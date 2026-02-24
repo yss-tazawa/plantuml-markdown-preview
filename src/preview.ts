@@ -234,7 +234,11 @@ export function openPreview(context: vscode.ExtensionContext, filePath: string, 
             if (debounceTimer) { clearTimeout(debounceTimer); debounceTimer = null; }
             const text = doc.getText();
             lastPlantUmlContent = extractPlantUmlContent(text);
-            renderPanelWithLoading(text);
+            try {
+                renderPanel(text);
+            } catch (err) {
+                console.error('[plantuml-markdown-preview] render error:', err);
+            }
         });
 
         changeDisposable = vscode.workspace.onDidChangeTextDocument((event) => {
@@ -247,7 +251,11 @@ export function openPreview(context: vscode.ExtensionContext, filePath: string, 
             debounceTimer = setTimeout(() => {
                 debounceTimer = null;
                 lastPlantUmlContent = currentPlantUml;
-                renderPanelWithLoading(text);
+                try {
+                    renderPanel(text);
+                } catch (err) {
+                    console.error('[plantuml-markdown-preview] render error:', err);
+                }
             }, delay);
         });
 
