@@ -1,0 +1,115 @@
+name: Bug Report
+description: Something is broken or not working as expected
+title: "[Bug] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report a bug!
+        Please fill in as much detail as possible so we can diagnose the issue quickly.
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: Describe the issue clearly and concisely.
+      placeholder: "e.g. PlantUML diagrams are not rendering and an error message appears in…"
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps-to-reproduce
+    attributes:
+      label: Steps to reproduce
+      description: Provide the exact steps to reproduce the problem.
+      placeholder: |
+        1. Open a Markdown file
+        2. Add a PlantUML code block
+        3. Open preview (Cmd+Alt+V / Ctrl+Alt+V)
+        4. …
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected-behavior
+    attributes:
+      label: Expected behavior
+      description: What should have happened instead?
+    validations:
+      required: true
+
+  - type: dropdown
+    id: os
+    attributes:
+      label: OS
+      options:
+        - macOS
+        - Windows
+        - Linux
+    validations:
+      required: true
+
+  - type: input
+    id: vscode-version
+    attributes:
+      label: VS Code version
+      description: "Help → About (or `code --version`)"
+      placeholder: "e.g. 1.96.0"
+    validations:
+      required: true
+
+  - type: input
+    id: extension-version
+    attributes:
+      label: Extension version
+      description: Check in the Extensions view
+      placeholder: "e.g. 0.1.0"
+    validations:
+      required: true
+
+  - type: input
+    id: java-version
+    attributes:
+      label: Java version
+      description: "Paste the output of `java -version`"
+      placeholder: "e.g. openjdk 21.0.2"
+    validations:
+      required: true
+
+  - type: input
+    id: graphviz-version
+    attributes:
+      label: Graphviz version (optional)
+      description: "Paste the output of `dot -V`"
+      placeholder: "e.g. dot - graphviz version 12.2.1"
+    validations:
+      required: false
+
+  - type: textarea
+    id: screenshots-logs
+    attributes:
+      label: Screenshots / error logs
+      description: |
+        Paste any relevant screenshots or error logs.
+        Check the VS Code Output panel (channel: PlantUML Markdown Preview) for useful diagnostics.
+      render: text
+    validations:
+      required: false
+
+  - type: textarea
+    id: plantuml-code
+    attributes:
+      label: PlantUML code
+      description: If the issue involves a specific diagram, paste the PlantUML code block here.
+      render: plantuml
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: duplicate-check
+    attributes:
+      label: Duplicate check
+      options:
+        - label: I searched existing issues and confirmed this has not been reported yet.
+          required: true

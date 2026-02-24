@@ -1,0 +1,19 @@
+{
+  "No Markdown file (.md) is selected.": "No Markdown file (.md) is selected.",
+  "PlantUML jar is not configured. Open settings?": "PlantUML jar is not configured. Open settings?",
+  "Open Settings": "Open Settings",
+  "Export failed: {0}": "Export failed: {0}",
+  "HTML exported: {0}": "HTML exported: {0}",
+  "Open in Browser": "Open in Browser",
+  "PlantUML jar is not configured.": "PlantUML jar is not configured.",
+  "PlantUML execution error: {0}": "PlantUML execution error: {0}",
+  "PlantUML error:": "PlantUML error:",
+  "(Preview)": "(Preview)",
+  "Rendering...": "Rendering...",
+  "Rendering PlantUML...": "Rendering PlantUML...",
+  "Fetching PlantUML theme list...": "Fetching PlantUML theme list...",
+  "Preview Theme": "Preview Theme",
+  "PlantUML Theme": "PlantUML Theme",
+  "Select theme": "Select theme",
+  "(current)": "(current)"
+}

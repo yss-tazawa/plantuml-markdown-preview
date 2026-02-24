@@ -1,0 +1,11 @@
+.vscode/
+.claude/
+private/
+*.code-workspace
+*.vsix
+*.html
+CLAUDE.md
+.DS_Store
+Thumbs.db
+node_modules/
+dist/

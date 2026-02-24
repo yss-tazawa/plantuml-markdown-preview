@@ -1,0 +1,24 @@
+# Shared with .gitignore
+.vscode/**
+.claude/**
+private/**
+*.code-workspace
+*.vsix
+*.html
+CLAUDE.md
+.DS_Store
+Thumbs.db
+node_modules/**
+
+# Not needed in package
+.git/**
+.github/**
+CONTRIBUTING.md
+esbuild.js
+
+# Pre-bundle source code
+extension.ts
+extension.js
+jsconfig.json
+tsconfig.json
+src/**
