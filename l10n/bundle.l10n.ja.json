@@ -1,0 +1,19 @@
+{
+  "No Markdown file (.md) is selected.": "Markdown ファイル (.md) が選択されていません。",
+  "PlantUML jar is not configured. Open settings?": "PlantUML jar が設定されていません。設定を開きますか？",
+  "Open Settings": "設定を開く",
+  "Export failed: {0}": "エクスポート失敗: {0}",
+  "HTML exported: {0}": "HTML を出力しました: {0}",
+  "Open in Browser": "ブラウザで開く",
+  "PlantUML jar is not configured.": "PlantUML jar が設定されていません。",
+  "PlantUML execution error: {0}": "PlantUML 実行エラー: {0}",
+  "PlantUML error:": "PlantUML エラー:",
+  "(Preview)": "(Preview)",
+  "Rendering...": "描画中...",
+  "Rendering PlantUML...": "PlantUML を描画中...",
+  "Fetching PlantUML theme list...": "PlantUML テーマ一覧を取得中...",
+  "Preview Theme": "プレビューテーマ",
+  "PlantUML Theme": "PlantUML テーマ",
+  "Select theme": "テーマを選択",
+  "(current)": "(現在)"
+}

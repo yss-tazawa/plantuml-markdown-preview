@@ -1,0 +1,66 @@
+name: Feature Request
+description: Suggest a new feature or improvement
+title: "[Feature] "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for suggesting an improvement!
+        The more detail you provide, the easier it is to evaluate.
+
+  - type: textarea
+    id: what-you-want
+    attributes:
+      label: What would you like
+      description: Describe the feature and what problem it solves.
+    validations:
+      required: true
+
+  - type: textarea
+    id: current-pain-point
+    attributes:
+      label: Current pain point
+      description: What is difficult or impossible today?
+    validations:
+      required: false
+
+  - type: textarea
+    id: proposed-solution
+    attributes:
+      label: Proposed solution
+      description: Your idea for how it could work, if any.
+    validations:
+      required: false
+
+  - type: dropdown
+    id: category
+    attributes:
+      label: Category
+      description: Pick the closest match.
+      options:
+        - Preview
+        - HTML export
+        - Themes
+        - Performance
+        - Internationalization
+        - Documentation
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: Additional context
+      description: Related links, screenshots, or issues.
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: duplicate-check
+    attributes:
+      label: Duplicate check
+      options:
+        - label: I searched existing issues and confirmed this has not been requested yet.
+          required: true

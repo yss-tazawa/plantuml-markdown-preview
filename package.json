@@ -1,0 +1,191 @@
+{
+  "name": "plantuml-markdown-preview",
+  "displayName": "%displayName%",
+  "description": "%description%",
+  "version": "0.1.0",
+  "license": "MIT",
+  "publisher": "yss-tazawa",
+  "icon": "images/icon.png",
+  "engines": {
+    "vscode": "^1.80.0"
+  },
+  "l10n": "./l10n",
+  "categories": [
+    "Other"
+  ],
+  "keywords": [
+    "markdown",
+    "plantuml",
+    "preview",
+    "diagram"
+  ],
+  "activationEvents": [],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "markdown.markdownItPlugins": true,
+    "commands": [
+      {
+        "command": "plantuml-markdown-preview.openPreview",
+        "title": "%command.openPreview.title%",
+        "category": "%command.category%"
+      },
+      {
+        "command": "plantuml-markdown-preview.exportHtml",
+        "title": "%command.exportHtml.title%",
+        "category": "%command.category%"
+      },
+      {
+        "command": "plantuml-markdown-preview.exportHtmlAndOpen",
+        "title": "%command.exportHtmlAndOpen.title%",
+        "category": "%command.category%"
+      },
+      {
+        "command": "plantuml-markdown-preview.changeTheme",
+        "title": "%command.changeTheme.title%",
+        "category": "%command.category%",
+        "icon": "$(color-mode)"
+      }
+    ],
+    "submenus": [
+      {
+        "id": "plantuml-markdown-preview.submenu",
+        "label": "%submenu.label%"
+      }
+    ],
+    "menus": {
+      "explorer/context": [
+        {
+          "submenu": "plantuml-markdown-preview.submenu",
+          "when": "resourceExtname == .md",
+          "group": "plantuml-markdown-preview"
+        }
+      ],
+      "editor/context": [
+        {
+          "submenu": "plantuml-markdown-preview.submenu",
+          "when": "editorLangId == markdown",
+          "group": "plantuml-markdown-preview"
+        }
+      ],
+      "editor/title": [
+        {
+          "command": "plantuml-markdown-preview.changeTheme",
+          "when": "activeWebviewPanelId == 'plantumlMarkdownPreview'",
+          "group": "navigation"
+        }
+      ],
+      "webview/context": [
+        {
+          "command": "plantuml-markdown-preview.exportHtml",
+          "when": "webviewId == 'plantumlMarkdownPreview'"
+        },
+        {
+          "command": "plantuml-markdown-preview.exportHtmlAndOpen",
+          "when": "webviewId == 'plantumlMarkdownPreview'"
+        }
+      ],
+      "plantuml-markdown-preview.submenu": [
+        {
+          "command": "plantuml-markdown-preview.openPreview",
+          "group": "1_preview@1"
+        },
+        {
+          "command": "plantuml-markdown-preview.exportHtml",
+          "group": "2_export@1"
+        },
+        {
+          "command": "plantuml-markdown-preview.exportHtmlAndOpen",
+          "group": "2_export@2"
+        }
+      ]
+    },
+    "keybindings": [
+      {
+        "command": "plantuml-markdown-preview.openPreview",
+        "key": "ctrl+alt+v",
+        "mac": "cmd+alt+v",
+        "when": "editorLangId == markdown"
+      }
+    ],
+    "configuration": {
+      "title": "%configuration.title%",
+      "properties": {
+        "plantumlMarkdownPreview.jarPath": {
+          "type": "string",
+          "default": "",
+          "description": "%configuration.jarPath.description%"
+        },
+        "plantumlMarkdownPreview.javaPath": {
+          "type": "string",
+          "default": "java",
+          "description": "%configuration.javaPath.description%"
+        },
+        "plantumlMarkdownPreview.dotPath": {
+          "type": "string",
+          "default": "dot",
+          "description": "%configuration.dotPath.description%"
+        },
+        "plantumlMarkdownPreview.debounceNoPlantUmlMs": {
+          "type": "number",
+          "default": 100,
+          "description": "%configuration.debounceNoPlantUmlMs.description%"
+        },
+        "plantumlMarkdownPreview.debouncePlantUmlMs": {
+          "type": "number",
+          "default": 100,
+          "description": "%configuration.debouncePlantUmlMs.description%"
+        },
+        "plantumlMarkdownPreview.plantumlTheme": {
+          "type": "string",
+          "default": "default",
+          "description": "%configuration.plantumlTheme.description%"
+        },
+        "plantumlMarkdownPreview.previewTheme": {
+          "type": "string",
+          "default": "github-light",
+          "enum": [
+            "github-light",
+            "github-dark",
+            "one-dark",
+            "dracula",
+            "solarized-light",
+            "solarized-dark"
+          ],
+          "enumDescriptions": [
+            "%configuration.previewTheme.github-light%",
+            "%configuration.previewTheme.github-dark%",
+            "%configuration.previewTheme.one-dark%",
+            "%configuration.previewTheme.dracula%",
+            "%configuration.previewTheme.solarized-light%",
+            "%configuration.previewTheme.solarized-dark%"
+          ],
+          "description": "%configuration.previewTheme.description%"
+        }
+      }
+    }
+  },
+  "dependencies": {
+    "highlight.js": "^11.11.1",
+    "markdown-it": "^14.1.1"
+  },
+  "devDependencies": {
+    "@types/markdown-it": "^14.1.2",
+    "@types/node": "^25.3.0",
+    "@types/vscode": "^1.80.0",
+    "esbuild": "^0.27.3",
+    "typescript": "^5.9.3"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yss-tazawa/plantuml-markdown-preview"
+  },
+  "homepage": "https://github.com/yss-tazawa/plantuml-markdown-preview#readme",
+  "bugs": {
+    "url": "https://github.com/yss-tazawa/plantuml-markdown-preview/issues"
+  },
+  "scripts": {
+    "build": "node esbuild.js",
+    "typecheck": "tsc --noEmit",
+    "package": "npm run typecheck && npm run build && npx @vscode/vsce package"
+  }
+}
