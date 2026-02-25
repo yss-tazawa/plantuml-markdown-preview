@@ -30,7 +30,7 @@
  * @param {string} renderingText - Localized "Rendering..." text for the loading overlay.
  * @returns {string} HTML `<script nonce="...">` string ready for insertion before `</body>`.
  */
-export function buildScrollSyncScript(initialLine: number, initialMaxTopLine: number, nonce: string, renderSeq: number, renderingText: string): string {
+export function buildScrollSyncScript(initialLine: number, initialMaxTopLine: number, nonce: string, renderSeq: number, renderingText: string, syncMasterTimeoutMs: number): string {
     return `<script nonce="${nonce}">
 (function() {
     const vscode = acquireVsCodeApi();
@@ -56,7 +56,7 @@ export function buildScrollSyncScript(initialLine: number, initialMaxTopLine: nu
     function setSyncMaster(who) {
         syncMaster = who;
         if (syncMasterTimer) clearTimeout(syncMasterTimer);
-        syncMasterTimer = setTimeout(function() { syncMaster = 'none'; syncMasterTimer = null; }, 300);
+        syncMasterTimer = setTimeout(function() { syncMaster = 'none'; syncMasterTimer = null; }, ${syncMasterTimeoutMs});
     }
 
     // --- Anchor-based scroll map ---

@@ -64,12 +64,11 @@ src/
   exporter.ts       HTML export with inline SVG and syntax highlighting
   scroll-sync.ts    Bidirectional editor ↔ preview scroll sync
   utils.ts          Shared utilities (escapeHtml, getNonce)
-  themes/           CSS theme definitions (base + 6 variants)
+  themes/           CSS theme definitions (14 themes: 8 light + 6 dark)
 l10n/               Localization bundles (English + Japanese)
+.github/            GitHub templates (PR template, security policy)
 dist/               Build output (gitignored)
 ```
-
-For detailed architecture documentation, see `private/docs/design.md` (available locally after cloning).
 
 ## Coding Guidelines
 
@@ -103,7 +102,7 @@ Adding the English strings is sufficient — the maintainer will handle Japanese
 1. Fork the repository and create a branch from **`develop`**
 2. Make your changes
 3. Ensure `npm run typecheck && npm run build` passes
-4. Test manually via F5 debug
+4. Test manually via F5 debug (there are no automated tests yet — manual testing via the Extension Development Host is the primary verification method)
 5. Push your branch and open a Pull Request against **`develop`**
 
 > **Branch strategy:** `develop` is the working branch; `main` is the release branch. Always branch from and target `develop`.

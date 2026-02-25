@@ -23,8 +23,9 @@
 - **Inline PlantUML rendering** — diagrams appear directly in your Markdown preview, not in a separate panel
 - **Self-contained HTML export** — SVG diagrams embedded inline, zero external dependencies
 - **Bidirectional scroll sync** — editor and preview scroll together, both ways
-- **6 preview themes** — GitHub Light/Dark, One Dark, Dracula, Solarized Light/Dark
+- **14 preview themes** — 8 light + 6 dark themes including GitHub, Atom, Solarized, Dracula, Monokai, and more
 - **Secure** — CSP nonce-based policy, no code execution from Markdown content
+- **Internationalization** — English and Japanese UI
 
 ## Table of Contents
 
@@ -50,8 +51,6 @@ alongside your regular Markdown content.
 - Loading indicator during PlantUML rendering
 - PlantUML syntax errors displayed inline with line numbers and source context
 
-<!-- TODO: screenshot or GIF of live preview updating -->
-
 ### HTML Export
 
 Export your Markdown document to a self-contained HTML file.
@@ -71,22 +70,35 @@ Editor and preview stay in sync as you scroll either one.
 
 **Preview themes** control the overall document appearance:
 
+**Light themes:**
+
 | Theme | Style |
 |-------|-------|
 | GitHub Light | White background (default) |
+| Atom Light | Soft gray text, Atom editor inspired |
+| One Light | Off-white, balanced palette |
+| Solarized Light | Warm beige, eye-friendly |
+| Vue | Green accents, Vue.js docs inspired |
+| Pen Paper Coffee | Warm paper, handwritten aesthetic |
+| Coy | Near-white, clean design |
+| VS | Classic Visual Studio colors |
+
+**Dark themes:**
+
+| Theme | Style |
+|-------|-------|
 | GitHub Dark | Dark background |
+| Atom Dark | Tomorrow Night palette |
 | One Dark | Atom-inspired dark |
 | Dracula | Vibrant dark |
-| Solarized Light | Warm beige, eye-friendly |
 | Solarized Dark | Deep teal, eye-friendly |
+| Monokai | Vivid syntax, Sublime Text inspired |
 
-Switch themes instantly from the title bar icon — no re-render needed (CSS-only swap).
+Switch preview themes instantly from the title bar icon — no re-render needed (CSS-only swap). PlantUML theme changes trigger a re-render.
 
 **PlantUML themes** control diagram styling independently. The extension discovers
 available themes from your PlantUML installation and presents them in a combined
 QuickPick alongside preview themes.
-
-<!-- TODO: screenshot of theme picker -->
 
 ### Syntax Highlighting
 
@@ -98,6 +110,15 @@ selected preview theme.
 - Content Security Policy with nonce-based script restrictions
 - No code execution from Markdown content
 - User-authored `<script>` tags are blocked
+
+### Built-in Markdown Preview Integration
+
+PlantUML diagrams also render in VS Code's built-in Markdown preview
+(`Markdown: Open Preview to the Side`). No additional configuration needed.
+
+> **Note:** The built-in preview does not support this extension's preview themes,
+> bidirectional scroll sync, or HTML export. For the full feature set, use the
+> extension's own preview panel (`Cmd+Alt+V` / `Ctrl+Alt+V`).
 
 ## Quick Start
 
@@ -133,14 +154,17 @@ Add to your VS Code settings (`Cmd+,` / `Ctrl+,`):
 ### Open Preview
 
 - **Keyboard shortcut:** `Cmd+Alt+V` (Mac) / `Ctrl+Alt+V` (Windows / Linux)
-- **Context menu:** Right-click a `.md` file → **PlantUML Markdown Preview** → **Open Preview to Side**
+- **Context menu:** Right-click a `.md` file in the Explorer or inside the editor → **PlantUML Markdown Preview** → **Open Preview to Side**
 - **Command Palette:** `PlantUML Markdown Preview: Open Preview to Side`
 
 The preview uses its own theming independent of VS Code — default is a white background (GitHub Light).
 
 ### Export to HTML
 
-Right-click a `.md` file → **PlantUML Markdown Preview** → **Export as HTML**
+- **Context menu:** Right-click a `.md` file → **PlantUML Markdown Preview** → **Export as HTML**
+- **Preview panel:** Right-click inside the preview panel → **Export as HTML** or **Export as HTML & Open in Browser**
+- **Command Palette:** `PlantUML Markdown Preview: Export as HTML`
+- **Command Palette:** `PlantUML Markdown Preview: Export as HTML & Open in Browser`
 
 The HTML file is saved alongside the source `.md` file. To export and open in
 your browser in one step, choose **Export as HTML & Open in Browser**.
@@ -148,7 +172,8 @@ your browser in one step, choose **Export as HTML & Open in Browser**.
 ### Change Theme
 
 Click the theme icon in the preview panel title bar, or use the Command Palette:
-**PlantUML Markdown Preview: Change Preview Theme**
+
+- **Command Palette:** `PlantUML Markdown Preview: Change Preview Theme`
 
 ### PlantUML Syntax
 
@@ -178,9 +203,9 @@ All settings use the `plantumlMarkdownPreview.` prefix.
 | `javaPath` | `"java"` | Path to Java executable |
 | `dotPath` | `"dot"` | Path to Graphviz `dot` executable |
 | `previewTheme` | `"github-light"` | Preview theme (see [Themes](#themes)) |
-| `plantumlTheme` | `"default"` | PlantUML diagram theme (`-theme` CLI argument) |
+| `plantumlTheme` | `"default"` | PlantUML diagram theme. `"default"` applies no theme. Other values (e.g. `"cyborg"`, `"mars"`) are passed as `-theme` to PlantUML CLI. |
 | `debounceNoPlantUmlMs` | `100` | Debounce delay (ms) for non-PlantUML text changes |
-| `debouncePlantUmlMs` | `100` | Debounce delay (ms) for PlantUML content changes |
+| `debouncePlantUmlMs` | `300` | Debounce delay (ms) for PlantUML content changes |
 
 <details>
 <summary><strong>Preview theme options</strong></summary>
@@ -188,11 +213,19 @@ All settings use the `plantumlMarkdownPreview.` prefix.
 | Value | Description |
 |-------|-------------|
 | `github-light` | GitHub Light — white background (default) |
+| `atom-light` | Atom Light — soft gray text, Atom inspired |
+| `one-light` | One Light — off-white, balanced palette |
+| `solarized-light` | Solarized Light — warm beige, eye-friendly |
+| `vue` | Vue — green accents, Vue.js docs inspired |
+| `pen-paper-coffee` | Pen Paper Coffee — warm paper, handwritten aesthetic |
+| `coy` | Coy — near-white, clean design |
+| `vs` | VS — classic Visual Studio colors |
 | `github-dark` | GitHub Dark — dark background |
+| `atom-dark` | Atom Dark — Tomorrow Night palette |
 | `one-dark` | One Dark — Atom-inspired dark |
 | `dracula` | Dracula — vibrant dark palette |
-| `solarized-light` | Solarized Light — warm beige, eye-friendly |
 | `solarized-dark` | Solarized Dark — deep teal, eye-friendly |
+| `monokai` | Monokai — vivid syntax, Sublime Text inspired |
 
 </details>
 
