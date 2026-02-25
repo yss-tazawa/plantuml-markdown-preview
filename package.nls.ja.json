@@ -13,7 +13,7 @@
   "configuration.dotPath.description": "Graphviz dot 実行ファイルへのパス（デフォルト: dot）",
   "configuration.debounceNoPlantUmlMs.description": "PlantUML 以外のテキスト変更時のデバウンス待機時間（ms）。キャッシュヒット確定で Java 起動なし。デフォルト: 100",
   "configuration.debouncePlantUmlMs.description": "PlantUML 内容変更時のデバウンス待機時間（ms）。Java 起動が必要。デフォルト: 100",
-  "configuration.plantumlTheme.description": "PlantUML 図のテーマ。'default' はテーマなし（PlantUML デフォルト）。テーマ名（例: '_dark', 'cyborg'）を指定すると PlantUML CLI に -theme を渡します。デフォルト: default",
+  "configuration.plantumlTheme.description": "PlantUML 図のテーマ。'default' はテーマなし（PlantUML デフォルト）。テーマ名（例: 'cyborg', 'mars'）を指定すると PlantUML CLI に -theme を渡します。デフォルト: default",
   "configuration.previewTheme.description": "プレビューテーマ。ドキュメント全体スタイルとコードブロックのシンタックスハイライトをまとめて制御します。デフォルト: github-light",
   "configuration.previewTheme.github-light": "GitHub Light（デフォルト）— 白背景・黒文字。コードブロック: github-dark-dimmed",
   "configuration.previewTheme.github-dark": "GitHub Dark — 黒背景・白文字。コードブロック: github-dark",

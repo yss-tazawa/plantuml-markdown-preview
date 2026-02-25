@@ -13,7 +13,7 @@
   "configuration.dotPath.description": "Path to the Graphviz dot executable (default: dot)",
   "configuration.debounceNoPlantUmlMs.description": "Debounce delay (ms) when only non-PlantUML text changes (cache hit, no Java invocation). Default: 100",
   "configuration.debouncePlantUmlMs.description": "Debounce delay (ms) when PlantUML content changes (Java invocation required). Default: 100",
-  "configuration.plantumlTheme.description": "PlantUML diagram theme. 'default' uses PlantUML default (no theme applied). Set a theme name (e.g. '_dark', 'cyborg') to pass -theme to PlantUML CLI. Default: default",
+  "configuration.plantumlTheme.description": "PlantUML diagram theme. 'default' uses PlantUML default (no theme applied). Set a theme name (e.g. 'cyborg', 'mars') to pass -theme to PlantUML CLI. Default: default",
   "configuration.previewTheme.description": "Preview theme. Controls the overall document style and code block syntax highlight together. Default: github-light",
   "configuration.previewTheme.github-light": "GitHub Light (Default) — white background, dark text. Code blocks: github-dark-dimmed",
   "configuration.previewTheme.github-dark": "GitHub Dark — dark background, light text. Code blocks: github-dark",
