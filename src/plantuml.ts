@@ -3,17 +3,17 @@
  * @description PlantUML jar wrapper — converts PlantUML text to SVG.
  *
  * Key behaviors:
- * - renderToSvg: PlantUML text -> SVG string (synchronous, MD5-cached LRU)
+ * - renderToSvg: PlantUML text -> SVG string (synchronous, SHA-256-cached LRU)
  * - listThemes: Dynamically discover available PlantUML themes via `help themes`
  * - Spawns Java via spawnSync with -Djava.awt.headless=true (no macOS Dock icon)
- * - Cache key: content + jarPath + javaPath + dotPath + plantumlTheme (MD5 hash, max 200 entries)
+ * - Cache key: content + jarPath + javaPath + dotPath + plantumlTheme (SHA-256 hash, max 200 entries)
  * - Auto-wraps with @startuml/@enduml if missing
  * - On syntax error: parses -stdrpt:1 structured stderr, displays source context
  *   with error line highlight and line number offset correction
  * - Process errors (Java not found, timeout) and syntax errors are NOT cached
  */
 import * as vscode from 'vscode';
-import { spawnSync, execFile } from 'child_process';
+import { spawnSync, execFile, type ChildProcess } from 'child_process';
 import crypto from 'crypto';
 import { escapeHtml } from './utils.js';
 
@@ -29,7 +29,7 @@ export interface PlantUmlConfig {
     plantumlTheme?: string;
 }
 
-/** LRU cache mapping MD5 hash -> SVG string. */
+/** LRU cache mapping SHA-256 hash -> SVG string. */
 const cache = new Map<string, string>();
 
 /** Maximum number of cached SVG entries. */
@@ -43,6 +43,8 @@ let themeCacheResult: string[] | null = null;
 let themePendingKey = '';
 /** Promise of the currently in-flight theme fetch, used for deduplication. */
 let themePendingPromise: Promise<string[]> | null = null;
+/** Reference to the in-flight theme fetch child process for cleanup on deactivate. */
+let themePendingChild: ChildProcess | null = null;
 
 /** Representative themes used when dynamic discovery fails (old PlantUML versions). */
 const FALLBACK_PLANTUML_THEMES = [
@@ -53,7 +55,7 @@ const FALLBACK_PLANTUML_THEMES = [
  * Render PlantUML text to an SVG string (synchronous).
  *
  * Spawns `java -jar plantuml.jar -pipe -tsvg` with the given content piped via stdin.
- * Results are cached in an MD5-keyed LRU map (max 200 entries).
+ * Results are cached in a SHA-256-keyed LRU map (max 200 entries).
  * Process errors and syntax errors are NOT cached so re-edits are always re-evaluated.
  *
  * @param {string} pumlContent - Raw PlantUML source text (with or without @startuml/@enduml).
@@ -74,9 +76,9 @@ export function renderToSvg(pumlContent: string, config: PlantUmlConfig): string
     }
 
     const trimmed = pumlContent.trim();
-    const tagsAdded = !trimmed.startsWith('@startuml');
+    const tagsAdded = !trimmed.startsWith('@start');
     const content = ensureStartEndTags(trimmed);
-    const hash = crypto.createHash('md5')
+    const hash = crypto.createHash('sha256')
         .update(content).update('\0')
         .update(jarPath).update('\0')
         .update(javaPath).update('\0')
@@ -106,7 +108,8 @@ export function renderToSvg(pumlContent: string, config: PlantUmlConfig): string
         {
             input: content,
             encoding: 'utf8',
-            timeout: 30000
+            timeout: 15000,
+            killSignal: 'SIGKILL'
         }
     );
 
@@ -122,7 +125,8 @@ export function renderToSvg(pumlContent: string, config: PlantUmlConfig): string
 
     const svg = result.stdout;
     if (cache.size >= MAX_CACHE_SIZE) {
-        cache.delete(cache.keys().next().value!);
+        const oldest = cache.keys().next().value;
+        if (oldest !== undefined) cache.delete(oldest);
     }
     cache.set(hash, svg);
     return svg;
@@ -231,13 +235,16 @@ function parseStdrpt(stderr: string): { lineNumber: number; label: string } | nu
 }
 
 /**
- * Auto-wrap content with @startuml / @enduml if not already present.
+ * Auto-wrap content with @startuml / @enduml if no @start tag is present.
+ *
+ * Recognizes all PlantUML start tags (@startuml, @startmindmap, @startwbs, etc.)
+ * and only wraps content that doesn't already have one.
  *
  * @param {string} content - Trimmed PlantUML source text.
- * @returns {string} Content guaranteed to have @startuml/@enduml wrapper tags.
+ * @returns {string} Content guaranteed to have @startuml/@enduml wrapper tags (if no @start tag was present).
  */
 function ensureStartEndTags(content: string): string {
-    if (!content.startsWith('@startuml')) {
+    if (!content.startsWith('@start')) {
         return `@startuml\n${content}\n@enduml`;
     }
     return content;
@@ -299,12 +306,13 @@ export function listThemesAsync(config: Pick<PlantUmlConfig, 'jarPath' | 'javaPa
         const child = execFile(
             javaPath,
             ['-Djava.awt.headless=true', '-jar', jarPath, '-pipe', '-tutxt', '-charset', 'UTF-8'],
-            { encoding: 'utf8', timeout: 15000 },
+            { encoding: 'utf8', timeout: 15000, maxBuffer: 1024 * 1024 },
             (err: Error | null, stdout: string) => {
-                // Only clear the pending promise if it is still ours (a newer call
+                // Only clear the pending state if it is still ours (a newer call
                 // with a different config key may have replaced it already).
                 if (themePendingPromise === promise) {
                     themePendingPromise = null;
+                    themePendingChild = null;
                 }
                 if (err || !stdout) { resolve(FALLBACK_PLANTUML_THEMES); return; }
                 const themes = parseHelpThemes(stdout);
@@ -314,6 +322,7 @@ export function listThemesAsync(config: Pick<PlantUmlConfig, 'jarPath' | 'javaPa
                 resolve(themes);
             }
         );
+        themePendingChild = child;
         if (child.stdin) {
             try {
                 child.stdin.write('@startuml\nhelp themes\n@enduml');
@@ -337,6 +346,24 @@ export function listThemesAsync(config: Pick<PlantUmlConfig, 'jarPath' | 'javaPa
  */
 export function prefetchThemes(config: Pick<PlantUmlConfig, 'jarPath' | 'javaPath'>): void {
     listThemesAsync(config).catch(() => {});
+}
+
+/**
+ * Clear all caches and kill any in-flight child processes.
+ *
+ * Called from deactivate() to release memory and stop background work
+ * when the extension is unloaded.
+ */
+export function clearCache(): void {
+    cache.clear();
+    themeCacheKey = '';
+    themeCacheResult = null;
+    themePendingKey = '';
+    themePendingPromise = null;
+    if (themePendingChild) {
+        themePendingChild.kill();
+        themePendingChild = null;
+    }
 }
 
 /**
