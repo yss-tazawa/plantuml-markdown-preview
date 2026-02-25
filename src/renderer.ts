@@ -22,11 +22,10 @@ import type { PlantUmlConfig } from './plantuml.js';
  *   source_map core rule in exporter.ts sets token.meta.sourceLine).
  *
  * @param {MarkdownIt} md - The markdown-it instance to extend.
- * @param {Partial<PlantUmlConfig>} [config] - PlantUML configuration (jarPath, javaPath, etc.).
+ * @param {PlantUmlConfig} config - PlantUML configuration (jarPath, javaPath, etc.).
  * @returns {MarkdownIt} The same markdown-it instance with the fence rule replaced.
  */
-export function plantumlPlugin(md: MarkdownIt, config?: Partial<PlantUmlConfig>): MarkdownIt {
-    const cfg = config || {};
+export function plantumlPlugin(md: MarkdownIt, config: PlantUmlConfig): MarkdownIt {
 
     /** Original fence renderer rule, used as fallback for non-PlantUML blocks. */
     const defaultFence = md.renderer.rules.fence || function (tokens: Token[], idx: number, opts: MarkdownIt.Options, _env: unknown, self: { renderToken: (tokens: Token[], idx: number, opts: MarkdownIt.Options) => string }) {
@@ -63,7 +62,7 @@ export function plantumlPlugin(md: MarkdownIt, config?: Partial<PlantUmlConfig>)
             return defaultOutput;
         }
 
-        const svg = renderToSvg(token.content, cfg as PlantUmlConfig);
+        const svg = renderToSvg(token.content, config);
         return `<div class="plantuml-diagram"${lineAttr}>${svg}</div>\n`;
     };
 

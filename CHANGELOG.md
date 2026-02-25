@@ -5,6 +5,29 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## 0.1.2 - 2026-02-26
+
+### Added
+
+- 8 new preview themes: Atom Light, One Light, Vue, Pen Paper Coffee, Coy, VS (light) and Atom Dark, Monokai (dark) — total 14 themes (8 light + 6 dark)
+- Light/Dark separator labels in the theme picker QuickPick menu for easier navigation
+
+### Changed
+
+- Async file I/O for export and preview rendering (readFileSync → fs.promises)
+- SHA-256 cache keys for PlantUML SVG cache (replaces MD5)
+- PlantUML spawn timeout reduced from 30s to 15s
+- Default `debouncePlantUmlMs` changed from 100 to 300
+- Recognize all PlantUML `@start` tags (mindmap, wbs, etc.) not just `@startuml`
+
+### Fixed
+
+- Minor corrections in settings description text
+- Disposable event handler leak (now registered via context.subscriptions)
+- Floating promises on fire-and-forget VS Code commands
+- CSP missing `font-src` directive
+- Unescaped `lang` attribute in exported HTML
+
 ## 0.1.1 - 2026-02-25
 
 ### Changed
