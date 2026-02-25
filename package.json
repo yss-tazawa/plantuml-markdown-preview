@@ -2,7 +2,7 @@
   "name": "plantuml-markdown-preview",
   "displayName": "%displayName%",
   "description": "%description%",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "license": "MIT",
   "publisher": "yss-tazawa",
   "icon": "images/icon.png",
@@ -11,13 +11,17 @@
   },
   "l10n": "./l10n",
   "categories": [
-    "Other"
+    "Programming Languages",
+    "Visualization"
   ],
   "keywords": [
     "markdown",
     "plantuml",
     "preview",
-    "diagram"
+    "diagram",
+    "uml",
+    "svg",
+    "export"
   ],
   "activationEvents": [],
   "main": "./dist/extension.js",
@@ -132,7 +136,7 @@
         },
         "plantumlMarkdownPreview.debouncePlantUmlMs": {
           "type": "number",
-          "default": 100,
+          "default": 300,
           "description": "%configuration.debouncePlantUmlMs.description%"
         },
         "plantumlMarkdownPreview.plantumlTheme": {
@@ -145,19 +149,35 @@
           "default": "github-light",
           "enum": [
             "github-light",
+            "atom-light",
+            "one-light",
+            "solarized-light",
+            "vue",
+            "pen-paper-coffee",
+            "coy",
+            "vs",
             "github-dark",
+            "atom-dark",
             "one-dark",
             "dracula",
-            "solarized-light",
-            "solarized-dark"
+            "solarized-dark",
+            "monokai"
           ],
           "enumDescriptions": [
             "%configuration.previewTheme.github-light%",
+            "%configuration.previewTheme.atom-light%",
+            "%configuration.previewTheme.one-light%",
+            "%configuration.previewTheme.solarized-light%",
+            "%configuration.previewTheme.vue%",
+            "%configuration.previewTheme.pen-paper-coffee%",
+            "%configuration.previewTheme.coy%",
+            "%configuration.previewTheme.vs%",
             "%configuration.previewTheme.github-dark%",
+            "%configuration.previewTheme.atom-dark%",
             "%configuration.previewTheme.one-dark%",
             "%configuration.previewTheme.dracula%",
-            "%configuration.previewTheme.solarized-light%",
-            "%configuration.previewTheme.solarized-dark%"
+            "%configuration.previewTheme.solarized-dark%",
+            "%configuration.previewTheme.monokai%"
           ],
           "description": "%configuration.previewTheme.description%"
         }

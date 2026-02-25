@@ -13,7 +13,7 @@
 import * as vscode from 'vscode';
 import path from 'path';
 import fs from 'fs';
-import { renderHtml, getThemeKeys, getThemeCss } from './exporter.js';
+import { renderHtml, getThemeCss, LIGHT_THEME_KEYS, DARK_THEME_KEYS } from './exporter.js';
 import type { ExporterConfig } from './exporter.js';
 import { listThemesAsync, prefetchThemes } from './plantuml.js';
 import { buildScrollSyncScript } from './scroll-sync.js';
@@ -30,6 +30,8 @@ export interface PreviewConfig extends ExporterConfig {
 /** Scroll sync state: which side currently owns the scroll. */
 type SyncMaster = 'none' | 'editor' | 'preview';
 
+/** Extension context reference for registering disposables. */
+let extensionContext: vscode.ExtensionContext | null = null;
 /** The active WebviewPanel instance, or null when no preview is open. */
 let panel: vscode.WebviewPanel | null = null;
 /** Absolute path of the Markdown file currently displayed in the preview. */
@@ -87,6 +89,9 @@ function extractPlantUmlContent(text: string): string {
     return blocks.join('\n---\n');
 }
 
+/** Timeout (ms) for auto-resetting syncMaster to 'none'. Shared with scroll-sync.ts. */
+const SYNC_MASTER_TIMEOUT_MS = 300;
+
 /**
  * Set the syncMaster state and schedule auto-reset to 'none' after 300ms.
  *
@@ -97,7 +102,7 @@ function extractPlantUmlContent(text: string): string {
 function setSyncMaster(who: 'editor' | 'preview'): void {
     syncMaster = who;
     if (syncMasterTimer) clearTimeout(syncMasterTimer);
-    syncMasterTimer = setTimeout(() => { syncMaster = 'none'; syncMasterTimer = null; }, 300);
+    syncMasterTimer = setTimeout(() => { syncMaster = 'none'; syncMasterTimer = null; }, SYNC_MASTER_TIMEOUT_MS);
 }
 
 /**
@@ -110,7 +115,8 @@ function setSyncMaster(who: 'editor' | 'preview'): void {
  * @returns {number} Maximum value for the editor's top visible line (>= 0).
  */
 function calcMaxTopLine(lineCount: number, visibleLineCount: number): number {
-    return Math.max(0, lineCount - Math.ceil(visibleLineCount * 3 / 4));
+    const BOTTOM_OVERLAP_RATIO = 3 / 4;
+    return Math.max(0, lineCount - Math.ceil(visibleLineCount * BOTTOM_OVERLAP_RATIO));
 }
 
 /**
@@ -119,7 +125,8 @@ function calcMaxTopLine(lineCount: number, visibleLineCount: number): number {
  * @returns {string} Title string in the format "filename (Preview)".
  */
 function makeTitle(): string {
-    return path.basename(currentFilePath!, '.md') + ' ' + vscode.l10n.t('(Preview)');
+    const name = currentFilePath ? path.basename(currentFilePath, '.md') : 'Untitled';
+    return name + ' ' + vscode.l10n.t('(Preview)');
 }
 
 /**
@@ -159,6 +166,7 @@ export function disposePreview(): void {
  */
 function resetState(): void {
     panel = null;
+    extensionContext = null;
     currentFilePath = null;
     lastConfig = null;
     lastPlantUmlContent = '';
@@ -166,6 +174,32 @@ function resetState(): void {
     lastMaxTopLine = -1;
     syncMaster = 'none';
     disposeEventHandlers();
+}
+
+/**
+ * Read the document text from an open editor or the filesystem.
+ *
+ * Tries open VS Code text documents first (synchronous). Falls back to
+ * fs.promises.readFile (asynchronous) when the file is not currently open.
+ * Guards against stale reads by checking currentFilePath after the async read.
+ * Returns null when the file was switched while reading (stale read).
+ *
+ * @param {string} filePath - Absolute path to the .md file.
+ * @returns {Promise<string | null>} File content, or null if the file was switched or an error occurred.
+ */
+async function readFileContent(filePath: string): Promise<string | null> {
+    const doc = vscode.workspace.textDocuments.find(d => d.uri.fsPath === filePath);
+    if (doc) {
+        return doc.getText();
+    }
+    try {
+        const text = await fs.promises.readFile(filePath, 'utf8');
+        if (currentFilePath !== filePath) return null; // file switched while reading
+        return text;
+    } catch (err) {
+        vscode.window.showErrorMessage(`[PlantUML Markdown Preview] ${(err as Error).message}`);
+        return null;
+    }
 }
 
 /**
@@ -181,6 +215,7 @@ function resetState(): void {
  * @param {boolean} [preserveFocus=false] - When true, keep focus on the editor (auto-follow mode).
  */
 export function openPreview(context: vscode.ExtensionContext, filePath: string, config: PreviewConfig, preserveFocus = false): void {
+    extensionContext = context;
     lastConfig = config;
 
     // Cancel any pending debounce since we are about to do a fresh render.
@@ -240,13 +275,14 @@ export function openPreview(context: vscode.ExtensionContext, filePath: string, 
                 console.error('[plantuml-markdown-preview] render error:', err);
             }
         });
+        context.subscriptions.push(saveDisposable);
 
         changeDisposable = vscode.workspace.onDidChangeTextDocument((event) => {
-            if (!panel || !currentFilePath || event.document.uri.fsPath !== currentFilePath) return;
+            if (!panel || !currentFilePath || !lastConfig || event.document.uri.fsPath !== currentFilePath) return;
             if (debounceTimer) clearTimeout(debounceTimer);
             const text = event.document.getText();
             const currentPlantUml = extractPlantUmlContent(text);
-            const { debounceNoPlantUmlMs, debouncePlantUmlMs } = lastConfig!;
+            const { debounceNoPlantUmlMs, debouncePlantUmlMs } = lastConfig;
             const delay = currentPlantUml !== lastPlantUmlContent ? debouncePlantUmlMs : debounceNoPlantUmlMs;
             debounceTimer = setTimeout(() => {
                 debounceTimer = null;
@@ -258,6 +294,7 @@ export function openPreview(context: vscode.ExtensionContext, filePath: string, 
                 }
             }, delay);
         });
+        context.subscriptions.push(changeDisposable);
 
         scrollDisposable = vscode.window.onDidChangeTextEditorVisibleRanges((event) => {
             if (!panel) return;
@@ -277,6 +314,8 @@ export function openPreview(context: vscode.ExtensionContext, filePath: string, 
             lastMaxTopLine = maxTopLine;
             panel.webview.postMessage({ type: 'scrollToLine', line: topLine, maxTopLine });
         });
+        context.subscriptions.push(scrollDisposable);
+
     }
 
     // Initial display: capture the editor's current top line and maxTopLine
@@ -290,15 +329,11 @@ export function openPreview(context: vscode.ExtensionContext, filePath: string, 
     // Pre-fetch PlantUML theme list in background so it's cached when menu opens
     prefetchThemes(config);
 
-    const activeDoc = vscode.workspace.textDocuments.find(d => d.uri.fsPath === filePath);
-    let initialText: string;
-    try {
-        initialText = activeDoc ? activeDoc.getText() : fs.readFileSync(filePath, 'utf8');
-    } catch {
-        return;
-    }
-    lastPlantUmlContent = extractPlantUmlContent(initialText);
-    renderPanelWithLoading(initialText);
+    void readFileContent(filePath).then((text) => {
+        if (text === null) return;
+        lastPlantUmlContent = extractPlantUmlContent(text);
+        renderPanelWithLoading(text);
+    });
 }
 
 /**
@@ -317,14 +352,14 @@ function renderPanel(text: string): void {
     const nonce = getNonce();
     panel.webview.html = renderHtml(text, makeTitle(), lastConfig, {
         sourceMap: true,
-        scriptHtml: buildScrollSyncScript(lastScrollLine, lastMaxTopLine, nonce, renderSeq, vscode.l10n.t('Rendering...')),
+        scriptHtml: buildScrollSyncScript(lastScrollLine, lastMaxTopLine, nonce, renderSeq, vscode.l10n.t('Rendering...'), SYNC_MASTER_TIMEOUT_MS),
         cspNonce: nonce,
         cspSource: panel.webview.cspSource,
         lang: vscode.env.language
     });
-    panel.webview.postMessage({ type: 'hideLoading' });
     // After re-render the scrollMap changes, so force sync on next scroll event
     lastScrollLine = -1;
+    lastMaxTopLine = -1;
 }
 
 /**
@@ -362,51 +397,42 @@ function renderPanelWithLoading(text: string): void {
             // Yield to event loop so overlay renders before blocking re-render
             loadingRenderTimer = setTimeout(() => {
                 loadingRenderTimer = null;
-                loadingResolve = null;
                 try {
                     renderPanel(text);
                 } catch (err) {
                     console.error('[plantuml-markdown-preview] render error:', err);
-                    if (panel) panel.webview.postMessage({ type: 'hideLoading' });
+                } finally {
+                    resolve();
+                    loadingResolve = null;
                 }
-                resolve();
             }, 50);
         })
     );
 }
 
-/**
- * Attempt a CSS-only theme swap without full HTML re-render.
- *
- * Compares all config properties between old and new. Returns true (and applies
- * the swap) only when previewTheme is the sole changed property. PlantUML theme
- * changes require a full re-render because the SVG output itself changes.
- *
- * @param {PreviewConfig} newConfig - Incoming configuration from onDidChangeConfiguration.
- * @param {PreviewConfig | null} oldConfig - Previously applied configuration (null on first render).
- * @returns {boolean} True if CSS-only swap was applied, false if full re-render is needed.
- */
-function tryThemeOnlyUpdate(newConfig: PreviewConfig, oldConfig: PreviewConfig | null): boolean {
-    if (!panel || !oldConfig) return false;
-    if (newConfig.jarPath !== oldConfig.jarPath) return false;
-    if (newConfig.javaPath !== oldConfig.javaPath) return false;
-    if (newConfig.dotPath !== oldConfig.dotPath) return false;
-    if (newConfig.debounceNoPlantUmlMs !== oldConfig.debounceNoPlantUmlMs) return false;
-    if (newConfig.debouncePlantUmlMs !== oldConfig.debouncePlantUmlMs) return false;
-    if (newConfig.plantumlTheme !== oldConfig.plantumlTheme) return false;
-    if (newConfig.previewTheme === oldConfig.previewTheme) return false;
+/** Property keys that affect rendering output (PlantUML paths and themes). */
+const RENDER_KEYS = ['jarPath', 'javaPath', 'dotPath', 'plantumlTheme', 'previewTheme'] as const;
 
-    const css = getThemeCss(newConfig.previewTheme || 'github-light');
-    panel.webview.postMessage({ type: 'updateTheme', css });
-    lastConfig = newConfig;
-    return true;
+/**
+ * Check which rendering-related properties changed between two configs.
+ *
+ * @param {PreviewConfig} a - New configuration.
+ * @param {PreviewConfig} b - Old configuration.
+ * @returns {Set<string>} Set of property names that differ.
+ */
+function changedRenderKeys(a: PreviewConfig, b: PreviewConfig): Set<string> {
+    const changed = new Set<string>();
+    for (const key of RENDER_KEYS) {
+        if (a[key] !== b[key]) changed.add(key);
+    }
+    return changed;
 }
 
 /**
  * Update the preview with new extension settings.
  *
  * Handles three cases in order:
- * 1. Preview theme only changed -> CSS-only swap (tryThemeOnlyUpdate)
+ * 1. Preview theme only changed -> CSS-only swap (no re-render)
  * 2. Only debounce values changed -> update lastConfig, no re-render
  * 3. Other settings changed -> full re-render with loading feedback
  *
@@ -414,28 +440,30 @@ function tryThemeOnlyUpdate(newConfig: PreviewConfig, oldConfig: PreviewConfig |
  */
 export function updateConfig(config: PreviewConfig): void {
     if (!panel || !currentFilePath) return;
-    if (tryThemeOnlyUpdate(config, lastConfig)) return;
 
-    // When only debounce values changed, update lastConfig without re-render.
-    if (lastConfig
-        && config.jarPath === lastConfig.jarPath
-        && config.javaPath === lastConfig.javaPath
-        && config.dotPath === lastConfig.dotPath
-        && config.plantumlTheme === lastConfig.plantumlTheme
-        && config.previewTheme === lastConfig.previewTheme) {
-        lastConfig = config;
-        return;
-    }
-
+    const oldConfig = lastConfig;
     lastConfig = config;
-    const doc = vscode.workspace.textDocuments.find(d => d.uri.fsPath === currentFilePath);
-    let text: string;
-    try {
-        text = doc ? doc.getText() : fs.readFileSync(currentFilePath!, 'utf8');
-    } catch {
-        return;
+
+    if (!oldConfig) {
+        // First config — full render
+    } else {
+        const changed = changedRenderKeys(config, oldConfig);
+
+        // CSS-only swap when only previewTheme changed
+        if (changed.size === 1 && changed.has('previewTheme')) {
+            const css = getThemeCss(config.previewTheme || 'github-light');
+            panel.webview.postMessage({ type: 'updateTheme', css });
+            return;
+        }
+
+        // No rendering properties changed (only debounce values)
+        if (changed.size === 0) return;
     }
-    renderPanelWithLoading(text);
+
+    void readFileContent(currentFilePath).then((text) => {
+        if (text === null) return;
+        renderPanelWithLoading(text);
+    });
 }
 
 /**
@@ -457,8 +485,8 @@ export async function changeTheme(): Promise<void> {
     const currentPreviewTheme = lastConfig ? lastConfig.previewTheme : 'github-light';
     const currentPlantumlTheme = lastConfig ? lastConfig.plantumlTheme : 'default';
 
-    // Preview Theme section
-    const previewItems = getThemeKeys().map(key => ({
+    // Helper to build QuickPick items for a set of theme keys
+    const buildPreviewItems = (keys: readonly string[]) => keys.map(key => ({
         label: key === currentPreviewTheme ? `$(check) ${key}` : `      ${key}`,
         description: key === currentPreviewTheme ? vscode.l10n.t('(current)') : '',
         category: 'preview' as const,
@@ -470,6 +498,7 @@ export async function changeTheme(): Promise<void> {
         { location: vscode.ProgressLocation.Notification, title: vscode.l10n.t('Fetching PlantUML theme list...') },
         () => listThemesAsync(lastConfig || { jarPath: '', javaPath: 'java' })
     );
+    if (!panel) return;
     const plantumlItems = [
         {
             label: currentPlantumlTheme === 'default' ? '$(check) default' : '      default',
@@ -486,8 +515,10 @@ export async function changeTheme(): Promise<void> {
     ];
 
     const items = [
-        { label: vscode.l10n.t('Preview Theme'), kind: vscode.QuickPickItemKind.Separator },
-        ...previewItems,
+        { label: vscode.l10n.t('Preview Theme (Light)'), kind: vscode.QuickPickItemKind.Separator },
+        ...buildPreviewItems(LIGHT_THEME_KEYS),
+        { label: vscode.l10n.t('Preview Theme (Dark)'), kind: vscode.QuickPickItemKind.Separator },
+        ...buildPreviewItems(DARK_THEME_KEYS),
         { label: vscode.l10n.t('PlantUML Theme'), kind: vscode.QuickPickItemKind.Separator },
         ...plantumlItems
     ];
@@ -495,17 +526,22 @@ export async function changeTheme(): Promise<void> {
     const selected = await vscode.window.showQuickPick(items, {
         placeHolder: vscode.l10n.t('Select theme')
     });
+    if (!panel) return;
 
     if (!selected || !('category' in selected)) return;
 
     const cfg = vscode.workspace.getConfiguration('plantumlMarkdownPreview');
 
-    if (selected.category === 'preview') {
-        if (selected.themeKey === currentPreviewTheme) return;
-        await cfg.update('previewTheme', selected.themeKey, vscode.ConfigurationTarget.Global);
-    } else if (selected.category === 'plantuml') {
-        if (selected.themeKey === currentPlantumlTheme) return;
-        await cfg.update('plantumlTheme', selected.themeKey, vscode.ConfigurationTarget.Global);
+    try {
+        if (selected.category === 'preview') {
+            if (selected.themeKey === currentPreviewTheme) return;
+            await cfg.update('previewTheme', selected.themeKey, vscode.ConfigurationTarget.Global);
+        } else if (selected.category === 'plantuml') {
+            if (selected.themeKey === currentPlantumlTheme) return;
+            await cfg.update('plantumlTheme', selected.themeKey, vscode.ConfigurationTarget.Global);
+        }
+    } catch (err) {
+        vscode.window.showErrorMessage(`[PlantUML Markdown Preview] ${(err as Error).message}`);
     }
 }
 

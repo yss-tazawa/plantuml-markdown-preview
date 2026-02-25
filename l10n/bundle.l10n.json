@@ -12,7 +12,8 @@
   "Rendering...": "Rendering...",
   "Rendering PlantUML...": "Rendering PlantUML...",
   "Fetching PlantUML theme list...": "Fetching PlantUML theme list...",
-  "Preview Theme": "Preview Theme",
+  "Preview Theme (Light)": "Preview Theme (Light)",
+  "Preview Theme (Dark)": "Preview Theme (Dark)",
   "PlantUML Theme": "PlantUML Theme",
   "Select theme": "Select theme",
   "(current)": "(current)"

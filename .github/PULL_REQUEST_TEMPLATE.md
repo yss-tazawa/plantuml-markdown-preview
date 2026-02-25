@@ -1,6 +1,7 @@
 ## Summary
 
 <!-- What changed and why. Link related issues: Closes #XX -->
+<!-- Target branch: develop (not main) -->
 
 ## Type of change
 
@@ -21,6 +22,7 @@
 - [ ] New user-facing strings added to `package.nls.json` / `l10n/bundle.l10n.json`
 - [ ] No `dist/`, `node_modules/`, or `.vsix` files included
 - [ ] Commit messages follow [Conventional Commits](https://www.conventionalcommits.org/) (`feat:`, `fix:`, `docs:`, etc.)
+- [ ] `CHANGELOG.md` updated (for user-facing changes)
 
 ## Additional notes
 
