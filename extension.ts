@@ -11,6 +11,7 @@
  */
 import * as vscode from 'vscode';
 import path from 'path';
+import { execFile } from 'child_process';
 import { exportToHtml, clearMdCache } from './src/exporter.js';
 import { plantumlPlugin } from './src/renderer.js';
 import { clearCache } from './src/plantuml.js';
@@ -98,6 +99,18 @@ async function runExport(uri?: vscode.Uri): Promise<string | null> {
 }
 
 /**
+ * Open a file with the system's default application.
+ *
+ * Uses child_process.execFile to pass the native filesystem path directly,
+ * avoiding percent-encoding issues with non-ASCII characters in file:// URIs.
+ */
+function openInDefaultApp(filePath: string): void {
+    const cmd = process.platform === 'win32' ? 'explorer.exe'
+        : process.platform === 'darwin' ? 'open' : 'xdg-open';
+    execFile(cmd, [filePath], () => { /* explorer.exe returns exit code 1 on success; ignore all errors */ });
+}
+
+/**
  * Called by VS Code when the extension is activated.
  *
  * Registers all commands, the active editor tracker, and the configuration watcher.
@@ -119,7 +132,7 @@ export function activate(context: vscode.ExtensionContext): void {
                 openInBrowserLabel
             );
             if (action === openInBrowserLabel) {
-                void vscode.env.openExternal(vscode.Uri.file(outputPath));
+                openInDefaultApp(outputPath);
             }
         }
     );
@@ -129,7 +142,7 @@ export function activate(context: vscode.ExtensionContext): void {
         async (uri?: vscode.Uri) => {
             const outputPath = await runExport(uri);
             if (outputPath) {
-                void vscode.env.openExternal(vscode.Uri.file(outputPath));
+                openInDefaultApp(outputPath);
             }
         }
     );
