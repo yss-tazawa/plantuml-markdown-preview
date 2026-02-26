@@ -5,7 +5,7 @@
 <h1 align="center">PlantUML Markdown Preview</h1>
 
 <p align="center">
-  <strong>Render PlantUML diagrams inline. Export to self-contained HTML. Secure by design.</strong>
+  <strong>Render PlantUML diagrams inline in Markdown. Export to self-contained HTML. Secure by design.</strong>
 </p>
 
 <p align="center">

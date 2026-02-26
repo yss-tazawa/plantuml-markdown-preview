@@ -1,6 +1,6 @@
 {
   "displayName": "PlantUML Markdown Preview",
-  "description": "Inline PlantUML preview and HTML export for Markdown files. Simple and secure.",
+  "description": "Render PlantUML diagrams inline in Markdown. Export to self-contained HTML. Secure by design.",
   "submenu.label": "PlantUML Markdown Preview",
   "command.openPreview.title": "Open Preview to Side",
   "command.exportHtml.title": "Export as HTML",
