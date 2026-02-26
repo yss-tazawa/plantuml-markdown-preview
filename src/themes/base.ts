@@ -142,6 +142,8 @@ export function buildThemeCss(p: ThemePalette): string {
       color: ${p.blockquoteColor};
       background-color: ${p.blockquoteBg};
     }
+    blockquote > :first-child { margin-top: 0; }
+    blockquote > :last-child { margin-bottom: 0; }
     hr { border: none; border-top: 2px solid ${p.border}; margin: 2em 0; }
     img { max-width: 100%; height: auto; }
     .plantuml-diagram { margin: 1.5em 0; text-align: center; }
