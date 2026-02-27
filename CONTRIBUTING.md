@@ -63,7 +63,7 @@ src/
   plantuml.ts       PlantUML process invocation and caching
   exporter.ts       HTML export with inline SVG and syntax highlighting
   scroll-sync.ts    Bidirectional editor ↔ preview scroll sync
-  utils.ts          Shared utilities (escapeHtml, getNonce)
+  utils.ts          Shared utilities (escapeHtml, getNonce, resolveLocalImagePaths)
   themes/           CSS theme definitions (14 themes: 8 light + 6 dark)
 l10n/               Localization bundles (English + Japanese)
 .github/            GitHub templates (PR template, security policy)

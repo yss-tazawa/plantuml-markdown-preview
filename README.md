@@ -110,6 +110,8 @@ selected preview theme.
 - Content Security Policy with nonce-based script restrictions
 - No code execution from Markdown content
 - User-authored `<script>` tags are blocked
+- Local image loading is on by default (`allowLocalImages`); set to `false` to block all local file access
+- HTTP image loading is off by default (`allowHttpImages`); enabling adds `http:` to the CSP `img-src` directive, which allows unencrypted image requests — use only on trusted networks (intranet, local dev servers)
 
 ### Built-in Markdown Preview Integration
 
@@ -204,8 +206,12 @@ All settings use the `plantumlMarkdownPreview.` prefix.
 | `dotPath` | `"dot"` | Path to Graphviz `dot` executable |
 | `previewTheme` | `"github-light"` | Preview theme (see [Themes](#themes)) |
 | `plantumlTheme` | `"default"` | PlantUML diagram theme. `"default"` applies no theme. Other values (e.g. `"cyborg"`, `"mars"`) are passed as `-theme` to PlantUML CLI. |
+| `allowLocalImages` | `true` | Resolve relative image paths (e.g. `![](./image.png)`) in the preview. Set to `false` to block all local file access. |
+| `allowHttpImages` | `false` | Allow loading images over HTTP (unencrypted) in the preview. Useful for intranet or local development servers. |
 | `debounceNoPlantUmlMs` | `100` | Debounce delay (ms) for non-PlantUML text changes |
 | `debouncePlantUmlMs` | `300` | Debounce delay (ms) for PlantUML content changes |
+
+> **Note:** `allowLocalImages` and `allowHttpImages` apply only to the preview panel. HTML export always outputs original image paths without CSP restrictions.
 
 <details>
 <summary><strong>Preview theme options</strong></summary>

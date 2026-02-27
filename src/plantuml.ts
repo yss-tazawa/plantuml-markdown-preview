@@ -301,6 +301,12 @@ export function listThemesAsync(config: Pick<PlantUmlConfig, 'jarPath' | 'javaPa
     // Deduplicate concurrent calls: return the in-flight promise if one exists for the same key
     if (themePendingPromise && themePendingKey === key) return themePendingPromise;
 
+    // Kill the previous in-flight child process if config key changed
+    if (themePendingChild) {
+        themePendingChild.kill();
+        themePendingChild = null;
+    }
+
     themePendingKey = key;
     const promise = new Promise<string[]>((resolve) => {
         const child = execFile(

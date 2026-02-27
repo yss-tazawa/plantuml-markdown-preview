@@ -35,5 +35,8 @@ This extension is built with security in mind:
 - Content Security Policy with nonce-based script restrictions
 - No code execution from Markdown content
 - User-authored `<script>` tags are blocked
+- Local image loading is controlled by `allowLocalImages` (default: on); when disabled, `localResourceRoots` is set to `[]` to block all local file access
+- HTTP image loading is off by default (`allowHttpImages`); enabling adds `http:` to the CSP `img-src` directive
+- Resolved image URIs are HTML-escaped to prevent attribute injection
 
 See the [Security section in README](../README.md#security) for details.

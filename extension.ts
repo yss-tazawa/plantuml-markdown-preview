@@ -34,7 +34,9 @@ function getConfig(): PreviewConfig {
         debounceNoPlantUmlMs: cfg.get<number>('debounceNoPlantUmlMs', 100),
         debouncePlantUmlMs: cfg.get<number>('debouncePlantUmlMs', 300),
         plantumlTheme: cfg.get<string>('plantumlTheme', 'default'),
-        previewTheme: cfg.get<string>('previewTheme', 'github-light')
+        previewTheme: cfg.get<string>('previewTheme', 'github-light'),
+        allowLocalImages: cfg.get<boolean>('allowLocalImages', true),
+        allowHttpImages: cfg.get<boolean>('allowHttpImages', false)
     };
 }
 
