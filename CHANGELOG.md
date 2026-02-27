@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## 0.1.7 - 2026-02-27
+
+### Changed
+
+- Tables now scroll horizontally for wide content with `display: block` and `overflow: auto` (matching Markdown Preview Enhanced behavior)
+- Long unbroken text (e.g., fully-qualified class names) wraps at container boundaries via `word-wrap: break-word`
+- Preview uses full viewport width (`max-width: none`) for better use of the VS Code panel space
+
+### Fixed
+
+- Unwanted horizontal scrollbar appearing on PlantUML diagrams in HTML export
+
 ## 0.1.6 - 2026-02-27
 
 ### Changed
