@@ -17,7 +17,18 @@ import { renderHtml, getThemeCss, LIGHT_THEME_KEYS, DARK_THEME_KEYS } from './ex
 import type { ExporterConfig } from './exporter.js';
 import { listThemesAsync, prefetchThemes } from './plantuml.js';
 import { buildScrollSyncScript } from './scroll-sync.js';
-import { getNonce } from './utils.js';
+import { getNonce, resolveLocalImagePaths } from './utils.js';
+
+/** Output channel for extension diagnostic messages. Created lazily on first use. */
+let outputChannel: vscode.OutputChannel | null = null;
+
+/** Get or create the shared output channel for this extension. */
+function getOutputChannel(): vscode.OutputChannel {
+    if (!outputChannel) {
+        outputChannel = vscode.window.createOutputChannel('PlantUML Markdown Preview');
+    }
+    return outputChannel;
+}
 
 /** Full preview configuration extending ExporterConfig with debounce settings. */
 export interface PreviewConfig extends ExporterConfig {
@@ -25,6 +36,10 @@ export interface PreviewConfig extends ExporterConfig {
     debounceNoPlantUmlMs: number;
     /** Debounce delay (ms) when PlantUML content changed. */
     debouncePlantUmlMs: number;
+    /** When true, resolve relative image paths in the preview via webview URIs. */
+    allowLocalImages: boolean;
+    /** When true, allow loading images over HTTP (unencrypted) in the preview CSP. */
+    allowHttpImages: boolean;
 }
 
 /** Scroll sync state: which side currently owns the scroll. */
@@ -130,6 +145,43 @@ function makeTitle(): string {
 }
 
 /**
+ * Build localResourceRoots for the webview based on the current file path.
+ *
+ * Includes the Markdown file's parent directory and, when available, the
+ * workspace folder that contains the file.
+ *
+ * @param {string} filePath - Absolute path of the current Markdown file.
+ * @returns {vscode.Uri[]} URIs to allow as local resource roots.
+ */
+function buildLocalResourceRoots(filePath: string): vscode.Uri[] {
+    const roots: vscode.Uri[] = [vscode.Uri.file(path.dirname(filePath))];
+    const workspaceFolder = vscode.workspace.getWorkspaceFolder(vscode.Uri.file(filePath));
+    if (workspaceFolder) {
+        roots.push(workspaceFolder.uri);
+    }
+    return roots;
+}
+
+/**
+ * Update the webview's options (enableScripts, localResourceRoots).
+ *
+ * When allowLocalImages is true, sets localResourceRoots so the webview
+ * can load images from the file's directory and workspace. When false,
+ * sets localResourceRoots to an empty array to block all local file access.
+ */
+function applyWebviewOptions(): void {
+    if (!panel || !lastConfig || !currentFilePath) return;
+    if (lastConfig.allowLocalImages) {
+        panel.webview.options = {
+            enableScripts: true,
+            localResourceRoots: buildLocalResourceRoots(currentFilePath),
+        };
+    } else {
+        panel.webview.options = { enableScripts: true, localResourceRoots: [] };
+    }
+}
+
+/**
  * Dispose all VS Code event listeners and cancel pending timers.
  *
  * Handles save/change/scroll disposables, debounce timer, loading timer,
@@ -155,6 +207,10 @@ function disposeEventHandlers(): void {
 export function disposePreview(): void {
     if (panel) {
         panel.dispose(); // triggers onDidDispose -> resetState()
+    }
+    if (outputChannel) {
+        outputChannel.dispose();
+        outputChannel = null;
     }
 }
 
@@ -230,13 +286,18 @@ export function openPreview(context: vscode.ExtensionContext, filePath: string, 
 
     if (panel) {
         panel.title = makeTitle();
+        applyWebviewOptions();
         panel.reveal(vscode.ViewColumn.Two, preserveFocus);
     } else {
         panel = vscode.window.createWebviewPanel(
             'plantumlMarkdownPreview',
             makeTitle(),
             vscode.ViewColumn.Two,
-            { enableFindWidget: true, enableScripts: true }
+            {
+                enableFindWidget: true,
+                enableScripts: true,
+                localResourceRoots: config.allowLocalImages ? buildLocalResourceRoots(filePath) : [],
+            }
         );
 
         // Show loading placeholder until the first full render completes
@@ -272,7 +333,7 @@ export function openPreview(context: vscode.ExtensionContext, filePath: string, 
             try {
                 renderPanel(text);
             } catch (err) {
-                console.error('[plantuml-markdown-preview] render error:', err);
+                getOutputChannel().appendLine(`[render error] ${err}`);
             }
         });
         context.subscriptions.push(saveDisposable);
@@ -290,7 +351,7 @@ export function openPreview(context: vscode.ExtensionContext, filePath: string, 
                 try {
                     renderPanel(text);
                 } catch (err) {
-                    console.error('[plantuml-markdown-preview] render error:', err);
+                    getOutputChannel().appendLine(`[render error] ${err}`);
                 }
             }, delay);
         });
@@ -350,13 +411,23 @@ function renderPanel(text: string): void {
     if (!panel || !lastConfig) return;
     renderSeq++;
     const nonce = getNonce();
-    panel.webview.html = renderHtml(text, makeTitle(), lastConfig, {
+    let html = renderHtml(text, makeTitle(), lastConfig, {
         sourceMap: true,
         scriptHtml: buildScrollSyncScript(lastScrollLine, lastMaxTopLine, nonce, renderSeq, vscode.l10n.t('Rendering...'), SYNC_MASTER_TIMEOUT_MS),
         cspNonce: nonce,
         cspSource: panel.webview.cspSource,
-        lang: vscode.env.language
+        lang: vscode.env.language,
+        allowHttpImages: lastConfig.allowHttpImages
     });
+    if (lastConfig.allowLocalImages && currentFilePath) {
+        const webview = panel.webview;
+        html = resolveLocalImagePaths(
+            html,
+            path.dirname(currentFilePath),
+            (absPath) => webview.asWebviewUri(vscode.Uri.file(absPath)).toString()
+        );
+    }
+    panel.webview.html = html;
     // After re-render the scrollMap changes, so force sync on next scroll event
     lastScrollLine = -1;
     lastMaxTopLine = -1;
@@ -384,7 +455,7 @@ function renderPanelWithLoading(text: string): void {
         try {
             renderPanel(text);
         } catch (err) {
-            console.error('[plantuml-markdown-preview] render error:', err);
+            getOutputChannel().appendLine(`[render error] ${err}`);
         }
         return;
     }
@@ -400,7 +471,7 @@ function renderPanelWithLoading(text: string): void {
                 try {
                     renderPanel(text);
                 } catch (err) {
-                    console.error('[plantuml-markdown-preview] render error:', err);
+                    getOutputChannel().appendLine(`[render error] ${err}`);
                 } finally {
                     resolve();
                     loadingResolve = null;
@@ -411,7 +482,7 @@ function renderPanelWithLoading(text: string): void {
 }
 
 /** Property keys that affect rendering output (PlantUML paths and themes). */
-const RENDER_KEYS = ['jarPath', 'javaPath', 'dotPath', 'plantumlTheme', 'previewTheme'] as const;
+const RENDER_KEYS = ['jarPath', 'javaPath', 'dotPath', 'plantumlTheme', 'previewTheme', 'allowLocalImages', 'allowHttpImages'] as const;
 
 /**
  * Check which rendering-related properties changed between two configs.
@@ -458,6 +529,11 @@ export function updateConfig(config: PreviewConfig): void {
 
         // No rendering properties changed (only debounce values)
         if (changed.size === 0) return;
+
+        // Update webview options when allowLocalImages toggled
+        if (changed.has('allowLocalImages')) {
+            applyWebviewOptions();
+        }
     }
 
     void readFileContent(currentFilePath).then((text) => {

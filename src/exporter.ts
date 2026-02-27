@@ -139,6 +139,8 @@ export interface RenderOptions {
     cspSource?: string;
     /** HTML lang attribute value (e.g. 'en', 'ja'). Defaults to 'en'. */
     lang?: string;
+    /** When true, add http: to CSP img-src to allow unencrypted image loading. */
+    allowHttpImages?: boolean;
 }
 
 /**
@@ -262,9 +264,9 @@ export async function exportToHtml(mdFilePath: string, config: ExporterConfig): 
  */
 function buildHtml(title: string, body: string, previewTheme?: string, options?: RenderOptions): string {
     const theme = PREVIEW_THEMES[previewTheme || ''] || PREVIEW_THEMES[DEFAULT_PREVIEW_THEME];
-    const { scriptHtml, cspNonce, cspSource, lang } = options || {};
+    const { scriptHtml, cspNonce, cspSource, lang, allowHttpImages } = options || {};
     const cspMeta = cspNonce
-        ? `\n  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; font-src ${cspSource || "'self'"}; img-src ${cspSource || "'self'"} https: data:; script-src 'nonce-${cspNonce}';">`
+        ? `\n  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; font-src ${cspSource || "'self'"}; img-src ${cspSource || "'self'"} https:${allowHttpImages ? ' http:' : ''} data:; script-src 'nonce-${cspNonce}';">`
         : '';
     return `<!DOCTYPE html>
 <html lang="${escapeHtml(lang || 'en')}">

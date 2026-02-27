@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## 0.1.8 - 2026-02-28
+
+### Added
+
+- `allowLocalImages` setting — resolve relative image paths (e.g. `![](./image.png)`) in the preview via webview URIs; enabled by default
+- `allowHttpImages` setting — allow loading images over HTTP (unencrypted) in the preview by adding `http:` to the CSP `img-src` directive; disabled by default for security
+- Local image path resolution now handles both `<img src="...">` and `<img src='...'>` attributes
+
+### Changed
+
+- `localResourceRoots` is now explicitly set to `[]` when `allowLocalImages` is off, preventing VS Code's default behavior of allowing workspace-wide file access
+- Resolved image URIs are HTML-escaped to prevent attribute injection from unusual file paths
+
 ## 0.1.7 - 2026-02-27
 
 ### Changed

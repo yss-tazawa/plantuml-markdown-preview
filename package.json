@@ -2,7 +2,7 @@
   "name": "plantuml-markdown-preview",
   "displayName": "%displayName%",
   "description": "%description%",
-  "version": "0.1.7",
+  "version": "0.1.8",
   "license": "MIT",
   "publisher": "yss-tazawa",
   "icon": "images/icon.png",
@@ -129,21 +129,6 @@
           "default": "dot",
           "description": "%configuration.dotPath.description%"
         },
-        "plantumlMarkdownPreview.debounceNoPlantUmlMs": {
-          "type": "number",
-          "default": 100,
-          "description": "%configuration.debounceNoPlantUmlMs.description%"
-        },
-        "plantumlMarkdownPreview.debouncePlantUmlMs": {
-          "type": "number",
-          "default": 300,
-          "description": "%configuration.debouncePlantUmlMs.description%"
-        },
-        "plantumlMarkdownPreview.plantumlTheme": {
-          "type": "string",
-          "default": "default",
-          "description": "%configuration.plantumlTheme.description%"
-        },
         "plantumlMarkdownPreview.previewTheme": {
           "type": "string",
           "default": "github-light",
@@ -180,6 +165,31 @@
             "%configuration.previewTheme.monokai%"
           ],
           "description": "%configuration.previewTheme.description%"
+        },
+        "plantumlMarkdownPreview.plantumlTheme": {
+          "type": "string",
+          "default": "default",
+          "description": "%configuration.plantumlTheme.description%"
+        },
+        "plantumlMarkdownPreview.allowLocalImages": {
+          "type": "boolean",
+          "default": true,
+          "description": "%configuration.allowLocalImages.description%"
+        },
+        "plantumlMarkdownPreview.allowHttpImages": {
+          "type": "boolean",
+          "default": false,
+          "description": "%configuration.allowHttpImages.description%"
+        },
+        "plantumlMarkdownPreview.debounceNoPlantUmlMs": {
+          "type": "number",
+          "default": 100,
+          "description": "%configuration.debounceNoPlantUmlMs.description%"
+        },
+        "plantumlMarkdownPreview.debouncePlantUmlMs": {
+          "type": "number",
+          "default": 300,
+          "description": "%configuration.debouncePlantUmlMs.description%"
         }
       }
     }
