@@ -106,6 +106,7 @@ export function buildThemeCss(p: ThemePalette): string {
       margin: 0 auto;
       padding: 2rem 1.5rem 4rem;
       line-height: 1.7;
+      word-wrap: break-word;
       color: ${p.text};
       background-color: ${p.bg};
     }
@@ -131,7 +132,7 @@ export function buildThemeCss(p: ThemePalette): string {
       overflow-x: auto;
     }
     pre code { background: none; padding: 0; font-size: 0.875em; }
-    table { border-collapse: collapse; width: 100%; margin: 1em 0; }
+    table { border-collapse: collapse; display: block; width: 100%; overflow: auto; margin: 1em 0; word-break: keep-all; }
     th, td { border: 1px solid ${tableBorder}; padding: 0.5em 1em; text-align: left; }
     th { background: ${p.codeBg}; font-weight: 600; }
     tr:nth-child(even) { background: ${p.trEvenBg}; }
@@ -146,10 +147,9 @@ export function buildThemeCss(p: ThemePalette): string {
     blockquote > :last-child { margin-bottom: 0; }
     hr { border: none; border-top: 2px solid ${p.border}; margin: 2em 0; }
     img { max-width: 100%; height: auto; }
-    .plantuml-diagram { margin: 1.5em 0; text-align: left; overflow-x: auto; }
+    .plantuml-diagram { margin: 1.5em 0; text-align: left; }
     .plantuml-diagram svg { height: auto; }
-    body.preview { margin: 0; }
-    body.preview .plantuml-diagram { text-align: left; overflow-x: visible; }
+    body.preview { margin: 0; max-width: none; }
     .hljs { background: ${p.hljsBg}; color: ${hljsText}; }
     .hljs-comment, .hljs-prolog, .hljs-doctype, .hljs-cdata { color: ${p.hljsComment}; font-style: italic; }
     .hljs-keyword, .hljs-selector-tag { color: ${p.hljsKeyword}; }
