@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## 0.1.6 - 2026-02-27
+
+### Changed
+
+- Preview now uses full-width left-aligned layout (no max-width centering) for better use of the VS Code panel space
+- PlantUML diagrams are left-aligned in both preview and HTML export
+- HTML export retains centered page layout with horizontal scrolling for oversized diagrams
+
 ## 0.1.5 - 2026-02-27
 
 ### Fixed

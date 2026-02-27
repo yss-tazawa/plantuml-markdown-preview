@@ -146,8 +146,10 @@ export function buildThemeCss(p: ThemePalette): string {
     blockquote > :last-child { margin-bottom: 0; }
     hr { border: none; border-top: 2px solid ${p.border}; margin: 2em 0; }
     img { max-width: 100%; height: auto; }
-    .plantuml-diagram { margin: 1.5em 0; text-align: center; overflow-x: auto; }
+    .plantuml-diagram { margin: 1.5em 0; text-align: left; overflow-x: auto; }
     .plantuml-diagram svg { height: auto; }
+    body.preview { margin: 0; }
+    body.preview .plantuml-diagram { text-align: left; overflow-x: visible; }
     .hljs { background: ${p.hljsBg}; color: ${hljsText}; }
     .hljs-comment, .hljs-prolog, .hljs-doctype, .hljs-cdata { color: ${p.hljsComment}; font-style: italic; }
     .hljs-keyword, .hljs-selector-tag { color: ${p.hljsKeyword}; }

@@ -276,7 +276,7 @@ function buildHtml(title: string, body: string, previewTheme?: string, options?:
 ${theme.css}
   </style>
 </head>
-<body>
+<body${cspNonce ? ' class="preview"' : ''}>
 ${body}
 ${scriptHtml || ''}
 </body>
