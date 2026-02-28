@@ -8,7 +8,7 @@
   "command.changeTheme.title": "Change Preview Theme",
   "command.category": "PlantUML Markdown Preview",
   "configuration.title": "PlantUML Markdown Preview",
-  "configuration.jarPath.description": "Path to the PlantUML jar file (e.g. /usr/local/lib/plantuml.jar)",
+  "configuration.jarPath.description": "Path to the PlantUML jar file. Leave empty to use the bundled jar (LGPL). Example: /usr/local/lib/plantuml.jar",
   "configuration.javaPath.description": "Path to the Java executable (default: java)",
   "configuration.dotPath.description": "Path to the Graphviz dot executable (default: dot)",
   "configuration.debounceNoPlantUmlMs.description": "Debounce delay (ms) when only non-PlantUML text changes (cache hit, no Java invocation). Default: 100",

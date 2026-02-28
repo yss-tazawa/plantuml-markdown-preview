@@ -36,6 +36,7 @@
 - [Keyboard Shortcuts](#keyboard-shortcuts)
 - [FAQ](#faq)
 - [Contributing](#contributing)
+- [Third-Party Licenses](#third-party-licenses)
 - [License](#license)
 
 ## Features
@@ -129,8 +130,38 @@ PlantUML diagrams also render in VS Code's built-in Markdown preview
 | Tool | Purpose | Verify |
 |------|---------|--------|
 | Java (JRE or JDK) | Runs PlantUML | `java -version` |
-| [Graphviz](https://graphviz.org/) | Renders class / component diagrams | `dot -V` |
-| [plantuml.jar](https://plantuml.com/download) | PlantUML rendering engine | — |
+| [Graphviz](https://graphviz.org/) | Optional — needed for class, component, and other layout-dependent diagrams (see [Diagram Support](#diagram-support)) | `dot -V` |
+
+> **Note:** A PlantUML jar (LGPL) is bundled with the extension.
+> No separate download is needed.
+
+### Diagram Support
+
+What works depends on your setup:
+
+| Diagram | LGPL (bundled) | Win: GPLv2 jar | Mac/Linux: + Graphviz |
+|---------|:-:|:-:|:-:|
+| Sequence | ✓ | ✓ | ✓ |
+| Activity (new syntax) | ✓ | ✓ | ✓ |
+| Mind Map | ✓ | ✓ | ✓ |
+| WBS | ✓ | ✓ | ✓ |
+| Gantt | ✓ | ✓ | ✓ |
+| JSON / YAML | ✓ | ✓ | ✓ |
+| Salt / Wireframe | ✓ | ✓ | ✓ |
+| Timing | ✓ | ✓ | ✓ |
+| Network (nwdiag) | ✓ | ✓ | ✓ |
+| Class | — | ✓ | ✓ |
+| Use Case | — | ✓ | ✓ |
+| Object | — | ✓ | ✓ |
+| Component | — | ✓ | ✓ |
+| Deployment | — | ✓ | ✓ |
+| State | — | ✓ | ✓ |
+| ER (Entity Relationship) | — | ✓ | ✓ |
+| Activity (legacy) | — | ✓ | ✓ |
+
+- **LGPL (bundled)** — works out of the box. No Graphviz needed.
+- **Win: GPLv2 jar** — the [GPLv2 version](https://plantuml.com/download) bundles Graphviz (Windows only, auto-extracted). Set [`jarPath`](#configuration) to use it.
+- **Mac/Linux: + Graphviz** — install [Graphviz](https://graphviz.org/) separately. Works with either LGPL or GPLv2 jar.
 
 ### Install
 
@@ -140,16 +171,60 @@ PlantUML diagrams also render in VS Code's built-in Markdown preview
 
 ### Setup
 
-Add to your VS Code settings (`Cmd+,` / `Ctrl+,`):
+The extension works out of the box — no configuration is required.
 
-```json
-{
-  "plantumlMarkdownPreview.jarPath": "/path/to/plantuml.jar"
-}
-```
+The bundled LGPL jar supports sequence, activity, mind map, and other diagrams
+without extra setup (see [Diagram Support](#diagram-support)).
+To enable class, component, use case, and other layout-dependent diagrams,
+follow the steps for your platform below.
 
-> **Note:** `javaPath` and `dotPath` default to `"java"` and `"dot"`.
-> Only configure them if these commands are not on your PATH.
+#### Windows
+
+1. Install Java if not already installed (open PowerShell and run):
+   ```powershell
+   winget install Microsoft.OpenJDK.21
+   ```
+2. If `java` is not on your PATH, find the full path in PowerShell:
+   ```powershell
+   Get-Command java
+   # e.g. C:\Program Files\Microsoft\jdk-21.0.6.7-hotspot\bin\java.exe
+   ```
+   Open VS Code settings (`Ctrl+,`), search for `plantumlMarkdownPreview.javaPath`, and enter the path shown above
+3. Download the [GPLv2 version of PlantUML](https://plantuml.com/download) (`plantuml-gplv2-*.jar`) to a folder of your choice (includes Graphviz — no separate install needed)
+4. Open VS Code settings (`Ctrl+,`), search for `plantumlMarkdownPreview.jarPath`, and enter the full path to the downloaded `.jar` file (e.g. `C:\tools\plantuml-gplv2-1.2026.2.jar`)
+
+#### Mac
+
+1. Install Java and Graphviz via Homebrew:
+   ```sh
+   brew install openjdk graphviz
+   ```
+2. If `dot` is not on your PATH, find the full path and set it in VS Code:
+   ```sh
+   which dot
+   # e.g. /opt/homebrew/bin/dot
+   ```
+   Open VS Code settings (`Cmd+,`), search for `plantumlMarkdownPreview.dotPath`, and enter the path shown above
+
+#### Linux
+
+1. Install Java and Graphviz:
+   ```sh
+   # Debian / Ubuntu
+   sudo apt install default-jdk graphviz
+
+   # Fedora
+   sudo dnf install java-21-openjdk graphviz
+   ```
+2. If `dot` is not on your PATH, find the full path and set it in VS Code:
+   ```sh
+   which dot
+   # e.g. /usr/bin/dot
+   ```
+   Open VS Code settings (`Ctrl+,`), search for `plantumlMarkdownPreview.dotPath`, and enter the path shown above
+
+> **Note:** `javaPath`, `dotPath`, and `jarPath` default to `"java"`, `"dot"`, and the bundled jar.
+> Only configure them if these commands are not on your PATH or you want to use a different jar.
 
 ## Usage
 
@@ -192,16 +267,9 @@ Bob --> Alice: Hi!
 
 All settings use the `plantumlMarkdownPreview.` prefix.
 
-### Required
-
 | Setting | Default | Description |
 |---------|---------|-------------|
-| `jarPath` | `""` | Path to `plantuml.jar` |
-
-### Optional
-
-| Setting | Default | Description |
-|---------|---------|-------------|
+| `jarPath` | `""` | Path to `plantuml.jar`. Leave empty to use the bundled jar (LGPL). |
 | `javaPath` | `"java"` | Path to Java executable |
 | `dotPath` | `"dot"` | Path to Graphviz `dot` executable |
 | `previewTheme` | `"github-light"` | Preview theme (see [Themes](#themes)) |
@@ -246,9 +314,9 @@ All settings use the `plantumlMarkdownPreview.` prefix.
 <details>
 <summary><strong>PlantUML diagrams are not rendering</strong></summary>
 
-1. Verify `jarPath` points to a valid `plantuml.jar` file
-2. Run `java -version` in your terminal to confirm Java is installed
-3. Run `dot -V` to confirm Graphviz is installed
+1. Run `java -version` in your terminal to confirm Java is installed
+2. If you use class, component, or other layout-dependent diagrams, run `dot -V` to confirm Graphviz is installed (see [Diagram Support](#diagram-support))
+3. If you set a custom `jarPath`, verify it points to a valid `plantuml.jar` file. If `jarPath` is empty (default), the bundled LGPL jar is used automatically
 4. Check the VS Code Output panel for error messages
 
 </details>
@@ -272,6 +340,12 @@ Yes. An inline `!theme` directive takes precedence over the extension setting.
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for development setup, build instructions,
 and pull request guidelines.
+
+## Third-Party Licenses
+
+This extension bundles [PlantUML](https://plantuml.com/) `plantuml-lgpl-1.2026.2.jar`
+distributed under the [GNU Lesser General Public License v3 (LGPL-3.0)](https://www.gnu.org/licenses/lgpl-3.0.html).
+See also the [PlantUML license page](https://plantuml.com/license) for details.
 
 ## License
 

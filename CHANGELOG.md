@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- Bundled PlantUML LGPL jar (`plantuml-lgpl-1.2026.2.jar`) — no separate download required; the extension works out of the box with Java only
 - `allowLocalImages` setting — resolve relative image paths (e.g. `![](./image.png)`) in the preview via webview URIs; enabled by default
 - `allowHttpImages` setting — allow loading images over HTTP (unencrypted) in the preview by adding `http:` to the CSP `img-src` directive; disabled by default for security
 - Local image path resolution now handles both `<img src="...">` and `<img src='...'>` attributes

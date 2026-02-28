@@ -6,8 +6,8 @@ private/**
 *.vsix
 *.html
 CLAUDE.md
-.DS_Store
-Thumbs.db
+**/.DS_Store
+**/Thumbs.db
 node_modules/**
 
 # Not needed in package
