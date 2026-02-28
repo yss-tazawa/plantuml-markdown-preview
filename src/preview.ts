@@ -13,7 +13,7 @@
 import * as vscode from 'vscode';
 import path from 'path';
 import fs from 'fs';
-import { renderHtml, getThemeCss, LIGHT_THEME_KEYS, DARK_THEME_KEYS } from './exporter.js';
+import { renderHtml, renderHtmlAsync, getThemeCss, LIGHT_THEME_KEYS, DARK_THEME_KEYS } from './exporter.js';
 import type { ExporterConfig } from './exporter.js';
 import { listThemesAsync, prefetchThemes } from './plantuml.js';
 import { buildScrollSyncScript } from './scroll-sync.js';
@@ -40,6 +40,8 @@ export interface PreviewConfig extends ExporterConfig {
     allowLocalImages: boolean;
     /** When true, allow loading images over HTTP (unencrypted) in the preview CSP. */
     allowHttpImages: boolean;
+    /** Hidden debug flag: simulate Java not found, even when installed. */
+    debugSimulateNoJava?: boolean;
 }
 
 /** Scroll sync state: which side currently owns the scroll. */
@@ -330,11 +332,7 @@ export function openPreview(context: vscode.ExtensionContext, filePath: string, 
             if (debounceTimer) { clearTimeout(debounceTimer); debounceTimer = null; }
             const text = doc.getText();
             lastPlantUmlContent = extractPlantUmlContent(text);
-            try {
-                renderPanel(text);
-            } catch (err) {
-                getOutputChannel().appendLine(`[render error] ${err}`);
-            }
+            void renderPanel(text).catch(err => getOutputChannel().appendLine(`[render error] ${err}`));
         });
         context.subscriptions.push(saveDisposable);
 
@@ -348,11 +346,7 @@ export function openPreview(context: vscode.ExtensionContext, filePath: string, 
             debounceTimer = setTimeout(() => {
                 debounceTimer = null;
                 lastPlantUmlContent = currentPlantUml;
-                try {
-                    renderPanel(text);
-                } catch (err) {
-                    getOutputChannel().appendLine(`[render error] ${err}`);
-                }
+                void renderPanel(text).catch(err => getOutputChannel().appendLine(`[render error] ${err}`));
             }, delay);
         });
         context.subscriptions.push(changeDisposable);
@@ -400,25 +394,36 @@ export function openPreview(context: vscode.ExtensionContext, filePath: string, 
 /**
  * Render Markdown text and replace the panel's HTML content.
  *
- * Synchronous operation — blocks the extension host while PlantUML jars run.
+ * In local mode: synchronous rendering via renderHtml().
+ * In server mode: async rendering via renderHtmlAsync() with stale-render guard.
+ *
  * Increments renderSeq, generates a fresh CSP nonce, and embeds the scroll
- * sync script. Sends hideLoading after HTML replacement. Resets lastScrollLine
- * to -1 to force scroll sync on the next event.
+ * sync script. Resets lastScrollLine to -1 to force scroll sync on the next event.
  *
  * @param {string} text - Full Markdown document text to render.
  */
-function renderPanel(text: string): void {
+async function renderPanel(text: string): Promise<void> {
     if (!panel || !lastConfig) return;
-    renderSeq++;
+    const mySeq = ++renderSeq;
     const nonce = getNonce();
-    let html = renderHtml(text, makeTitle(), lastConfig, {
+    const renderOptions = {
         sourceMap: true,
         scriptHtml: buildScrollSyncScript(lastScrollLine, lastMaxTopLine, nonce, renderSeq, vscode.l10n.t('Rendering...'), SYNC_MASTER_TIMEOUT_MS),
         cspNonce: nonce,
         cspSource: panel.webview.cspSource,
         lang: vscode.env.language,
         allowHttpImages: lastConfig.allowHttpImages
-    });
+    };
+
+    let html: string;
+    if (lastConfig.renderMode === 'server' && lastConfig.serverUrl) {
+        html = await renderHtmlAsync(text, makeTitle(), lastConfig, renderOptions);
+        // Guard against stale render (user may have typed while we awaited)
+        if (!panel || !lastConfig || renderSeq !== mySeq) return;
+    } else {
+        html = renderHtml(text, makeTitle(), lastConfig, renderOptions);
+    }
+
     if (lastConfig.allowLocalImages && currentFilePath) {
         const webview = panel.webview;
         html = resolveLocalImagePaths(
@@ -468,21 +473,19 @@ function renderPanelWithLoading(text: string): void {
             // Yield to event loop so overlay renders before blocking re-render
             loadingRenderTimer = setTimeout(() => {
                 loadingRenderTimer = null;
-                try {
-                    renderPanel(text);
-                } catch (err) {
+                void renderPanel(text).catch(err => {
                     getOutputChannel().appendLine(`[render error] ${err}`);
-                } finally {
+                }).finally(() => {
                     resolve();
                     loadingResolve = null;
-                }
+                });
             }, 50);
         })
     );
 }
 
 /** Property keys that affect rendering output (PlantUML paths and themes). */
-const RENDER_KEYS = ['jarPath', 'javaPath', 'dotPath', 'plantumlTheme', 'previewTheme', 'allowLocalImages', 'allowHttpImages'] as const;
+const RENDER_KEYS = ['jarPath', 'javaPath', 'dotPath', 'plantumlTheme', 'previewTheme', 'allowLocalImages', 'allowHttpImages', 'renderMode', 'serverUrl'] as const;
 
 /**
  * Check which rendering-related properties changed between two configs.

@@ -21,6 +21,7 @@
 ## Highlights
 
 - **Inline PlantUML rendering** — diagrams appear directly in your Markdown preview, not in a separate panel
+- **Local & Server rendering** — use Java locally (default) or render via a PlantUML server (no Java required)
 - **Self-contained HTML export** — SVG diagrams embedded inline, zero external dependencies
 - **Bidirectional scroll sync** — editor and preview scroll together, both ways
 - **14 preview themes** — 8 light + 6 dark themes including GitHub, Atom, Solarized, Dracula, Monokai, and more
@@ -51,6 +52,15 @@ alongside your regular Markdown content.
 - Auto-follow when switching editor tabs
 - Loading indicator during PlantUML rendering
 - PlantUML syntax errors displayed inline with line numbers and source context
+
+### Local & Server Rendering
+
+Choose how PlantUML diagrams are rendered:
+
+- **Local mode** (default) — uses Java + PlantUML jar on your machine. Diagrams never leave your computer.
+- **Server mode** — sends PlantUML text to a PlantUML server for rendering. No Java installation required. Uses the public server (`https://www.plantuml.com/plantuml`) by default, or set your own self-hosted server URL for privacy.
+
+If Java is not found when opening a preview, a notification offers to switch to server mode automatically.
 
 ### HTML Export
 
@@ -127,6 +137,10 @@ PlantUML diagrams also render in VS Code's built-in Markdown preview
 
 ### Prerequisites
 
+**Server mode** — no prerequisites. Works out of the box. Diagrams are sent to a PlantUML server for rendering.
+
+**Local mode** (default):
+
 | Tool | Purpose | Verify |
 |------|---------|--------|
 | Java (JRE or JDK) | Runs PlantUML | `java -version` |
@@ -134,6 +148,8 @@ PlantUML diagrams also render in VS Code's built-in Markdown preview
 
 > **Note:** A PlantUML jar (LGPL) is bundled with the extension.
 > No separate download is needed.
+>
+> **Tip:** If Java is not installed, the extension will offer to switch to server mode when you open a preview.
 
 ### Diagram Support
 
@@ -173,7 +189,9 @@ What works depends on your setup:
 
 The extension works out of the box — no configuration is required.
 
-The bundled LGPL jar supports sequence, activity, mind map, and other diagrams
+**To use server mode** (no Java needed): Open VS Code settings (`Ctrl+,` / `Cmd+,`), search for `plantumlMarkdownPreview.renderMode`, and set it to `server`. Alternatively, the extension will prompt you to switch when Java is not detected.
+
+**To use local mode** (default): The bundled LGPL jar supports sequence, activity, mind map, and other diagrams
 without extra setup (see [Diagram Support](#diagram-support)).
 To enable class, component, use case, and other layout-dependent diagrams,
 follow the steps for your platform below.
@@ -269,11 +287,13 @@ All settings use the `plantumlMarkdownPreview.` prefix.
 
 | Setting | Default | Description |
 |---------|---------|-------------|
-| `jarPath` | `""` | Path to `plantuml.jar`. Leave empty to use the bundled jar (LGPL). |
-| `javaPath` | `"java"` | Path to Java executable |
-| `dotPath` | `"dot"` | Path to Graphviz `dot` executable |
+| `renderMode` | `"local"` | Rendering mode. `"local"` uses Java + PlantUML jar (diagrams stay on your machine). `"server"` sends diagrams to a PlantUML server (no Java required). |
+| `serverUrl` | `"https://www.plantuml.com/plantuml"` | PlantUML server URL for server mode. Set to a self-hosted server URL for privacy. |
+| `javaPath` | `"java"` | Path to Java executable (local mode only) |
+| `jarPath` | `""` | Path to `plantuml.jar`. Leave empty to use the bundled jar (LGPL). (local mode only) |
+| `dotPath` | `"dot"` | Path to Graphviz `dot` executable (local mode only) |
 | `previewTheme` | `"github-light"` | Preview theme (see [Themes](#themes)) |
-| `plantumlTheme` | `"default"` | PlantUML diagram theme. `"default"` applies no theme. Other values (e.g. `"cyborg"`, `"mars"`) are passed as `-theme` to PlantUML CLI. |
+| `plantumlTheme` | `"default"` | PlantUML diagram theme. `"default"` applies no theme. Other values (e.g. `"cyborg"`, `"mars"`) are passed as `-theme` to PlantUML CLI or injected as `!theme` directive in server mode. |
 | `allowLocalImages` | `true` | Resolve relative image paths (e.g. `![](./image.png)`) in the preview. Set to `false` to block all local file access. |
 | `allowHttpImages` | `false` | Allow loading images over HTTP (unencrypted) in the preview. Useful for intranet or local development servers. |
 | `debounceNoPlantUmlMs` | `100` | Debounce delay (ms) for non-PlantUML text changes |
@@ -314,10 +334,37 @@ All settings use the `plantumlMarkdownPreview.` prefix.
 <details>
 <summary><strong>PlantUML diagrams are not rendering</strong></summary>
 
+**Local mode:**
 1. Run `java -version` in your terminal to confirm Java is installed
 2. If you use class, component, or other layout-dependent diagrams, run `dot -V` to confirm Graphviz is installed (see [Diagram Support](#diagram-support))
 3. If you set a custom `jarPath`, verify it points to a valid `plantuml.jar` file. If `jarPath` is empty (default), the bundled LGPL jar is used automatically
 4. Check the VS Code Output panel for error messages
+
+**Server mode:**
+1. Verify the server URL is correct (default: `https://www.plantuml.com/plantuml`)
+2. Check your network connection — the extension needs to reach the PlantUML server
+3. If using a self-hosted server, ensure it is running and accessible
+
+</details>
+
+<details>
+<summary><strong>Can I use PlantUML without installing Java?</strong></summary>
+
+Yes. Set `renderMode` to `"server"` in the extension settings. Server mode sends your
+PlantUML text to a PlantUML server for rendering and does not require Java.
+By default the public server at `https://www.plantuml.com/plantuml` is used.
+For privacy, you can run your own PlantUML server and set `serverUrl` to its URL.
+
+</details>
+
+<details>
+<summary><strong>Is my diagram data safe in server mode?</strong></summary>
+
+In server mode, PlantUML source text is sent to the configured server.
+The default public server (`https://www.plantuml.com/plantuml`) is operated by the
+PlantUML project. If your diagrams contain sensitive information, consider
+running a [self-hosted PlantUML server](https://plantuml.com/server) and setting
+`serverUrl` to its URL, or use local mode (default) where diagrams never leave your machine.
 
 </details>
 

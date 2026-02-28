@@ -16,5 +16,16 @@
   "Preview Theme (Dark)": "Preview Theme (Dark)",
   "PlantUML Theme": "PlantUML Theme",
   "Select theme": "Select theme",
-  "(current)": "(current)"
+  "(current)": "(current)",
+  "Java is not found. PlantUML requires Java for local rendering.": "Java is not found. PlantUML requires Java for local rendering.",
+  "Use Server Mode": "Use Server Mode",
+  "Install Java": "Install Java",
+  "Dismiss": "Dismiss",
+  "Server mode sends your diagrams to an external server ({0}). Continue?": "Server mode sends your diagrams to an external server ({0}). Continue?",
+  "Yes, switch to server mode": "Yes, switch to server mode",
+  "Cancel": "Cancel",
+  "PlantUML server error: {0}": "PlantUML server error: {0}",
+  "PlantUML server request timed out": "PlantUML server request timed out",
+  "PlantUML server connection error: {0}": "PlantUML server connection error: {0}",
+  "PlantUML server returned unexpected response": "PlantUML server returned unexpected response"
 }

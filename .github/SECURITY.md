@@ -38,5 +38,6 @@ This extension is built with security in mind:
 - Local image loading is controlled by `allowLocalImages` (default: on); when disabled, `localResourceRoots` is set to `[]` to block all local file access
 - HTTP image loading is off by default (`allowHttpImages`); enabling adds `http:` to the CSP `img-src` directive
 - Resolved image URIs are HTML-escaped to prevent attribute injection
+- Server mode (`renderMode: server`) sends PlantUML text to an external server; defaults to the public PlantUML server — users can set a self-hosted server URL for privacy; local mode (default) keeps all diagrams on the machine
 
 See the [Security section in README](../README.md#security) for details.

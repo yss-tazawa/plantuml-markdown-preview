@@ -16,5 +16,16 @@
   "Preview Theme (Dark)": "プレビューテーマ（ダーク）",
   "PlantUML Theme": "PlantUML テーマ",
   "Select theme": "テーマを選択",
-  "(current)": "(現在)"
+  "(current)": "(現在)",
+  "Java is not found. PlantUML requires Java for local rendering.": "Java が見つかりません。ローカルレンダリングには Java が必要です。",
+  "Use Server Mode": "サーバーモードを使用",
+  "Install Java": "Java をインストール",
+  "Dismiss": "閉じる",
+  "Server mode sends your diagrams to an external server ({0}). Continue?": "サーバーモードでは PlantUML ダイアグラムを外部サーバー（{0}）に送信します。続行しますか？",
+  "Yes, switch to server mode": "はい、サーバーモードに切り替える",
+  "Cancel": "キャンセル",
+  "PlantUML server error: {0}": "PlantUML サーバーエラー: {0}",
+  "PlantUML server request timed out": "PlantUML サーバーへのリクエストがタイムアウトしました",
+  "PlantUML server connection error: {0}": "PlantUML サーバー接続エラー: {0}",
+  "PlantUML server returned unexpected response": "PlantUML サーバーから予期しないレスポンスが返されました"
 }

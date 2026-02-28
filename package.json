@@ -2,7 +2,7 @@
   "name": "plantuml-markdown-preview",
   "displayName": "%displayName%",
   "description": "%description%",
-  "version": "0.1.9",
+  "version": "0.2.0",
   "license": "MIT",
   "publisher": "yss-tazawa",
   "icon": "images/icon.png",
@@ -114,15 +114,33 @@
     "configuration": {
       "title": "%configuration.title%",
       "properties": {
-        "plantumlMarkdownPreview.jarPath": {
+        "plantumlMarkdownPreview.renderMode": {
           "type": "string",
-          "default": "",
-          "description": "%configuration.jarPath.description%"
+          "default": "local",
+          "enum": [
+            "local",
+            "server"
+          ],
+          "enumDescriptions": [
+            "%configuration.renderMode.local%",
+            "%configuration.renderMode.server%"
+          ],
+          "description": "%configuration.renderMode.description%"
+        },
+        "plantumlMarkdownPreview.serverUrl": {
+          "type": "string",
+          "default": "https://www.plantuml.com/plantuml",
+          "description": "%configuration.serverUrl.description%"
         },
         "plantumlMarkdownPreview.javaPath": {
           "type": "string",
           "default": "java",
           "description": "%configuration.javaPath.description%"
+        },
+        "plantumlMarkdownPreview.jarPath": {
+          "type": "string",
+          "default": "",
+          "description": "%configuration.jarPath.description%"
         },
         "plantumlMarkdownPreview.dotPath": {
           "type": "string",
