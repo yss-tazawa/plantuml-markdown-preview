@@ -11,6 +11,7 @@
  */
 import * as vscode from 'vscode';
 import path from 'path';
+import { existsSync } from 'fs';
 import { execFile } from 'child_process';
 import { exportToHtml, clearMdCache } from './src/exporter.js';
 import { plantumlPlugin } from './src/renderer.js';
@@ -20,15 +21,38 @@ import { openPreview, getCurrentFilePath, updateConfig, changeTheme, disposePrev
 import type { PreviewConfig } from './src/preview.js';
 import type MarkdownIt from 'markdown-it';
 
+/** Absolute path to the extension root directory, set during activate(). */
+let extensionPath = '';
+
+/**
+ * Resolve the path to the bundled PlantUML jar.
+ *
+ * Returns an empty string when `extensionPath` is not yet set (before activate)
+ * or when the bundled jar file does not exist on disk.
+ */
+function resolveBundledJarPath(): string {
+    if (!extensionPath) return '';
+    const bundled = path.join(extensionPath, 'vendor', 'plantuml.jar');
+    if (!existsSync(bundled)) {
+        console.warn(`Bundled PlantUML jar not found at: ${bundled}`);
+        return '';
+    }
+    return bundled;
+}
+
 /**
  * Read extension settings from the VS Code configuration store.
+ *
+ * When `jarPath` is empty (default), falls back to the bundled PlantUML jar
+ * located at `<extensionPath>/vendor/plantuml.jar`.
  *
  * @returns {PreviewConfig} Current configuration values with defaults applied.
  */
 function getConfig(): PreviewConfig {
     const cfg = vscode.workspace.getConfiguration('plantumlMarkdownPreview');
+    const userJarPath = cfg.get<string>('jarPath', '');
     return {
-        jarPath: cfg.get<string>('jarPath', ''),
+        jarPath: userJarPath || resolveBundledJarPath(),
         javaPath: cfg.get<string>('javaPath', 'java'),
         dotPath: cfg.get<string>('dotPath', 'dot'),
         debounceNoPlantUmlMs: cfg.get<number>('debounceNoPlantUmlMs', 100),
@@ -120,6 +144,7 @@ function openInDefaultApp(filePath: string): void {
  * @param {vscode.ExtensionContext} context - Extension context for managing subscriptions and storage.
  */
 export function activate(context: vscode.ExtensionContext): void {
+    extensionPath = context.extensionPath;
     // Ensure builtInPreviewConfig has correct values after workspace is fully loaded
     Object.assign(builtInPreviewConfig, getConfig());
 
@@ -202,11 +227,20 @@ export function deactivate(): void {
 /**
  * Mutable config object shared with the built-in Markdown preview.
  *
+ * Initialised with safe defaults (not via getConfig()) because this module-level
+ * constant is evaluated before activate() sets extensionPath.  activate() calls
+ * Object.assign to populate the real values once the extension context is ready.
+ *
  * The fence rule captured by plantumlPlugin reads from this object,
  * so updating its properties via Object.assign keeps the built-in
  * preview in sync with user setting changes.
  */
-const builtInPreviewConfig: PlantUmlConfig = getConfig();
+const builtInPreviewConfig: PlantUmlConfig = {
+    jarPath: '',
+    javaPath: 'java',
+    dotPath: 'dot',
+    plantumlTheme: 'default'
+};
 
 /**
  * Inject PlantUML rendering into VS Code's built-in Markdown preview.

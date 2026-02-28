@@ -8,7 +8,7 @@
   "command.changeTheme.title": "プレビューテーマを変更",
   "command.category": "PlantUML Markdown Preview",
   "configuration.title": "PlantUML Markdown Preview",
-  "configuration.jarPath.description": "PlantUML jar ファイルへのパス（例: /usr/local/lib/plantuml.jar）",
+  "configuration.jarPath.description": "PlantUML jar ファイルへのパス。空欄の場合は同梱の jar（LGPL）を使用します。例: /usr/local/lib/plantuml.jar",
   "configuration.javaPath.description": "Java 実行ファイルへのパス（デフォルト: java）",
   "configuration.dotPath.description": "Graphviz dot 実行ファイルへのパス（デフォルト: dot）",
   "configuration.debounceNoPlantUmlMs.description": "PlantUML 以外のテキスト変更時のデバウンス待機時間（ms）。キャッシュヒット確定で Java 起動なし。デフォルト: 100",
