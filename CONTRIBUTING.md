@@ -60,7 +60,8 @@ extension.ts        Entry point — command registration, configuration, activat
 src/
   preview.ts        Webview panel management and debouncing
   renderer.ts       markdown-it plugin — PlantUML fence blocks → SVG
-  plantuml.ts       PlantUML process invocation and caching
+  plantuml.ts       PlantUML local process invocation and caching
+  plantuml-server.ts PlantUML server rendering (HTTP fetch, encoding, LRU cache)
   exporter.ts       HTML export with inline SVG and syntax highlighting
   scroll-sync.ts    Bidirectional editor ↔ preview scroll sync
   utils.ts          Shared utilities (escapeHtml, getNonce, resolveLocalImagePaths)

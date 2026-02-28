@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## 0.2.0 - 2026-03-01
+
+### Added
+
+- **Server rendering mode** — render PlantUML diagrams via an external PlantUML server (no Java required); set `renderMode` to `server` and optionally configure `serverUrl` (defaults to the public PlantUML server)
+- `renderMode` setting — choose between `local` (Java + jar, default) and `server` (HTTP)
+- `serverUrl` setting — PlantUML server URL for server mode (default: `https://www.plantuml.com/plantuml`)
+- Java availability check on activation — when Java is not found, a notification offers to switch to server mode or install Java
+- LRU cache for server-rendered SVGs (SHA-256 keys, max 200 entries)
+- New module `src/plantuml-server.ts` — PlantUML text encoding, HTTP fetch, and server-side cache
+
+### Changed
+
+- Preview rendering is now fully async in both local and server modes (eliminates UI freeze on initial render)
+- HTML export (`renderHtmlAsync`) supports server mode with the same pre-render pipeline
+- PlantUML theme injection uses `!theme` directive in server mode (server cannot use `-theme` CLI flag)
+
 ## 0.1.9 - 2026-02-28
 
 ### Added

@@ -16,6 +16,7 @@ import { execFile } from 'child_process';
 import { exportToHtml, clearMdCache } from './src/exporter.js';
 import { plantumlPlugin } from './src/renderer.js';
 import { clearCache } from './src/plantuml.js';
+import { clearServerCache } from './src/plantuml-server.js';
 import type { PlantUmlConfig } from './src/plantuml.js';
 import { openPreview, getCurrentFilePath, updateConfig, changeTheme, disposePreview } from './src/preview.js';
 import type { PreviewConfig } from './src/preview.js';
@@ -60,7 +61,10 @@ function getConfig(): PreviewConfig {
         plantumlTheme: cfg.get<string>('plantumlTheme', 'default'),
         previewTheme: cfg.get<string>('previewTheme', 'github-light'),
         allowLocalImages: cfg.get<boolean>('allowLocalImages', true),
-        allowHttpImages: cfg.get<boolean>('allowHttpImages', false)
+        allowHttpImages: cfg.get<boolean>('allowHttpImages', false),
+        renderMode: cfg.get<'local' | 'server'>('renderMode', 'local'),
+        serverUrl: cfg.get<string>('serverUrl', 'https://www.plantuml.com/plantuml'),
+        debugSimulateNoJava: cfg.get<boolean>('debugSimulateNoJava', false),
     };
 }
 
@@ -101,7 +105,8 @@ async function runExport(uri?: vscode.Uri): Promise<string | null> {
 
     const config = getConfig();
 
-    if (!config.jarPath) {
+    // jarPath check is only needed for local mode
+    if (config.renderMode !== 'server' && !config.jarPath) {
         const openSettingsLabel = vscode.l10n.t('Open Settings');
         const action = await vscode.window.showErrorMessage(
             vscode.l10n.t('PlantUML jar is not configured. Open settings?'),
@@ -134,6 +139,46 @@ function openInDefaultApp(filePath: string): void {
     const cmd = process.platform === 'win32' ? 'explorer.exe'
         : process.platform === 'darwin' ? 'open' : 'xdg-open';
     execFile(cmd, [filePath], () => { /* explorer.exe returns exit code 1 on success; ignore all errors */ });
+}
+
+/**
+ * Check if Java is available. When not found (or debugSimulateNoJava is true),
+ * show a notification with options to switch to server mode or install Java.
+ */
+async function checkJavaAvailability(config: PreviewConfig): Promise<void> {
+    if (config.renderMode === 'server') return;
+
+    const javaFound = await new Promise<boolean>((resolve) => {
+        if (config.debugSimulateNoJava) { resolve(false); return; }
+        execFile(config.javaPath || 'java', ['-version'], { timeout: 5000 }, (err) => {
+            resolve(!err);
+        });
+    });
+    if (javaFound) return;
+
+    const useServer = vscode.l10n.t('Use Server Mode');
+    const installJava = vscode.l10n.t('Install Java');
+    const dismiss = vscode.l10n.t('Dismiss');
+
+    const action = await vscode.window.showWarningMessage(
+        vscode.l10n.t('Java is not found. PlantUML requires Java for local rendering.'),
+        useServer, installJava, dismiss
+    );
+
+    if (action === useServer) {
+        const serverUrl = config.serverUrl || 'https://www.plantuml.com/plantuml';
+        const confirm = await vscode.window.showWarningMessage(
+            vscode.l10n.t('Server mode sends your diagrams to an external server ({0}). Continue?', serverUrl),
+            vscode.l10n.t('Yes, switch to server mode'),
+            vscode.l10n.t('Cancel')
+        );
+        if (confirm === vscode.l10n.t('Yes, switch to server mode')) {
+            const cfg = vscode.workspace.getConfiguration('plantumlMarkdownPreview');
+            await cfg.update('renderMode', 'server', vscode.ConfigurationTarget.Global);
+        }
+    } else if (action === installJava) {
+        void vscode.env.openExternal(vscode.Uri.parse('https://www.java.com/en/download/'));
+    }
 }
 
 /**
@@ -182,7 +227,9 @@ export function activate(context: vscode.ExtensionContext): void {
                 vscode.window.showErrorMessage(vscode.l10n.t('No Markdown file (.md) is selected.'));
                 return;
             }
-            openPreview(context, filePath, getConfig());
+            const config = getConfig();
+            openPreview(context, filePath, config);
+            void checkJavaAvailability(config);
         }
     );
 
@@ -220,6 +267,7 @@ export function activate(context: vscode.ExtensionContext): void {
  */
 export function deactivate(): void {
     clearCache();
+    clearServerCache();
     clearMdCache();
     disposePreview();
 }

@@ -17,6 +17,7 @@ import MarkdownIt from 'markdown-it';
 import hljs from 'highlight.js';
 import { plantumlPlugin } from './renderer.js';
 import type { PlantUmlConfig } from './plantuml.js';
+import { renderAllServer, type ServerConfig } from './plantuml-server.js';
 import { escapeHtml } from './utils.js';
 
 import * as githubLight from './themes/github-light.js';
@@ -125,6 +126,10 @@ const MD_OPTIONS: MarkdownIt.Options = {
 export interface ExporterConfig extends PlantUmlConfig {
     /** Preview theme key (e.g. 'github-light', 'dracula'). */
     previewTheme?: string;
+    /** Rendering mode: 'local' (Java) or 'server' (HTTP). Default: 'local'. */
+    renderMode?: 'local' | 'server';
+    /** PlantUML server URL for server mode. */
+    serverUrl?: string;
 }
 
 /** Options for controlling HTML output features. */
@@ -153,7 +158,7 @@ export interface RenderOptions {
  * @param {ExporterConfig} config - Current configuration to check against the cache.
  */
 function invalidateMdCache(config: ExporterConfig): void {
-    const key = config.jarPath + '\0' + config.javaPath + '\0' + config.dotPath + '\0' + (config.plantumlTheme || 'default');
+    const key = config.jarPath + '\0' + config.javaPath + '\0' + config.dotPath + '\0' + (config.plantumlTheme || 'default') + '\0' + (config.renderMode || 'local') + '\0' + (config.serverUrl || '');
     if (mdCacheKey !== key) {
         mdCacheKey = key;
         cachedMd = null;
@@ -232,6 +237,64 @@ export function renderHtml(source: string, title: string, config: ExporterConfig
     return buildHtml(title, bodyHtml, config.previewTheme, options);
 }
 
+/** Regex to find ```plantuml blocks and extract their content. */
+const PLANTUML_FENCE_RE_GLOBAL = /^```plantuml[ \t]*\n([\s\S]*?)\n[ \t]*```/gim;
+
+/**
+ * Extract PlantUML block contents from Markdown source in document order.
+ *
+ * @param source Raw Markdown text.
+ * @returns Array of PlantUML source text strings.
+ */
+function extractPlantUmlBlocks(source: string): string[] {
+    const blocks: string[] = [];
+    const re = new RegExp(PLANTUML_FENCE_RE_GLOBAL.source, PLANTUML_FENCE_RE_GLOBAL.flags);
+    let match;
+    while ((match = re.exec(source)) !== null) {
+        blocks.push(match[1]);
+    }
+    return blocks;
+}
+
+/**
+ * Render Markdown to HTML — async variant for server mode.
+ *
+ * When config.renderMode === 'server':
+ * 1. Extracts all PlantUML blocks from source
+ * 2. Renders them in parallel via PlantUML server
+ * 3. Passes pre-rendered SVGs to md.render() via env.preRenderedSvgs
+ *
+ * When config.renderMode === 'local' (or undefined):
+ * Falls back to the existing synchronous renderHtml().
+ *
+ * @param source Raw Markdown text.
+ * @param title Document title.
+ * @param config PlantUML and theme configuration.
+ * @param options Optional flags for source map, script injection, and CSP.
+ * @returns Complete HTML document string.
+ */
+export async function renderHtmlAsync(source: string, title: string, config: ExporterConfig, options?: RenderOptions): Promise<string> {
+    if (config.renderMode !== 'server' || !config.serverUrl) {
+        return renderHtml(source, title, config, options);
+    }
+
+    const blocks = extractPlantUmlBlocks(source);
+    let preRenderedSvgs: Map<string, string> | undefined;
+
+    if (blocks.length > 0) {
+        const serverConfig: ServerConfig = {
+            serverUrl: config.serverUrl,
+            plantumlTheme: config.plantumlTheme,
+        };
+        preRenderedSvgs = await renderAllServer(blocks, serverConfig);
+    }
+
+    const md = getOrCreateMd(config, options?.sourceMap);
+    const env: { preRenderedSvgs?: Map<string, string> } = { preRenderedSvgs };
+    const bodyHtml = md.render(source, env);
+    return buildHtml(title, bodyHtml, config.previewTheme, options);
+}
+
 /**
  * Export a Markdown file to a standalone HTML file with PlantUML SVG inline embedding.
  *
@@ -244,7 +307,7 @@ export function renderHtml(source: string, title: string, config: ExporterConfig
  */
 export async function exportToHtml(mdFilePath: string, config: ExporterConfig): Promise<string> {
     const source = await fs.promises.readFile(mdFilePath, 'utf8');
-    const fullHtml = renderHtml(source, path.basename(mdFilePath, '.md'), config);
+    const fullHtml = await renderHtmlAsync(source, path.basename(mdFilePath, '.md'), config);
     const outputPath = mdFilePath.replace(/\.md$/, '.html');
     await fs.promises.writeFile(outputPath, fullHtml, 'utf8');
     return outputPath;
