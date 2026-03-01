@@ -4,6 +4,10 @@
  */
 import crypto from 'crypto';
 import path from 'path';
+import {
+    spawn as nodeSpawn, spawnSync as nodeSpawnSync, execFile as nodeExecFile,
+    type ChildProcess, type SpawnOptions, type SpawnSyncOptions, type SpawnSyncReturns,
+} from 'child_process';
 
 /** Lookup table mapping HTML special characters to their entity references. */
 const HTML_ESCAPE_MAP: Readonly<Record<string, string>> = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
@@ -193,6 +197,113 @@ export async function batchRender(
         }
     }
     return results;
+}
+
+// ---------------------------------------------------------------------------
+// Java process helpers — centralised shell: true + JAVA_HOME resolution
+// ---------------------------------------------------------------------------
+
+/**
+ * Resolve the Java executable command.
+ *
+ * Priority:
+ * 1. Explicit user setting (anything other than the default 'java')
+ * 2. JAVA_HOME environment variable → `$JAVA_HOME/bin/java`
+ * 3. Plain `'java'` (relies on PATH)
+ *
+ * All spawn/exec wrappers below call this, so the resolution logic lives in
+ * exactly one place.
+ */
+export function resolveJavaCommand(configJavaPath: string): string {
+    const p = configJavaPath || 'java';
+    if (p !== 'java') return p;
+    const javaHome = process.env.JAVA_HOME;
+    if (javaHome) return path.join(javaHome, 'bin', 'java');
+    return 'java';
+}
+
+/**
+ * Quote a string for safe embedding in a shell command line.
+ *
+ * When `shell: true` is used with spawn/execFile, Node.js joins the command
+ * and arguments with spaces. This function quotes arguments that contain
+ * characters the shell would interpret, so that paths with spaces
+ * (e.g. `C:\Program Files\...`) are handled correctly.
+ *
+ * @param arg - A command or argument string to escape.
+ * @returns Shell-safe string, quoted if necessary.
+ */
+function shellEscape(arg: string): string {
+    if (!/[\s"'`$!#&|;()<>^%]/.test(arg)) return arg;
+    if (process.platform === 'win32') {
+        // cmd.exe: wrap in double quotes, escape internal double quotes
+        return `"${arg.replace(/"/g, '""')}"`;
+    }
+    // POSIX sh: single quotes prevent all interpretation
+    return `'${arg.replace(/'/g, "'\\''")}'`;
+}
+
+/**
+ * Spawn a Java child process (async).
+ *
+ * Wraps Node `spawn` with {@link resolveJavaCommand}, {@link shellEscape},
+ * and `shell: true` so that PATH resolution works reliably on all platforms
+ * (including Windows when VS Code is launched from a shortcut).
+ *
+ * @param configJavaPath - The `javaPath` value from extension settings.
+ * @param args - CLI arguments passed to the Java process.
+ * @param options - Node.js `SpawnOptions` (stdio, env, etc.).
+ * @returns The spawned child process.
+ */
+export function spawnJava(configJavaPath: string, args: string[], options?: SpawnOptions): ChildProcess {
+    return nodeSpawn(shellEscape(resolveJavaCommand(configJavaPath)), args.map(shellEscape), { ...options, shell: true });
+}
+
+/**
+ * Spawn a Java child process (sync).
+ *
+ * Wraps Node `spawnSync` with the same resolution and quoting as
+ * {@link spawnJava}. Output encoding is forced to `'utf8'` so the
+ * return type is always `SpawnSyncReturns<string>`.
+ *
+ * @param configJavaPath - The `javaPath` value from extension settings.
+ * @param args - CLI arguments passed to the Java process.
+ * @param options - Node.js `SpawnSyncOptions` (input, timeout, etc.).
+ * @returns Synchronous execution result with string stdout/stderr.
+ */
+export function spawnJavaSync(
+    configJavaPath: string, args: string[], options?: SpawnSyncOptions,
+): SpawnSyncReturns<string> {
+    return nodeSpawnSync(
+        shellEscape(resolveJavaCommand(configJavaPath)), args.map(shellEscape),
+        { ...options, encoding: 'utf8', shell: true },
+    ) as SpawnSyncReturns<string>;
+}
+
+/**
+ * Execute a Java command with a callback (async, buffered).
+ *
+ * Wraps Node `execFile` with the same resolution and quoting as
+ * {@link spawnJava}. Suitable for short-lived commands where stdout/stderr
+ * are buffered in memory (e.g. `java -version`, theme listing).
+ *
+ * @param configJavaPath - The `javaPath` value from extension settings.
+ * @param args - CLI arguments passed to the Java process.
+ * @param options - Buffered execution options (timeout, maxBuffer, etc.).
+ * @param cb - Callback invoked when the process exits.
+ * @returns The spawned child process.
+ */
+export function execJava(
+    configJavaPath: string,
+    args: readonly string[],
+    options: { timeout?: number; encoding?: BufferEncoding; maxBuffer?: number },
+    cb: (err: Error | null, stdout: string, stderr: string) => void,
+): ChildProcess {
+    return nodeExecFile(
+        shellEscape(resolveJavaCommand(configJavaPath)),
+        (args as string[]).map(shellEscape),
+        { ...options, shell: true }, cb,
+    );
 }
 
 /** Regex matching <img ...src="..." ...> or <img ...src='...' ...> tags. Captures prefix, quote, src value, and suffix. */
