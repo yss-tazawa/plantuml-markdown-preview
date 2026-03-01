@@ -161,14 +161,18 @@ function makeTitle(): string {
 /**
  * Build localResourceRoots for the webview based on the current file path.
  *
- * Includes the Markdown file's parent directory and, when available, the
+ * Always includes the extension's dist/ directory (for mermaid.min.js),
+ * the Markdown file's parent directory, and, when available, the
  * workspace folder that contains the file.
  *
  * @param filePath - Absolute path of the current Markdown file.
  * @returns URIs to allow as local resource roots.
  */
 function buildLocalResourceRoots(filePath: string): vscode.Uri[] {
-    const roots: vscode.Uri[] = [vscode.Uri.file(path.dirname(filePath))];
+    const roots: vscode.Uri[] = [
+        vscode.Uri.file(__dirname),  // dist/ — mermaid.min.js
+        vscode.Uri.file(path.dirname(filePath)),
+    ];
     const workspaceFolder = vscode.workspace.getWorkspaceFolder(vscode.Uri.file(filePath));
     if (workspaceFolder) {
         roots.push(workspaceFolder.uri);
@@ -181,7 +185,8 @@ function buildLocalResourceRoots(filePath: string): vscode.Uri[] {
  *
  * When allowLocalImages is true, sets localResourceRoots so the webview
  * can load images from the file's directory and workspace. When false,
- * sets localResourceRoots to an empty array to block all local file access.
+ * restricts localResourceRoots to the extension's dist/ directory only
+ * (mermaid.min.js still needs to load).
  *
  * No-op when panel, lastConfig, or currentFilePath is null.
  */
@@ -193,7 +198,7 @@ function applyWebviewOptions(): void {
             localResourceRoots: buildLocalResourceRoots(currentFilePath),
         };
     } else {
-        panel.webview.options = { enableScripts: true, localResourceRoots: [] };
+        panel.webview.options = { enableScripts: true, localResourceRoots: [vscode.Uri.file(__dirname)] };
     }
 }
 
@@ -310,7 +315,7 @@ export function openPreview(filePath: string, config: Config, preserveFocus = fa
             {
                 enableFindWidget: true,
                 enableScripts: true,
-                localResourceRoots: config.allowLocalImages ? buildLocalResourceRoots(filePath) : [],
+                localResourceRoots: config.allowLocalImages ? buildLocalResourceRoots(filePath) : [vscode.Uri.file(__dirname)],
             }
         );
 
