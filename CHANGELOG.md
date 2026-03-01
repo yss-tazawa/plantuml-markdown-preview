@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## 0.3.0 - 2026-03-02
+
+### Added
+
+- **Mermaid diagram support** — render `mermaid` code blocks in the preview and HTML export using client-side mermaid.js; no Java required
+- `mermaidTheme` setting — choose from 5 themes (default / dark / forest / neutral / base) with QuickPick integration
+- `plantumlScale` setting — control PlantUML diagram size (auto / 70%–120%)
+- `mermaidScale` setting — control Mermaid diagram size (auto / 50%–100%)
+- `htmlMaxWidth` setting — set the maximum width of exported HTML (640px–1440px / none)
+- `htmlAlignment` setting — set the alignment of exported HTML body (center / left)
+
 ## 0.2.2 - 2026-03-01
 
 ### Fixed

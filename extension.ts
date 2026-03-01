@@ -17,9 +17,8 @@ import { exportToHtml, clearMdCache } from './src/exporter.js';
 import { plantumlPlugin } from './src/renderer.js';
 import { clearCache } from './src/plantuml.js';
 import { clearServerCache } from './src/plantuml-server.js';
-import type { PlantUmlConfig } from './src/plantuml.js';
 import { openPreview, getCurrentFilePath, updateConfig, changeTheme, disposePreview, setOutputChannel } from './src/preview.js';
-import type { PreviewConfig } from './src/preview.js';
+import { CONFIG_SECTION, type Config } from './src/config.js';
 import type MarkdownIt from 'markdown-it';
 
 /** Absolute path to the extension root directory, set during activate(). */
@@ -47,10 +46,10 @@ function resolveBundledJarPath(): string {
  * When `jarPath` is empty (default), falls back to the bundled PlantUML jar
  * located at `<extensionPath>/vendor/plantuml.jar`.
  *
- * @returns {PreviewConfig} Current configuration values with defaults applied.
+ * @returns Current configuration values with defaults applied.
  */
-function getConfig(): PreviewConfig {
-    const cfg = vscode.workspace.getConfiguration('plantumlMarkdownPreview');
+function getConfig(): Config {
+    const cfg = vscode.workspace.getConfiguration(CONFIG_SECTION);
     const userJarPath = cfg.get<string>('jarPath', '');
     return {
         jarPath: userJarPath || resolveBundledJarPath(),
@@ -59,11 +58,16 @@ function getConfig(): PreviewConfig {
         debounceNoPlantUmlMs: cfg.get<number>('debounceNoPlantUmlMs', 100),
         debouncePlantUmlMs: cfg.get<number>('debouncePlantUmlMs', 300),
         plantumlTheme: cfg.get<string>('plantumlTheme', 'default'),
+        plantumlScale: cfg.get<string>('plantumlScale', '100%'),
         previewTheme: cfg.get<string>('previewTheme', 'github-light'),
         allowLocalImages: cfg.get<boolean>('allowLocalImages', true),
         allowHttpImages: cfg.get<boolean>('allowHttpImages', false),
         renderMode: cfg.get<'local' | 'server'>('renderMode', 'local'),
         serverUrl: cfg.get<string>('serverUrl', 'https://www.plantuml.com/plantuml'),
+        mermaidTheme: cfg.get<string>('mermaidTheme', 'default'),
+        mermaidScale: cfg.get<string>('mermaidScale', '80%'),
+        htmlMaxWidth: cfg.get<string>('htmlMaxWidth', '960px'),
+        htmlAlignment: cfg.get<string>('htmlAlignment', 'center'),
         // Intentionally not declared in package.json contributes.configuration (hidden debug setting)
         debugSimulateNoJava: cfg.get<boolean>('debugSimulateNoJava', false),
     };
@@ -79,8 +83,8 @@ function getConfig(): PreviewConfig {
  *
  * Returns null when no .md file can be determined.
  *
- * @param {vscode.Uri} [uri] - URI passed from a command invocation (e.g. explorer context menu).
- * @returns {string | null} Absolute .md file path, or null if no Markdown source is available.
+ * @param [uri] - URI passed from a command invocation (e.g. explorer context menu).
+ * @returns Absolute .md file path, or null if no Markdown source is available.
  */
 function resolveMarkdownPath(uri?: vscode.Uri): string | null {
     const fsPath = uri?.fsPath
@@ -94,8 +98,8 @@ function resolveMarkdownPath(uri?: vscode.Uri): string | null {
  *
  * Shows user-facing error messages when validation fails (not .md, jarPath not set).
  *
- * @param {vscode.Uri} [uri] - URI passed from a command invocation.
- * @returns {Promise<string | null>} Absolute path of the generated HTML file, or null on failure.
+ * @param [uri] - URI passed from a command invocation.
+ * @returns Absolute path of the generated HTML file, or null on failure.
  */
 async function runExport(uri?: vscode.Uri): Promise<string | null> {
     const filePath = resolveMarkdownPath(uri);
@@ -130,7 +134,11 @@ async function runExport(uri?: vscode.Uri): Promise<string | null> {
     }
 }
 
-/** Open a file with the system's default application. */
+/**
+ * Open a file with the system's default application.
+ *
+ * @param filePath - Absolute path to the file to open.
+ */
 function openInDefaultApp(filePath: string): void {
     if (!existsSync(filePath)) {
         vscode.window.showErrorMessage(vscode.l10n.t('File not found: {0}', filePath));
@@ -145,8 +153,10 @@ let javaCheckChild: ReturnType<typeof execFile> | null = null;
 /**
  * Check if Java is available. When not found (or debugSimulateNoJava is true),
  * show a notification with options to switch to server mode or install Java.
+ *
+ * @param config - Current extension settings (javaPath, renderMode, serverUrl).
  */
-async function checkJavaAvailability(config: PreviewConfig): Promise<void> {
+async function checkJavaAvailability(config: Config): Promise<void> {
     if (config.renderMode === 'server') return;
 
     const javaFound = await new Promise<boolean>((resolve) => {
@@ -176,7 +186,7 @@ async function checkJavaAvailability(config: PreviewConfig): Promise<void> {
             vscode.l10n.t('Cancel')
         );
         if (confirm === yesLabel) {
-            const cfg = vscode.workspace.getConfiguration('plantumlMarkdownPreview');
+            const cfg = vscode.workspace.getConfiguration(CONFIG_SECTION);
             await cfg.update('renderMode', 'server', vscode.ConfigurationTarget.Global);
         }
     } else if (action === installJava) {
@@ -189,9 +199,9 @@ async function checkJavaAvailability(config: PreviewConfig): Promise<void> {
  *
  * Registers all commands, the active editor tracker, and the configuration watcher.
  *
- * @param {vscode.ExtensionContext} context - Extension context for managing subscriptions and storage.
+ * @param context - Extension context for managing subscriptions and storage.
  */
-export function activate(context: vscode.ExtensionContext): void {
+export function activate(context: vscode.ExtensionContext): { extendMarkdownIt: (md: MarkdownIt) => MarkdownIt } {
     extensionPath = context.extensionPath;
 
     // Create and register the shared output channel so its lifecycle is managed
@@ -263,7 +273,7 @@ export function activate(context: vscode.ExtensionContext): void {
     });
 
     const configWatcher = vscode.workspace.onDidChangeConfiguration((event) => {
-        if (event.affectsConfiguration('plantumlMarkdownPreview')) {
+        if (event.affectsConfiguration(CONFIG_SECTION)) {
             const config = getConfig();
             updateConfig(config);
             syncBuiltInPreviewConfig(config);
@@ -271,6 +281,8 @@ export function activate(context: vscode.ExtensionContext): void {
     });
 
     context.subscriptions.push(exportCmd, exportAndOpenCmd, previewCmd, changeThemeCmd, editorTracker, configWatcher);
+
+    return { extendMarkdownIt };
 }
 
 /**
@@ -303,19 +315,32 @@ export function deactivate(): void {
  *
  * NOTE: Default values here must match the defaults in getConfig().
  */
-const builtInPreviewConfig: PlantUmlConfig = {
+const builtInPreviewConfig: Config = {
     jarPath: '',
     javaPath: 'java',
     dotPath: 'dot',
-    plantumlTheme: 'default'
+    plantumlTheme: 'default',
+    plantumlScale: '100%',
+    previewTheme: 'github-light',
+    renderMode: 'local',
+    serverUrl: 'https://www.plantuml.com/plantuml',
+    mermaidTheme: 'default',
+    mermaidScale: '80%',
+    htmlMaxWidth: '960px',
+    htmlAlignment: 'center',
+    allowLocalImages: true,
+    allowHttpImages: false,
+    debounceNoPlantUmlMs: 100,
+    debouncePlantUmlMs: 300,
 };
 
-/** Sync builtInPreviewConfig with the current extension settings. */
-function syncBuiltInPreviewConfig(config: PreviewConfig): void {
-    builtInPreviewConfig.jarPath = config.jarPath;
-    builtInPreviewConfig.javaPath = config.javaPath;
-    builtInPreviewConfig.dotPath = config.dotPath;
-    builtInPreviewConfig.plantumlTheme = config.plantumlTheme;
+/**
+ * Sync builtInPreviewConfig with the current extension settings.
+ *
+ * @param config - Current extension settings to apply.
+ */
+function syncBuiltInPreviewConfig(config: Config): void {
+    Object.assign(builtInPreviewConfig, config);
 }
 
 /**
@@ -324,8 +349,8 @@ function syncBuiltInPreviewConfig(config: PreviewConfig): void {
  * Called by VS Code's markdown.markdownItPlugins contribution point.
  * Uses a mutable config reference that is updated when settings change.
  *
- * @param {MarkdownIt} md - The markdown-it instance provided by VS Code.
- * @returns {MarkdownIt} The same instance with the PlantUML fence rule applied.
+ * @param md - The markdown-it instance provided by VS Code.
+ * @returns The same instance with the PlantUML fence rule applied.
  */
 export function extendMarkdownIt(md: MarkdownIt): MarkdownIt {
     return plantumlPlugin(md, builtInPreviewConfig);

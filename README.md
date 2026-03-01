@@ -5,7 +5,7 @@
 <h1 align="center">PlantUML Markdown Preview</h1>
 
 <p align="center">
-  <strong>Render PlantUML diagrams inline in Markdown. Export to self-contained HTML. Secure by design.</strong>
+  <strong>Render PlantUML &amp; Mermaid diagrams inline in Markdown. Export to self-contained HTML. Secure by design.</strong>
 </p>
 
 <p align="center">
@@ -21,8 +21,10 @@
 ## Highlights
 
 - **Inline PlantUML rendering** — diagrams appear directly in your Markdown preview, not in a separate panel
+- **Mermaid support** — ```` ```mermaid ```` blocks rendered client-side with theme selection (no Java needed)
+- **Diagram scale control** — adjust PlantUML and Mermaid diagram sizes independently
 - **Local & Server rendering** — use Java locally (default, fully async) or render via a PlantUML server (no Java required)
-- **Self-contained HTML export** — SVG diagrams embedded inline, zero external dependencies
+- **Self-contained HTML export** — SVG diagrams embedded inline, configurable layout width and alignment
 - **Bidirectional scroll sync** — editor and preview scroll together, both ways
 - **14 preview themes** — 8 light + 6 dark themes including GitHub, Atom, Solarized, Dracula, Monokai, and more
 - **Secure** — CSP nonce-based policy, no code execution from Markdown content
@@ -43,16 +45,24 @@
 
 ## Features
 
-### Inline PlantUML Preview
+### Inline Diagram Preview
 
-Open any Markdown file and preview PlantUML code blocks rendered as SVG diagrams,
-alongside your regular Markdown content.
+```` ```plantuml ```` and ```` ```mermaid ```` code blocks are rendered as inline SVG diagrams alongside your regular Markdown content.
 
 - Real-time preview updates as you type (two-stage debouncing)
 - Auto-refresh on file save
 - Auto-follow when switching editor tabs
-- Loading indicator during PlantUML rendering
-- PlantUML syntax errors displayed inline with line numbers and source context
+- Loading indicator during diagram rendering
+- Syntax errors displayed inline with line numbers and source context
+- PlantUML: rendered via Java (local) or PlantUML server — see [Local & Server Rendering](#local--server-rendering)
+- Mermaid: rendered client-side using [mermaid.js](https://mermaid.js.org/) — no Java or external tools required
+
+### Diagram Scale
+
+Control the display size of PlantUML and Mermaid diagrams independently.
+
+- **PlantUML scale** — `auto` (shrink to fit) or fixed percentage (70%–120%, default 100%). SVG stays crisp at any scale.
+- **Mermaid scale** — `auto` (fit container) or fixed percentage (50%–100%, default 80%).
 
 ### Local & Server Rendering
 
@@ -67,9 +77,10 @@ If Java is not found when opening a preview, a notification offers to switch to 
 
 Export your Markdown document to a self-contained HTML file.
 
-- PlantUML diagrams embedded as inline SVG
+- PlantUML and Mermaid diagrams embedded as inline SVG
 - Syntax highlighting CSS included — no external dependencies
 - Export and open in browser in one command
+- Configurable layout width (640px–1440px or unlimited) and alignment (center or left)
 
 ### Bidirectional Scroll Sync
 
@@ -112,6 +123,8 @@ Switch preview themes instantly from the title bar icon — no re-render needed 
 available themes from your PlantUML installation and presents them in a combined
 QuickPick alongside preview themes.
 
+**Mermaid themes** control Mermaid diagram styling: `default`, `dark`, `forest`, `neutral`, `base`. Also available in the QuickPick theme picker.
+
 ### Syntax Highlighting
 
 190+ languages supported via highlight.js. Code blocks are styled to match your
@@ -127,20 +140,26 @@ selected preview theme.
 
 ### Built-in Markdown Preview Integration
 
-PlantUML diagrams also render in VS Code's built-in Markdown preview
+PlantUML and Mermaid diagrams also render in VS Code's built-in Markdown preview
 (`Markdown: Open Preview to the Side`). No additional configuration needed.
 
 > **Note:** The built-in preview does not support this extension's preview themes,
 > bidirectional scroll sync, or HTML export. For the full feature set, use the
 > extension's own preview panel (`Cmd+Alt+V` / `Ctrl+Alt+V`).
+>
+> **Note:** The built-in preview renders diagrams synchronously. Large or complex
+> PlantUML diagrams may briefly freeze the editor. For heavy diagrams, use the
+> extension's own preview panel instead.
 
 ## Quick Start
 
 ### Prerequisites
 
-**Server mode** — no prerequisites. Works out of the box. Diagrams are sent to a PlantUML server for rendering.
+**Mermaid** — no prerequisites. Works out of the box.
 
-**Local mode** (default):
+**PlantUML (server mode)** — no prerequisites. Diagrams are sent to a PlantUML server for rendering.
+
+**PlantUML (local mode)** — default:
 
 | Tool | Purpose | Verify |
 |------|---------|--------|
@@ -271,6 +290,8 @@ Click the theme icon in the preview panel title bar, or use the Command Palette:
 
 - **Command Palette:** `PlantUML Markdown Preview: Change Preview Theme`
 
+The theme picker shows all three theme categories in a single list — preview themes, PlantUML themes, and Mermaid themes — so you can switch any of them from one place.
+
 ### PlantUML Syntax
 
 ````markdown
@@ -281,6 +302,17 @@ Bob --> Alice: Hi!
 ````
 
 `@startuml` / `@enduml` wrappers are added automatically if omitted.
+
+### Mermaid Syntax
+
+````markdown
+```mermaid
+graph TD
+    A[Start] --> B{Decision}
+    B -->|Yes| C[OK]
+    B -->|No| D[Cancel]
+```
+````
 
 ## Configuration
 
@@ -295,6 +327,11 @@ All settings use the `plantumlMarkdownPreview.` prefix.
 | `dotPath` | `"dot"` | Path to Graphviz `dot` executable (local mode only) |
 | `previewTheme` | `"github-light"` | Preview theme (see [Themes](#themes)) |
 | `plantumlTheme` | `"default"` | PlantUML diagram theme. `"default"` applies no theme. Other values (e.g. `"cyborg"`, `"mars"`) are passed as `-theme` to PlantUML CLI or injected as `!theme` directive in server mode. |
+| `plantumlScale` | `"100%"` | PlantUML diagram scale. `"auto"` shrinks diagrams that exceed container width. A percentage (70%–120%) renders at that fraction of natural size. |
+| `mermaidTheme` | `"default"` | Mermaid diagram theme: `"default"`, `"dark"`, `"forest"`, `"neutral"`, or `"base"`. |
+| `mermaidScale` | `"80%"` | Mermaid diagram scale. `"auto"` scales to fit container width. A percentage (50%–100%) renders at that fraction of natural size. |
+| `htmlMaxWidth` | `"960px"` | Maximum width of the exported HTML body. Options: `"640px"` – `"1440px"`, or `"none"` for no limit. |
+| `htmlAlignment` | `"center"` | HTML body alignment. `"center"` (default) or `"left"`. |
 | `allowLocalImages` | `true` | Resolve relative image paths (e.g. `![](./image.png)`) in the preview. Set to `false` to block all local file access. |
 | `allowHttpImages` | `false` | Allow loading images over HTTP (unencrypted) in the preview. Useful for intranet or local development servers. |
 | `debounceNoPlantUmlMs` | `100` | Debounce delay (ms) for non-PlantUML text changes |
@@ -373,8 +410,8 @@ running a [self-hosted PlantUML server](https://plantuml.com/server) and setting
 <details>
 <summary><strong>Diagrams look wrong with a dark theme</strong></summary>
 
-Set a PlantUML theme to match your preview theme. Open the theme picker from the
-title bar icon and select a dark PlantUML theme like `cyborg` or `mars`.
+Set a diagram theme to match your preview theme. Open the theme picker from the
+title bar icon and select a dark PlantUML theme (e.g. `cyborg`, `mars`) or set the Mermaid theme to `dark`.
 
 </details>
 
@@ -392,9 +429,10 @@ and pull request guidelines.
 
 ## Third-Party Licenses
 
-This extension bundles [PlantUML](https://plantuml.com/) (LGPL version)
-distributed under the [GNU Lesser General Public License v3 (LGPL-3.0)](https://www.gnu.org/licenses/lgpl-3.0.html).
-See also the [PlantUML license page](https://plantuml.com/license) for details.
+This extension bundles the following third-party software:
+
+- [PlantUML](https://plantuml.com/) (LGPL version) — [GNU Lesser General Public License v3 (LGPL-3.0)](https://www.gnu.org/licenses/lgpl-3.0.html). See the [PlantUML license page](https://plantuml.com/license) for details.
+- [mermaid.js](https://mermaid.js.org/) — [MIT License](https://github.com/mermaid-js/mermaid/blob/develop/LICENSE)
 
 ## License
 
