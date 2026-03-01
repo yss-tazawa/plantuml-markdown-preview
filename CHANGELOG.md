@@ -5,112 +5,104 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
-## 0.2.0 - 2026-03-01
-
-### Added
-
-- **Server rendering mode** — render PlantUML diagrams via an external PlantUML server (no Java required); set `renderMode` to `server` and optionally configure `serverUrl` (defaults to the public PlantUML server)
-- `renderMode` setting — choose between `local` (Java + jar, default) and `server` (HTTP)
-- `serverUrl` setting — PlantUML server URL for server mode (default: `https://www.plantuml.com/plantuml`)
-- Java availability check on activation — when Java is not found, a notification offers to switch to server mode or install Java
-- LRU cache for server-rendered SVGs (SHA-256 keys, max 200 entries)
-- New module `src/plantuml-server.ts` — PlantUML text encoding, HTTP fetch, and server-side cache
+## 0.2.1 - 2026-03-01
 
 ### Changed
 
-- Preview rendering is now fully async in both local and server modes (eliminates UI freeze on initial render)
-- HTML export (`renderHtmlAsync`) supports server mode with the same pre-render pipeline
-- PlantUML theme injection uses `!theme` directive in server mode (server cannot use `-theme` CLI flag)
+- Preview no longer freezes while rendering PlantUML diagrams in local mode
+- Preview opens instantly with a progress notification
+
+### Fixed
+
+- XSS vulnerability in error messages displayed in the preview
+- Scroll sync drifting after images finish loading
+
+## 0.2.0 - 2026-02-28
+
+### Added
+
+- **Server rendering mode** — render diagrams via an external PlantUML server without requiring Java; set `renderMode` to `server` and optionally configure `serverUrl`
+- `renderMode` setting — choose between `local` (default) and `server`
+- `serverUrl` setting — PlantUML server URL (default: `https://www.plantuml.com/plantuml`)
+- Notification when Java is not found, offering to switch to server mode
+
+### Changed
+
+- HTML export supports server rendering mode
+- PlantUML themes now work in server mode
 
 ## 0.1.9 - 2026-02-28
 
 ### Added
 
-- Bundled PlantUML LGPL jar (`plantuml-lgpl-1.2026.2.jar`) — no separate download required; the extension works out of the box with Java only
-
-### Changed
-
-- `jarPath` setting description updated to mention bundled jar fallback
+- Bundled PlantUML jar — no separate download required; works out of the box with Java
 
 ## 0.1.8 - 2026-02-28
 
 ### Added
 
-- `allowLocalImages` setting — resolve relative image paths (e.g. `![](./image.png)`) in the preview via webview URIs; enabled by default
-- `allowHttpImages` setting — allow loading images over HTTP (unencrypted) in the preview by adding `http:` to the CSP `img-src` directive; disabled by default for security
-- Local image path resolution now handles both `<img src="...">` and `<img src='...'>` attributes
-
-### Changed
-
-- `localResourceRoots` is now explicitly set to `[]` when `allowLocalImages` is off, preventing VS Code's default behavior of allowing workspace-wide file access
-- Resolved image URIs are HTML-escaped to prevent attribute injection from unusual file paths
+- `allowLocalImages` setting — resolve relative image paths in the preview (enabled by default)
+- `allowHttpImages` setting — allow loading images over HTTP in the preview (disabled by default)
 
 ## 0.1.7 - 2026-02-27
 
 ### Changed
 
-- Tables now scroll horizontally for wide content with `display: block` and `overflow: auto` (matching Markdown Preview Enhanced behavior)
-- Long unbroken text (e.g., fully-qualified class names) wraps at container boundaries via `word-wrap: break-word`
-- Preview uses full viewport width (`max-width: none`) for better use of the VS Code panel space
+- Tables scroll horizontally for wide content
+- Long unbroken text wraps at container boundaries
+- Preview uses full viewport width
 
 ### Fixed
 
-- Unwanted horizontal scrollbar appearing on PlantUML diagrams in HTML export
+- Unwanted horizontal scrollbar on PlantUML diagrams in HTML export
 
 ## 0.1.6 - 2026-02-27
 
 ### Changed
 
-- Preview now uses full-width left-aligned layout (no max-width centering) for better use of the VS Code panel space
+- Preview uses full-width left-aligned layout
 - PlantUML diagrams are left-aligned in both preview and HTML export
-- HTML export retains centered page layout with horizontal scrolling for oversized diagrams
 
 ## 0.1.5 - 2026-02-27
 
 ### Fixed
 
-- PlantUML diagrams shrinking horizontally when the preview or browser window is narrowed; diagrams now retain their original size with horizontal scrolling when needed
+- PlantUML diagrams shrinking when the preview or browser window is narrowed
 
 ## 0.1.4 - 2026-02-26
 
 ### Fixed
 
-- HTML export "Open in Browser" failing on Windows when file path contains non-ASCII characters (e.g. Japanese)
+- HTML export "Open in Browser" failing on Windows with non-ASCII file paths
 
 ## 0.1.3 - 2026-02-26
 
 ### Fixed
 
-- Excessive vertical spacing inside blockquotes caused by paragraph margin stacking with blockquote padding
+- Excessive vertical spacing inside blockquotes
 
 ## 0.1.2 - 2026-02-26
 
 ### Added
 
-- 8 new preview themes: Atom Light, One Light, Vue, Pen Paper Coffee, Coy, VS (light) and Atom Dark, Monokai (dark) — total 14 themes (8 light + 6 dark)
-- Light/Dark separator labels in the theme picker QuickPick menu for easier navigation
+- 8 new preview themes (14 total): Atom Light, One Light, Vue, Pen Paper Coffee, Coy, VS, Atom Dark, Monokai
+- Light/Dark separator labels in the theme picker
 
 ### Changed
 
-- Async file I/O for export and preview rendering (readFileSync → fs.promises)
-- SHA-256 cache keys for PlantUML SVG cache (replaces MD5)
-- PlantUML spawn timeout reduced from 30s to 15s
 - Default `debouncePlantUmlMs` changed from 100 to 300
-- Recognize all PlantUML `@start` tags (mindmap, wbs, etc.) not just `@startuml`
+- Support all PlantUML diagram types (mind map, WBS, etc.)
+- Improved settings descriptions
 
 ### Fixed
 
-- Minor corrections in settings description text
-- Disposable event handler leak (now registered via context.subscriptions)
-- Floating promises on fire-and-forget VS Code commands
-- CSP missing `font-src` directive
-- Unescaped `lang` attribute in exported HTML
+- Fonts not loading in the preview panel
 
 ## 0.1.1 - 2026-02-25
 
 ### Changed
 
-- Suppress "Rendering..." overlay and notification during text editing and file save; loading feedback is now shown only on tab switch and initial open
+- Loading overlay no longer appears during typing and file save
 
 ## 0.1.0 - 2026-02-25
 
@@ -118,12 +110,11 @@ Initial release.
 
 ### Added
 
-- **Inline PlantUML preview** — render PlantUML code blocks as SVG directly in the Markdown preview, with real-time updates, auto-refresh on save, auto-follow on tab switch, loading indicator, and inline error display with line numbers
-- **HTML export** — export Markdown to a self-contained HTML file with inline SVG diagrams and syntax highlighting CSS; option to export and open in browser in one step
-- **Bidirectional scroll sync** — anchor-based scroll mapping between editor and preview with smooth position restoration after re-render
-- **Themes** — 6 preview themes (GitHub Light/Dark, One Dark, Dracula, Solarized Light/Dark) with instant CSS-only switching; PlantUML theme support with dynamic theme discovery from the installed jar
-- **Syntax highlighting** — 190+ languages via highlight.js, styled to match the selected preview theme
-- **Security** — Content Security Policy with nonce-based script restrictions; no code execution from Markdown content
-- **Keyboard shortcut** — `Cmd+Alt+V` (Mac) / `Ctrl+Alt+V` (Windows/Linux) to open preview
+- **Inline PlantUML preview** — render PlantUML code blocks as SVG in the Markdown preview with real-time updates and inline error display
+- **HTML export** — export Markdown to a self-contained HTML file with inline SVG diagrams
+- **Bidirectional scroll sync** — anchor-based scroll mapping between editor and preview
+- **Themes** — 6 preview themes with instant switching; PlantUML theme support
+- **Syntax highlighting** — 190+ languages via highlight.js
+- **Keyboard shortcut** — `Cmd+Alt+V` / `Ctrl+Alt+V` to open preview
 - **Context menus** — explorer, editor, and webview context menu integration
 - **Internationalization** — English and Japanese

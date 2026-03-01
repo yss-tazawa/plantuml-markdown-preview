@@ -18,7 +18,7 @@ import { plantumlPlugin } from './src/renderer.js';
 import { clearCache } from './src/plantuml.js';
 import { clearServerCache } from './src/plantuml-server.js';
 import type { PlantUmlConfig } from './src/plantuml.js';
-import { openPreview, getCurrentFilePath, updateConfig, changeTheme, disposePreview } from './src/preview.js';
+import { openPreview, getCurrentFilePath, updateConfig, changeTheme, disposePreview, setOutputChannel } from './src/preview.js';
 import type { PreviewConfig } from './src/preview.js';
 import type MarkdownIt from 'markdown-it';
 
@@ -64,6 +64,7 @@ function getConfig(): PreviewConfig {
         allowHttpImages: cfg.get<boolean>('allowHttpImages', false),
         renderMode: cfg.get<'local' | 'server'>('renderMode', 'local'),
         serverUrl: cfg.get<string>('serverUrl', 'https://www.plantuml.com/plantuml'),
+        // Intentionally not declared in package.json contributes.configuration (hidden debug setting)
         debugSimulateNoJava: cfg.get<boolean>('debugSimulateNoJava', false),
     };
 }
@@ -129,17 +130,17 @@ async function runExport(uri?: vscode.Uri): Promise<string | null> {
     }
 }
 
-/**
- * Open a file with the system's default application.
- *
- * Uses child_process.execFile to pass the native filesystem path directly,
- * avoiding percent-encoding issues with non-ASCII characters in file:// URIs.
- */
+/** Open a file with the system's default application. */
 function openInDefaultApp(filePath: string): void {
-    const cmd = process.platform === 'win32' ? 'explorer.exe'
-        : process.platform === 'darwin' ? 'open' : 'xdg-open';
-    execFile(cmd, [filePath], () => { /* explorer.exe returns exit code 1 on success; ignore all errors */ });
+    if (!existsSync(filePath)) {
+        vscode.window.showErrorMessage(vscode.l10n.t('File not found: {0}', filePath));
+        return;
+    }
+    void vscode.env.openExternal(vscode.Uri.file(filePath));
 }
+
+/** Reference to the in-flight Java check child process for cleanup on deactivate. */
+let javaCheckChild: ReturnType<typeof execFile> | null = null;
 
 /**
  * Check if Java is available. When not found (or debugSimulateNoJava is true),
@@ -150,7 +151,8 @@ async function checkJavaAvailability(config: PreviewConfig): Promise<void> {
 
     const javaFound = await new Promise<boolean>((resolve) => {
         if (config.debugSimulateNoJava) { resolve(false); return; }
-        execFile(config.javaPath || 'java', ['-version'], { timeout: 5000 }, (err) => {
+        javaCheckChild = execFile(config.javaPath || 'java', ['-version'], { timeout: 5000 }, (err) => {
+            javaCheckChild = null;
             resolve(!err);
         });
     });
@@ -167,12 +169,13 @@ async function checkJavaAvailability(config: PreviewConfig): Promise<void> {
 
     if (action === useServer) {
         const serverUrl = config.serverUrl || 'https://www.plantuml.com/plantuml';
+        const yesLabel = vscode.l10n.t('Yes, switch to server mode');
         const confirm = await vscode.window.showWarningMessage(
             vscode.l10n.t('Server mode sends your diagrams to an external server ({0}). Continue?', serverUrl),
-            vscode.l10n.t('Yes, switch to server mode'),
+            yesLabel,
             vscode.l10n.t('Cancel')
         );
-        if (confirm === vscode.l10n.t('Yes, switch to server mode')) {
+        if (confirm === yesLabel) {
             const cfg = vscode.workspace.getConfiguration('plantumlMarkdownPreview');
             await cfg.update('renderMode', 'server', vscode.ConfigurationTarget.Global);
         }
@@ -190,8 +193,15 @@ async function checkJavaAvailability(config: PreviewConfig): Promise<void> {
  */
 export function activate(context: vscode.ExtensionContext): void {
     extensionPath = context.extensionPath;
+
+    // Create and register the shared output channel so its lifecycle is managed
+    // by context.subscriptions regardless of preview panel state.
+    const channel = vscode.window.createOutputChannel('PlantUML Markdown Preview');
+    context.subscriptions.push(channel);
+    setOutputChannel(channel);
+
     // Ensure builtInPreviewConfig has correct values after workspace is fully loaded
-    Object.assign(builtInPreviewConfig, getConfig());
+    syncBuiltInPreviewConfig(getConfig());
 
     const exportCmd = vscode.commands.registerCommand(
         'plantuml-markdown-preview.exportHtml',
@@ -228,8 +238,13 @@ export function activate(context: vscode.ExtensionContext): void {
                 return;
             }
             const config = getConfig();
-            openPreview(context, filePath, config);
-            void checkJavaAvailability(config);
+            void vscode.window.withProgress(
+                { location: vscode.ProgressLocation.Notification, title: vscode.l10n.t('Opening preview...') },
+                async () => {
+                    await openPreview(filePath, config, false);
+                    checkJavaAvailability(config).catch(() => {});
+                }
+            );
         }
     );
 
@@ -244,15 +259,14 @@ export function activate(context: vscode.ExtensionContext): void {
         const filePath = editor.document.uri.fsPath;
         if (!filePath.endsWith('.md')) return;
         if (filePath === getCurrentFilePath()) return;
-        openPreview(context, filePath, getConfig(), true);
+        void openPreview(filePath, getConfig(), true);
     });
 
     const configWatcher = vscode.workspace.onDidChangeConfiguration((event) => {
         if (event.affectsConfiguration('plantumlMarkdownPreview')) {
             const config = getConfig();
             updateConfig(config);
-            // Keep the mutable config reference for extendMarkdownIt in sync
-            Object.assign(builtInPreviewConfig, config);
+            syncBuiltInPreviewConfig(config);
         }
     });
 
@@ -266,6 +280,10 @@ export function activate(context: vscode.ExtensionContext): void {
  * Clears all caches (SVG render cache, theme cache, markdown-it cache).
  */
 export function deactivate(): void {
+    if (javaCheckChild) {
+        javaCheckChild.kill();
+        javaCheckChild = null;
+    }
     clearCache();
     clearServerCache();
     clearMdCache();
@@ -282,6 +300,8 @@ export function deactivate(): void {
  * The fence rule captured by plantumlPlugin reads from this object,
  * so updating its properties via Object.assign keeps the built-in
  * preview in sync with user setting changes.
+ *
+ * NOTE: Default values here must match the defaults in getConfig().
  */
 const builtInPreviewConfig: PlantUmlConfig = {
     jarPath: '',
@@ -289,6 +309,14 @@ const builtInPreviewConfig: PlantUmlConfig = {
     dotPath: 'dot',
     plantumlTheme: 'default'
 };
+
+/** Sync builtInPreviewConfig with the current extension settings. */
+function syncBuiltInPreviewConfig(config: PreviewConfig): void {
+    builtInPreviewConfig.jarPath = config.jarPath;
+    builtInPreviewConfig.javaPath = config.javaPath;
+    builtInPreviewConfig.dotPath = config.dotPath;
+    builtInPreviewConfig.plantumlTheme = config.plantumlTheme;
+}
 
 /**
  * Inject PlantUML rendering into VS Code's built-in Markdown preview.

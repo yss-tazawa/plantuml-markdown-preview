@@ -9,6 +9,10 @@
  * - expectingScrollEvent flag distinguishes programmatic scroll from user scroll
  * - Restores scroll position after re-render via INITIAL_LINE / INITIAL_MAX_TOP_LINE
  * - MutationObserver invalidates anchors when DOM content changes
+ *
+ * NOTE: The Webview JavaScript is embedded as a string template because the VS Code
+ * Webview API requires fully serialised HTML. This means the embedded code is not
+ * type-checked or linted. Keep changes minimal and well-tested.
  */
 
 /**
@@ -272,6 +276,35 @@ export function buildScrollSyncScript(initialLine: number, initialMaxTopLine: nu
     /** Invalidate the anchor cache when DOM content changes (e.g. re-render, theme swap). */
     const observer = new MutationObserver(function() { anchors = null; });
     observer.observe(document.body, { childList: true, subtree: true });
+
+    /**
+     * Invalidate the anchor cache when any image finishes loading, since its
+     * rendered height may change from 0 to its natural size, shifting all
+     * subsequent anchors.
+     */
+    function onImageSettled() {
+        anchors = null;
+        // Re-sync scroll position so the viewport corrects for the layout shift
+        if (lastSentLine >= 0 && lastMaxTopLine >= 0) {
+            requestAnimationFrame(function() {
+                scrollToSourceLine(lastSentLine, lastMaxTopLine);
+            });
+        } else if (INITIAL_LINE > 0) {
+            requestAnimationFrame(function() {
+                scrollToSourceLine(INITIAL_LINE, INITIAL_MAX_TOP_LINE);
+            });
+        }
+    }
+    function observeImages() {
+        var imgs = document.querySelectorAll('img');
+        for (var i = 0; i < imgs.length; i++) {
+            if (!imgs[i].complete) {
+                imgs[i].addEventListener('load', onImageSettled, { once: true });
+                imgs[i].addEventListener('error', onImageSettled, { once: true });
+            }
+        }
+    }
+    observeImages();
 
     /** Restore scroll position after re-render using values embedded by renderPanel(). */
     if (INITIAL_LINE > 0) {

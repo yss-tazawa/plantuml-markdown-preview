@@ -27,5 +27,8 @@
   "PlantUML server error: {0}": "PlantUML サーバーエラー: {0}",
   "PlantUML server request timed out": "PlantUML サーバーへのリクエストがタイムアウトしました",
   "PlantUML server connection error: {0}": "PlantUML サーバー接続エラー: {0}",
-  "PlantUML server returned unexpected response": "PlantUML サーバーから予期しないレスポンスが返されました"
+  "PlantUML server returned unexpected response": "PlantUML サーバーから予期しないレスポンスが返されました",
+  "Opening preview...": "プレビューを開いています...",
+  "File not found: {0}": "ファイルが見つかりません: {0}",
+  "Timed out": "タイムアウト"
 }

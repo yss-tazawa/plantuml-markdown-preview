@@ -5,14 +5,14 @@
  * Key behaviors:
  * - encodePlantUml: PlantUML text -> URL path segment (UTF-8 -> raw deflate -> custom Base64)
  * - renderToSvgServer: PlantUML text -> SVG string (async, HTTP fetch)
- * - renderAllServer: render multiple blocks in parallel via Promise.all
+ * - renderAllServer: render multiple blocks with controlled concurrency (max 5)
  * - Independent LRU cache (SHA-256 key, max 200 entries)
  * - Theme injection via `!theme` directive (server cannot use -theme CLI flag)
  * - Uses Node.js 18+ fetch API (no external dependencies)
  */
 import * as vscode from 'vscode';
 import { deflateRawSync } from 'zlib';
-import crypto from 'crypto';
+import { escapeHtml, ensureStartEndTags, errorHtml, LruCache, computeHash, batchRender } from './utils.js';
 
 /** Configuration for server-based rendering. */
 export interface ServerConfig {
@@ -79,10 +79,7 @@ export function encodePlantUml(content: string): string {
 // ---------------------------------------------------------------------------
 
 /** LRU cache mapping SHA-256 hash -> SVG string. */
-const cache = new Map<string, string>();
-
-/** Maximum number of cached SVG entries. */
-const MAX_CACHE_SIZE = 200;
+const cache = new LruCache<string>(200);
 
 /** Default HTTP request timeout in milliseconds. */
 const DEFAULT_TIMEOUT_MS = 15000;
@@ -92,11 +89,7 @@ const DEFAULT_TIMEOUT_MS = 15000;
  * Key components: content + serverUrl + plantumlTheme.
  */
 function cacheKey(content: string, config: ServerConfig): string {
-    return crypto.createHash('sha256')
-        .update(content).update('\0')
-        .update(config.serverUrl).update('\0')
-        .update(config.plantumlTheme || 'default')
-        .digest('hex');
+    return computeHash(content, config.serverUrl, config.plantumlTheme || 'default');
 }
 
 // ---------------------------------------------------------------------------
@@ -110,7 +103,7 @@ function cacheKey(content: string, config: ServerConfig): string {
  * @param config Server URL and theme settings.
  * @returns SVG markup on success, or styled HTML error div on failure.
  */
-export async function renderToSvgServer(pumlContent: string, config: ServerConfig): Promise<string> {
+export async function renderToSvgServer(pumlContent: string, config: ServerConfig, signal?: AbortSignal): Promise<string> {
     const trimmed = pumlContent.trim();
     const content = ensureStartEndTags(trimmed);
 
@@ -122,29 +115,29 @@ export async function renderToSvgServer(pumlContent: string, config: ServerConfi
     const hash = cacheKey(themedContent, config);
 
     // LRU cache lookup
-    if (cache.has(hash)) {
-        const cached = cache.get(hash)!;
-        cache.delete(hash);
-        cache.set(hash, cached);
-        return cached;
-    }
+    const cached = cache.get(hash);
+    if (cached !== undefined) return cached;
 
     const encoded = encodePlantUml(themedContent);
     const url = `${config.serverUrl.replace(/\/+$/, '')}/svg/${encoded}`;
 
-    try {
-        const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), DEFAULT_TIMEOUT_MS);
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), DEFAULT_TIMEOUT_MS);
 
+    // Link external signal (e.g. from renderPanel) to our controller
+    if (signal?.aborted) { clearTimeout(timeout); return ''; }
+    const onAbort = () => controller.abort();
+    signal?.addEventListener('abort', onAbort, { once: true });
+
+    try {
         const response = await fetch(url, {
             signal: controller.signal,
             headers: { 'Accept': 'image/svg+xml' }
         });
-        clearTimeout(timeout);
 
         if (!response.ok) {
             return errorHtml(
-                vscode.l10n.t('PlantUML server error: {0}', `HTTP ${response.status} ${response.statusText}`)
+                vscode.l10n.t('PlantUML server error: {0}', `HTTP ${response.status} ${escapeHtml(response.statusText)}`)
             );
         }
 
@@ -158,40 +151,42 @@ export async function renderToSvgServer(pumlContent: string, config: ServerConfi
         }
 
         // Cache the result (errors are NOT cached)
-        if (cache.size >= MAX_CACHE_SIZE) {
-            const oldest = cache.keys().next().value;
-            if (oldest !== undefined) cache.delete(oldest);
-        }
         cache.set(hash, svg);
         return svg;
     } catch (err) {
         if ((err as Error).name === 'AbortError') {
+            // Distinguish external cancellation (user triggered) from timeout
+            if (signal?.aborted) return '';
             return errorHtml(vscode.l10n.t('PlantUML server request timed out'));
         }
         return errorHtml(
-            vscode.l10n.t('PlantUML server connection error: {0}', (err as Error).message)
+            vscode.l10n.t('PlantUML server connection error: {0}', escapeHtml((err as Error).message))
         );
+    } finally {
+        clearTimeout(timeout);
+        signal?.removeEventListener('abort', onAbort);
     }
 }
 
+/** Maximum number of concurrent HTTP requests to the PlantUML server. */
+const MAX_SERVER_CONCURRENCY = 5;
+
 /**
- * Render multiple PlantUML blocks in parallel via server.
+ * Render multiple PlantUML blocks via server with controlled concurrency.
+ *
+ * Sends up to MAX_SERVER_CONCURRENCY requests in parallel to balance
+ * throughput against server load.
  *
  * @param blocks Array of PlantUML source texts.
  * @param config Server URL and theme settings.
  * @returns Map from trimmed content -> SVG string.
  */
-export async function renderAllServer(
+export function renderAllServer(
     blocks: string[],
-    config: ServerConfig
+    config: ServerConfig,
+    signal?: AbortSignal
 ): Promise<Map<string, string>> {
-    const results = new Map<string, string>();
-    const promises = blocks.map(async (content) => {
-        const svg = await renderToSvgServer(content, config);
-        results.set(content.trim(), svg);
-    });
-    await Promise.all(promises);
-    return results;
+    return batchRender(blocks, MAX_SERVER_CONCURRENCY, (content, sig) => renderToSvgServer(content, config, sig), signal);
 }
 
 /** Clear the server SVG cache. */
@@ -204,25 +199,9 @@ export function clearServerCache(): void {
 // ---------------------------------------------------------------------------
 
 /**
- * Auto-wrap content with @startuml / @enduml if no @start tag is present.
- * Recognizes all PlantUML start tags (@startuml, @startmindmap, @startwbs, etc.).
- */
-function ensureStartEndTags(content: string): string {
-    if (!content.startsWith('@start')) {
-        return `@startuml\n${content}\n@enduml`;
-    }
-    return content;
-}
-
-/**
  * Inject !theme directive after @startuml/@startXXX line.
  * Server mode cannot use -theme CLI arg, so we embed the directive in the source.
  */
 function injectThemeDirective(content: string, theme: string): string {
     return content.replace(/^(@start\w+.*)$/m, `$1\n!theme ${theme}`);
-}
-
-/** Wrap an error message in a styled HTML error div. */
-function errorHtml(message: string): string {
-    return `<div style="border:1px solid #f66;background:#fff0f0;padding:0.5em 1em;border-radius:4px;color:#c00;font-size:0.9em;text-align:left;">${message}</div>`;
 }

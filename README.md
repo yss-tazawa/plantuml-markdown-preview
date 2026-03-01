@@ -21,7 +21,7 @@
 ## Highlights
 
 - **Inline PlantUML rendering** — diagrams appear directly in your Markdown preview, not in a separate panel
-- **Local & Server rendering** — use Java locally (default) or render via a PlantUML server (no Java required)
+- **Local & Server rendering** — use Java locally (default, fully async) or render via a PlantUML server (no Java required)
 - **Self-contained HTML export** — SVG diagrams embedded inline, zero external dependencies
 - **Bidirectional scroll sync** — editor and preview scroll together, both ways
 - **14 preview themes** — 8 light + 6 dark themes including GitHub, Atom, Solarized, Dracula, Monokai, and more
@@ -32,6 +32,7 @@
 
 - [Features](#features)
 - [Quick Start](#quick-start)
+  - [Diagram Support](#diagram-support)
 - [Usage](#usage)
 - [Configuration](#configuration)
 - [Keyboard Shortcuts](#keyboard-shortcuts)
@@ -57,7 +58,7 @@ alongside your regular Markdown content.
 
 Choose how PlantUML diagrams are rendered:
 
-- **Local mode** (default) — uses Java + PlantUML jar on your machine. Diagrams never leave your computer.
+- **Local mode** (default) — uses Java + PlantUML jar on your machine. Diagrams never leave your computer. Rendering is fully asynchronous so the editor stays responsive.
 - **Server mode** — sends PlantUML text to a PlantUML server for rendering. No Java installation required. Uses the public server (`https://www.plantuml.com/plantuml`) by default, or set your own self-hosted server URL for privacy.
 
 If Java is not found when opening a preview, a notification offers to switch to server mode automatically.
@@ -74,7 +75,7 @@ Export your Markdown document to a self-contained HTML file.
 
 Editor and preview stay in sync as you scroll either one.
 
-- Anchor-based scroll mapping with binary search and linear interpolation
+- Accurate scroll mapping with smooth position tracking
 - Smooth position restoration after re-render
 
 ### Themes
@@ -182,7 +183,7 @@ What works depends on your setup:
 ### Install
 
 1. Open VS Code
-2. Search for **PlantUML Markdown Preview** in the Extensions view (`Ctrl+Shift+X`)
+2. Search for **PlantUML Markdown Preview** in the Extensions view (`Ctrl+Shift+X` / `Cmd+Shift+X`)
 3. Click **Install**
 
 ### Setup
@@ -344,6 +345,7 @@ All settings use the `plantumlMarkdownPreview.` prefix.
 1. Verify the server URL is correct (default: `https://www.plantuml.com/plantuml`)
 2. Check your network connection — the extension needs to reach the PlantUML server
 3. If using a self-hosted server, ensure it is running and accessible
+4. Requests to the server time out after 15 seconds (local mode also has a 15-second timeout per diagram)
 
 </details>
 
@@ -390,7 +392,7 @@ and pull request guidelines.
 
 ## Third-Party Licenses
 
-This extension bundles [PlantUML](https://plantuml.com/) `plantuml-lgpl-1.2026.2.jar`
+This extension bundles [PlantUML](https://plantuml.com/) (LGPL version)
 distributed under the [GNU Lesser General Public License v3 (LGPL-3.0)](https://www.gnu.org/licenses/lgpl-3.0.html).
 See also the [PlantUML license page](https://plantuml.com/license) for details.
 
