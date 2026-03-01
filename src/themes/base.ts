@@ -149,7 +149,7 @@ export function buildThemeCss(p: ThemePalette): string {
     img { max-width: 100%; height: auto; }
     .plantuml-diagram { margin: 1.5em 0; text-align: left; }
     .plantuml-diagram svg { height: auto; }
-    body.preview { margin: 0; max-width: none; }
+    body.preview { margin: 0; max-width: none; padding: 1em 26px; }
     .hljs { background: ${p.hljsBg}; color: ${hljsText}; }
     .hljs-comment, .hljs-prolog, .hljs-doctype, .hljs-cdata { color: ${p.hljsComment}; font-style: italic; }
     .hljs-keyword, .hljs-selector-tag { color: ${p.hljsKeyword}; }
