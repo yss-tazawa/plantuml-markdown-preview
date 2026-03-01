@@ -37,11 +37,152 @@ export function getNonce(): string {
     return crypto.randomBytes(16).toString('hex');
 }
 
+/**
+ * Auto-wrap content with @startuml / @enduml if no @start tag is present.
+ * Recognizes all PlantUML start tags (@startuml, @startmindmap, @startwbs, etc.).
+ *
+ * @param {string} content - Trimmed PlantUML source text.
+ * @returns {string} Content guaranteed to have @startuml/@enduml wrapper tags (if no @start tag was present).
+ */
+export function ensureStartEndTags(content: string): string {
+    if (!content.startsWith('@start')) {
+        return `@startuml\n${content}\n@enduml`;
+    }
+    return content;
+}
+
+/**
+ * Wrap an error message in a red-bordered styled HTML div.
+ *
+ * @param {string} message - HTML content (may include tags) to display inside the error box.
+ * @returns {string} Complete HTML div string with error styling.
+ */
+export function errorHtml(message: string): string {
+    return `<div style="border:1px solid #f66;background:#fff0f0;padding:0.5em 1em;border-radius:4px;color:#c00;font-size:0.9em;text-align:left;">${message}</div>`;
+}
+
+/**
+ * Regex to match ```plantuml fenced code blocks and capture their content.
+ * Allows 0-3 spaces of indentation on opening/closing fences (CommonMark spec).
+ * Closing fence must be followed only by optional spaces/tabs then end-of-line
+ * (CommonMark: text after the closing fence means it is not a valid closing fence).
+ * Use with `new RegExp(source, flags)` to get a fresh stateful copy for `exec()` loops.
+ */
+export const PLANTUML_FENCE_RE_SOURCE = '^ {0,3}```plantuml[ \\t]*\\n([\\s\\S]*?)\\n {0,3}```[ \\t]*$';
+
+/** Simple test regex to detect ```plantuml fenced code blocks (no capture). */
+export const PLANTUML_FENCE_TEST_RE = /^ {0,3}```plantuml/im;
+
+/**
+ * Extract PlantUML block contents from Markdown source in document order.
+ *
+ * @param source Raw Markdown text.
+ * @returns Array of PlantUML source text strings.
+ */
+export function extractPlantUmlBlocks(source: string): string[] {
+    const blocks: string[] = [];
+    const re = new RegExp(PLANTUML_FENCE_RE_SOURCE, 'gim');
+    let match;
+    while ((match = re.exec(source)) !== null) {
+        blocks.push(match[1]);
+    }
+    return blocks;
+}
+
+/**
+ * Simple LRU cache backed by a Map.
+ *
+ * Entries are kept in insertion order; a `get` hit moves the entry to the
+ * end (most recently used). When the cache exceeds `maxSize`, the oldest
+ * (least recently used) entry is evicted.
+ */
+export class LruCache<V> {
+    private readonly map = new Map<string, V>();
+    constructor(private readonly maxSize: number) {}
+
+    get(key: string): V | undefined {
+        if (!this.map.has(key)) return undefined;
+        const value = this.map.get(key)!;
+        this.map.delete(key);
+        this.map.set(key, value);
+        return value;
+    }
+
+    set(key: string, value: V): void {
+        if (this.map.has(key)) this.map.delete(key);
+        if (this.map.size >= this.maxSize) {
+            const oldest = this.map.keys().next().value;
+            if (oldest !== undefined) this.map.delete(oldest);
+        }
+        this.map.set(key, value);
+    }
+
+    clear(): void {
+        this.map.clear();
+    }
+}
+
+/**
+ * Compute a SHA-256 hash from one or more string parts, separated by null bytes.
+ *
+ * Used as a cache key for PlantUML rendering results. Centralises the hashing
+ * logic previously duplicated in plantuml.ts and plantuml-server.ts.
+ *
+ * @param {...string} parts - Strings to hash (content, paths, theme, etc.).
+ * @returns {string} Hex-encoded SHA-256 hash.
+ */
+export function computeHash(...parts: string[]): string {
+    const h = crypto.createHash('sha256');
+    for (let i = 0; i < parts.length; i++) {
+        if (i > 0) h.update('\0');
+        h.update(parts[i]);
+    }
+    return h.digest('hex');
+}
+
+/**
+ * Render multiple items in batches with controlled concurrency.
+ *
+ * Processes up to `concurrency` items in parallel, then moves to the next batch.
+ * Returns a Map keyed by trimmed input content.
+ *
+ * @param {string[]} blocks - Array of source texts to render.
+ * @param {number} concurrency - Maximum number of concurrent render operations.
+ * @param {function} renderFn - Async function that renders a single block.
+ * @param {AbortSignal} [signal] - Optional signal to cancel remaining operations.
+ * @returns {Promise<Map<string, string>>} Map of trimmed content -> rendered output.
+ */
+export async function batchRender(
+    blocks: string[],
+    concurrency: number,
+    renderFn: (content: string, signal?: AbortSignal) => Promise<string>,
+    signal?: AbortSignal
+): Promise<Map<string, string>> {
+    const results = new Map<string, string>();
+    for (let i = 0; i < blocks.length; i += concurrency) {
+        if (signal?.aborted) break;
+        const batch = blocks.slice(i, i + concurrency);
+        const svgs = await Promise.all(batch.map(content =>
+            signal?.aborted ? Promise.resolve('') : renderFn(content, signal)
+        ));
+        for (let j = 0; j < batch.length; j++) {
+            results.set(batch[j].trim(), svgs[j]);
+        }
+    }
+    return results;
+}
+
 /** Regex matching <img ...src="..." ...> or <img ...src='...' ...> tags. Captures prefix, quote, src value, and suffix. */
 const IMG_SRC_RE = /<img\s([^>]*?)src=(["'])(.*?)\2([^>]*?)>/gi;
 
 /** Schemes that should not be resolved as local paths. */
 const ABSOLUTE_SRC_RE = /^(https?:|data:|vscode-webview:|\/\/)/i;
+
+/** Pre-compiled regexes for quote character escaping in image URIs. */
+const QUOTE_ESCAPE_RE: Record<string, RegExp> = {
+    '"': /"/g,
+    "'": /'/g,
+};
 
 /**
  * Replace relative image paths in rendered HTML with resolved URIs.
@@ -49,6 +190,10 @@ const ABSOLUTE_SRC_RE = /^(https?:|data:|vscode-webview:|\/\/)/i;
  * Finds all `<img src="...">` and `<img src='...'>` tags whose src is a
  * relative path and converts them using the provided resolver function.
  * Absolute URLs, data URIs, and vscode-webview URIs are left untouched.
+ *
+ * Note: Absolute filesystem paths (e.g. `/usr/share/img.png`) are resolved
+ * via toUri, but the Webview will block them if the path falls outside
+ * localResourceRoots (file directory + workspace root).
  *
  * @param {string} html - Rendered HTML string.
  * @param {string} baseDirPath - Absolute directory path to resolve relative paths against.
@@ -59,7 +204,8 @@ export function resolveLocalImagePaths(html: string, baseDirPath: string, toUri:
     return html.replace(IMG_SRC_RE, (match, pre: string, quote: string, src: string, post: string) => {
         if (ABSOLUTE_SRC_RE.test(src)) return match;
         const absolutePath = path.isAbsolute(src) ? src : path.resolve(baseDirPath, src);
-        const uri = toUri(absolutePath).replace(/"/g, '&quot;');
-        return `<img ${pre}src="${uri}"${post}>`;
+        const escapeChar = quote === '"' ? '&quot;' : '&#39;';
+        const uri = toUri(absolutePath).replace(QUOTE_ESCAPE_RE[quote], escapeChar);
+        return `<img ${pre}src=${quote}${uri}${quote}${post}>`;
     });
 }

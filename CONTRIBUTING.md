@@ -21,13 +21,13 @@ Before filing a new issue, please search [existing issues](https://github.com/ys
 
 ### Prerequisites
 
-| Tool | Purpose | Verify |
-| ---- | ------- | ------ |
-| [Node.js](https://nodejs.org/) (LTS) | Build toolchain | `node -v` |
-| Java (JRE or JDK) | Runs PlantUML | `java -version` |
-| [Graphviz](https://graphviz.org/) | Renders class / component diagrams | `dot -V` |
-| [plantuml.jar](https://plantuml.com/download) | PlantUML engine | — |
-| [VS Code](https://code.visualstudio.com/) | Extension host | — |
+| Tool | Purpose | Required | Verify |
+| ---- | ------- | -------- | ------ |
+| [Node.js](https://nodejs.org/) (LTS) | Build toolchain | Yes | `node -v` |
+| Java (JRE or JDK) | Runs PlantUML (local mode) | Yes (local mode) | `java -version` |
+| [Graphviz](https://graphviz.org/) | Renders class / component diagrams | Optional | `dot -V` |
+| [plantuml.jar](https://plantuml.com/download) | PlantUML engine | Optional — bundled jar (LGPL) is included | — |
+| [VS Code](https://code.visualstudio.com/) | Extension host | Yes | — |
 
 ### Clone and Install
 
@@ -37,7 +37,7 @@ cd plantuml-markdown-preview
 npm install
 ```
 
-Then set `plantumlMarkdownPreview.jarPath` in your VS Code settings to point to your `plantuml.jar`. See [README.md](README.md#quick-start) for details.
+The bundled PlantUML jar (LGPL) is used by default. To use a different jar, set `plantumlMarkdownPreview.jarPath` in your VS Code settings. See [README.md](README.md#quick-start) for details.
 
 ### Build
 
@@ -60,11 +60,11 @@ extension.ts        Entry point — command registration, configuration, activat
 src/
   preview.ts        Webview panel management and debouncing
   renderer.ts       markdown-it plugin — PlantUML fence blocks → SVG
-  plantuml.ts       PlantUML local process invocation and caching
+  plantuml.ts       PlantUML local process invocation (sync + async), caching, theme discovery
   plantuml-server.ts PlantUML server rendering (HTTP fetch, encoding, LRU cache)
   exporter.ts       HTML export with inline SVG and syntax highlighting
   scroll-sync.ts    Bidirectional editor ↔ preview scroll sync
-  utils.ts          Shared utilities (escapeHtml, getNonce, resolveLocalImagePaths)
+  utils.ts          Shared utilities (escapeHtml, getNonce, ensureStartEndTags, errorHtml, fence regex)
   themes/           CSS theme definitions (14 themes: 8 light + 6 dark)
 l10n/               Localization bundles (English + Japanese)
 .github/            GitHub templates (PR template, security policy)

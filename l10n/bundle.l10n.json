@@ -27,5 +27,8 @@
   "PlantUML server error: {0}": "PlantUML server error: {0}",
   "PlantUML server request timed out": "PlantUML server request timed out",
   "PlantUML server connection error: {0}": "PlantUML server connection error: {0}",
-  "PlantUML server returned unexpected response": "PlantUML server returned unexpected response"
+  "PlantUML server returned unexpected response": "PlantUML server returned unexpected response",
+  "Opening preview...": "Opening preview...",
+  "File not found: {0}": "File not found: {0}",
+  "Timed out": "Timed out"
 }

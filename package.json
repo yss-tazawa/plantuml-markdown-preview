@@ -2,7 +2,7 @@
   "name": "plantuml-markdown-preview",
   "displayName": "%displayName%",
   "description": "%description%",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "license": "MIT",
   "publisher": "yss-tazawa",
   "icon": "images/icon.png",
@@ -21,7 +21,11 @@
     "diagram",
     "uml",
     "svg",
-    "export"
+    "export",
+    "html",
+    "server",
+    "java",
+    "local"
   ],
   "activationEvents": [],
   "main": "./dist/extension.js",

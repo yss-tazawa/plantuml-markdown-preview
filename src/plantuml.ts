@@ -4,8 +4,10 @@
  *
  * Key behaviors:
  * - renderToSvg: PlantUML text -> SVG string (synchronous, SHA-256-cached LRU)
+ * - renderToSvgAsync: PlantUML text -> SVG string (asynchronous via child_process.spawn, SHA-256-cached LRU)
+ * - renderAllLocal: Render all PlantUML blocks with controlled concurrency (max 3) using renderToSvgAsync
  * - listThemes: Dynamically discover available PlantUML themes via `help themes`
- * - Spawns Java via spawnSync with -Djava.awt.headless=true (no macOS Dock icon)
+ * - Spawns Java via spawnSync/spawn with -Djava.awt.headless=true (no macOS Dock icon)
  * - Cache key: content + jarPath + javaPath + dotPath + plantumlTheme (SHA-256 hash, max 200 entries)
  * - Auto-wraps with @startuml/@enduml if missing
  * - On syntax error: parses -stdrpt:1 structured stderr, displays source context
@@ -13,9 +15,11 @@
  * - Process errors (Java not found, timeout) and syntax errors are NOT cached
  */
 import * as vscode from 'vscode';
-import { spawnSync, execFile, type ChildProcess } from 'child_process';
-import crypto from 'crypto';
-import { escapeHtml } from './utils.js';
+import { spawnSync, spawn, execFile, type ChildProcess } from 'child_process';
+import { escapeHtml, ensureStartEndTags, errorHtml, LruCache, computeHash, batchRender } from './utils.js';
+
+/** Set of currently in-flight render child processes (for cleanup on deactivate). */
+const activeChildren = new Set<ChildProcess>();
 
 /** Configuration required for PlantUML rendering and theme discovery. */
 export interface PlantUmlConfig {
@@ -30,10 +34,7 @@ export interface PlantUmlConfig {
 }
 
 /** LRU cache mapping SHA-256 hash -> SVG string. */
-const cache = new Map<string, string>();
-
-/** Maximum number of cached SVG entries. */
-const MAX_CACHE_SIZE = 200;
+const cache = new LruCache<string>(200);
 
 /** Cache key for the last successful theme list fetch. Format: `jarPath + '\0' + javaPath`. */
 let themeCacheKey = '';
@@ -51,8 +52,57 @@ const FALLBACK_PLANTUML_THEMES = [
     'cerulean', 'cyborg', 'mars', 'sketchy', 'vibrant',
 ];
 
+/** Prepared render context extracted from config and PlantUML content. */
+interface RenderContext {
+    javaPath: string;
+    args: string[];
+    content: string;
+    trimmed: string;
+    tagsAdded: boolean;
+    hash: string;
+}
+
+/**
+ * Extract common render context from config and PlantUML content.
+ *
+ * Normalises config defaults, ensures @startuml/@enduml tags, computes the
+ * SHA-256 cache key, and builds the Java CLI args array.
+ * Returns `null` (with an error HTML string) when jarPath is missing.
+ */
+function prepareRenderContext(pumlContent: string, config: PlantUmlConfig): { ctx: RenderContext } | { error: string } {
+    const jarPath = config.jarPath || '';
+    const javaPath = config.javaPath || 'java';
+    const dotPath = config.dotPath || 'dot';
+    const plantumlTheme = config.plantumlTheme || 'default';
+
+    if (!jarPath) {
+        return { error: errorHtml(
+            vscode.l10n.t('PlantUML jar is not configured.') + '<br>' +
+            '<code>plantumlMarkdownPreview.jarPath</code>'
+        ) };
+    }
+
+    const trimmed = pumlContent.trim();
+    const tagsAdded = !trimmed.startsWith('@start');
+    const content = ensureStartEndTags(trimmed);
+    const hash = computeHash(content, jarPath, javaPath, dotPath, plantumlTheme);
+
+    const args = ['-Djava.awt.headless=true', '-jar', jarPath, '-pipe', '-tsvg', '-charset', 'UTF-8', '-stdrpt:1'];
+    if (dotPath !== 'dot') {
+        args.push('-graphvizdot', dotPath);
+    }
+    if (plantumlTheme !== 'default') {
+        args.push('-theme', plantumlTheme);
+    }
+
+    return { ctx: { javaPath, args, content, trimmed, tagsAdded, hash } };
+}
+
 /**
  * Render PlantUML text to an SVG string (synchronous).
+ *
+ * Used only by VS Code's built-in Markdown preview (markdown-it plugin API is synchronous
+ * and cannot await Promises). The custom preview panel uses renderToSvgAsync() instead.
  *
  * Spawns `java -jar plantuml.jar -pipe -tsvg` with the given content piped via stdin.
  * Results are cached in a SHA-256-keyed LRU map (max 200 entries).
@@ -63,44 +113,12 @@ const FALLBACK_PLANTUML_THEMES = [
  * @returns {string} SVG markup on success, or a styled HTML error div on failure.
  */
 export function renderToSvg(pumlContent: string, config: PlantUmlConfig): string {
-    const jarPath = config.jarPath || '';
-    const javaPath = config.javaPath || 'java';
-    const dotPath = config.dotPath || 'dot';
-    const plantumlTheme = config.plantumlTheme || 'default';
+    const prepared = prepareRenderContext(pumlContent, config);
+    if ('error' in prepared) return prepared.error;
+    const { javaPath, args, content, trimmed, tagsAdded, hash } = prepared.ctx;
 
-    if (!jarPath) {
-        return errorHtml(
-            vscode.l10n.t('PlantUML jar is not configured.') + '<br>' +
-            '<code>plantumlMarkdownPreview.jarPath</code>'
-        );
-    }
-
-    const trimmed = pumlContent.trim();
-    const tagsAdded = !trimmed.startsWith('@start');
-    const content = ensureStartEndTags(trimmed);
-    const hash = crypto.createHash('sha256')
-        .update(content).update('\0')
-        .update(jarPath).update('\0')
-        .update(javaPath).update('\0')
-        .update(dotPath).update('\0')
-        .update(plantumlTheme)
-        .digest('hex');
-
-    if (cache.has(hash)) {
-        // LRU: refresh access order (move to end of Map insertion order)
-        const cached = cache.get(hash)!;
-        cache.delete(hash);
-        cache.set(hash, cached);
-        return cached;
-    }
-
-    const args = ['-Djava.awt.headless=true', '-jar', jarPath, '-pipe', '-tsvg', '-charset', 'UTF-8', '-stdrpt:1'];
-    if (dotPath !== 'dot') {
-        args.push('-graphvizdot', dotPath);
-    }
-    if (plantumlTheme !== 'default') {
-        args.push('-theme', plantumlTheme);
-    }
+    const cached = cache.get(hash);
+    if (cached !== undefined) return cached;
 
     const result = spawnSync(
         javaPath,
@@ -109,27 +127,123 @@ export function renderToSvg(pumlContent: string, config: PlantUmlConfig): string
             input: content,
             encoding: 'utf8',
             timeout: 15000,
-            killSignal: 'SIGKILL'
+            // SIGTERM allows Java to clean up temporary files gracefully on timeout.
+            killSignal: 'SIGTERM'
         }
     );
 
-    // Process errors (Java not found, timeout, etc.) are not cached
     if (result.error) {
-        return errorHtml(vscode.l10n.t('PlantUML execution error: {0}', result.error.message));
+        return errorHtml(vscode.l10n.t('PlantUML execution error: {0}', escapeHtml(result.error.message)));
     }
 
-    // Syntax errors are not cached (user is editing, will be re-evaluated soon).
     if (result.status !== 0) {
         return buildErrorMessage(result.stderr, trimmed, tagsAdded ? 1 : 0, result.status ?? -1);
     }
 
     const svg = result.stdout;
-    if (cache.size >= MAX_CACHE_SIZE) {
-        const oldest = cache.keys().next().value;
-        if (oldest !== undefined) cache.delete(oldest);
-    }
     cache.set(hash, svg);
     return svg;
+}
+
+/**
+ * Render PlantUML text to an SVG string (asynchronous).
+ *
+ * Non-blocking variant of renderToSvg(). Spawns `java -jar plantuml.jar -pipe -tsvg`
+ * using the async `spawn` API so the extension host event loop is not blocked.
+ * Shares the same SHA-256-keyed LRU cache as the synchronous version.
+ *
+ * @param {string} pumlContent - Raw PlantUML source text (with or without @startuml/@enduml).
+ * @param {PlantUmlConfig} config - Paths and theme settings for the PlantUML invocation.
+ * @param {AbortSignal} [signal] - Optional signal to cancel the child process.
+ * @returns {Promise<string>} SVG markup on success, or a styled HTML error div on failure.
+ */
+export function renderToSvgAsync(pumlContent: string, config: PlantUmlConfig, signal?: AbortSignal): Promise<string> {
+    const prepared = prepareRenderContext(pumlContent, config);
+    if ('error' in prepared) return Promise.resolve(prepared.error);
+    const { javaPath, args, content, trimmed, tagsAdded, hash } = prepared.ctx;
+
+    const cached = cache.get(hash);
+    if (cached !== undefined) return Promise.resolve(cached);
+
+    if (signal?.aborted) return Promise.resolve('');
+
+    return new Promise<string>((resolve) => {
+        const child = spawn(javaPath, args, { stdio: ['pipe', 'pipe', 'pipe'] });
+        activeChildren.add(child);
+        const stdoutBufs: Buffer[] = [];
+        const stderrBufs: Buffer[] = [];
+        let settled = false;
+
+        const settle = (value: string) => {
+            if (settled) return;
+            settled = true;
+            activeChildren.delete(child);
+            resolve(value);
+        };
+
+        // Kill child process when abort signal fires
+        const onAbort = () => {
+            child.kill('SIGKILL');
+            settle('');
+        };
+        signal?.addEventListener('abort', onAbort, { once: true });
+
+        const timer = setTimeout(() => {
+            child.kill('SIGKILL');
+            settle(errorHtml(vscode.l10n.t('PlantUML execution error: {0}', vscode.l10n.t('Timed out'))));
+        }, 15000);
+
+        child.stdout.on('data', (chunk: Buffer) => { stdoutBufs.push(chunk); });
+        child.stderr.on('data', (chunk: Buffer) => { stderrBufs.push(chunk); });
+
+        child.on('error', (err: Error) => {
+            clearTimeout(timer);
+            signal?.removeEventListener('abort', onAbort);
+            settle(errorHtml(vscode.l10n.t('PlantUML execution error: {0}', escapeHtml(err.message))));
+        });
+
+        child.on('close', (code: number | null) => {
+            clearTimeout(timer);
+            signal?.removeEventListener('abort', onAbort);
+            if (settled) return;
+
+            if (code !== 0) {
+                const stderr = Buffer.concat(stderrBufs).toString('utf8');
+                settle(buildErrorMessage(stderr, trimmed, tagsAdded ? 1 : 0, code ?? -1));
+                return;
+            }
+
+            const stdout = Buffer.concat(stdoutBufs).toString('utf8');
+            cache.set(hash, stdout);
+            settle(stdout);
+        });
+
+        child.stdin.on('error', () => {}); // Suppress EPIPE when child exits before stdin is consumed
+        try {
+            child.stdin.write(content);
+            child.stdin.end();
+        } catch {
+            // stdin closed; close/error handler will settle
+        }
+    });
+}
+
+/** Maximum number of concurrent JVM processes for local rendering. */
+const MAX_CONCURRENCY = 3;
+
+/**
+ * Render multiple PlantUML blocks to SVGs with controlled concurrency (asynchronous).
+ *
+ * Spawns up to MAX_CONCURRENCY JVM processes in parallel to balance throughput
+ * against resource usage. Returns a Map keyed by trimmed block content.
+ *
+ * @param {string[]} blocks - Array of PlantUML source texts.
+ * @param {PlantUmlConfig} config - Paths and theme settings.
+ * @param {AbortSignal} [signal] - Optional signal to cancel remaining child processes.
+ * @returns {Promise<Map<string, string>>} Map of trimmed content -> SVG string.
+ */
+export function renderAllLocal(blocks: string[], config: PlantUmlConfig, signal?: AbortSignal): Promise<Map<string, string>> {
+    return batchRender(blocks, MAX_CONCURRENCY, (content, sig) => renderToSvgAsync(content, config, sig), signal);
 }
 
 /**
@@ -232,32 +346,6 @@ function parseStdrpt(stderr: string): { lineNumber: number; label: string } | nu
         lineNumber: parseInt(lineNumberMatch[1], 10) - 1, // 1-indexed -> 0-indexed
         label: labelMatch ? labelMatch[1] : 'Error'
     };
-}
-
-/**
- * Auto-wrap content with @startuml / @enduml if no @start tag is present.
- *
- * Recognizes all PlantUML start tags (@startuml, @startmindmap, @startwbs, etc.)
- * and only wraps content that doesn't already have one.
- *
- * @param {string} content - Trimmed PlantUML source text.
- * @returns {string} Content guaranteed to have @startuml/@enduml wrapper tags (if no @start tag was present).
- */
-function ensureStartEndTags(content: string): string {
-    if (!content.startsWith('@start')) {
-        return `@startuml\n${content}\n@enduml`;
-    }
-    return content;
-}
-
-/**
- * Wrap an error message in a red-bordered styled HTML div.
- *
- * @param {string} message - HTML content (may include tags) to display inside the error box.
- * @returns {string} Complete HTML div string with error styling.
- */
-function errorHtml(message: string): string {
-    return `<div style="border:1px solid #f66;background:#fff0f0;padding:0.5em 1em;border-radius:4px;color:#c00;font-size:0.9em;text-align:left;">${message}</div>`;
 }
 
 /**
@@ -370,6 +458,11 @@ export function clearCache(): void {
         themePendingChild.kill();
         themePendingChild = null;
     }
+    // Kill any in-flight render child processes (e.g. exportToHtml path)
+    for (const child of activeChildren) {
+        child.kill('SIGKILL');
+    }
+    activeChildren.clear();
 }
 
 /**

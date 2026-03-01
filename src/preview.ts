@@ -13,19 +13,37 @@
 import * as vscode from 'vscode';
 import path from 'path';
 import fs from 'fs';
-import { renderHtml, renderHtmlAsync, getThemeCss, LIGHT_THEME_KEYS, DARK_THEME_KEYS } from './exporter.js';
+import { renderHtmlAsync, getThemeCss, LIGHT_THEME_KEYS, DARK_THEME_KEYS } from './exporter.js';
 import type { ExporterConfig } from './exporter.js';
 import { listThemesAsync, prefetchThemes } from './plantuml.js';
 import { buildScrollSyncScript } from './scroll-sync.js';
-import { getNonce, resolveLocalImagePaths } from './utils.js';
+import { getNonce, resolveLocalImagePaths, extractPlantUmlBlocks, PLANTUML_FENCE_TEST_RE, escapeHtml } from './utils.js';
 
-/** Output channel for extension diagnostic messages. Created lazily on first use. */
+/** Output channel for extension diagnostic messages. Injected by setOutputChannel(). */
 let outputChannel: vscode.OutputChannel | null = null;
 
-/** Get or create the shared output channel for this extension. */
+/**
+ * Set the shared output channel for this module.
+ *
+ * Called from activate() in extension.ts so the channel's lifecycle
+ * is managed by context.subscriptions regardless of preview state.
+ */
+export function setOutputChannel(channel: vscode.OutputChannel): void {
+    outputChannel = channel;
+}
+
+/**
+ * Get the shared output channel.
+ *
+ * Creates a defensive fallback if not yet injected via setOutputChannel().
+ * Normally setOutputChannel() is called from activate() before any event
+ * listeners are registered, so this fallback should never be reached.
+ */
 function getOutputChannel(): vscode.OutputChannel {
     if (!outputChannel) {
-        outputChannel = vscode.window.createOutputChannel('PlantUML Markdown Preview');
+        // setOutputChannel() is called from activate() before any event listeners
+        // are registered. If this point is reached, it indicates a programming error.
+        throw new Error('[PlantUML Markdown Preview] Output channel not initialised — setOutputChannel() was not called');
     }
     return outputChannel;
 }
@@ -47,8 +65,6 @@ export interface PreviewConfig extends ExporterConfig {
 /** Scroll sync state: which side currently owns the scroll. */
 type SyncMaster = 'none' | 'editor' | 'preview';
 
-/** Extension context reference for registering disposables. */
-let extensionContext: vscode.ExtensionContext | null = null;
 /** The active WebviewPanel instance, or null when no preview is open. */
 let panel: vscode.WebviewPanel | null = null;
 /** Absolute path of the Markdown file currently displayed in the preview. */
@@ -69,9 +85,10 @@ let debounceTimer: ReturnType<typeof setTimeout> | null = null;
 let loadingRenderTimer: ReturnType<typeof setTimeout> | null = null;
 /** Resolve callback for the current withProgress Promise (dismisses the notification). */
 let loadingResolve: (() => void) | null = null;
-
-/** Regex to detect ```plantuml fenced code blocks (used for loading feedback decision). */
-const PLANTUML_FENCE_RE = /^```plantuml/im;
+/** Resolve function for the Promise returned by openPreview (settles after first render). */
+let firstRenderResolve: (() => void) | null = null;
+/** AbortController for cancelling in-flight local rendering processes. */
+let renderAbortController: AbortController | null = null;
 
 /** Concatenated PlantUML block content from the last render (for change detection). */
 let lastPlantUmlContent = '';
@@ -97,13 +114,8 @@ let syncMasterTimer: ReturnType<typeof setTimeout> | null = null;
  * @returns {string} Concatenated PlantUML block bodies separated by '---', or empty string.
  */
 function extractPlantUmlContent(text: string): string {
-    const blocks: string[] = [];
-    const regex = /^```plantuml[ \t]*\n([\s\S]*?)\n[ \t]*```/gim;
-    let match;
-    while ((match = regex.exec(text)) !== null) {
-        blocks.push(match[1].trim());
-    }
-    return blocks.join('\n---\n');
+    if (!PLANTUML_FENCE_TEST_RE.test(text)) return '';
+    return extractPlantUmlBlocks(text).map(b => b.trim()).join('\n---\n');
 }
 
 /** Timeout (ms) for auto-resetting syncMaster to 'none'. Shared with scroll-sync.ts. */
@@ -198,6 +210,7 @@ function disposeEventHandlers(): void {
     if (loadingRenderTimer) { clearTimeout(loadingRenderTimer); loadingRenderTimer = null; }
     if (loadingResolve) { loadingResolve(); loadingResolve = null; }
     if (syncMasterTimer) { clearTimeout(syncMasterTimer); syncMasterTimer = null; }
+    if (renderAbortController) { renderAbortController.abort(); renderAbortController = null; }
 }
 
 /**
@@ -210,10 +223,7 @@ export function disposePreview(): void {
     if (panel) {
         panel.dispose(); // triggers onDidDispose -> resetState()
     }
-    if (outputChannel) {
-        outputChannel.dispose();
-        outputChannel = null;
-    }
+    // outputChannel lifecycle is managed by context.subscriptions in extension.ts
 }
 
 /**
@@ -224,13 +234,13 @@ export function disposePreview(): void {
  */
 function resetState(): void {
     panel = null;
-    extensionContext = null;
     currentFilePath = null;
     lastConfig = null;
     lastPlantUmlContent = '';
     lastScrollLine = -1;
     lastMaxTopLine = -1;
     syncMaster = 'none';
+    if (firstRenderResolve) { firstRenderResolve(); firstRenderResolve = null; }
     disposeEventHandlers();
 }
 
@@ -267,13 +277,13 @@ async function readFileContent(filePath: string): Promise<string | null> {
  * with save/change/scroll event listeners. Registers onDidDispose for cleanup.
  * On file switch, resets scroll state and renders the new file.
  *
- * @param {vscode.ExtensionContext} context - Extension context for managing subscriptions.
+ * Returns a Promise that resolves after the first render completes.
+ *
  * @param {string} filePath - Absolute path to the .md file to preview.
  * @param {PreviewConfig} config - Current extension settings.
  * @param {boolean} [preserveFocus=false] - When true, keep focus on the editor (auto-follow mode).
  */
-export function openPreview(context: vscode.ExtensionContext, filePath: string, config: PreviewConfig, preserveFocus = false): void {
-    extensionContext = context;
+export function openPreview(filePath: string, config: PreviewConfig, preserveFocus = false): Promise<void> {
     lastConfig = config;
 
     // Cancel any pending debounce since we are about to do a fresh render.
@@ -306,10 +316,10 @@ export function openPreview(context: vscode.ExtensionContext, filePath: string, 
         panel.webview.html = `<!DOCTYPE html>
 <html><head><meta charset="UTF-8"></head><body>
 <div id="loading-overlay" style="position:fixed;top:0;left:0;width:100%;height:100%;background:var(--vscode-editor-background,#fff);display:flex;align-items:center;justify-content:center;z-index:9999;">
-<div style="color:var(--vscode-editor-foreground,#333);font-size:14px;">${vscode.l10n.t('Rendering...')}</div>
+<div style="color:var(--vscode-editor-foreground,#333);font-size:14px;">${escapeHtml(vscode.l10n.t('Rendering...'))}</div>
 </div></body></html>`;
 
-        panel.onDidDispose(resetState, null, context.subscriptions);
+        panel.onDidDispose(resetState);
 
         panel.webview.onDidReceiveMessage((message) => {
             if (message.type === 'revealLine' && typeof message.line === 'number') {
@@ -325,8 +335,11 @@ export function openPreview(context: vscode.ExtensionContext, filePath: string, 
                 editor.revealRange(range, vscode.TextEditorRevealType.AtTop);
                 lastScrollLine = line;
             }
-        }, null, context.subscriptions);
+        });
 
+        // Event listeners are managed by disposeEventHandlers() (called from
+        // resetState() via panel.onDidDispose) to avoid stale disposable
+        // accumulation on panel re-creation.
         saveDisposable = vscode.workspace.onDidSaveTextDocument((doc) => {
             if (!panel || !currentFilePath || doc.uri.fsPath !== currentFilePath) return;
             if (debounceTimer) { clearTimeout(debounceTimer); debounceTimer = null; }
@@ -334,7 +347,6 @@ export function openPreview(context: vscode.ExtensionContext, filePath: string, 
             lastPlantUmlContent = extractPlantUmlContent(text);
             void renderPanel(text).catch(err => getOutputChannel().appendLine(`[render error] ${err}`));
         });
-        context.subscriptions.push(saveDisposable);
 
         changeDisposable = vscode.workspace.onDidChangeTextDocument((event) => {
             if (!panel || !currentFilePath || !lastConfig || event.document.uri.fsPath !== currentFilePath) return;
@@ -349,7 +361,6 @@ export function openPreview(context: vscode.ExtensionContext, filePath: string, 
                 void renderPanel(text).catch(err => getOutputChannel().appendLine(`[render error] ${err}`));
             }, delay);
         });
-        context.subscriptions.push(changeDisposable);
 
         scrollDisposable = vscode.window.onDidChangeTextEditorVisibleRanges((event) => {
             if (!panel) return;
@@ -367,9 +378,8 @@ export function openPreview(context: vscode.ExtensionContext, filePath: string, 
             setSyncMaster('editor');
             lastScrollLine = topLine;
             lastMaxTopLine = maxTopLine;
-            panel.webview.postMessage({ type: 'scrollToLine', line: topLine, maxTopLine });
+            void panel.webview.postMessage({ type: 'scrollToLine', line: topLine, maxTopLine });
         });
-        context.subscriptions.push(scrollDisposable);
 
     }
 
@@ -381,21 +391,35 @@ export function openPreview(context: vscode.ExtensionContext, filePath: string, 
         lastMaxTopLine = calcMaxTopLine(activeEditor.document.lineCount, visibleLineCount);
     }
 
-    // Pre-fetch PlantUML theme list in background so it's cached when menu opens
-    prefetchThemes(config);
+    return new Promise<void>((resolve) => {
+        // Settle any previous openPreview Promise (e.g. rapid file switches)
+        // so the old "Opening preview..." notification is dismissed.
+        if (firstRenderResolve) {
+            firstRenderResolve();
+        }
+        firstRenderResolve = resolve;
 
-    void readFileContent(filePath).then((text) => {
-        if (text === null) return;
-        lastPlantUmlContent = extractPlantUmlContent(text);
-        renderPanelWithLoading(text);
+        void readFileContent(filePath).then((text) => {
+            if (text === null) {
+                fireDeferredWork();
+                return;
+            }
+            lastPlantUmlContent = extractPlantUmlContent(text);
+            renderPanelWithLoading(text);
+        }).catch(() => {
+            // Defensive: readFileContent should never reject, but guarantee
+            // fireDeferredWork runs so the withProgress notification is dismissed.
+            fireDeferredWork();
+        });
     });
 }
 
 /**
  * Render Markdown text and replace the panel's HTML content.
  *
- * In local mode: synchronous rendering via renderHtml().
- * In server mode: async rendering via renderHtmlAsync() with stale-render guard.
+ * Always uses renderHtmlAsync() so PlantUML blocks are pre-rendered
+ * asynchronously (local: sequential spawn, server: parallel HTTP).
+ * This prevents spawnSync from blocking the extension host event loop.
  *
  * Increments renderSeq, generates a fresh CSP nonce, and embeds the scroll
  * sync script. Resets lastScrollLine to -1 to force scroll sync on the next event.
@@ -404,38 +428,64 @@ export function openPreview(context: vscode.ExtensionContext, filePath: string, 
  */
 async function renderPanel(text: string): Promise<void> {
     if (!panel || !lastConfig) return;
+    // Cancel any in-flight rendering processes from a previous renderPanel call.
+    // Abort is best-effort: the renderSeq guard below is the definitive stale check.
+    if (renderAbortController) renderAbortController.abort();
+    const myController = new AbortController();
+    renderAbortController = myController;
+    const signal = myController.signal;
+
     const mySeq = ++renderSeq;
-    const nonce = getNonce();
-    const renderOptions = {
-        sourceMap: true,
-        scriptHtml: buildScrollSyncScript(lastScrollLine, lastMaxTopLine, nonce, renderSeq, vscode.l10n.t('Rendering...'), SYNC_MASTER_TIMEOUT_MS),
-        cspNonce: nonce,
-        cspSource: panel.webview.cspSource,
-        lang: vscode.env.language,
-        allowHttpImages: lastConfig.allowHttpImages
-    };
 
-    let html: string;
-    if (lastConfig.renderMode === 'server' && lastConfig.serverUrl) {
-        html = await renderHtmlAsync(text, makeTitle(), lastConfig, renderOptions);
-        // Guard against stale render (user may have typed while we awaited)
-        if (!panel || !lastConfig || renderSeq !== mySeq) return;
-    } else {
-        html = renderHtml(text, makeTitle(), lastConfig, renderOptions);
-    }
+    try {
+        const nonce = getNonce();
+        const renderOptions = {
+            sourceMap: true,
+            scriptHtml: buildScrollSyncScript(lastScrollLine, lastMaxTopLine, nonce, mySeq, vscode.l10n.t('Rendering...'), SYNC_MASTER_TIMEOUT_MS),
+            cspNonce: nonce,
+            cspSource: panel.webview.cspSource,
+            lang: vscode.env.language,
+            allowHttpImages: lastConfig.allowHttpImages
+        };
 
-    if (lastConfig.allowLocalImages && currentFilePath) {
-        const webview = panel.webview;
-        html = resolveLocalImagePaths(
-            html,
-            path.dirname(currentFilePath),
-            (absPath) => webview.asWebviewUri(vscode.Uri.file(absPath)).toString()
-        );
+        const html = await renderHtmlAsync(text, makeTitle(), lastConfig, renderOptions, signal);
+        // Guard against stale render: renderSeq mismatch means a newer renderPanel
+        // call has started; signal.aborted means disposeEventHandlers() ran mid-flight.
+        if (!panel || !lastConfig || renderSeq !== mySeq || signal.aborted) return;
+
+        let finalHtml = html;
+        if (lastConfig.allowLocalImages && currentFilePath) {
+            const webview = panel.webview;
+            finalHtml = resolveLocalImagePaths(
+                html,
+                path.dirname(currentFilePath),
+                (absPath) => webview.asWebviewUri(vscode.Uri.file(absPath)).toString()
+            );
+        }
+        panel.webview.html = finalHtml;
+        // After re-render the scrollMap changes, so force sync on next scroll event
+        lastScrollLine = -1;
+        lastMaxTopLine = -1;
+    } catch (err) {
+        getOutputChannel().appendLine(`[renderPanel error] ${err}`);
     }
-    panel.webview.html = html;
-    // After re-render the scrollMap changes, so force sync on next scroll event
-    lastScrollLine = -1;
-    lastMaxTopLine = -1;
+}
+
+/**
+ * Run deferred work after the first render completes.
+ *
+ * Pre-fetches the PlantUML theme list (so the QuickPick menu is instant)
+ * and invokes the one-shot firstRenderResolve (e.g. checkJavaAvailability).
+ * This avoids competing with the initial async render for CPU/IO.
+ */
+function fireDeferredWork(): void {
+    if (lastConfig && lastConfig.renderMode !== 'server') {
+        prefetchThemes(lastConfig);
+    }
+    if (firstRenderResolve) {
+        firstRenderResolve();
+        firstRenderResolve = null;
+    }
 }
 
 /**
@@ -455,33 +505,50 @@ function renderPanelWithLoading(text: string): void {
     if (loadingRenderTimer) { clearTimeout(loadingRenderTimer); loadingRenderTimer = null; }
     if (loadingResolve) { loadingResolve(); loadingResolve = null; }
 
-    const hasPlantUml = PLANTUML_FENCE_RE.test(text);
+    const hasPlantUml = PLANTUML_FENCE_TEST_RE.test(text);
     if (!hasPlantUml) {
-        try {
-            renderPanel(text);
-        } catch (err) {
+        void renderPanel(text).catch(err => {
             getOutputChannel().appendLine(`[render error] ${err}`);
-        }
+        }).finally(() => {
+            fireDeferredWork();
+        });
         return;
     }
 
-    panel.webview.postMessage({ type: 'showLoading', seq: renderSeq });
-    vscode.window.withProgress(
-        { location: vscode.ProgressLocation.Notification, title: vscode.l10n.t('Rendering PlantUML...') },
-        () => new Promise<void>((resolve) => {
-            loadingResolve = resolve;
-            // Yield to event loop so overlay renders before blocking re-render
-            loadingRenderTimer = setTimeout(() => {
-                loadingRenderTimer = null;
-                void renderPanel(text).catch(err => {
-                    getOutputChannel().appendLine(`[render error] ${err}`);
-                }).finally(() => {
-                    resolve();
-                    loadingResolve = null;
-                });
-            }, 50);
-        })
-    );
+    // Send showLoading with the *current* (pre-increment) renderSeq.
+    // renderPanel() will ++renderSeq and embed the new value as RENDER_SEQ in
+    // the replacement HTML. Because the seq values differ, the new HTML's
+    // message handler ignores this stale showLoading — which is intentional:
+    // the overlay should only appear on the *old* HTML that is about to be replaced.
+    void panel.webview.postMessage({ type: 'showLoading', seq: renderSeq });
+
+    // On initial render, the command-level "Opening preview..." notification is
+    // already visible, so skip the separate "Rendering PlantUML..." notification
+    // to avoid duplicates.
+    const isInitialRender = !!firstRenderResolve;
+
+    const doRender = () => {
+        loadingRenderTimer = null;
+        void renderPanel(text).catch(err => {
+            getOutputChannel().appendLine(`[render error] ${err}`);
+        }).finally(() => {
+            if (loadingResolve) { loadingResolve(); loadingResolve = null; }
+            fireDeferredWork();
+        });
+    };
+
+    if (isInitialRender) {
+        // Yield to event loop so the webview overlay renders first
+        loadingRenderTimer = setTimeout(doRender, 50);
+    } else {
+        vscode.window.withProgress(
+            { location: vscode.ProgressLocation.Notification, title: vscode.l10n.t('Rendering PlantUML...') },
+            () => new Promise<void>((resolve) => {
+                loadingResolve = resolve;
+                loadingRenderTimer = setTimeout(doRender, 50);
+            })
+        );
+    }
 }
 
 /** Property keys that affect rendering output (PlantUML paths and themes). */
@@ -526,7 +593,7 @@ export function updateConfig(config: PreviewConfig): void {
         // CSS-only swap when only previewTheme changed
         if (changed.size === 1 && changed.has('previewTheme')) {
             const css = getThemeCss(config.previewTheme || 'github-light');
-            panel.webview.postMessage({ type: 'updateTheme', css });
+            void panel.webview.postMessage({ type: 'updateTheme', css });
             return;
         }
 
@@ -542,7 +609,7 @@ export function updateConfig(config: PreviewConfig): void {
     void readFileContent(currentFilePath).then((text) => {
         if (text === null) return;
         renderPanelWithLoading(text);
-    });
+    }).catch(err => getOutputChannel().appendLine(`[config update error] ${err}`));
 }
 
 /**

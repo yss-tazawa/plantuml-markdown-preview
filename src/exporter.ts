@@ -3,7 +3,8 @@
  * @description Markdown -> HTML rendering pipeline.
  *
  * Responsibilities:
- * - renderHtml: Markdown text -> full HTML document (export & preview, unified)
+ * - renderHtmlAsync: Markdown text -> full HTML document (export & preview, unified)
+ *   - Pre-renders PlantUML blocks asynchronously (local or server) before md.render()
  *   - When options.sourceMap is true, adds data-source-line attributes for scroll sync
  * - exportToHtml: .md file -> .html file in the same directory
  * - getOrCreateMd: Cached markdown-it instance factory (with/without source map)
@@ -17,23 +18,15 @@ import MarkdownIt from 'markdown-it';
 import hljs from 'highlight.js';
 import { plantumlPlugin } from './renderer.js';
 import type { PlantUmlConfig } from './plantuml.js';
+import { renderAllLocal } from './plantuml.js';
 import { renderAllServer, type ServerConfig } from './plantuml-server.js';
-import { escapeHtml } from './utils.js';
+import { escapeHtml, extractPlantUmlBlocks } from './utils.js';
 
-import * as githubLight from './themes/github-light.js';
-import * as atomLight from './themes/atom-light.js';
-import * as oneLight from './themes/one-light.js';
-import * as solarizedLight from './themes/solarized-light.js';
-import * as vue from './themes/vue.js';
-import * as penPaperCoffee from './themes/pen-paper-coffee.js';
-import * as coy from './themes/coy.js';
-import * as vs from './themes/vs.js';
-import * as githubDark from './themes/github-dark.js';
-import * as atomDark from './themes/atom-dark.js';
-import * as oneDark from './themes/one-dark.js';
-import * as dracula from './themes/dracula.js';
-import * as solarizedDark from './themes/solarized-dark.js';
-import * as monokai from './themes/monokai.js';
+import {
+    githubLight, atomLight, oneLight, solarizedLight,
+    vue, penPaperCoffee, coy, vs,
+    githubDark, atomDark, oneDark, dracula, solarizedDark, monokai,
+} from './themes/index.js';
 
 // -----------------------------------------------------------------------
 // Preview theme definitions (each theme is in a separate src/themes/ file)
@@ -126,10 +119,10 @@ const MD_OPTIONS: MarkdownIt.Options = {
 export interface ExporterConfig extends PlantUmlConfig {
     /** Preview theme key (e.g. 'github-light', 'dracula'). */
     previewTheme?: string;
-    /** Rendering mode: 'local' (Java) or 'server' (HTTP). Default: 'local'. */
-    renderMode?: 'local' | 'server';
+    /** Rendering mode: 'local' (Java) or 'server' (HTTP). */
+    renderMode: 'local' | 'server';
     /** PlantUML server URL for server mode. */
-    serverUrl?: string;
+    serverUrl: string;
 }
 
 /** Options for controlling HTML output features. */
@@ -221,73 +214,43 @@ function getOrCreateMd(config: ExporterConfig, withSourceMap?: boolean): Markdow
 }
 
 /**
- * Render Markdown text to a complete HTML document string.
+ * Render Markdown to HTML — async variant.
  *
- * Combines markdown-it rendering with theme CSS, optional CSP headers,
- * and optional inline script (scroll sync).
+ * Pre-renders all PlantUML blocks asynchronously (local or server mode)
+ * before passing them to md.render() via env.preRenderedSvgs, so the
+ * synchronous fence rule never needs to call spawnSync.
  *
- * @param {string} source - Raw Markdown text to render.
- * @param {string} title - Document title (used in <title> and as panel heading).
- * @param {ExporterConfig} config - PlantUML and theme configuration.
- * @param {RenderOptions} [options] - Optional flags for source map, script injection, and CSP.
- * @returns {string} Complete HTML document string.
- */
-export function renderHtml(source: string, title: string, config: ExporterConfig, options?: RenderOptions): string {
-    const bodyHtml = getOrCreateMd(config, options?.sourceMap).render(source);
-    return buildHtml(title, bodyHtml, config.previewTheme, options);
-}
-
-/** Regex to find ```plantuml blocks and extract their content. */
-const PLANTUML_FENCE_RE_GLOBAL = /^```plantuml[ \t]*\n([\s\S]*?)\n[ \t]*```/gim;
-
-/**
- * Extract PlantUML block contents from Markdown source in document order.
- *
- * @param source Raw Markdown text.
- * @returns Array of PlantUML source text strings.
- */
-function extractPlantUmlBlocks(source: string): string[] {
-    const blocks: string[] = [];
-    const re = new RegExp(PLANTUML_FENCE_RE_GLOBAL.source, PLANTUML_FENCE_RE_GLOBAL.flags);
-    let match;
-    while ((match = re.exec(source)) !== null) {
-        blocks.push(match[1]);
-    }
-    return blocks;
-}
-
-/**
- * Render Markdown to HTML — async variant for server mode.
- *
- * When config.renderMode === 'server':
- * 1. Extracts all PlantUML blocks from source
- * 2. Renders them in parallel via PlantUML server
- * 3. Passes pre-rendered SVGs to md.render() via env.preRenderedSvgs
- *
- * When config.renderMode === 'local' (or undefined):
- * Falls back to the existing synchronous renderHtml().
+ * - Server mode: renders all blocks in parallel via PlantUML server.
+ * - Local mode: renders blocks sequentially via async spawn to avoid
+ *   blocking the extension host event loop.
  *
  * @param source Raw Markdown text.
  * @param title Document title.
  * @param config PlantUML and theme configuration.
  * @param options Optional flags for source map, script injection, and CSP.
+ * @param signal Optional AbortSignal to cancel in-flight rendering processes.
  * @returns Complete HTML document string.
  */
-export async function renderHtmlAsync(source: string, title: string, config: ExporterConfig, options?: RenderOptions): Promise<string> {
-    if (config.renderMode !== 'server' || !config.serverUrl) {
-        return renderHtml(source, title, config, options);
-    }
-
+export async function renderHtmlAsync(source: string, title: string, config: ExporterConfig, options?: RenderOptions, signal?: AbortSignal): Promise<string> {
     const blocks = extractPlantUmlBlocks(source);
     let preRenderedSvgs: Map<string, string> | undefined;
 
     if (blocks.length > 0) {
-        const serverConfig: ServerConfig = {
-            serverUrl: config.serverUrl,
-            plantumlTheme: config.plantumlTheme,
-        };
-        preRenderedSvgs = await renderAllServer(blocks, serverConfig);
+        if (config.renderMode === 'server' && config.serverUrl) {
+            const serverConfig: ServerConfig = {
+                serverUrl: config.serverUrl,
+                plantumlTheme: config.plantumlTheme,
+            };
+            preRenderedSvgs = await renderAllServer(blocks, serverConfig, signal);
+        } else {
+            preRenderedSvgs = await renderAllLocal(blocks, config, signal);
+        }
     }
+
+    // If the signal fired during async rendering the preRenderedSvgs map may be
+    // incomplete.  Proceeding to md.render() would cause the fence rule to fall
+    // back to synchronous renderToSvg (spawnSync), freezing the extension host.
+    if (signal?.aborted) return '';
 
     const md = getOrCreateMd(config, options?.sourceMap);
     const env: { preRenderedSvgs?: Map<string, string> } = { preRenderedSvgs };
@@ -303,11 +266,12 @@ export async function renderHtmlAsync(source: string, title: string, config: Exp
  *
  * @param {string} mdFilePath - Absolute path to the Markdown file.
  * @param {ExporterConfig} config - PlantUML and theme configuration.
+ * @param {AbortSignal} [signal] - Optional AbortSignal to cancel in-flight rendering processes.
  * @returns {Promise<string>} Absolute path of the generated HTML file.
  */
-export async function exportToHtml(mdFilePath: string, config: ExporterConfig): Promise<string> {
+export async function exportToHtml(mdFilePath: string, config: ExporterConfig, signal?: AbortSignal): Promise<string> {
     const source = await fs.promises.readFile(mdFilePath, 'utf8');
-    const fullHtml = await renderHtmlAsync(source, path.basename(mdFilePath, '.md'), config);
+    const fullHtml = await renderHtmlAsync(source, path.basename(mdFilePath, '.md'), config, undefined, signal);
     const outputPath = mdFilePath.replace(/\.md$/, '.html');
     await fs.promises.writeFile(outputPath, fullHtml, 'utf8');
     return outputPath;
@@ -329,7 +293,7 @@ function buildHtml(title: string, body: string, previewTheme?: string, options?:
     const theme = PREVIEW_THEMES[previewTheme || ''] || PREVIEW_THEMES[DEFAULT_PREVIEW_THEME];
     const { scriptHtml, cspNonce, cspSource, lang, allowHttpImages } = options || {};
     const cspMeta = cspNonce
-        ? `\n  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; font-src ${cspSource || "'self'"}; img-src ${cspSource || "'self'"} https:${allowHttpImages ? ' http:' : ''} data:; script-src 'nonce-${cspNonce}';">`
+        ? `\n  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; font-src 'none'; img-src ${cspSource || "'self'"} https:${allowHttpImages ? ' http:' : ''} data:; script-src 'nonce-${cspNonce}';">`
         : '';
     return `<!DOCTYPE html>
 <html lang="${escapeHtml(lang || 'en')}">

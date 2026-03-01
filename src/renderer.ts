@@ -62,9 +62,10 @@ export function plantumlPlugin(md: MarkdownIt, config: PlantUmlConfig): Markdown
             return defaultOutput;
         }
 
-        // Use pre-rendered SVG from env if available (server mode), otherwise fall back to local rendering
-        const renderEnv = env as { preRenderedSvgs?: Map<string, string> };
-        const preRendered = renderEnv?.preRenderedSvgs?.get(token.content.trim());
+        // Use pre-rendered SVG from env if available (async pre-render path), otherwise fall back to synchronous local rendering
+        const renderEnv = env as Record<string, unknown>;
+        const preRenderedSvgs = renderEnv?.preRenderedSvgs instanceof Map ? renderEnv.preRenderedSvgs as Map<string, string> : undefined;
+        const preRendered = preRenderedSvgs?.get(token.content.trim());
         const svg = preRendered ?? renderToSvg(token.content, config);
         return `<div class="plantuml-diagram"${lineAttr}>${svg}</div>\n`;
     };
