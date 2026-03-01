@@ -9,7 +9,7 @@
   "command.category": "PlantUML Markdown Preview",
   "configuration.title": "PlantUML Markdown Preview",
   "configuration.jarPath.description": "Path to the PlantUML jar file. Leave empty to use the bundled jar (LGPL). Example: /usr/local/lib/plantuml.jar",
-  "configuration.javaPath.description": "Path to the Java executable (default: java)",
+  "configuration.javaPath.description": "Path to the Java executable. If set, this value is used as-is. Otherwise, JAVA_HOME/bin/java is tried first, then 'java' on PATH. Default: java",
   "configuration.dotPath.description": "Path to the Graphviz dot executable (default: dot)",
   "configuration.debounceNoPlantUmlMs.description": "Debounce delay (ms) when only non-PlantUML text changes (no re-rendering of diagrams). Default: 100",
   "configuration.debouncePlantUmlMs.description": "Debounce delay (ms) when PlantUML content changes (triggers re-rendering). Default: 300",

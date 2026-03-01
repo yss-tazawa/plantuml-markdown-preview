@@ -7,7 +7,7 @@
  * - renderToSvgAsync: PlantUML text -> SVG string (asynchronous via child_process.spawn, SHA-256-cached LRU)
  * - renderAllLocal: Render all PlantUML blocks with controlled concurrency (max 3) using renderToSvgAsync
  * - listThemes: Dynamically discover available PlantUML themes via `help themes`
- * - Spawns Java via spawnSync/spawn with -Djava.awt.headless=true (no macOS Dock icon)
+ * - Spawns Java via spawnJava/spawnJavaSync wrappers with -Djava.awt.headless=true (no macOS Dock icon)
  * - Cache key: content + jarPath + javaPath + dotPath + plantumlTheme (SHA-256 hash, max 200 entries)
  * - Auto-wraps with @startuml/@enduml if missing
  * - On syntax error: parses -stdrpt:1 structured stderr, displays source context
@@ -15,8 +15,8 @@
  * - Process errors (Java not found, timeout) and syntax errors are NOT cached
  */
 import * as vscode from 'vscode';
-import { spawnSync, spawn, execFile, type ChildProcess } from 'child_process';
-import { escapeHtml, ensureStartEndTags, errorHtml, LruCache, computeHash, batchRender } from './utils.js';
+import type { ChildProcess } from 'child_process';
+import { escapeHtml, ensureStartEndTags, errorHtml, LruCache, computeHash, batchRender, resolveJavaCommand, spawnJava, spawnJavaSync, execJava } from './utils.js';
 import type { Config } from './config.js';
 
 /** Set of currently in-flight render child processes (for cleanup on deactivate). */
@@ -78,7 +78,7 @@ function prepareRenderContext(pumlContent: string, config: Config): { ctx: Rende
     const trimmed = pumlContent.trim();
     const tagsAdded = !trimmed.startsWith('@start');
     const content = ensureStartEndTags(trimmed);
-    const hash = computeHash(content, jarPath, javaPath, dotPath, plantumlTheme);
+    const hash = computeHash(content, jarPath, resolveJavaCommand(javaPath), dotPath, plantumlTheme);
 
     const args = ['-Djava.awt.headless=true', '-jar', jarPath, '-pipe', '-tsvg', '-charset', 'UTF-8', '-stdrpt:1'];
     if (dotPath !== 'dot') {
@@ -113,7 +113,7 @@ export function renderToSvg(pumlContent: string, config: Config): string {
     const cached = cache.get(hash);
     if (cached !== undefined) return cached;
 
-    const result = spawnSync(
+    const result = spawnJavaSync(
         javaPath,
         args,
         {
@@ -121,7 +121,7 @@ export function renderToSvg(pumlContent: string, config: Config): string {
             encoding: 'utf8',
             timeout: 15000,
             // SIGTERM allows Java to clean up temporary files gracefully on timeout.
-            killSignal: 'SIGTERM'
+            killSignal: 'SIGTERM',
         }
     );
 
@@ -161,7 +161,7 @@ export function renderToSvgAsync(pumlContent: string, config: Config, signal?: A
     if (signal?.aborted) return Promise.resolve('');
 
     return new Promise<string>((resolve) => {
-        const child = spawn(javaPath, args, { stdio: ['pipe', 'pipe', 'pipe'] });
+        const child = spawnJava(javaPath, args, { stdio: ['pipe', 'pipe', 'pipe'] });
         activeChildren.add(child);
         const stdoutBufs: Buffer[] = [];
         const stderrBufs: Buffer[] = [];
@@ -188,8 +188,8 @@ export function renderToSvgAsync(pumlContent: string, config: Config, signal?: A
             settle(errorHtml(vscode.l10n.t('PlantUML execution error: {0}', vscode.l10n.t('Timed out'))));
         }, 15000);
 
-        child.stdout.on('data', (chunk: Buffer) => { stdoutBufs.push(chunk); });
-        child.stderr.on('data', (chunk: Buffer) => { stderrBufs.push(chunk); });
+        child.stdout!.on('data', (chunk: Buffer) => { stdoutBufs.push(chunk); });
+        child.stderr!.on('data', (chunk: Buffer) => { stderrBufs.push(chunk); });
 
         child.on('error', (err: Error) => {
             clearTimeout(timer);
@@ -213,10 +213,10 @@ export function renderToSvgAsync(pumlContent: string, config: Config, signal?: A
             settle(stdout);
         });
 
-        child.stdin.on('error', () => {}); // Suppress EPIPE when child exits before stdin is consumed
+        child.stdin!.on('error', () => {}); // Suppress EPIPE when child exits before stdin is consumed
         try {
-            child.stdin.write(content);
-            child.stdin.end();
+            child.stdin!.write(content);
+            child.stdin!.end();
         } catch {
             // stdin closed; close/error handler will settle
         }
@@ -392,7 +392,7 @@ export function listThemesAsync(config: Pick<Config, 'jarPath' | 'javaPath'>): P
 
     themePendingKey = key;
     const promise = new Promise<string[]>((resolve) => {
-        const child = execFile(
+        const child = execJava(
             javaPath,
             ['-Djava.awt.headless=true', '-jar', jarPath, '-pipe', '-tutxt', '-charset', 'UTF-8'],
             { encoding: 'utf8', timeout: 15000, maxBuffer: 1024 * 1024 },

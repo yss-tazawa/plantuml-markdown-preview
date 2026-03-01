@@ -261,7 +261,8 @@ follow the steps for your platform below.
    ```
    Open VS Code settings (`Ctrl+,`), search for `plantumlMarkdownPreview.dotPath`, and enter the path shown above
 
-> **Note:** `javaPath`, `dotPath`, and `jarPath` default to `"java"`, `"dot"`, and the bundled jar.
+> **Note:** `javaPath` defaults to `"java"`. If left at the default, `JAVA_HOME/bin/java` is tried first, then `java` on PATH.
+> `dotPath` and `jarPath` default to `"dot"` and the bundled jar respectively.
 > Only configure them if these commands are not on your PATH or you want to use a different jar.
 
 ## Usage
@@ -322,7 +323,7 @@ All settings use the `plantumlMarkdownPreview.` prefix.
 |---------|---------|-------------|
 | `renderMode` | `"local"` | Rendering mode. `"local"` uses Java + PlantUML jar (diagrams stay on your machine). `"server"` sends diagrams to a PlantUML server (no Java required). |
 | `serverUrl` | `"https://www.plantuml.com/plantuml"` | PlantUML server URL for server mode. Set to a self-hosted server URL for privacy. |
-| `javaPath` | `"java"` | Path to Java executable (local mode only) |
+| `javaPath` | `"java"` | Path to Java executable. If set, used as-is; otherwise falls back to `JAVA_HOME/bin/java`, then `java` on PATH. (local mode only) |
 | `jarPath` | `""` | Path to `plantuml.jar`. Leave empty to use the bundled jar (LGPL). (local mode only) |
 | `dotPath` | `"dot"` | Path to Graphviz `dot` executable (local mode only) |
 | `previewTheme` | `"github-light"` | Preview theme (see [Themes](#themes)) |

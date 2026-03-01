@@ -9,7 +9,7 @@
   "command.category": "PlantUML Markdown Preview",
   "configuration.title": "PlantUML Markdown Preview",
   "configuration.jarPath.description": "PlantUML jar ファイルへのパス。空欄の場合は同梱の jar（LGPL）を使用します。例: /usr/local/lib/plantuml.jar",
-  "configuration.javaPath.description": "Java 実行ファイルへのパス（デフォルト: java）",
+  "configuration.javaPath.description": "Java 実行ファイルへのパス。設定するとその値をそのまま使用します。未設定の場合は JAVA_HOME/bin/java を優先し、なければ PATH 上の 'java' を使用します。デフォルト: java",
   "configuration.dotPath.description": "Graphviz dot 実行ファイルへのパス（デフォルト: dot）",
   "configuration.debounceNoPlantUmlMs.description": "PlantUML 以外のテキスト変更時のデバウンス待機時間（ms）。ダイアグラムの再レンダリングなし。デフォルト: 100",
   "configuration.debouncePlantUmlMs.description": "PlantUML 内容変更時のデバウンス待機時間（ms）。再レンダリングが発生します。デフォルト: 300",

@@ -12,12 +12,12 @@
 import * as vscode from 'vscode';
 import path from 'path';
 import { existsSync } from 'fs';
-import { execFile } from 'child_process';
 import { exportToHtml, clearMdCache } from './src/exporter.js';
 import { plantumlPlugin } from './src/renderer.js';
 import { clearCache } from './src/plantuml.js';
 import { clearServerCache } from './src/plantuml-server.js';
 import { openPreview, getCurrentFilePath, updateConfig, changeTheme, disposePreview, setOutputChannel } from './src/preview.js';
+import { execJava } from './src/utils.js';
 import { CONFIG_SECTION, type Config } from './src/config.js';
 import type MarkdownIt from 'markdown-it';
 
@@ -148,7 +148,7 @@ function openInDefaultApp(filePath: string): void {
 }
 
 /** Reference to the in-flight Java check child process for cleanup on deactivate. */
-let javaCheckChild: ReturnType<typeof execFile> | null = null;
+let javaCheckChild: ReturnType<typeof execJava> | null = null;
 
 /**
  * Check if Java is available. When not found (or debugSimulateNoJava is true),
@@ -161,7 +161,7 @@ async function checkJavaAvailability(config: Config): Promise<void> {
 
     const javaFound = await new Promise<boolean>((resolve) => {
         if (config.debugSimulateNoJava) { resolve(false); return; }
-        javaCheckChild = execFile(config.javaPath || 'java', ['-version'], { timeout: 5000 }, (err) => {
+        javaCheckChild = execJava(config.javaPath, ['-version'], { timeout: 5000 }, (err) => {
             javaCheckChild = null;
             resolve(!err);
         });
