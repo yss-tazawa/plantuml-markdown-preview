@@ -17,21 +17,10 @@
 import * as vscode from 'vscode';
 import { spawnSync, spawn, execFile, type ChildProcess } from 'child_process';
 import { escapeHtml, ensureStartEndTags, errorHtml, LruCache, computeHash, batchRender } from './utils.js';
+import type { Config } from './config.js';
 
 /** Set of currently in-flight render child processes (for cleanup on deactivate). */
 const activeChildren = new Set<ChildProcess>();
-
-/** Configuration required for PlantUML rendering and theme discovery. */
-export interface PlantUmlConfig {
-    /** Absolute path to the PlantUML jar file. */
-    jarPath: string;
-    /** Path or command name for the Java executable (default: 'java'). */
-    javaPath: string;
-    /** Path or command name for the Graphviz dot executable (default: 'dot'). */
-    dotPath: string;
-    /** PlantUML theme name passed via -theme CLI arg. 'default' means no theme. */
-    plantumlTheme?: string;
-}
 
 /** LRU cache mapping SHA-256 hash -> SVG string. */
 const cache = new LruCache<string>(200);
@@ -67,9 +56,13 @@ interface RenderContext {
  *
  * Normalises config defaults, ensures @startuml/@enduml tags, computes the
  * SHA-256 cache key, and builds the Java CLI args array.
- * Returns `null` (with an error HTML string) when jarPath is missing.
+ * Returns `{ error }` (with an error HTML string) when jarPath is missing.
+ *
+ * @param pumlContent - Raw PlantUML source text.
+ * @param config - Paths and theme settings for the PlantUML invocation.
+ * @returns Render context on success, or error HTML on failure.
  */
-function prepareRenderContext(pumlContent: string, config: PlantUmlConfig): { ctx: RenderContext } | { error: string } {
+function prepareRenderContext(pumlContent: string, config: Config): { ctx: RenderContext } | { error: string } {
     const jarPath = config.jarPath || '';
     const javaPath = config.javaPath || 'java';
     const dotPath = config.dotPath || 'dot';
@@ -108,11 +101,11 @@ function prepareRenderContext(pumlContent: string, config: PlantUmlConfig): { ct
  * Results are cached in a SHA-256-keyed LRU map (max 200 entries).
  * Process errors and syntax errors are NOT cached so re-edits are always re-evaluated.
  *
- * @param {string} pumlContent - Raw PlantUML source text (with or without @startuml/@enduml).
- * @param {PlantUmlConfig} config - Paths and theme settings for the PlantUML invocation.
- * @returns {string} SVG markup on success, or a styled HTML error div on failure.
+ * @param pumlContent - Raw PlantUML source text (with or without @startuml/@enduml).
+ * @param config - Paths and theme settings for the PlantUML invocation.
+ * @returns SVG markup on success, or a styled HTML error div on failure.
  */
-export function renderToSvg(pumlContent: string, config: PlantUmlConfig): string {
+export function renderToSvg(pumlContent: string, config: Config): string {
     const prepared = prepareRenderContext(pumlContent, config);
     if ('error' in prepared) return prepared.error;
     const { javaPath, args, content, trimmed, tagsAdded, hash } = prepared.ctx;
@@ -152,12 +145,12 @@ export function renderToSvg(pumlContent: string, config: PlantUmlConfig): string
  * using the async `spawn` API so the extension host event loop is not blocked.
  * Shares the same SHA-256-keyed LRU cache as the synchronous version.
  *
- * @param {string} pumlContent - Raw PlantUML source text (with or without @startuml/@enduml).
- * @param {PlantUmlConfig} config - Paths and theme settings for the PlantUML invocation.
- * @param {AbortSignal} [signal] - Optional signal to cancel the child process.
- * @returns {Promise<string>} SVG markup on success, or a styled HTML error div on failure.
+ * @param pumlContent - Raw PlantUML source text (with or without @startuml/@enduml).
+ * @param config - Paths and theme settings for the PlantUML invocation.
+ * @param [signal] - Optional signal to cancel the child process.
+ * @returns SVG markup on success, or a styled HTML error div on failure.
  */
-export function renderToSvgAsync(pumlContent: string, config: PlantUmlConfig, signal?: AbortSignal): Promise<string> {
+export function renderToSvgAsync(pumlContent: string, config: Config, signal?: AbortSignal): Promise<string> {
     const prepared = prepareRenderContext(pumlContent, config);
     if ('error' in prepared) return Promise.resolve(prepared.error);
     const { javaPath, args, content, trimmed, tagsAdded, hash } = prepared.ctx;
@@ -183,6 +176,8 @@ export function renderToSvgAsync(pumlContent: string, config: PlantUmlConfig, si
 
         // Kill child process when abort signal fires
         const onAbort = () => {
+            clearTimeout(timer);
+            signal?.removeEventListener('abort', onAbort);
             child.kill('SIGKILL');
             settle('');
         };
@@ -237,12 +232,12 @@ const MAX_CONCURRENCY = 3;
  * Spawns up to MAX_CONCURRENCY JVM processes in parallel to balance throughput
  * against resource usage. Returns a Map keyed by trimmed block content.
  *
- * @param {string[]} blocks - Array of PlantUML source texts.
- * @param {PlantUmlConfig} config - Paths and theme settings.
- * @param {AbortSignal} [signal] - Optional signal to cancel remaining child processes.
- * @returns {Promise<Map<string, string>>} Map of trimmed content -> SVG string.
+ * @param blocks - Array of PlantUML source texts.
+ * @param config - Paths and theme settings.
+ * @param [signal] - Optional signal to cancel remaining child processes.
+ * @returns Map of trimmed content -> SVG string.
  */
-export function renderAllLocal(blocks: string[], config: PlantUmlConfig, signal?: AbortSignal): Promise<Map<string, string>> {
+export function renderAllLocal(blocks: string[], config: Config, signal?: AbortSignal): Promise<Map<string, string>> {
     return batchRender(blocks, MAX_CONCURRENCY, (content, sig) => renderToSvgAsync(content, config, sig), signal);
 }
 
@@ -254,11 +249,11 @@ export function renderAllLocal(blocks: string[], config: PlantUmlConfig, signal?
  * the error line highlighted. Falls back to raw stderr when the structured
  * format is not available.
  *
- * @param {string} stderr - Standard error output from the PlantUML process.
- * @param {string} displayContent - Original PlantUML source (without auto-added tags).
- * @param {number} lineOffset - Number of lines prepended by ensureStartEndTags (0 or 1).
- * @param {number} exitCode - Process exit code (used in fallback message).
- * @returns {string} Styled HTML error div ready for Webview insertion.
+ * @param stderr - Standard error output from the PlantUML process.
+ * @param displayContent - Original PlantUML source (without auto-added tags).
+ * @param lineOffset - Number of lines prepended by ensureStartEndTags (0 or 1).
+ * @param exitCode - Process exit code (used in fallback message).
+ * @returns Styled HTML error div ready for Webview insertion.
  */
 function buildErrorMessage(stderr: string, displayContent: string, lineOffset: number, exitCode: number): string {
     const parsed = parseStdrpt(stderr);
@@ -292,7 +287,7 @@ function buildErrorMessage(stderr: string, displayContent: string, lineOffset: n
              * Appends the formatted line to the `msg` accumulator. The error line
              * (matching `lineNumber`) is rendered with a red background and `>>` marker.
              *
-             * @param {number} i - Zero-based line index into the `lines` array.
+             * @param i - Zero-based line index into the `lines` array.
              */
             const renderLine = (i: number): void => {
                 const num = String(i + 1).padStart(pad);
@@ -330,8 +325,8 @@ function buildErrorMessage(stderr: string, displayContent: string, lineOffset: n
  *   lineNumber=42
  *   label=Syntax Error?
  *
- * @param {string} stderr - Raw stderr from the PlantUML process.
- * @returns {{ lineNumber: number; label: string } | null} Parsed result with
+ * @param stderr - Raw stderr from the PlantUML process.
+ * @returns Parsed result with
  *   0-indexed lineNumber, or null if the format is not recognized.
  */
 function parseStdrpt(stderr: string): { lineNumber: number; label: string } | null {
@@ -354,10 +349,10 @@ function parseStdrpt(stderr: string): { lineNumber: number; label: string } | nu
  * Returns the in-memory cache populated by a prior listThemesAsync() call.
  * If no cache exists, returns a hardcoded fallback list of representative themes.
  *
- * @param {Pick<PlantUmlConfig, 'jarPath' | 'javaPath'>} config - Jar and Java paths for cache key matching.
- * @returns {string[]} Array of theme name strings.
+ * @param config - Jar and Java paths for cache key matching.
+ * @returns Array of theme name strings.
  */
-export function listThemes(config: Pick<PlantUmlConfig, 'jarPath' | 'javaPath'>): string[] {
+export function listThemes(config: Pick<Config, 'jarPath' | 'javaPath'>): string[] {
     const jarPath = config.jarPath || '';
     const javaPath = config.javaPath || 'java';
     if (!jarPath) return FALLBACK_PLANTUML_THEMES;
@@ -375,10 +370,10 @@ export function listThemes(config: Pick<PlantUmlConfig, 'jarPath' | 'javaPath'>)
  * Results are cached in memory. Concurrent calls with the same config are
  * deduplicated (returns the same in-flight Promise).
  *
- * @param {Pick<PlantUmlConfig, 'jarPath' | 'javaPath'>} config - Jar and Java paths.
- * @returns {Promise<string[]>} Resolves to an array of theme names, or fallback list on error.
+ * @param config - Jar and Java paths.
+ * @returns Resolves to an array of theme names, or fallback list on error.
  */
-export function listThemesAsync(config: Pick<PlantUmlConfig, 'jarPath' | 'javaPath'>): Promise<string[]> {
+export function listThemesAsync(config: Pick<Config, 'jarPath' | 'javaPath'>): Promise<string[]> {
     const jarPath = config.jarPath || '';
     const javaPath = config.javaPath || 'java';
     if (!jarPath) return Promise.resolve(FALLBACK_PLANTUML_THEMES);
@@ -436,9 +431,9 @@ export function listThemesAsync(config: Pick<PlantUmlConfig, 'jarPath' | 'javaPa
  * Call this at preview open time so the cache is warm when the user
  * opens the theme QuickPick menu. Errors are silently swallowed.
  *
- * @param {Pick<PlantUmlConfig, 'jarPath' | 'javaPath'>} config - Jar and Java paths.
+ * @param config - Jar and Java paths.
  */
-export function prefetchThemes(config: Pick<PlantUmlConfig, 'jarPath' | 'javaPath'>): void {
+export function prefetchThemes(config: Pick<Config, 'jarPath' | 'javaPath'>): void {
     listThemesAsync(config).catch(() => {});
 }
 
@@ -471,8 +466,8 @@ export function clearCache(): void {
  * Scans for the "The possible themes are" header line, then collects all
  * subsequent non-empty, non-"_none_" lines as theme names.
  *
- * @param {string} output - Raw text output from PlantUML `help themes`.
- * @returns {string[]} Array of theme name strings (may be empty).
+ * @param output - Raw text output from PlantUML `help themes`.
+ * @returns Array of theme name strings (may be empty).
  */
 function parseHelpThemes(output: string): string[] {
     const lines = output.split('\n');

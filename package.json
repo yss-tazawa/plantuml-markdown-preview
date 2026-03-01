@@ -2,12 +2,12 @@
   "name": "plantuml-markdown-preview",
   "displayName": "%displayName%",
   "description": "%description%",
-  "version": "0.2.2",
+  "version": "0.3.0",
   "license": "MIT",
   "publisher": "yss-tazawa",
   "icon": "images/icon.png",
   "engines": {
-    "vscode": "^1.80.0"
+    "vscode": "^1.82.0"
   },
   "l10n": "./l10n",
   "categories": [
@@ -25,7 +25,8 @@
     "html",
     "server",
     "java",
-    "local"
+    "local",
+    "mermaid"
   ],
   "activationEvents": [],
   "main": "./dist/extension.js",
@@ -193,6 +194,84 @@
           "default": "default",
           "description": "%configuration.plantumlTheme.description%"
         },
+        "plantumlMarkdownPreview.plantumlScale": {
+          "type": "string",
+          "default": "100%",
+          "enum": ["auto", "120%", "115%", "110%", "105%", "100%", "95%", "90%", "85%", "80%", "75%", "70%"],
+          "enumDescriptions": [
+            "%configuration.plantumlScale.auto%",
+            "%configuration.plantumlScale.120%",
+            "%configuration.plantumlScale.115%",
+            "%configuration.plantumlScale.110%",
+            "%configuration.plantumlScale.105%",
+            "%configuration.plantumlScale.100%",
+            "%configuration.plantumlScale.95%",
+            "%configuration.plantumlScale.90%",
+            "%configuration.plantumlScale.85%",
+            "%configuration.plantumlScale.80%",
+            "%configuration.plantumlScale.75%",
+            "%configuration.plantumlScale.70%"
+          ],
+          "description": "%configuration.plantumlScale.description%"
+        },
+        "plantumlMarkdownPreview.mermaidTheme": {
+          "type": "string",
+          "default": "default",
+          "enum": ["default", "dark", "forest", "neutral", "base"],
+          "enumDescriptions": [
+            "%configuration.mermaidTheme.default%",
+            "%configuration.mermaidTheme.dark%",
+            "%configuration.mermaidTheme.forest%",
+            "%configuration.mermaidTheme.neutral%",
+            "%configuration.mermaidTheme.base%"
+          ],
+          "description": "%configuration.mermaidTheme.description%"
+        },
+        "plantumlMarkdownPreview.mermaidScale": {
+          "type": "string",
+          "default": "80%",
+          "enum": ["auto", "100%", "95%", "90%", "85%", "80%", "75%", "70%", "65%", "60%", "55%", "50%"],
+          "enumDescriptions": [
+            "%configuration.mermaidScale.auto%",
+            "%configuration.mermaidScale.100%",
+            "%configuration.mermaidScale.95%",
+            "%configuration.mermaidScale.90%",
+            "%configuration.mermaidScale.85%",
+            "%configuration.mermaidScale.80%",
+            "%configuration.mermaidScale.75%",
+            "%configuration.mermaidScale.70%",
+            "%configuration.mermaidScale.65%",
+            "%configuration.mermaidScale.60%",
+            "%configuration.mermaidScale.55%",
+            "%configuration.mermaidScale.50%"
+          ],
+          "description": "%configuration.mermaidScale.description%"
+        },
+        "plantumlMarkdownPreview.htmlMaxWidth": {
+          "type": "string",
+          "default": "960px",
+          "enum": ["640px", "768px", "960px", "1024px", "1200px", "1440px", "none"],
+          "enumDescriptions": [
+            "%configuration.htmlMaxWidth.640%",
+            "%configuration.htmlMaxWidth.768%",
+            "%configuration.htmlMaxWidth.960%",
+            "%configuration.htmlMaxWidth.1024%",
+            "%configuration.htmlMaxWidth.1200%",
+            "%configuration.htmlMaxWidth.1440%",
+            "%configuration.htmlMaxWidth.none%"
+          ],
+          "description": "%configuration.htmlMaxWidth.description%"
+        },
+        "plantumlMarkdownPreview.htmlAlignment": {
+          "type": "string",
+          "default": "center",
+          "enum": ["center", "left"],
+          "enumDescriptions": [
+            "%configuration.htmlAlignment.center%",
+            "%configuration.htmlAlignment.left%"
+          ],
+          "description": "%configuration.htmlAlignment.description%"
+        },
         "plantumlMarkdownPreview.allowLocalImages": {
           "type": "boolean",
           "default": true,
@@ -218,12 +297,13 @@
   },
   "dependencies": {
     "highlight.js": "^11.11.1",
-    "markdown-it": "^14.1.1"
+    "markdown-it": "^14.1.1",
+    "mermaid": "^11.12.3"
   },
   "devDependencies": {
     "@types/markdown-it": "^14.1.2",
-    "@types/node": "^25.3.0",
-    "@types/vscode": "^1.80.0",
+    "@types/node": "^20.17.0",
+    "@types/vscode": "^1.82.0",
     "esbuild": "^0.27.3",
     "typescript": "^5.9.3"
   },

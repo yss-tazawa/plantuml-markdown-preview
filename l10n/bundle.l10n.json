@@ -10,7 +10,6 @@
   "PlantUML error:": "PlantUML error:",
   "(Preview)": "(Preview)",
   "Rendering...": "Rendering...",
-  "Rendering PlantUML...": "Rendering PlantUML...",
   "Fetching PlantUML theme list...": "Fetching PlantUML theme list...",
   "Preview Theme (Light)": "Preview Theme (Light)",
   "Preview Theme (Dark)": "Preview Theme (Dark)",
@@ -30,5 +29,7 @@
   "PlantUML server returned unexpected response": "PlantUML server returned unexpected response",
   "Opening preview...": "Opening preview...",
   "File not found: {0}": "File not found: {0}",
-  "Timed out": "Timed out"
+  "Timed out": "Timed out",
+  "Mermaid Theme": "Mermaid Theme",
+  "Rendering diagrams...": "Rendering diagrams..."
 }

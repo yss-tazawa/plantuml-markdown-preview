@@ -22,6 +22,14 @@ require('esbuild').build({
     sourcemap: false,
 }).then(() => {
     console.log('Build complete: dist/extension.js');
+
+    // Copy mermaid.min.js to dist/ for Webview-side rendering
+    const fs = require('fs');
+    const path = require('path');
+    const src = path.join(__dirname, 'node_modules/mermaid/dist/mermaid.min.js');
+    const dest = path.join(__dirname, 'dist/mermaid.min.js');
+    fs.copyFileSync(src, dest);
+    console.log('Copied: dist/mermaid.min.js');
 }).catch((err) => {
     console.error(err);
     process.exit(1);

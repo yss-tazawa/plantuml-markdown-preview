@@ -14,10 +14,13 @@ import * as vscode from 'vscode';
 import path from 'path';
 import fs from 'fs';
 import { renderHtmlAsync, getThemeCss, LIGHT_THEME_KEYS, DARK_THEME_KEYS } from './exporter.js';
-import type { ExporterConfig } from './exporter.js';
 import { listThemesAsync, prefetchThemes } from './plantuml.js';
 import { buildScrollSyncScript } from './scroll-sync.js';
-import { getNonce, resolveLocalImagePaths, extractPlantUmlBlocks, PLANTUML_FENCE_TEST_RE, escapeHtml } from './utils.js';
+import { getNonce, resolveLocalImagePaths, extractPlantUmlBlocks, PLANTUML_FENCE_TEST_RE, extractMermaidBlocks, MERMAID_FENCE_TEST_RE, escapeHtml } from './utils.js';
+import { CONFIG_SECTION, type Config } from './config.js';
+
+/** Mermaid built-in theme keys, ordered for display. */
+const MERMAID_THEME_KEYS = ['default', 'dark', 'forest', 'neutral', 'base'] as const;
 
 /** Output channel for extension diagnostic messages. Injected by setOutputChannel(). */
 let outputChannel: vscode.OutputChannel | null = null;
@@ -27,6 +30,8 @@ let outputChannel: vscode.OutputChannel | null = null;
  *
  * Called from activate() in extension.ts so the channel's lifecycle
  * is managed by context.subscriptions regardless of preview state.
+ *
+ * @param channel - Output channel for diagnostic messages.
  */
 export function setOutputChannel(channel: vscode.OutputChannel): void {
     outputChannel = channel;
@@ -38,6 +43,8 @@ export function setOutputChannel(channel: vscode.OutputChannel): void {
  * Creates a defensive fallback if not yet injected via setOutputChannel().
  * Normally setOutputChannel() is called from activate() before any event
  * listeners are registered, so this fallback should never be reached.
+ *
+ * @returns The shared output channel instance.
  */
 function getOutputChannel(): vscode.OutputChannel {
     if (!outputChannel) {
@@ -48,19 +55,6 @@ function getOutputChannel(): vscode.OutputChannel {
     return outputChannel;
 }
 
-/** Full preview configuration extending ExporterConfig with debounce settings. */
-export interface PreviewConfig extends ExporterConfig {
-    /** Debounce delay (ms) when only non-PlantUML content changed. */
-    debounceNoPlantUmlMs: number;
-    /** Debounce delay (ms) when PlantUML content changed. */
-    debouncePlantUmlMs: number;
-    /** When true, resolve relative image paths in the preview via webview URIs. */
-    allowLocalImages: boolean;
-    /** When true, allow loading images over HTTP (unencrypted) in the preview CSP. */
-    allowHttpImages: boolean;
-    /** Hidden debug flag: simulate Java not found, even when installed. */
-    debugSimulateNoJava?: boolean;
-}
 
 /** Scroll sync state: which side currently owns the scroll. */
 type SyncMaster = 'none' | 'editor' | 'preview';
@@ -70,7 +64,7 @@ let panel: vscode.WebviewPanel | null = null;
 /** Absolute path of the Markdown file currently displayed in the preview. */
 let currentFilePath: string | null = null;
 /** Most recently applied configuration snapshot (used for diff in updateConfig). */
-let lastConfig: PreviewConfig | null = null;
+let lastConfig: Config | null = null;
 
 /** Disposable for the onDidSaveTextDocument listener. */
 let saveDisposable: vscode.Disposable | null = null;
@@ -90,8 +84,8 @@ let firstRenderResolve: (() => void) | null = null;
 /** AbortController for cancelling in-flight local rendering processes. */
 let renderAbortController: AbortController | null = null;
 
-/** Concatenated PlantUML block content from the last render (for change detection). */
-let lastPlantUmlContent = '';
+/** Concatenated diagram block content from the last render (for change detection). */
+let lastDiagramContent = '';
 /** Last editor top line sent to Webview (-1 forces re-sync on next event). */
 let lastScrollLine = -1;
 /** Last editor maxTopLine sent to Webview (-1 forces re-sync on next event). */
@@ -105,17 +99,23 @@ let syncMaster: SyncMaster = 'none';
 let syncMasterTimer: ReturnType<typeof setTimeout> | null = null;
 
 /**
- * Extract and concatenate all ```plantuml block contents from Markdown text.
+ * Extract and concatenate all diagram block contents (PlantUML + Mermaid) from Markdown text.
  *
- * Used by the two-stage debounce to detect whether PlantUML content has changed
+ * Used by the two-stage debounce to detect whether diagram content has changed
  * since the last render, so the appropriate delay can be selected.
  *
- * @param {string} text - Full Markdown document text.
- * @returns {string} Concatenated PlantUML block bodies separated by '---', or empty string.
+ * @param text - Full Markdown document text.
+ * @returns Concatenated diagram block bodies separated by '---', or empty string.
  */
-function extractPlantUmlContent(text: string): string {
-    if (!PLANTUML_FENCE_TEST_RE.test(text)) return '';
-    return extractPlantUmlBlocks(text).map(b => b.trim()).join('\n---\n');
+function extractDiagramContent(text: string): string {
+    const parts: string[] = [];
+    if (PLANTUML_FENCE_TEST_RE.test(text)) {
+        parts.push(...extractPlantUmlBlocks(text).map(b => b.trim()));
+    }
+    if (MERMAID_FENCE_TEST_RE.test(text)) {
+        parts.push(...extractMermaidBlocks(text).map(b => b.trim()));
+    }
+    return parts.join('\n---\n');
 }
 
 /** Timeout (ms) for auto-resetting syncMaster to 'none'. Shared with scroll-sync.ts. */
@@ -126,7 +126,7 @@ const SYNC_MASTER_TIMEOUT_MS = 300;
  *
  * Prevents feedback loops by marking which side initiated the scroll.
  *
- * @param {'editor' | 'preview'} who - Origin of the current scroll action.
+ * @param who - Origin of the current scroll action.
  */
 function setSyncMaster(who: 'editor' | 'preview'): void {
     syncMaster = who;
@@ -139,9 +139,9 @@ function setSyncMaster(who: 'editor' | 'preview'): void {
  *
  * This ensures the tail anchor maps editor-bottom to preview-bottom.
  *
- * @param {number} lineCount - Total number of lines in the document.
- * @param {number} visibleLineCount - Number of lines currently visible in the editor viewport.
- * @returns {number} Maximum value for the editor's top visible line (>= 0).
+ * @param lineCount - Total number of lines in the document.
+ * @param visibleLineCount - Number of lines currently visible in the editor viewport.
+ * @returns Maximum value for the editor's top visible line (>= 0).
  */
 function calcMaxTopLine(lineCount: number, visibleLineCount: number): number {
     const BOTTOM_OVERLAP_RATIO = 3 / 4;
@@ -151,7 +151,7 @@ function calcMaxTopLine(lineCount: number, visibleLineCount: number): number {
 /**
  * Generate a preview panel title from the current file path.
  *
- * @returns {string} Title string in the format "filename (Preview)".
+ * @returns Title string in the format "filename (Preview)".
  */
 function makeTitle(): string {
     const name = currentFilePath ? path.basename(currentFilePath, '.md') : 'Untitled';
@@ -164,8 +164,8 @@ function makeTitle(): string {
  * Includes the Markdown file's parent directory and, when available, the
  * workspace folder that contains the file.
  *
- * @param {string} filePath - Absolute path of the current Markdown file.
- * @returns {vscode.Uri[]} URIs to allow as local resource roots.
+ * @param filePath - Absolute path of the current Markdown file.
+ * @returns URIs to allow as local resource roots.
  */
 function buildLocalResourceRoots(filePath: string): vscode.Uri[] {
     const roots: vscode.Uri[] = [vscode.Uri.file(path.dirname(filePath))];
@@ -182,6 +182,8 @@ function buildLocalResourceRoots(filePath: string): vscode.Uri[] {
  * When allowLocalImages is true, sets localResourceRoots so the webview
  * can load images from the file's directory and workspace. When false,
  * sets localResourceRoots to an empty array to block all local file access.
+ *
+ * No-op when panel, lastConfig, or currentFilePath is null.
  */
 function applyWebviewOptions(): void {
     if (!panel || !lastConfig || !currentFilePath) return;
@@ -236,7 +238,7 @@ function resetState(): void {
     panel = null;
     currentFilePath = null;
     lastConfig = null;
-    lastPlantUmlContent = '';
+    lastDiagramContent = '';
     lastScrollLine = -1;
     lastMaxTopLine = -1;
     syncMaster = 'none';
@@ -252,8 +254,8 @@ function resetState(): void {
  * Guards against stale reads by checking currentFilePath after the async read.
  * Returns null when the file was switched while reading (stale read).
  *
- * @param {string} filePath - Absolute path to the .md file.
- * @returns {Promise<string | null>} File content, or null if the file was switched or an error occurred.
+ * @param filePath - Absolute path to the .md file.
+ * @returns File content, or null if the file was switched or an error occurred.
  */
 async function readFileContent(filePath: string): Promise<string | null> {
     const doc = vscode.workspace.textDocuments.find(d => d.uri.fsPath === filePath);
@@ -279,11 +281,11 @@ async function readFileContent(filePath: string): Promise<string | null> {
  *
  * Returns a Promise that resolves after the first render completes.
  *
- * @param {string} filePath - Absolute path to the .md file to preview.
- * @param {PreviewConfig} config - Current extension settings.
- * @param {boolean} [preserveFocus=false] - When true, keep focus on the editor (auto-follow mode).
+ * @param filePath - Absolute path to the .md file to preview.
+ * @param config - Current extension settings.
+ * @param [preserveFocus=false] - When true, keep focus on the editor (auto-follow mode).
  */
-export function openPreview(filePath: string, config: PreviewConfig, preserveFocus = false): Promise<void> {
+export function openPreview(filePath: string, config: Config, preserveFocus = false): Promise<void> {
     lastConfig = config;
 
     // Cancel any pending debounce since we are about to do a fresh render.
@@ -344,7 +346,7 @@ export function openPreview(filePath: string, config: PreviewConfig, preserveFoc
             if (!panel || !currentFilePath || doc.uri.fsPath !== currentFilePath) return;
             if (debounceTimer) { clearTimeout(debounceTimer); debounceTimer = null; }
             const text = doc.getText();
-            lastPlantUmlContent = extractPlantUmlContent(text);
+            lastDiagramContent = extractDiagramContent(text);
             void renderPanel(text).catch(err => getOutputChannel().appendLine(`[render error] ${err}`));
         });
 
@@ -352,12 +354,12 @@ export function openPreview(filePath: string, config: PreviewConfig, preserveFoc
             if (!panel || !currentFilePath || !lastConfig || event.document.uri.fsPath !== currentFilePath) return;
             if (debounceTimer) clearTimeout(debounceTimer);
             const text = event.document.getText();
-            const currentPlantUml = extractPlantUmlContent(text);
+            const currentDiagramContent = extractDiagramContent(text);
             const { debounceNoPlantUmlMs, debouncePlantUmlMs } = lastConfig;
-            const delay = currentPlantUml !== lastPlantUmlContent ? debouncePlantUmlMs : debounceNoPlantUmlMs;
+            const delay = currentDiagramContent !== lastDiagramContent ? debouncePlantUmlMs : debounceNoPlantUmlMs;
             debounceTimer = setTimeout(() => {
                 debounceTimer = null;
-                lastPlantUmlContent = currentPlantUml;
+                lastDiagramContent = currentDiagramContent;
                 void renderPanel(text).catch(err => getOutputChannel().appendLine(`[render error] ${err}`));
             }, delay);
         });
@@ -404,7 +406,7 @@ export function openPreview(filePath: string, config: PreviewConfig, preserveFoc
                 fireDeferredWork();
                 return;
             }
-            lastPlantUmlContent = extractPlantUmlContent(text);
+            lastDiagramContent = extractDiagramContent(text);
             renderPanelWithLoading(text);
         }).catch(() => {
             // Defensive: readFileContent should never reject, but guarantee
@@ -424,7 +426,7 @@ export function openPreview(filePath: string, config: PreviewConfig, preserveFoc
  * Increments renderSeq, generates a fresh CSP nonce, and embeds the scroll
  * sync script. Resets lastScrollLine to -1 to force scroll sync on the next event.
  *
- * @param {string} text - Full Markdown document text to render.
+ * @param text - Full Markdown document text to render.
  */
 async function renderPanel(text: string): Promise<void> {
     if (!panel || !lastConfig) return;
@@ -436,16 +438,22 @@ async function renderPanel(text: string): Promise<void> {
     const signal = myController.signal;
 
     const mySeq = ++renderSeq;
+    let htmlReplaced = false;
 
     try {
         const nonce = getNonce();
+        const mermaidPath = path.join(__dirname, 'mermaid.min.js');
+        const mermaidUri = panel.webview.asWebviewUri(vscode.Uri.file(mermaidPath)).toString();
         const renderOptions = {
             sourceMap: true,
             scriptHtml: buildScrollSyncScript(lastScrollLine, lastMaxTopLine, nonce, mySeq, vscode.l10n.t('Rendering...'), SYNC_MASTER_TIMEOUT_MS),
             cspNonce: nonce,
             cspSource: panel.webview.cspSource,
             lang: vscode.env.language,
-            allowHttpImages: lastConfig.allowHttpImages
+            allowHttpImages: lastConfig.allowHttpImages,
+            mermaidScriptUri: mermaidUri,
+            mermaidTheme: lastConfig.mermaidTheme,
+            mermaidScale: lastConfig.mermaidScale,
         };
 
         const html = await renderHtmlAsync(text, makeTitle(), lastConfig, renderOptions, signal);
@@ -463,11 +471,18 @@ async function renderPanel(text: string): Promise<void> {
             );
         }
         panel.webview.html = finalHtml;
+        htmlReplaced = true;
         // After re-render the scrollMap changes, so force sync on next scroll event
         lastScrollLine = -1;
         lastMaxTopLine = -1;
     } catch (err) {
         getOutputChannel().appendLine(`[renderPanel error] ${err}`);
+    } finally {
+        // If HTML was not replaced (stale render or error), dismiss the loading
+        // overlay on the current webview to prevent it from staying permanently.
+        if (!htmlReplaced && panel) {
+            void panel.webview.postMessage({ type: 'hideLoading' });
+        }
     }
 }
 
@@ -489,14 +504,14 @@ function fireDeferredWork(): void {
 }
 
 /**
- * Render with loading feedback when PlantUML blocks are present.
+ * Render with loading feedback when diagram blocks are present.
  *
- * If the text contains ```plantuml blocks, shows a Webview overlay and a
- * notification bar progress before delegating to renderPanel(). Uses a 50ms
- * setTimeout to yield the event loop so the overlay can render first.
- * For documents without PlantUML, delegates directly to renderPanel().
+ * If the text contains diagram blocks (PlantUML or Mermaid), shows a Webview
+ * overlay and a notification bar progress before delegating to renderPanel().
+ * Uses a 50ms setTimeout to yield the event loop so the overlay can render first.
+ * For documents without diagrams, delegates directly to renderPanel().
  *
- * @param {string} text - Full Markdown document text to render.
+ * @param text - Full Markdown document text to render.
  */
 function renderPanelWithLoading(text: string): void {
     if (!panel || !lastConfig) return;
@@ -505,8 +520,8 @@ function renderPanelWithLoading(text: string): void {
     if (loadingRenderTimer) { clearTimeout(loadingRenderTimer); loadingRenderTimer = null; }
     if (loadingResolve) { loadingResolve(); loadingResolve = null; }
 
-    const hasPlantUml = PLANTUML_FENCE_TEST_RE.test(text);
-    if (!hasPlantUml) {
+    const hasDiagram = PLANTUML_FENCE_TEST_RE.test(text) || MERMAID_FENCE_TEST_RE.test(text);
+    if (!hasDiagram) {
         void renderPanel(text).catch(err => {
             getOutputChannel().appendLine(`[render error] ${err}`);
         }).finally(() => {
@@ -542,7 +557,7 @@ function renderPanelWithLoading(text: string): void {
         loadingRenderTimer = setTimeout(doRender, 50);
     } else {
         vscode.window.withProgress(
-            { location: vscode.ProgressLocation.Notification, title: vscode.l10n.t('Rendering PlantUML...') },
+            { location: vscode.ProgressLocation.Notification, title: vscode.l10n.t('Rendering diagrams...') },
             () => new Promise<void>((resolve) => {
                 loadingResolve = resolve;
                 loadingRenderTimer = setTimeout(doRender, 50);
@@ -552,16 +567,16 @@ function renderPanelWithLoading(text: string): void {
 }
 
 /** Property keys that affect rendering output (PlantUML paths and themes). */
-const RENDER_KEYS = ['jarPath', 'javaPath', 'dotPath', 'plantumlTheme', 'previewTheme', 'allowLocalImages', 'allowHttpImages', 'renderMode', 'serverUrl'] as const;
+const RENDER_KEYS = ['jarPath', 'javaPath', 'dotPath', 'plantumlTheme', 'plantumlScale', 'previewTheme', 'allowLocalImages', 'allowHttpImages', 'renderMode', 'serverUrl', 'mermaidTheme', 'mermaidScale'] as const;
 
 /**
  * Check which rendering-related properties changed between two configs.
  *
- * @param {PreviewConfig} a - New configuration.
- * @param {PreviewConfig} b - Old configuration.
- * @returns {Set<string>} Set of property names that differ.
+ * @param a - New configuration.
+ * @param b - Old configuration.
+ * @returns Set of property names that differ.
  */
-function changedRenderKeys(a: PreviewConfig, b: PreviewConfig): Set<string> {
+function changedRenderKeys(a: Config, b: Config): Set<string> {
     const changed = new Set<string>();
     for (const key of RENDER_KEYS) {
         if (a[key] !== b[key]) changed.add(key);
@@ -577,9 +592,9 @@ function changedRenderKeys(a: PreviewConfig, b: PreviewConfig): Set<string> {
  * 2. Only debounce values changed -> update lastConfig, no re-render
  * 3. Other settings changed -> full re-render with loading feedback
  *
- * @param {PreviewConfig} config - New configuration from onDidChangeConfiguration.
+ * @param config - New configuration from onDidChangeConfiguration.
  */
-export function updateConfig(config: PreviewConfig): void {
+export function updateConfig(config: Config): void {
     if (!panel || !currentFilePath) return;
 
     const oldConfig = lastConfig;
@@ -623,13 +638,14 @@ export function updateConfig(config: PreviewConfig): void {
  * No-op when the panel is not open, user presses Escape, or selects the
  * already-active theme.
  *
- * @returns {Promise<void>} Resolves when the theme selection is complete or cancelled.
+ * @returns Resolves when the theme selection is complete or cancelled.
  */
 export async function changeTheme(): Promise<void> {
     if (!panel) return;
 
     const currentPreviewTheme = lastConfig ? lastConfig.previewTheme : 'github-light';
     const currentPlantumlTheme = lastConfig ? lastConfig.plantumlTheme : 'default';
+    const currentMermaidTheme = lastConfig ? lastConfig.mermaidTheme : 'default';
 
     // Helper to build QuickPick items for a set of theme keys
     const buildPreviewItems = (keys: readonly string[]) => keys.map(key => ({
@@ -666,7 +682,14 @@ export async function changeTheme(): Promise<void> {
         { label: vscode.l10n.t('Preview Theme (Dark)'), kind: vscode.QuickPickItemKind.Separator },
         ...buildPreviewItems(DARK_THEME_KEYS),
         { label: vscode.l10n.t('PlantUML Theme'), kind: vscode.QuickPickItemKind.Separator },
-        ...plantumlItems
+        ...plantumlItems,
+        { label: vscode.l10n.t('Mermaid Theme'), kind: vscode.QuickPickItemKind.Separator },
+        ...MERMAID_THEME_KEYS.map(key => ({
+            label: key === currentMermaidTheme ? `$(check) ${key}` : `      ${key}`,
+            description: key === currentMermaidTheme ? vscode.l10n.t('(current)') : '',
+            category: 'mermaid' as const,
+            themeKey: key
+        }))
     ];
 
     const selected = await vscode.window.showQuickPick(items, {
@@ -676,7 +699,7 @@ export async function changeTheme(): Promise<void> {
 
     if (!selected || !('category' in selected)) return;
 
-    const cfg = vscode.workspace.getConfiguration('plantumlMarkdownPreview');
+    const cfg = vscode.workspace.getConfiguration(CONFIG_SECTION);
 
     try {
         if (selected.category === 'preview') {
@@ -685,6 +708,9 @@ export async function changeTheme(): Promise<void> {
         } else if (selected.category === 'plantuml') {
             if (selected.themeKey === currentPlantumlTheme) return;
             await cfg.update('plantumlTheme', selected.themeKey, vscode.ConfigurationTarget.Global);
+        } else if (selected.category === 'mermaid') {
+            if (selected.themeKey === currentMermaidTheme) return;
+            await cfg.update('mermaidTheme', selected.themeKey, vscode.ConfigurationTarget.Global);
         }
     } catch (err) {
         vscode.window.showErrorMessage(`[PlantUML Markdown Preview] ${(err as Error).message}`);
@@ -697,7 +723,7 @@ export async function changeTheme(): Promise<void> {
  * Used by extension.ts to check if the preview panel is active and to
  * determine the current file for editor auto-follow guard conditions.
  *
- * @returns {string | null} Absolute file path of the previewed .md file, or null if no preview is open.
+ * @returns Absolute file path of the previewed .md file, or null if no preview is open.
  */
 export function getCurrentFilePath(): string | null {
     return currentFilePath;

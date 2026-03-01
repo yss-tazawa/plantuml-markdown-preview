@@ -85,8 +85,8 @@ export interface ThemePalette {
  * and highlight.js syntax token classes. Optional palette fields fall back
  * to their corresponding base values.
  *
- * @param {ThemePalette} p - Theme color palette defining all visual tokens.
- * @returns {string} Complete CSS string (without wrapping `<style>` tags).
+ * @param p - Theme color palette defining all visual tokens.
+ * @returns Complete CSS string (without wrapping `<style>` tags).
  */
 export function buildThemeCss(p: ThemePalette): string {
     const headingColor = p.headingColor ? ` color: ${p.headingColor};` : '';
@@ -149,6 +149,10 @@ export function buildThemeCss(p: ThemePalette): string {
     img { max-width: 100%; height: auto; }
     .plantuml-diagram { margin: 1.5em 0; text-align: left; }
     .plantuml-diagram svg { height: auto; }
+    .mermaid-diagram { margin: 1.5em 0; text-align: left; }
+    .mermaid-diagram pre.mermaid { visibility: hidden; overflow: visible; border: none; padding: 0; }
+    .mermaid-diagram svg { visibility: visible; height: auto; }
+    .mermaid-error { visibility: visible; color: #d32f2f; border-left: 3px solid #d32f2f; padding: 0.5em; white-space: pre-wrap; font-size: 0.85em; }
     body.preview { margin: 0; max-width: none; padding: 1em 26px; }
     .hljs { background: ${p.hljsBg}; color: ${hljsText}; }
     .hljs-comment, .hljs-prolog, .hljs-doctype, .hljs-cdata { color: ${p.hljsComment}; font-style: italic; }

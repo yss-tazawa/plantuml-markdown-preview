@@ -17,8 +17,8 @@ const HTML_ESCAPE_RE = /[&<>"']/g;
  * Uses a single-pass replacement instead of chained .replace() calls
  * to avoid creating intermediate string objects.
  *
- * @param {string} str - Raw string that may contain HTML special characters.
- * @returns {string} Escaped string safe for HTML insertion.
+ * @param str - Raw string that may contain HTML special characters.
+ * @returns Escaped string safe for HTML insertion.
  */
 export function escapeHtml(str: string): string {
     return String(str).replace(HTML_ESCAPE_RE, ch => HTML_ESCAPE_MAP[ch]);
@@ -31,7 +31,7 @@ export function escapeHtml(str: string): string {
  * crypto.randomBytes. Used to authorize inline scripts in the Webview
  * while blocking user-authored script tags.
  *
- * @returns {string} 32-character hexadecimal nonce string.
+ * @returns 32-character hexadecimal nonce string.
  */
 export function getNonce(): string {
     return crypto.randomBytes(16).toString('hex');
@@ -41,8 +41,8 @@ export function getNonce(): string {
  * Auto-wrap content with @startuml / @enduml if no @start tag is present.
  * Recognizes all PlantUML start tags (@startuml, @startmindmap, @startwbs, etc.).
  *
- * @param {string} content - Trimmed PlantUML source text.
- * @returns {string} Content guaranteed to have @startuml/@enduml wrapper tags (if no @start tag was present).
+ * @param content - Trimmed PlantUML source text.
+ * @returns Content guaranteed to have @startuml/@enduml wrapper tags (if no @start tag was present).
  */
 export function ensureStartEndTags(content: string): string {
     if (!content.startsWith('@start')) {
@@ -54,8 +54,8 @@ export function ensureStartEndTags(content: string): string {
 /**
  * Wrap an error message in a red-bordered styled HTML div.
  *
- * @param {string} message - HTML content (may include tags) to display inside the error box.
- * @returns {string} Complete HTML div string with error styling.
+ * @param message - HTML content (may include tags) to display inside the error box.
+ * @returns Complete HTML div string with error styling.
  */
 export function errorHtml(message: string): string {
     return `<div style="border:1px solid #f66;background:#fff0f0;padding:0.5em 1em;border-radius:4px;color:#c00;font-size:0.9em;text-align:left;">${message}</div>`;
@@ -73,6 +73,12 @@ export const PLANTUML_FENCE_RE_SOURCE = '^ {0,3}```plantuml[ \\t]*\\n([\\s\\S]*?
 /** Simple test regex to detect ```plantuml fenced code blocks (no capture). */
 export const PLANTUML_FENCE_TEST_RE = /^ {0,3}```plantuml/im;
 
+/** Simple test regex to detect ```mermaid fenced code blocks (no capture). */
+export const MERMAID_FENCE_TEST_RE = /^ {0,3}```mermaid/im;
+
+/** Regex source for ```mermaid fenced code blocks (with capture). */
+export const MERMAID_FENCE_RE_SOURCE = '^ {0,3}```mermaid[ \\t]*\\n([\\s\\S]*?)\\n {0,3}```[ \\t]*$';
+
 /**
  * Extract PlantUML block contents from Markdown source in document order.
  *
@@ -82,6 +88,22 @@ export const PLANTUML_FENCE_TEST_RE = /^ {0,3}```plantuml/im;
 export function extractPlantUmlBlocks(source: string): string[] {
     const blocks: string[] = [];
     const re = new RegExp(PLANTUML_FENCE_RE_SOURCE, 'gim');
+    let match;
+    while ((match = re.exec(source)) !== null) {
+        blocks.push(match[1]);
+    }
+    return blocks;
+}
+
+/**
+ * Extract Mermaid block contents from Markdown source in document order.
+ *
+ * @param source Raw Markdown text.
+ * @returns Array of Mermaid source text strings.
+ */
+export function extractMermaidBlocks(source: string): string[] {
+    const blocks: string[] = [];
+    const re = new RegExp(MERMAID_FENCE_RE_SOURCE, 'gim');
     let match;
     while ((match = re.exec(source)) !== null) {
         blocks.push(match[1]);
@@ -128,8 +150,8 @@ export class LruCache<V> {
  * Used as a cache key for PlantUML rendering results. Centralises the hashing
  * logic previously duplicated in plantuml.ts and plantuml-server.ts.
  *
- * @param {...string} parts - Strings to hash (content, paths, theme, etc.).
- * @returns {string} Hex-encoded SHA-256 hash.
+ * @param parts - Strings to hash (content, paths, theme, etc.).
+ * @returns Hex-encoded SHA-256 hash.
  */
 export function computeHash(...parts: string[]): string {
     const h = crypto.createHash('sha256');
@@ -146,11 +168,11 @@ export function computeHash(...parts: string[]): string {
  * Processes up to `concurrency` items in parallel, then moves to the next batch.
  * Returns a Map keyed by trimmed input content.
  *
- * @param {string[]} blocks - Array of source texts to render.
- * @param {number} concurrency - Maximum number of concurrent render operations.
- * @param {function} renderFn - Async function that renders a single block.
- * @param {AbortSignal} [signal] - Optional signal to cancel remaining operations.
- * @returns {Promise<Map<string, string>>} Map of trimmed content -> rendered output.
+ * @param blocks - Array of source texts to render.
+ * @param concurrency - Maximum number of concurrent render operations.
+ * @param renderFn - Async function that renders a single block.
+ * @param [signal] - Optional signal to cancel remaining operations.
+ * @returns Map of trimmed content -> rendered output.
  */
 export async function batchRender(
     blocks: string[],
@@ -159,7 +181,8 @@ export async function batchRender(
     signal?: AbortSignal
 ): Promise<Map<string, string>> {
     const results = new Map<string, string>();
-    for (let i = 0; i < blocks.length; i += concurrency) {
+    const uniqueBlocks = [...new Set(blocks)];
+    for (let i = 0; i < uniqueBlocks.length; i += concurrency) {
         if (signal?.aborted) break;
         const batch = blocks.slice(i, i + concurrency);
         const svgs = await Promise.all(batch.map(content =>
@@ -178,12 +201,6 @@ const IMG_SRC_RE = /<img\s([^>]*?)src=(["'])(.*?)\2([^>]*?)>/gi;
 /** Schemes that should not be resolved as local paths. */
 const ABSOLUTE_SRC_RE = /^(https?:|data:|vscode-webview:|\/\/)/i;
 
-/** Pre-compiled regexes for quote character escaping in image URIs. */
-const QUOTE_ESCAPE_RE: Record<string, RegExp> = {
-    '"': /"/g,
-    "'": /'/g,
-};
-
 /**
  * Replace relative image paths in rendered HTML with resolved URIs.
  *
@@ -195,17 +212,16 @@ const QUOTE_ESCAPE_RE: Record<string, RegExp> = {
  * via toUri, but the Webview will block them if the path falls outside
  * localResourceRoots (file directory + workspace root).
  *
- * @param {string} html - Rendered HTML string.
- * @param {string} baseDirPath - Absolute directory path to resolve relative paths against.
- * @param {(absolutePath: string) => string} toUri - Converts an absolute file path to a displayable URI.
- * @returns {string} HTML with resolved image paths.
+ * @param html - Rendered HTML string.
+ * @param baseDirPath - Absolute directory path to resolve relative paths against.
+ * @param toUri - Converts an absolute file path to a displayable URI.
+ * @returns HTML with resolved image paths.
  */
 export function resolveLocalImagePaths(html: string, baseDirPath: string, toUri: (absolutePath: string) => string): string {
     return html.replace(IMG_SRC_RE, (match, pre: string, quote: string, src: string, post: string) => {
         if (ABSOLUTE_SRC_RE.test(src)) return match;
         const absolutePath = path.isAbsolute(src) ? src : path.resolve(baseDirPath, src);
-        const escapeChar = quote === '"' ? '&quot;' : '&#39;';
-        const uri = toUri(absolutePath).replace(QUOTE_ESCAPE_RE[quote], escapeChar);
+        const uri = escapeHtml(toUri(absolutePath));
         return `<img ${pre}src=${quote}${uri}${quote}${post}>`;
     });
 }

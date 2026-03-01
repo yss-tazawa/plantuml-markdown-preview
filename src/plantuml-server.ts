@@ -13,14 +13,7 @@
 import * as vscode from 'vscode';
 import { deflateRawSync } from 'zlib';
 import { escapeHtml, ensureStartEndTags, errorHtml, LruCache, computeHash, batchRender } from './utils.js';
-
-/** Configuration for server-based rendering. */
-export interface ServerConfig {
-    /** PlantUML server base URL (e.g. 'https://www.plantuml.com/plantuml'). */
-    serverUrl: string;
-    /** PlantUML theme name. 'default' means no theme. */
-    plantumlTheme?: string;
-}
+import type { Config } from './config.js';
 
 // ---------------------------------------------------------------------------
 // PlantUML custom Base64 encoding
@@ -87,8 +80,12 @@ const DEFAULT_TIMEOUT_MS = 15000;
 /**
  * Compute a cache key for server rendering.
  * Key components: content + serverUrl + plantumlTheme.
+ *
+ * @param content - PlantUML source text (with @startuml/@enduml).
+ * @param config - Server URL and theme settings.
+ * @returns SHA-256 hash string for cache lookup.
  */
-function cacheKey(content: string, config: ServerConfig): string {
+function cacheKey(content: string, config: Config): string {
     return computeHash(content, config.serverUrl, config.plantumlTheme || 'default');
 }
 
@@ -103,7 +100,7 @@ function cacheKey(content: string, config: ServerConfig): string {
  * @param config Server URL and theme settings.
  * @returns SVG markup on success, or styled HTML error div on failure.
  */
-export async function renderToSvgServer(pumlContent: string, config: ServerConfig, signal?: AbortSignal): Promise<string> {
+export async function renderToSvgServer(pumlContent: string, config: Config, signal?: AbortSignal): Promise<string> {
     const trimmed = pumlContent.trim();
     const content = ensureStartEndTags(trimmed);
 
@@ -183,7 +180,7 @@ const MAX_SERVER_CONCURRENCY = 5;
  */
 export function renderAllServer(
     blocks: string[],
-    config: ServerConfig,
+    config: Config,
     signal?: AbortSignal
 ): Promise<Map<string, string>> {
     return batchRender(blocks, MAX_SERVER_CONCURRENCY, (content, sig) => renderToSvgServer(content, config, sig), signal);
@@ -201,7 +198,11 @@ export function clearServerCache(): void {
 /**
  * Inject !theme directive after @startuml/@startXXX line.
  * Server mode cannot use -theme CLI arg, so we embed the directive in the source.
+ *
+ * @param content - PlantUML source text (with @start tag).
+ * @param theme - Theme name to inject (e.g. 'cerulean').
+ * @returns Modified source with `!theme <name>` inserted after the @start line.
  */
 function injectThemeDirective(content: string, theme: string): string {
-    return content.replace(/^(@start\w+.*)$/m, `$1\n!theme ${theme}`);
+    return content.replace(/^(@start\w+.*)$/gm, `$1\n!theme ${theme}`);
 }

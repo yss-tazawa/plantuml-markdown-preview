@@ -27,12 +27,13 @@
  * - MutationObserver to invalidate anchors when DOM changes
  * - Message handlers: scrollToLine, updateTheme, showLoading, hideLoading
  *
- * @param {number} initialLine - Editor top line to restore after re-render (-1 = no restore).
- * @param {number} initialMaxTopLine - Editor max top line for the tail anchor.
- * @param {string} nonce - CSP nonce string to authorize the inline script.
- * @param {number} renderSeq - Sequence number to discard stale showLoading messages.
- * @param {string} renderingText - Localized "Rendering..." text for the loading overlay.
- * @returns {string} HTML `<script nonce="...">` string ready for insertion before `</body>`.
+ * @param initialLine - Editor top line to restore after re-render (-1 = no restore).
+ * @param initialMaxTopLine - Editor max top line for the tail anchor.
+ * @param nonce - CSP nonce string to authorize the inline script.
+ * @param renderSeq - Sequence number to discard stale showLoading messages.
+ * @param renderingText - Localized "Rendering..." text for the loading overlay.
+ * @param syncMasterTimeoutMs - Timeout in ms before syncMaster resets to 'none'.
+ * @returns HTML `<script nonce="...">` string ready for insertion before `</body>`.
  */
 export function buildScrollSyncScript(initialLine: number, initialMaxTopLine: number, nonce: string, renderSeq: number, renderingText: string, syncMasterTimeoutMs: number): string {
     return `<script nonce="${nonce}">
@@ -250,7 +251,15 @@ export function buildScrollSyncScript(initialLine: number, initialMaxTopLine: nu
                 document.body.appendChild(overlay);
             }
             overlay.style.display = 'flex';
+            // Safety timeout: auto-dismiss overlay if hideLoading is never received
+            if (window.__loadingTimeout) clearTimeout(window.__loadingTimeout);
+            window.__loadingTimeout = setTimeout(function() {
+                const ol = document.getElementById('loading-overlay');
+                if (ol) ol.style.display = 'none';
+                window.__loadingTimeout = null;
+            }, 10000);
         } else if (message && message.type === 'hideLoading') {
+            if (window.__loadingTimeout) { clearTimeout(window.__loadingTimeout); window.__loadingTimeout = null; }
             const ol = document.getElementById('loading-overlay');
             if (ol) ol.style.display = 'none';
         }

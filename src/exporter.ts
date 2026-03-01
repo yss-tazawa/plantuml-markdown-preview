@@ -17,10 +17,10 @@ import path from 'path';
 import MarkdownIt from 'markdown-it';
 import hljs from 'highlight.js';
 import { plantumlPlugin } from './renderer.js';
-import type { PlantUmlConfig } from './plantuml.js';
 import { renderAllLocal } from './plantuml.js';
-import { renderAllServer, type ServerConfig } from './plantuml-server.js';
+import { renderAllServer } from './plantuml-server.js';
 import { escapeHtml, extractPlantUmlBlocks } from './utils.js';
+import type { Config } from './config.js';
 
 import {
     githubLight, atomLight, oneLight, solarizedLight,
@@ -93,9 +93,9 @@ const MD_OPTIONS: MarkdownIt.Options = {
      * Returns highlighted HTML when the language is recognized by highlight.js,
      * or an empty string to let markdown-it apply its default escaping.
      *
-     * @param {string} str - Raw code block content to highlight.
-     * @param {string} lang - Language identifier from the fence info string (e.g. 'typescript', 'python').
-     * @returns {string} Highlighted HTML wrapped in `<pre class="hljs"><code>`, or empty string for fallback.
+     * @param str - Raw code block content to highlight.
+     * @param lang - Language identifier from the fence info string (e.g. 'typescript', 'python').
+     * @returns Highlighted HTML wrapped in `<pre class="hljs"><code>`, or empty string for fallback.
      */
     highlight(str, lang) {
         if (lang && hljs.getLanguage(lang)) {
@@ -111,20 +111,6 @@ const MD_OPTIONS: MarkdownIt.Options = {
     }
 };
 
-/**
- * Configuration for the HTML rendering pipeline.
- *
- * Extends PlantUmlConfig with an additional preview theme property.
- */
-export interface ExporterConfig extends PlantUmlConfig {
-    /** Preview theme key (e.g. 'github-light', 'dracula'). */
-    previewTheme?: string;
-    /** Rendering mode: 'local' (Java) or 'server' (HTTP). */
-    renderMode: 'local' | 'server';
-    /** PlantUML server URL for server mode. */
-    serverUrl: string;
-}
-
 /** Options for controlling HTML output features. */
 export interface RenderOptions {
     /** When true, add data-source-line attributes for scroll sync. */
@@ -139,18 +125,29 @@ export interface RenderOptions {
     lang?: string;
     /** When true, add http: to CSP img-src to allow unencrypted image loading. */
     allowHttpImages?: boolean;
+    /** Webview URI for mermaid.min.js (Webview preview only). */
+    mermaidScriptUri?: string;
+    /** Mermaid theme name (e.g. 'default', 'dark', 'forest'). */
+    mermaidTheme?: string;
+    /** Mermaid diagram scale ('auto' or '50%'–'100%'). */
+    mermaidScale?: string;
+    /** Maximum width of the HTML export body (e.g. '960px', '1200px'). */
+    htmlMaxWidth?: string;
+    /** HTML export body alignment ('center' or 'left'). */
+    htmlAlignment?: string;
 }
 
 /**
  * Invalidate the markdown-it cache when path or theme settings change.
  *
- * Compares a composite key of jarPath, javaPath, dotPath, and plantumlTheme.
- * When the key differs from the cached one, both markdown-it instances
- * (with and without source map) are discarded.
+ * Compares a composite key of jarPath, javaPath, dotPath, plantumlTheme,
+ * renderMode, and serverUrl. When the key differs from the cached one,
+ * both markdown-it instances (with and without source map) are discarded.
  *
- * @param {ExporterConfig} config - Current configuration to check against the cache.
+ * @param config - Current configuration to check against the cache.
+ * @returns
  */
-function invalidateMdCache(config: ExporterConfig): void {
+function invalidateMdCache(config: Config): void {
     const key = config.jarPath + '\0' + config.javaPath + '\0' + config.dotPath + '\0' + (config.plantumlTheme || 'default') + '\0' + (config.renderMode || 'local') + '\0' + (config.serverUrl || '');
     if (mdCacheKey !== key) {
         mdCacheKey = key;
@@ -167,11 +164,11 @@ function invalidateMdCache(config: ExporterConfig): void {
  * line numbers in `token.meta.sourceLine` for fence tokens.
  * Cached instances are reused for the same path/theme settings.
  *
- * @param {ExporterConfig} config - Configuration used for PlantUML rendering.
- * @param {boolean} [withSourceMap] - Whether to enable the source_map core rule.
- * @returns {MarkdownIt} Configured markdown-it instance (possibly cached).
+ * @param config - Configuration used for PlantUML rendering.
+ * @param [withSourceMap] - Whether to enable the source_map core rule.
+ * @returns Configured markdown-it instance (possibly cached).
  */
-function getOrCreateMd(config: ExporterConfig, withSourceMap?: boolean): MarkdownIt {
+function getOrCreateMd(config: Config, withSourceMap?: boolean): MarkdownIt {
     invalidateMdCache(config);
 
     if (withSourceMap) {
@@ -191,7 +188,7 @@ function getOrCreateMd(config: ExporterConfig, withSourceMap?: boolean): Markdow
          * directly on the token. For fence tokens (nesting === 0), stores the line number
          * in `token.meta.sourceLine` so the renderer can wrap the output with the attribute.
          *
-         * @param {MarkdownIt.StateCore} state - markdown-it core state containing the token stream.
+         * @param state - markdown-it core state containing the token stream.
          */
         md.core.ruler.push('source_map', function (state) {
             for (const token of state.tokens) {
@@ -231,17 +228,13 @@ function getOrCreateMd(config: ExporterConfig, withSourceMap?: boolean): Markdow
  * @param signal Optional AbortSignal to cancel in-flight rendering processes.
  * @returns Complete HTML document string.
  */
-export async function renderHtmlAsync(source: string, title: string, config: ExporterConfig, options?: RenderOptions, signal?: AbortSignal): Promise<string> {
+export async function renderHtmlAsync(source: string, title: string, config: Config, options?: RenderOptions, signal?: AbortSignal): Promise<string> {
     const blocks = extractPlantUmlBlocks(source);
     let preRenderedSvgs: Map<string, string> | undefined;
 
     if (blocks.length > 0) {
         if (config.renderMode === 'server' && config.serverUrl) {
-            const serverConfig: ServerConfig = {
-                serverUrl: config.serverUrl,
-                plantumlTheme: config.plantumlTheme,
-            };
-            preRenderedSvgs = await renderAllServer(blocks, serverConfig, signal);
+            preRenderedSvgs = await renderAllServer(blocks, config, signal);
         } else {
             preRenderedSvgs = await renderAllLocal(blocks, config, signal);
         }
@@ -253,7 +246,7 @@ export async function renderHtmlAsync(source: string, title: string, config: Exp
     if (signal?.aborted) return '';
 
     const md = getOrCreateMd(config, options?.sourceMap);
-    const env: { preRenderedSvgs?: Map<string, string> } = { preRenderedSvgs };
+    const env: { preRenderedSvgs?: Map<string, string>; plantumlScale?: string } = { preRenderedSvgs, plantumlScale: config.plantumlScale };
     const bodyHtml = md.render(source, env);
     return buildHtml(title, bodyHtml, config.previewTheme, options);
 }
@@ -264,17 +257,40 @@ export async function renderHtmlAsync(source: string, title: string, config: Exp
  * Reads the .md file asynchronously, renders it to HTML (without source map or scripts),
  * and writes the result to the same directory with a .html extension.
  *
- * @param {string} mdFilePath - Absolute path to the Markdown file.
- * @param {ExporterConfig} config - PlantUML and theme configuration.
- * @param {AbortSignal} [signal] - Optional AbortSignal to cancel in-flight rendering processes.
- * @returns {Promise<string>} Absolute path of the generated HTML file.
+ * @param mdFilePath - Absolute path to the Markdown file.
+ * @param config - PlantUML and theme configuration.
+ * @param [signal] - Optional AbortSignal to cancel in-flight rendering processes.
+ * @returns Absolute path of the generated HTML file.
  */
-export async function exportToHtml(mdFilePath: string, config: ExporterConfig, signal?: AbortSignal): Promise<string> {
+export async function exportToHtml(mdFilePath: string, config: Config, signal?: AbortSignal): Promise<string> {
     const source = await fs.promises.readFile(mdFilePath, 'utf8');
-    const fullHtml = await renderHtmlAsync(source, path.basename(mdFilePath, '.md'), config, undefined, signal);
+    const exportOptions: RenderOptions = {
+        mermaidTheme: config.mermaidTheme,
+        mermaidScale: config.mermaidScale,
+        htmlMaxWidth: config.htmlMaxWidth,
+        htmlAlignment: config.htmlAlignment,
+    };
+    const fullHtml = await renderHtmlAsync(source, path.basename(mdFilePath, '.md'), config, exportOptions, signal);
     const outputPath = mdFilePath.replace(/\.md$/, '.html');
     await fs.promises.writeFile(outputPath, fullHtml, 'utf8');
     return outputPath;
+}
+
+/**
+ * Build an optional `<style>` override for HTML export layout.
+ *
+ * Generates CSS overrides for max-width and alignment when they differ
+ * from the base theme defaults (960px centered).
+ *
+ * @param [htmlMaxWidth] - Body max-width value (e.g. '1200px', 'none').
+ * @param [htmlAlignment] - Body alignment ('center' or 'left').
+ * @returns Style tag string, or empty string when no overrides are needed.
+ */
+function buildLayoutOverrideStyle(htmlMaxWidth?: string, htmlAlignment?: string): string {
+    const overrides: string[] = [];
+    if (htmlMaxWidth && htmlMaxWidth !== '960px') overrides.push(`max-width: ${htmlMaxWidth}`);
+    if (htmlAlignment === 'left') overrides.push('margin: 0');
+    return overrides.length ? `\n  <style>body { ${overrides.join('; ')}; }</style>` : '';
 }
 
 /**
@@ -283,18 +299,31 @@ export async function exportToHtml(mdFilePath: string, config: ExporterConfig, s
  * Inserts theme CSS via `<style id="theme-css">`, optional CSP meta tag
  * (nonce-based script-src), and optional script HTML before `</body>`.
  *
- * @param {string} title - Document title for the <title> tag.
- * @param {string} body - Rendered HTML body content.
- * @param {string} [previewTheme] - Theme key for CSS selection.
- * @param {RenderOptions} [options] - CSP nonce, script HTML, and CSP source.
- * @returns {string} Complete `<!DOCTYPE html>` document string.
+ * @param title - Document title for the <title> tag.
+ * @param body - Rendered HTML body content.
+ * @param [previewTheme] - Theme key for CSS selection.
+ * @param [options] - CSP nonce, script HTML, and CSP source.
+ * @returns Complete `<!DOCTYPE html>` document string.
  */
 function buildHtml(title: string, body: string, previewTheme?: string, options?: RenderOptions): string {
     const theme = PREVIEW_THEMES[previewTheme || ''] || PREVIEW_THEMES[DEFAULT_PREVIEW_THEME];
-    const { scriptHtml, cspNonce, cspSource, lang, allowHttpImages } = options || {};
+    const { scriptHtml, cspNonce, cspSource, lang, allowHttpImages, mermaidScriptUri, mermaidTheme, mermaidScale, htmlMaxWidth, htmlAlignment } = options || {};
     const cspMeta = cspNonce
-        ? `\n  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; font-src 'none'; img-src ${cspSource || "'self'"} https:${allowHttpImages ? ' http:' : ''} data:; script-src 'nonce-${cspNonce}';">`
+        ? `\n  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; font-src 'none'; img-src ${cspSource || "'self'"} https:${allowHttpImages ? ' http:' : ''} data:; script-src 'nonce-${cspNonce}'${cspSource ? ` ${cspSource}` : ''};">`
         : '';
+    const validMermaidThemes = new Set(['default', 'dark', 'forest', 'neutral', 'base']);
+    const mermaidThemeValue = validMermaidThemes.has(mermaidTheme || '') ? mermaidTheme! : 'default';
+    const scaleNum = mermaidScale && mermaidScale !== 'auto' ? parseFloat(mermaidScale) / 100 : 0;
+    const mermaidInitScript = `mermaid.initialize({startOnLoad:false,theme:'${mermaidThemeValue}'});(async function(){var scale=${scaleNum};var els=document.querySelectorAll('pre.mermaid');for(var i=0;i<els.length;i++){var el=els[i];try{var r=await mermaid.render('m'+i,el.textContent||'');el.innerHTML=r.svg}catch(e){var msg=(e.message||String(e)).replace(/</g,'&lt;').replace(/>/g,'&gt;');el.innerHTML='<div class="mermaid-error">'+msg+'</div>'}if(scale>0){var svg=el.querySelector('svg');if(svg){var mw=svg.style.maxWidth;var natW=mw?parseFloat(mw):parseFloat(svg.getAttribute('width'));if(!isNaN(natW)){svg.setAttribute('width',(natW*scale)+'px');svg.style.maxWidth='none';svg.removeAttribute('height');svg.style.height='auto'}}}el.style.visibility='visible'}})();`;
+    const hasMermaid = body.includes('mermaid-diagram');
+    let mermaidHtml = '';
+    if (mermaidScriptUri && cspNonce && hasMermaid) {
+        // Webview preview: load from local bundled file
+        mermaidHtml = `\n<script nonce="${cspNonce}" src="${mermaidScriptUri}"></script>\n<script nonce="${cspNonce}">${mermaidInitScript}</script>`;
+    } else if (hasMermaid && !cspNonce) {
+        // HTML export: load from CDN
+        mermaidHtml = `\n<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>\n<script>${mermaidInitScript}</script>`;
+    }
     return `<!DOCTYPE html>
 <html lang="${escapeHtml(lang || 'en')}">
 <head>
@@ -303,10 +332,10 @@ function buildHtml(title: string, body: string, previewTheme?: string, options?:
   <title>${escapeHtml(title)}</title>
   <style id="theme-css">
 ${theme.css}
-  </style>
+  </style>${buildLayoutOverrideStyle(htmlMaxWidth, htmlAlignment)}
 </head>
 <body${cspNonce ? ' class="preview"' : ''}>
-${body}
+${body}${mermaidHtml}
 ${scriptHtml || ''}
 </body>
 </html>`;
@@ -328,8 +357,8 @@ export function clearMdCache(): void {
  *
  * Falls back to the default theme (github-light) if the given name is not found.
  *
- * @param {string} themeName - Theme key to look up.
- * @returns {string} Complete CSS string for the theme.
+ * @param themeName - Theme key to look up.
+ * @returns Complete CSS string for the theme.
  */
 export function getThemeCss(themeName: string): string {
     const theme = PREVIEW_THEMES[themeName] || PREVIEW_THEMES[DEFAULT_PREVIEW_THEME];
