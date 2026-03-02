@@ -83,6 +83,8 @@ let loadingResolve: (() => void) | null = null;
 let firstRenderResolve: (() => void) | null = null;
 /** AbortController for cancelling in-flight local rendering processes. */
 let renderAbortController: AbortController | null = null;
+/** When true, renderPanelWithLoading skips the "Rendering diagrams..." notification (one-shot). */
+let suppressLoadingNotification = false;
 
 /** Concatenated diagram block content from the last render (for change detection). */
 let lastDiagramContent = '';
@@ -289,9 +291,12 @@ async function readFileContent(filePath: string): Promise<string | null> {
  * @param filePath - Absolute path to the .md file to preview.
  * @param config - Current extension settings.
  * @param [preserveFocus=false] - When true, keep focus on the editor (auto-follow mode).
+ * @param [suppressNotification=false] - When true, skip the "Rendering diagrams..." notification
+ *   (caller already shows its own progress notification).
  */
-export function openPreview(filePath: string, config: Config, preserveFocus = false): Promise<void> {
+export function openPreview(filePath: string, config: Config, preserveFocus = false, suppressNotification = false): Promise<void> {
     lastConfig = config;
+    suppressLoadingNotification = suppressNotification;
 
     // Cancel any pending debounce since we are about to do a fresh render.
     if (debounceTimer) { clearTimeout(debounceTimer); debounceTimer = null; }
@@ -306,12 +311,17 @@ export function openPreview(filePath: string, config: Config, preserveFocus = fa
     if (panel) {
         panel.title = makeTitle();
         applyWebviewOptions();
-        panel.reveal(vscode.ViewColumn.Two, preserveFocus);
+        // When auto-following editor changes (preserveFocus=true), skip
+        // reveal() — it would bring the preview to the front and cover
+        // a file the user just opened in the same column.
+        if (!preserveFocus) {
+            panel.reveal(vscode.ViewColumn.Two, false);
+        }
     } else {
         panel = vscode.window.createWebviewPanel(
             'plantumlMarkdownPreview',
             makeTitle(),
-            vscode.ViewColumn.Two,
+            { viewColumn: vscode.ViewColumn.Two, preserveFocus },
             {
                 enableFindWidget: true,
                 enableScripts: true,
@@ -408,6 +418,7 @@ export function openPreview(filePath: string, config: Config, preserveFocus = fa
 
         void readFileContent(filePath).then((text) => {
             if (text === null) {
+                suppressLoadingNotification = false;
                 fireDeferredWork();
                 return;
             }
@@ -416,6 +427,7 @@ export function openPreview(filePath: string, config: Config, preserveFocus = fa
         }).catch(() => {
             // Defensive: readFileContent should never reject, but guarantee
             // fireDeferredWork runs so the withProgress notification is dismissed.
+            suppressLoadingNotification = false;
             fireDeferredWork();
         });
     });
@@ -527,6 +539,7 @@ function renderPanelWithLoading(text: string): void {
 
     const hasDiagram = PLANTUML_FENCE_TEST_RE.test(text) || MERMAID_FENCE_TEST_RE.test(text);
     if (!hasDiagram) {
+        suppressLoadingNotification = false;
         void renderPanel(text).catch(err => {
             getOutputChannel().appendLine(`[render error] ${err}`);
         }).finally(() => {
@@ -542,10 +555,10 @@ function renderPanelWithLoading(text: string): void {
     // the overlay should only appear on the *old* HTML that is about to be replaced.
     void panel.webview.postMessage({ type: 'showLoading', seq: renderSeq });
 
-    // On initial render, the command-level "Opening preview..." notification is
-    // already visible, so skip the separate "Rendering PlantUML..." notification
-    // to avoid duplicates.
-    const isInitialRender = !!firstRenderResolve;
+    // When the caller already shows a notification (e.g. "Opening preview..."),
+    // skip the separate "Rendering diagrams..." notification to avoid duplicates.
+    const skipNotification = suppressLoadingNotification;
+    suppressLoadingNotification = false;
 
     const doRender = () => {
         loadingRenderTimer = null;
@@ -557,7 +570,7 @@ function renderPanelWithLoading(text: string): void {
         });
     };
 
-    if (isInitialRender) {
+    if (skipNotification) {
         // Yield to event loop so the webview overlay renders first
         loadingRenderTimer = setTimeout(doRender, 50);
     } else {
