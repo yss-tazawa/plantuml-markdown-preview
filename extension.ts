@@ -12,6 +12,7 @@
 import * as vscode from 'vscode';
 import path from 'path';
 import { existsSync } from 'fs';
+import { execFile } from 'child_process';
 import { exportToHtml, clearMdCache } from './src/exporter.js';
 import { plantumlPlugin } from './src/renderer.js';
 import { clearCache } from './src/plantuml.js';
@@ -137,6 +138,9 @@ async function runExport(uri?: vscode.Uri): Promise<string | null> {
 /**
  * Open a file with the system's default application.
  *
+ * Uses child_process.execFile to pass the native filesystem path directly,
+ * avoiding percent-encoding issues with non-ASCII characters in file:// URIs.
+ *
  * @param filePath - Absolute path to the file to open.
  */
 function openInDefaultApp(filePath: string): void {
@@ -144,7 +148,9 @@ function openInDefaultApp(filePath: string): void {
         vscode.window.showErrorMessage(vscode.l10n.t('File not found: {0}', filePath));
         return;
     }
-    void vscode.env.openExternal(vscode.Uri.file(filePath));
+    const cmd = process.platform === 'win32' ? 'explorer.exe'
+        : process.platform === 'darwin' ? 'open' : 'xdg-open';
+    execFile(cmd, [filePath], () => { /* explorer.exe returns exit code 1 on success; ignore all errors */ });
 }
 
 /** Reference to the in-flight Java check child process for cleanup on deactivate. */
@@ -254,7 +260,7 @@ export function activate(context: vscode.ExtensionContext): { extendMarkdownIt: 
             void vscode.window.withProgress(
                 { location: vscode.ProgressLocation.Notification, title: vscode.l10n.t('Opening preview...') },
                 async () => {
-                    await openPreview(filePath, config, false);
+                    await openPreview(filePath, config, true, true);
                     checkJavaAvailability(config).catch(() => {});
                 }
             );

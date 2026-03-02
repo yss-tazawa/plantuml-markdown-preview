@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## 0.3.5 - 2026-03-02
+
+### Fixed
+
+- HTML export "Open in Browser" failing on Windows when the file path contains non-ASCII characters (e.g. Japanese)
+- "Rendering diagrams..." notification not appearing when switching between Markdown files
+- Preview panel stealing focus when opening a file in the same editor column as the preview
+
 ## 0.3.4 - 2026-03-02
 
 ### Fixed
@@ -16,7 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 ### Fixed
 
 - Fix some PlantUML diagrams not rendering when a document contains duplicate diagram blocks
-- Faster PlantUML rendering via batch mode (reduces JVM startup overhead)
+- Faster PlantUML rendering for documents with multiple diagrams
 
 ## 0.3.2 - 2026-03-02
 

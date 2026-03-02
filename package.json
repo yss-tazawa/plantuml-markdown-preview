@@ -2,7 +2,7 @@
   "name": "plantuml-markdown-preview",
   "displayName": "%displayName%",
   "description": "%description%",
-  "version": "0.3.4",
+  "version": "0.3.5",
   "license": "MIT",
   "publisher": "yss-tazawa",
   "icon": "images/icon.png",
@@ -197,7 +197,20 @@
         "plantumlMarkdownPreview.plantumlScale": {
           "type": "string",
           "default": "100%",
-          "enum": ["auto", "120%", "115%", "110%", "105%", "100%", "95%", "90%", "85%", "80%", "75%", "70%"],
+          "enum": [
+            "auto",
+            "120%",
+            "115%",
+            "110%",
+            "105%",
+            "100%",
+            "95%",
+            "90%",
+            "85%",
+            "80%",
+            "75%",
+            "70%"
+          ],
           "enumDescriptions": [
             "%configuration.plantumlScale.auto%",
             "%configuration.plantumlScale.120%",
@@ -217,7 +230,13 @@
         "plantumlMarkdownPreview.mermaidTheme": {
           "type": "string",
           "default": "default",
-          "enum": ["default", "dark", "forest", "neutral", "base"],
+          "enum": [
+            "default",
+            "dark",
+            "forest",
+            "neutral",
+            "base"
+          ],
           "enumDescriptions": [
             "%configuration.mermaidTheme.default%",
             "%configuration.mermaidTheme.dark%",
@@ -230,7 +249,20 @@
         "plantumlMarkdownPreview.mermaidScale": {
           "type": "string",
           "default": "80%",
-          "enum": ["auto", "100%", "95%", "90%", "85%", "80%", "75%", "70%", "65%", "60%", "55%", "50%"],
+          "enum": [
+            "auto",
+            "100%",
+            "95%",
+            "90%",
+            "85%",
+            "80%",
+            "75%",
+            "70%",
+            "65%",
+            "60%",
+            "55%",
+            "50%"
+          ],
           "enumDescriptions": [
             "%configuration.mermaidScale.auto%",
             "%configuration.mermaidScale.100%",
@@ -250,7 +282,15 @@
         "plantumlMarkdownPreview.htmlMaxWidth": {
           "type": "string",
           "default": "960px",
-          "enum": ["640px", "768px", "960px", "1024px", "1200px", "1440px", "none"],
+          "enum": [
+            "640px",
+            "768px",
+            "960px",
+            "1024px",
+            "1200px",
+            "1440px",
+            "none"
+          ],
           "enumDescriptions": [
             "%configuration.htmlMaxWidth.640%",
             "%configuration.htmlMaxWidth.768%",
@@ -265,7 +305,10 @@
         "plantumlMarkdownPreview.htmlAlignment": {
           "type": "string",
           "default": "center",
-          "enum": ["center", "left"],
+          "enum": [
+            "center",
+            "left"
+          ],
           "enumDescriptions": [
             "%configuration.htmlAlignment.center%",
             "%configuration.htmlAlignment.left%"
