@@ -188,7 +188,7 @@ export async function batchRender(
     const uniqueBlocks = [...new Set(blocks)];
     for (let i = 0; i < uniqueBlocks.length; i += concurrency) {
         if (signal?.aborted) break;
-        const batch = blocks.slice(i, i + concurrency);
+        const batch = uniqueBlocks.slice(i, i + concurrency);
         const svgs = await Promise.all(batch.map(content =>
             signal?.aborted ? Promise.resolve('') : renderFn(content, signal)
         ));
@@ -223,32 +223,10 @@ export function resolveJavaCommand(configJavaPath: string): string {
 }
 
 /**
- * Quote a string for safe embedding in a shell command line.
- *
- * When `shell: true` is used with spawn/execFile, Node.js joins the command
- * and arguments with spaces. This function quotes arguments that contain
- * characters the shell would interpret, so that paths with spaces
- * (e.g. `C:\Program Files\...`) are handled correctly.
- *
- * @param arg - A command or argument string to escape.
- * @returns Shell-safe string, quoted if necessary.
- */
-function shellEscape(arg: string): string {
-    if (!/[\s"'`$!#&|;()<>^%]/.test(arg)) return arg;
-    if (process.platform === 'win32') {
-        // cmd.exe: wrap in double quotes, escape internal double quotes
-        return `"${arg.replace(/"/g, '""')}"`;
-    }
-    // POSIX sh: single quotes prevent all interpretation
-    return `'${arg.replace(/'/g, "'\\''")}'`;
-}
-
-/**
  * Spawn a Java child process (async).
  *
- * Wraps Node `spawn` with {@link resolveJavaCommand}, {@link shellEscape},
- * and `shell: true` so that PATH resolution works reliably on all platforms
- * (including Windows when VS Code is launched from a shortcut).
+ * Wraps Node `spawn` with {@link resolveJavaCommand} so that JAVA_HOME
+ * resolution works reliably on all platforms.
  *
  * @param configJavaPath - The `javaPath` value from extension settings.
  * @param args - CLI arguments passed to the Java process.
@@ -256,15 +234,15 @@ function shellEscape(arg: string): string {
  * @returns The spawned child process.
  */
 export function spawnJava(configJavaPath: string, args: string[], options?: SpawnOptions): ChildProcess {
-    return nodeSpawn(shellEscape(resolveJavaCommand(configJavaPath)), args.map(shellEscape), { ...options, shell: true });
+    return nodeSpawn(resolveJavaCommand(configJavaPath), args, options ?? {});
 }
 
 /**
  * Spawn a Java child process (sync).
  *
- * Wraps Node `spawnSync` with the same resolution and quoting as
- * {@link spawnJava}. Output encoding is forced to `'utf8'` so the
- * return type is always `SpawnSyncReturns<string>`.
+ * Wraps Node `spawnSync` with the same resolution as {@link spawnJava}.
+ * Output encoding is forced to `'utf8'` so the return type is always
+ * `SpawnSyncReturns<string>`.
  *
  * @param configJavaPath - The `javaPath` value from extension settings.
  * @param args - CLI arguments passed to the Java process.
@@ -275,17 +253,17 @@ export function spawnJavaSync(
     configJavaPath: string, args: string[], options?: SpawnSyncOptions,
 ): SpawnSyncReturns<string> {
     return nodeSpawnSync(
-        shellEscape(resolveJavaCommand(configJavaPath)), args.map(shellEscape),
-        { ...options, encoding: 'utf8', shell: true },
+        resolveJavaCommand(configJavaPath), args,
+        { ...options, encoding: 'utf8' },
     ) as SpawnSyncReturns<string>;
 }
 
 /**
  * Execute a Java command with a callback (async, buffered).
  *
- * Wraps Node `execFile` with the same resolution and quoting as
- * {@link spawnJava}. Suitable for short-lived commands where stdout/stderr
- * are buffered in memory (e.g. `java -version`, theme listing).
+ * Wraps Node `execFile` with the same resolution as {@link spawnJava}.
+ * Suitable for short-lived commands where stdout/stderr are buffered in
+ * memory (e.g. `java -version`, theme listing).
  *
  * @param configJavaPath - The `javaPath` value from extension settings.
  * @param args - CLI arguments passed to the Java process.
@@ -300,9 +278,9 @@ export function execJava(
     cb: (err: Error | null, stdout: string, stderr: string) => void,
 ): ChildProcess {
     return nodeExecFile(
-        shellEscape(resolveJavaCommand(configJavaPath)),
-        (args as string[]).map(shellEscape),
-        { ...options, shell: true }, cb,
+        resolveJavaCommand(configJavaPath),
+        args as string[],
+        options, cb,
     );
 }
 
