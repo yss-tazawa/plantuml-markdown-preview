@@ -35,7 +35,7 @@ This extension is built with security in mind:
 - Content Security Policy with nonce-based script restrictions
 - No code execution from Markdown content
 - User-authored `<script>` tags are blocked
-- Local image loading is controlled by `allowLocalImages` (default: on); when disabled, `localResourceRoots` is set to `[]` to block all local file access
+- Local image loading is controlled by `allowLocalImages` (default: on); when disabled, `localResourceRoots` is restricted to the extension's own directory only (for bundled assets such as mermaid.js)
 - HTTP image loading is off by default (`allowHttpImages`); enabling adds `http:` to the CSP `img-src` directive
 - Resolved image URIs are HTML-escaped to prevent attribute injection
 - Server mode (`renderMode: server`) sends PlantUML text to an external server; defaults to the public PlantUML server — users can set a self-hosted server URL for privacy; local mode (default) keeps all diagrams on the machine
