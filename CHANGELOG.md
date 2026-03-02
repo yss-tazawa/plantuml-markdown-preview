@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## 0.3.6 - 2026-03-03
+
+### Fixed
+
+- Server render mode only showed "HTTP 400 Bad Request" for PlantUML syntax errors. Now the error diagram from the server is displayed, showing exactly where the syntax error occurred
+
 ## 0.3.5 - 2026-03-02
 
 ### Fixed
