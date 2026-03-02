@@ -37,9 +37,9 @@ export interface Config {
     allowLocalImages: boolean;
     /** When true, allow loading images over HTTP (unencrypted) in the preview CSP. */
     allowHttpImages: boolean;
-    /** Debounce delay (ms) when only non-PlantUML content changed. */
+    /** Debounce delay (ms) when only non-diagram text changed (diagrams served from cache). */
     debounceNoPlantUmlMs: number;
-    /** Debounce delay (ms) when PlantUML content changed. */
+    /** Debounce delay (ms) when diagram content changed. */
     debouncePlantUmlMs: number;
     /** Hidden debug flag: simulate Java not found, even when installed. */
     debugSimulateNoJava?: boolean;
