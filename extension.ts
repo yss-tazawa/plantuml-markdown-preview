@@ -149,6 +149,8 @@ function openInDefaultApp(filePath: string): void {
 
 /** Reference to the in-flight Java check child process for cleanup on deactivate. */
 let javaCheckChild: ReturnType<typeof execJava> | null = null;
+/** Reference to the in-flight JVM warmup child process for cleanup on deactivate. */
+let warmupChild: ReturnType<typeof execJava> | null = null;
 
 /**
  * Check if Java is available. When not found (or debugSimulateNoJava is true),
@@ -211,7 +213,8 @@ export function activate(context: vscode.ExtensionContext): { extendMarkdownIt: 
     setOutputChannel(channel);
 
     // Ensure builtInPreviewConfig has correct values after workspace is fully loaded
-    syncBuiltInPreviewConfig(getConfig());
+    const initialConfig = getConfig();
+    syncBuiltInPreviewConfig(initialConfig);
 
     const exportCmd = vscode.commands.registerCommand(
         'plantuml-markdown-preview.exportHtml',
@@ -282,6 +285,14 @@ export function activate(context: vscode.ExtensionContext): { extendMarkdownIt: 
 
     context.subscriptions.push(exportCmd, exportAndOpenCmd, previewCmd, changeThemeCmd, editorTracker, configWatcher);
 
+    // Warm up JVM/JAR file cache in the background so the first render is faster.
+    // On Windows, cold-starting the JVM loads java.exe + plantuml.jar from disk;
+    // this fire-and-forget call primes the OS file cache before the user opens preview.
+    if (initialConfig.renderMode !== 'server' && initialConfig.jarPath) {
+        warmupChild = execJava(initialConfig.javaPath, ['-jar', initialConfig.jarPath, '-version'],
+            { timeout: 30000 }, (_err) => { warmupChild = null; /* errors are expected when Java is missing */ });
+    }
+
     return { extendMarkdownIt };
 }
 
@@ -295,6 +306,10 @@ export function deactivate(): void {
     if (javaCheckChild) {
         javaCheckChild.kill();
         javaCheckChild = null;
+    }
+    if (warmupChild) {
+        warmupChild.kill();
+        warmupChild = null;
     }
     clearCache();
     clearServerCache();

@@ -5,7 +5,7 @@
  * Key behaviors:
  * - renderToSvg: PlantUML text -> SVG string (synchronous, SHA-256-cached LRU)
  * - renderToSvgAsync: PlantUML text -> SVG string (asynchronous via child_process.spawn, SHA-256-cached LRU)
- * - renderAllLocal: Render all PlantUML blocks with controlled concurrency (max 3) using renderToSvgAsync
+ * - renderAllLocal: Render all PlantUML blocks in a single JVM process (batch mode) with fallback to individual rendering
  * - listThemes: Dynamically discover available PlantUML themes via `help themes`
  * - Spawns Java via spawnJava/spawnJavaSync wrappers with -Djava.awt.headless=true (no macOS Dock icon)
  * - Cache key: content + jarPath + javaPath + dotPath + plantumlTheme (SHA-256 hash, max 200 entries)
@@ -16,7 +16,7 @@
  */
 import * as vscode from 'vscode';
 import type { ChildProcess } from 'child_process';
-import { escapeHtml, ensureStartEndTags, errorHtml, LruCache, computeHash, batchRender, resolveJavaCommand, spawnJava, spawnJavaSync, execJava } from './utils.js';
+import { escapeHtml, ensureStartEndTags, errorHtml, LruCache, computeHash, resolveJavaCommand, spawnJava, spawnJavaSync, execJava } from './utils.js';
 import type { Config } from './config.js';
 
 /** Set of currently in-flight render child processes (for cleanup on deactivate). */
@@ -223,14 +223,237 @@ export function renderToSvgAsync(pumlContent: string, config: Config, signal?: A
     });
 }
 
-/** Maximum number of concurrent JVM processes for local rendering. */
-const MAX_CONCURRENCY = 3;
+/**
+ * Split concatenated SVG output from PlantUML -pipe mode into individual SVGs.
+ *
+ * PlantUML outputs each diagram's SVG consecutively in stdout. Each SVG starts
+ * with a `<?xml` declaration. We split on this boundary to extract individual SVGs.
+ *
+ * @param stdout - Concatenated SVG output from PlantUML.
+ * @returns Array of individual SVG strings.
+ */
+function splitSvgOutput(stdout: string): string[] {
+    return stdout.split(/(?=<\?xml\s)/).filter(p => p.trim().length > 0);
+}
 
 /**
- * Render multiple PlantUML blocks to SVGs with controlled concurrency (asynchronous).
+ * Detect whether an SVG is a PlantUML error diagram (syntax error).
  *
- * Spawns up to MAX_CONCURRENCY JVM processes in parallel to balance throughput
- * against resource usage. Returns a Map keyed by trimmed block content.
+ * Error SVGs should not be cached so that re-renders after a fix produce
+ * corrected output. Uses broad OR matching so that false positives
+ * (valid SVGs mistakenly flagged) are harmless — they simply trigger
+ * an individual re-render that produces the correct result.
+ *
+ * @param svg - Individual SVG string from PlantUML.
+ * @returns true if the SVG appears to be an error diagram.
+ */
+function isErrorSvg(svg: string): boolean {
+    return /\[From string \(line \d+\)\]/.test(svg) || svg.includes('Syntax Error');
+}
+
+/**
+ * Spawn a single JVM process for batch PlantUML rendering.
+ *
+ * @param javaPath - Java path config value.
+ * @param args - CLI arguments for the JVM.
+ * @param stdinPayload - Concatenated PlantUML content.
+ * @param timeout - Process timeout in ms.
+ * @param signal - Optional abort signal.
+ * @returns Stdout content on success.
+ * @throws Error on spawn failure, timeout, abort, or non-zero exit with empty stdout.
+ */
+function spawnBatchJvm(javaPath: string, args: string[], stdinPayload: string, timeout: number, signal?: AbortSignal): Promise<string> {
+    return new Promise<string>((resolve, reject) => {
+        const child = spawnJava(javaPath, args, { stdio: ['pipe', 'pipe', 'pipe'] });
+        activeChildren.add(child);
+        const stdoutBufs: Buffer[] = [];
+        let settled = false;
+
+        const settle = (value: string | Error) => {
+            if (settled) return;
+            settled = true;
+            activeChildren.delete(child);
+            if (typeof value === 'string') resolve(value);
+            else reject(value);
+        };
+
+        const onAbort = () => {
+            clearTimeout(timer);
+            signal?.removeEventListener('abort', onAbort);
+            child.kill('SIGKILL');
+            settle(new Error('aborted'));
+        };
+        signal?.addEventListener('abort', onAbort, { once: true });
+
+        const timer = setTimeout(() => {
+            child.kill('SIGKILL');
+            settle(new Error('Timed out'));
+        }, timeout);
+
+        child.stdout!.on('data', (chunk: Buffer) => { stdoutBufs.push(chunk); });
+        child.stderr!.on('data', () => {}); // Ignore stderr in batch mode
+
+        child.on('error', (err: Error) => {
+            clearTimeout(timer);
+            signal?.removeEventListener('abort', onAbort);
+            settle(err);
+        });
+
+        child.on('close', (code: number | null) => {
+            clearTimeout(timer);
+            signal?.removeEventListener('abort', onAbort);
+            if (settled) return;
+            const stdout = Buffer.concat(stdoutBufs).toString('utf8');
+            if (code !== 0 && !stdout.trim()) {
+                settle(new Error(`Process exited with code ${code ?? 'null'}`));
+            } else {
+                // Non-zero exit with stdout: PlantUML may embed errors as SVG.
+                // The caller (renderBatchLocal) detects these via isErrorSvg
+                // and re-renders them individually for detailed error messages.
+                settle(stdout);
+            }
+        });
+
+        child.stdin!.on('error', () => {});
+        try {
+            child.stdin!.write(stdinPayload);
+            child.stdin!.end();
+        } catch {
+            // stdin closed; event handler will settle
+        }
+    });
+}
+
+/**
+ * Fall back to individual sequential rendering when batch mode fails.
+ *
+ * Renders each block one at a time via renderToSvgAsync, preserving the
+ * per-diagram error handling (with -stdrpt:1 parsing).
+ *
+ * @param uncached - Blocks that were not in cache.
+ * @param results - Map to populate with rendered results.
+ * @param config - Paths and theme settings.
+ * @param signal - Optional abort signal.
+ * @returns Updated results map.
+ */
+async function fallbackToIndividual(
+    uncached: { trimmed: string }[],
+    results: Map<string, string>,
+    config: Config,
+    signal?: AbortSignal,
+): Promise<Map<string, string>> {
+    for (const block of uncached) {
+        if (signal?.aborted) break;
+        const svg = await renderToSvgAsync(block.trimmed, config, signal);
+        results.set(block.trimmed, svg);
+    }
+    return results;
+}
+
+/**
+ * Render multiple PlantUML blocks in a single JVM process (batch mode).
+ *
+ * Sends all uncached blocks to one JVM via stdin in -pipe mode. Each block
+ * is wrapped with @startuml/@enduml, concatenated, and piped as a single
+ * stdin payload. The concatenated SVG output is split by <?xml boundaries.
+ *
+ * Falls back to individual rendering (via renderToSvgAsync) if the batch
+ * JVM fails or produces an unexpected number of SVGs.
+ *
+ * @param blocks - Array of raw PlantUML source texts.
+ * @param config - Paths and theme settings.
+ * @param signal - Optional abort signal.
+ * @returns Map of trimmed content -> SVG string.
+ */
+async function renderBatchLocal(blocks: string[], config: Config, signal?: AbortSignal): Promise<Map<string, string>> {
+    const results = new Map<string, string>();
+    const jarPath = config.jarPath || '';
+    const javaPath = config.javaPath || 'java';
+    const dotPath = config.dotPath || 'dot';
+    const plantumlTheme = config.plantumlTheme || 'default';
+
+    if (!jarPath) {
+        const err = errorHtml(
+            vscode.l10n.t('PlantUML jar is not configured.') + '<br>' +
+            '<code>plantumlMarkdownPreview.jarPath</code>'
+        );
+        for (const b of blocks) results.set(b.trim(), err);
+        return results;
+    }
+
+    // Deduplicate and separate cached from uncached
+    const seen = new Set<string>();
+    const uncached: { trimmed: string; content: string; hash: string }[] = [];
+
+    for (const raw of blocks) {
+        const trimmed = raw.trim();
+        if (seen.has(trimmed)) continue;
+        seen.add(trimmed);
+        const content = ensureStartEndTags(trimmed);
+        const hash = computeHash(content, jarPath, resolveJavaCommand(javaPath), dotPath, plantumlTheme);
+        const cached = cache.get(hash);
+        if (cached !== undefined) {
+            results.set(trimmed, cached);
+        } else {
+            uncached.push({ trimmed, content, hash });
+        }
+    }
+
+    if (uncached.length === 0 || signal?.aborted) return results;
+
+    // Build batch JVM args (no -stdrpt:1 — per-diagram stderr not parseable in batch)
+    const args = ['-Djava.awt.headless=true', '-jar', jarPath, '-pipe', '-tsvg', '-charset', 'UTF-8'];
+    if (dotPath !== 'dot') args.push('-graphvizdot', dotPath);
+    if (plantumlTheme !== 'default') args.push('-theme', plantumlTheme);
+
+    // Dynamic timeout: 15s base + 5s per additional block, max 60s
+    const timeout = Math.min(15000 + (uncached.length - 1) * 5000, 60000);
+
+    // Concatenate all blocks into single stdin payload
+    const stdinPayload = uncached.map(b => b.content).join('\n');
+
+    try {
+        const stdout = await spawnBatchJvm(javaPath, args, stdinPayload, timeout, signal);
+        const svgs = splitSvgOutput(stdout);
+
+        if (svgs.length !== uncached.length) {
+            // Output count mismatch: fall back to individual rendering
+            return fallbackToIndividual(uncached, results, config, signal);
+        }
+
+        // Re-render error SVGs individually to get detailed error messages
+        // (with -stdrpt:1 line numbers) instead of PlantUML's raw error SVG.
+        // This also makes isErrorSvg false positives harmless — the individual
+        // re-render simply produces the correct SVG and caches it normally.
+        const errorIndices: number[] = [];
+        for (let i = 0; i < uncached.length; i++) {
+            const svg = svgs[i];
+            if (isErrorSvg(svg)) {
+                errorIndices.push(i);
+            } else {
+                cache.set(uncached[i].hash, svg);
+                results.set(uncached[i].trimmed, svg);
+            }
+        }
+        for (const i of errorIndices) {
+            if (signal?.aborted) break;
+            const detailed = await renderToSvgAsync(uncached[i].trimmed, config, signal);
+            results.set(uncached[i].trimmed, detailed);
+        }
+    } catch {
+        // Batch JVM failed: fall back to individual rendering
+        return fallbackToIndividual(uncached, results, config, signal);
+    }
+
+    return results;
+}
+
+/**
+ * Render multiple PlantUML blocks to SVGs using batch mode (single JVM).
+ *
+ * All uncached blocks are sent to a single JVM process, eliminating the
+ * per-diagram JVM startup overhead. Falls back to individual rendering
+ * if batch mode fails.
  *
  * @param blocks - Array of PlantUML source texts.
  * @param config - Paths and theme settings.
@@ -238,7 +461,7 @@ const MAX_CONCURRENCY = 3;
  * @returns Map of trimmed content -> SVG string.
  */
 export function renderAllLocal(blocks: string[], config: Config, signal?: AbortSignal): Promise<Map<string, string>> {
-    return batchRender(blocks, MAX_CONCURRENCY, (content, sig) => renderToSvgAsync(content, config, sig), signal);
+    return renderBatchLocal(blocks, config, signal);
 }
 
 /**
