@@ -335,8 +335,8 @@ All settings use the `plantumlMarkdownPreview.` prefix.
 | `htmlAlignment` | `"center"` | HTML body alignment. `"center"` (default) or `"left"`. |
 | `allowLocalImages` | `true` | Resolve relative image paths (e.g. `![](./image.png)`) in the preview. Set to `false` to block all local file access. |
 | `allowHttpImages` | `false` | Allow loading images over HTTP (unencrypted) in the preview. Useful for intranet or local development servers. |
-| `debounceNoPlantUmlMs` | `100` | Debounce delay (ms) for non-PlantUML text changes |
-| `debouncePlantUmlMs` | `300` | Debounce delay (ms) for PlantUML content changes |
+| `debounceNoPlantUmlMs` | `100` | Debounce delay (ms) for non-diagram text changes (diagrams served from cache) |
+| `debouncePlantUmlMs` | `300` | Debounce delay (ms) for diagram content changes |
 
 > **Note:** `allowLocalImages` and `allowHttpImages` apply only to the preview panel. HTML export always outputs original image paths without CSP restrictions.
 
