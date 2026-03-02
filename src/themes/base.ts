@@ -104,7 +104,7 @@ export function buildThemeCss(p: ThemePalette): string {
       font-size: 16px;
       max-width: 960px;
       margin: 0 auto;
-      padding: 2rem 1.5rem 4rem;
+      padding: 1em 1.5rem 4rem;
       line-height: 1.7;
       word-wrap: break-word;
       color: ${p.text};
