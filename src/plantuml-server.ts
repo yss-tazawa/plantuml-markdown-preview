@@ -98,7 +98,7 @@ function cacheKey(content: string, config: Config): string {
  *
  * @param pumlContent Raw PlantUML source text (with or without @startuml/@enduml).
  * @param config Server URL and theme settings.
- * @returns SVG markup on success, or styled HTML error div on failure.
+ * @returns SVG markup on success, raw SVG on HTTP error with SVG body (e.g. syntax errors), or styled HTML error div on other failures.
  */
 export async function renderToSvgServer(pumlContent: string, config: Config, signal?: AbortSignal): Promise<string> {
     const trimmed = pumlContent.trim();
@@ -132,13 +132,18 @@ export async function renderToSvgServer(pumlContent: string, config: Config, sig
             headers: { 'Accept': 'image/svg+xml' }
         });
 
+        const svg = await response.text();
+
         if (!response.ok) {
+            // PlantUML server returns syntax errors as SVG with HTTP 400;
+            // show the SVG so users can see error details visually.
+            if (svg.includes('<svg') || svg.includes('<?xml')) {
+                return svg;
+            }
             return errorHtml(
                 vscode.l10n.t('PlantUML server error: {0}', `HTTP ${response.status} ${escapeHtml(response.statusText)}`)
             );
         }
-
-        const svg = await response.text();
 
         // Validate that we got SVG back (server may return error pages as HTML)
         if (!svg.includes('<svg') && !svg.includes('<?xml')) {
