@@ -10,7 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 ### Fixed
 
 - Fix some PlantUML diagrams not rendering when a document contains duplicate diagram blocks
-- Reduce PlantUML rendering overhead on Windows
+- Faster PlantUML rendering via batch mode (reduces JVM startup overhead)
 
 ## 0.3.2 - 2026-03-02
 
