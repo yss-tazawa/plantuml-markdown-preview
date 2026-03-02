@@ -21,13 +21,13 @@
 ## Highlights
 
 - **Inline PlantUML rendering** — diagrams appear directly in your Markdown preview, not in a separate panel
+- **Secure** — CSP nonce-based policy, no code execution from Markdown content
+- **Local & Server rendering** — use Java locally (default, fully async) or render via a PlantUML server (no Java required)
 - **Mermaid support** — ```` ```mermaid ```` blocks rendered client-side with theme selection (no Java needed)
 - **Diagram scale control** — adjust PlantUML and Mermaid diagram sizes independently
-- **Local & Server rendering** — use Java locally (default, fully async) or render via a PlantUML server (no Java required)
 - **Self-contained HTML export** — SVG diagrams embedded inline, configurable layout width and alignment
 - **Bidirectional scroll sync** — editor and preview scroll together, both ways
 - **14 preview themes** — 8 light + 6 dark themes including GitHub, Atom, Solarized, Dracula, Monokai, and more
-- **Secure** — CSP nonce-based policy, no code execution from Markdown content
 - **Internationalization** — English and Japanese UI
 
 ## Table of Contents
