@@ -17,11 +17,11 @@
   "Select theme": "テーマを選択",
   "(current)": "(現在)",
   "Java is not found. PlantUML requires Java for local rendering.": "Java が見つかりません。ローカルレンダリングには Java が必要です。",
-  "Use Server Mode": "サーバーモードを使用",
+  "Use Easy Mode": "Easy モードを使用",
   "Install Java": "Java をインストール",
   "Dismiss": "閉じる",
-  "Server mode sends your diagrams to an external server ({0}). Continue?": "サーバーモードでは PlantUML ダイアグラムを外部サーバー（{0}）に送信します。続行しますか？",
-  "Yes, switch to server mode": "はい、サーバーモードに切り替える",
+  "Easy mode sends diagram source to an external server ({0}). Continue?": "Easy モードではダイアグラムソースを外部サーバー（{0}）に送信します。続行しますか？",
+  "Yes, switch to Easy mode": "はい、Easy モードに切り替える",
   "Cancel": "キャンセル",
   "PlantUML server error: {0}": "PlantUML サーバーエラー: {0}",
   "PlantUML server request timed out": "PlantUML サーバーへのリクエストがタイムアウトしました",
@@ -35,7 +35,7 @@
   "Local PlantUML server is not running. Check the output panel for details.": "ローカル PlantUML サーバーが起動していません。出力パネルを確認してください。",
   "Local PlantUML server started on port {0}": "ローカル PlantUML サーバーがポート {0} で起動しました",
   "Local PlantUML server crashed: {0}": "ローカル PlantUML サーバーがクラッシュしました: {0}",
-  "Switch to Local Mode": "ローカルモードに切り替え",
+  "Switch to Secure Mode": "Secure モードに切り替え",
   "Restart Server": "サーバーを再起動",
   "Local PlantUML server stopped.": "ローカル PlantUML サーバーを停止しました"
 }

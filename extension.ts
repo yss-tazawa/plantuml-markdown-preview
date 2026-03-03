@@ -20,8 +20,15 @@ import { clearServerCache } from './src/plantuml-server.js';
 import { prepareLocalServer, startLocalServer, stopLocalServer, restartLocalServer, setLocalServerOutputChannel } from './src/local-server.js';
 import { openPreview, getCurrentFilePath, updateConfig, changeTheme, disposePreview, setOutputChannel } from './src/preview.js';
 import { execJava } from './src/utils.js';
-import { CONFIG_SECTION, type Config } from './src/config.js';
+import { CONFIG_SECTION, MODE_PRESETS, type Config, type Mode } from './src/config.js';
 import type MarkdownIt from 'markdown-it';
+
+/** Resolve the allowLocalImages tri-state ('mode-default' | 'on' | 'off') to a boolean. */
+function resolveAllowLocalImages(value: string, presetDefault: boolean): boolean {
+    if (value === 'on') return true;
+    if (value === 'off') return false;
+    return presetDefault;
+}
 
 /** Absolute path to the extension root directory, set during activate(). */
 let extensionPath = '';
@@ -45,28 +52,31 @@ function resolveBundledJarPath(): string {
 /**
  * Read extension settings from the VS Code configuration store.
  *
- * When `jarPath` is empty (default), falls back to the bundled PlantUML jar
+ * When `plantumlJarPath` is empty (default), falls back to the bundled PlantUML jar
  * located at `<extensionPath>/vendor/plantuml.jar`.
  *
  * @returns Current configuration values with defaults applied.
  */
 function getConfig(): Config {
     const cfg = vscode.workspace.getConfiguration(CONFIG_SECTION);
-    const userJarPath = cfg.get<string>('jarPath', '');
+    const userJarPath = cfg.get<string>('plantumlJarPath', '');
+    const mode = (cfg.get<string>('mode', 'fast') as Mode);
+    const preset = MODE_PRESETS[mode] ?? MODE_PRESETS.fast;
     return {
-        jarPath: userJarPath || resolveBundledJarPath(),
+        mode,
+        plantumlJarPath: userJarPath || resolveBundledJarPath(),
         javaPath: cfg.get<string>('javaPath', 'java'),
         dotPath: cfg.get<string>('dotPath', 'dot'),
-        debounceNoDiagramChangeMs: cfg.get<number>('debounceNoDiagramChangeMs', 100),
-        debounceDiagramChangeMs: cfg.get<number>('debounceDiagramChangeMs', 100),
+        debounceNoDiagramChangeMs: cfg.get<number>('debounceNoDiagramChangeMs') ?? preset.debounceNoDiagramChangeMs,
+        debounceDiagramChangeMs: cfg.get<number>('debounceDiagramChangeMs') ?? preset.debounceDiagramChangeMs,
         plantumlTheme: cfg.get<string>('plantumlTheme', 'default'),
         plantumlScale: cfg.get<string>('plantumlScale', '100%'),
         previewTheme: cfg.get<string>('previewTheme', 'github-light'),
-        allowLocalImages: cfg.get<boolean>('allowLocalImages', true),
+        allowLocalImages: resolveAllowLocalImages(cfg.get<string>('allowLocalImages', 'mode-default'), preset.allowLocalImages),
         allowHttpImages: cfg.get<boolean>('allowHttpImages', false),
-        renderMode: cfg.get<'local' | 'server' | 'local-server'>('renderMode', 'local'),
-        serverUrl: cfg.get<string>('serverUrl', 'https://www.plantuml.com/plantuml'),
-        localServerPort: cfg.get<number>('localServerPort', 0),
+        renderMode: preset.renderMode,
+        plantumlServerUrl: cfg.get<string>('plantumlServerUrl', 'https://www.plantuml.com/plantuml'),
+        plantumlLocalServerPort: cfg.get<number>('plantumlLocalServerPort', 0),
         mermaidTheme: cfg.get<string>('mermaidTheme', 'default'),
         mermaidScale: cfg.get<string>('mermaidScale', '80%'),
         htmlMaxWidth: cfg.get<string>('htmlMaxWidth', '960px'),
@@ -113,8 +123,8 @@ async function runExport(uri?: vscode.Uri): Promise<string | null> {
 
     const config = getConfig();
 
-    // jarPath check is only needed for local mode
-    if (config.renderMode !== 'server' && !config.jarPath) {
+    // plantumlJarPath check is only needed for local mode
+    if (config.renderMode !== 'server' && !config.plantumlJarPath) {
         const openSettingsLabel = vscode.l10n.t('Open Settings');
         const action = await vscode.window.showErrorMessage(
             vscode.l10n.t('PlantUML jar is not configured. Open settings?'),
@@ -123,7 +133,7 @@ async function runExport(uri?: vscode.Uri): Promise<string | null> {
         if (action === openSettingsLabel) {
             void vscode.commands.executeCommand(
                 'workbench.action.openSettings',
-                'plantumlMarkdownPreview.jarPath'
+                'plantumlMarkdownPreview.plantumlJarPath'
             );
         }
         return null;
@@ -182,26 +192,26 @@ async function checkJavaAvailability(config: Config): Promise<boolean> {
     });
     if (javaFound) return true;
 
-    const useServer = vscode.l10n.t('Use Server Mode');
+    const useEasy = vscode.l10n.t('Use Easy Mode');
     const installJava = vscode.l10n.t('Install Java');
     const dismiss = vscode.l10n.t('Dismiss');
 
     const action = await vscode.window.showWarningMessage(
         vscode.l10n.t('Java is not found. PlantUML requires Java for local rendering.'),
-        useServer, installJava, dismiss
+        useEasy, installJava, dismiss
     );
 
-    if (action === useServer) {
-        const serverUrl = config.serverUrl || 'https://www.plantuml.com/plantuml';
-        const yesLabel = vscode.l10n.t('Yes, switch to server mode');
+    if (action === useEasy) {
+        const serverUrl = config.plantumlServerUrl || 'https://www.plantuml.com/plantuml';
+        const yesLabel = vscode.l10n.t('Yes, switch to Easy mode');
         const confirm = await vscode.window.showWarningMessage(
-            vscode.l10n.t('Server mode sends your diagrams to an external server ({0}). Continue?', serverUrl),
+            vscode.l10n.t('Easy mode sends diagram source to an external server ({0}). Continue?', serverUrl),
             yesLabel,
             vscode.l10n.t('Cancel')
         );
         if (confirm === yesLabel) {
             const cfg = vscode.workspace.getConfiguration(CONFIG_SECTION);
-            await cfg.update('renderMode', 'server', vscode.ConfigurationTarget.Global);
+            await cfg.update('mode', 'easy', vscode.ConfigurationTarget.Global);
         }
     } else if (action === installJava) {
         void vscode.env.openExternal(vscode.Uri.parse('https://www.java.com/en/download/'));
@@ -329,8 +339,8 @@ export function activate(context: vscode.ExtensionContext): { extendMarkdownIt: 
     // On Windows, cold-starting the JVM loads java.exe + plantuml.jar from disk;
     // this fire-and-forget call primes the OS file cache before the user opens preview.
     // Only for 'local' mode — 'local-server' has its own startup, 'server' doesn't need Java.
-    if (initialConfig.renderMode === 'local' && initialConfig.jarPath) {
-        warmupChild = execJava(initialConfig.javaPath, ['-jar', initialConfig.jarPath, '-version'],
+    if (initialConfig.renderMode === 'local' && initialConfig.plantumlJarPath) {
+        warmupChild = execJava(initialConfig.javaPath, ['-jar', initialConfig.plantumlJarPath, '-version'],
             { timeout: 30000 }, (_err) => { warmupChild = null; /* errors are expected when Java is missing */ });
     }
 
@@ -338,7 +348,7 @@ export function activate(context: vscode.ExtensionContext): { extendMarkdownIt: 
 }
 
 /** Keys that affect the local-server process and require a restart when changed. */
-const LOCAL_SERVER_KEYS = ['jarPath', 'javaPath', 'dotPath', 'localServerPort'] as const;
+const LOCAL_SERVER_KEYS = ['plantumlJarPath', 'javaPath', 'dotPath', 'plantumlLocalServerPort'] as const;
 
 /**
  * Handle local-server lifecycle when configuration changes.
@@ -411,15 +421,16 @@ export function deactivate(): void {
  * NOTE: Default values here must match the defaults in getConfig().
  */
 const builtInPreviewConfig: Config = {
-    jarPath: '',
+    mode: 'fast',
+    plantumlJarPath: '',
     javaPath: 'java',
     dotPath: 'dot',
     plantumlTheme: 'default',
     plantumlScale: '100%',
     previewTheme: 'github-light',
-    renderMode: 'local',
-    serverUrl: 'https://www.plantuml.com/plantuml',
-    localServerPort: 0,
+    renderMode: 'local-server',
+    plantumlServerUrl: 'https://www.plantuml.com/plantuml',
+    plantumlLocalServerPort: 0,
     mermaidTheme: 'default',
     mermaidScale: '80%',
     htmlMaxWidth: '960px',

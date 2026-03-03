@@ -126,6 +126,12 @@ export class LruCache<V> {
     private readonly map = new Map<string, V>();
     constructor(private readonly maxSize: number) {}
 
+    /**
+     * Retrieve a value and promote it to most-recently-used.
+     *
+     * @param key - Cache key to look up.
+     * @returns The cached value, or `undefined` if not present.
+     */
     get(key: string): V | undefined {
         if (!this.map.has(key)) return undefined;
         const value = this.map.get(key)!;
@@ -134,6 +140,12 @@ export class LruCache<V> {
         return value;
     }
 
+    /**
+     * Insert or update an entry, evicting the oldest if at capacity.
+     *
+     * @param key - Cache key.
+     * @param value - Value to store.
+     */
     set(key: string, value: V): void {
         if (this.map.has(key)) this.map.delete(key);
         if (this.map.size >= this.maxSize) {
@@ -143,6 +155,7 @@ export class LruCache<V> {
         this.map.set(key, value);
     }
 
+    /** Remove all entries from the cache. */
     clear(): void {
         this.map.clear();
     }

@@ -119,42 +119,64 @@
     "configuration": {
       "title": "%configuration.title%",
       "properties": {
-        "plantumlMarkdownPreview.renderMode": {
+        "plantumlMarkdownPreview.mode": {
+          "order": 1,
           "type": "string",
-          "default": "local-server",
+          "default": "fast",
           "enum": [
-            "local",
-            "server",
-            "local-server"
+            "fast",
+            "secure",
+            "easy"
           ],
           "enumDescriptions": [
-            "%configuration.renderMode.local%",
-            "%configuration.renderMode.server%",
-            "%configuration.renderMode.localServer%"
+            "%configuration.mode.fast%",
+            "%configuration.mode.secure%",
+            "%configuration.mode.easy%"
           ],
-          "description": "%configuration.renderMode.description%"
-        },
-        "plantumlMarkdownPreview.serverUrl": {
-          "type": "string",
-          "default": "https://www.plantuml.com/plantuml",
-          "description": "%configuration.serverUrl.description%"
+          "description": "%configuration.mode.description%"
         },
         "plantumlMarkdownPreview.javaPath": {
+          "order": 2,
           "type": "string",
           "default": "java",
           "description": "%configuration.javaPath.description%"
         },
-        "plantumlMarkdownPreview.jarPath": {
+        "plantumlMarkdownPreview.plantumlJarPath": {
+          "order": 3,
           "type": "string",
           "default": "",
-          "description": "%configuration.jarPath.description%"
+          "description": "%configuration.plantumlJarPath.description%"
         },
         "plantumlMarkdownPreview.dotPath": {
+          "order": 4,
           "type": "string",
           "default": "dot",
           "description": "%configuration.dotPath.description%"
         },
+        "plantumlMarkdownPreview.allowLocalImages": {
+          "order": 5,
+          "type": "string",
+          "default": "mode-default",
+          "enum": [
+            "mode-default",
+            "on",
+            "off"
+          ],
+          "enumDescriptions": [
+            "%configuration.allowLocalImages.mode-default%",
+            "%configuration.allowLocalImages.on%",
+            "%configuration.allowLocalImages.off%"
+          ],
+          "description": "%configuration.allowLocalImages.description%"
+        },
+        "plantumlMarkdownPreview.allowHttpImages": {
+          "order": 6,
+          "type": "boolean",
+          "default": false,
+          "description": "%configuration.allowHttpImages.description%"
+        },
         "plantumlMarkdownPreview.previewTheme": {
+          "order": 7,
           "type": "string",
           "default": "github-light",
           "enum": [
@@ -192,11 +214,13 @@
           "description": "%configuration.previewTheme.description%"
         },
         "plantumlMarkdownPreview.plantumlTheme": {
+          "order": 8,
           "type": "string",
           "default": "default",
           "description": "%configuration.plantumlTheme.description%"
         },
         "plantumlMarkdownPreview.plantumlScale": {
+          "order": 10,
           "type": "string",
           "default": "100%",
           "enum": [
@@ -230,6 +254,7 @@
           "description": "%configuration.plantumlScale.description%"
         },
         "plantumlMarkdownPreview.mermaidTheme": {
+          "order": 9,
           "type": "string",
           "default": "default",
           "enum": [
@@ -249,6 +274,7 @@
           "description": "%configuration.mermaidTheme.description%"
         },
         "plantumlMarkdownPreview.mermaidScale": {
+          "order": 11,
           "type": "string",
           "default": "80%",
           "enum": [
@@ -282,6 +308,7 @@
           "description": "%configuration.mermaidScale.description%"
         },
         "plantumlMarkdownPreview.htmlMaxWidth": {
+          "order": 12,
           "type": "string",
           "default": "960px",
           "enum": [
@@ -305,6 +332,7 @@
           "description": "%configuration.htmlMaxWidth.description%"
         },
         "plantumlMarkdownPreview.htmlAlignment": {
+          "order": 13,
           "type": "string",
           "default": "center",
           "enum": [
@@ -317,32 +345,31 @@
           ],
           "description": "%configuration.htmlAlignment.description%"
         },
-        "plantumlMarkdownPreview.allowLocalImages": {
-          "type": "boolean",
-          "default": true,
-          "description": "%configuration.allowLocalImages.description%"
-        },
-        "plantumlMarkdownPreview.allowHttpImages": {
-          "type": "boolean",
-          "default": false,
-          "description": "%configuration.allowHttpImages.description%"
-        },
         "plantumlMarkdownPreview.debounceNoDiagramChangeMs": {
-          "type": "number",
-          "default": 100,
+          "order": 14,
+          "type": ["number", "null"],
+          "default": null,
           "description": "%configuration.debounceNoDiagramChangeMs.description%"
         },
         "plantumlMarkdownPreview.debounceDiagramChangeMs": {
-          "type": "number",
-          "default": 100,
+          "order": 15,
+          "type": ["number", "null"],
+          "default": null,
           "description": "%configuration.debounceDiagramChangeMs.description%"
         },
-        "plantumlMarkdownPreview.localServerPort": {
+        "plantumlMarkdownPreview.plantumlLocalServerPort": {
+          "order": 16,
           "type": "number",
           "default": 0,
           "minimum": 0,
           "maximum": 65535,
-          "description": "%configuration.localServerPort.description%"
+          "description": "%configuration.plantumlLocalServerPort.description%"
+        },
+        "plantumlMarkdownPreview.plantumlServerUrl": {
+          "order": 17,
+          "type": "string",
+          "default": "https://www.plantuml.com/plantuml",
+          "description": "%configuration.plantumlServerUrl.description%"
         }
       }
     }

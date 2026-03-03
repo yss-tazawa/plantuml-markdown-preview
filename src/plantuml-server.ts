@@ -79,14 +79,14 @@ const DEFAULT_TIMEOUT_MS = 15000;
 
 /**
  * Compute a cache key for server rendering.
- * Key components: content + serverUrl + plantumlTheme.
+ * Key components: content + plantumlServerUrl + plantumlTheme.
  *
  * @param content - PlantUML source text (with @startuml/@enduml).
  * @param config - Server URL and theme settings.
  * @returns SHA-256 hash string for cache lookup.
  */
 function cacheKey(content: string, config: Config): string {
-    return computeHash(content, config.serverUrl, config.plantumlTheme || 'default');
+    return computeHash(content, config.plantumlServerUrl, config.plantumlTheme || 'default');
 }
 
 // ---------------------------------------------------------------------------
@@ -116,7 +116,7 @@ export async function renderToSvgServer(pumlContent: string, config: Config, sig
     if (cached !== undefined) return cached;
 
     const encoded = encodePlantUml(themedContent);
-    const url = `${config.serverUrl.replace(/\/+$/, '')}/svg/${encoded}`;
+    const url = `${config.plantumlServerUrl.replace(/\/+$/, '')}/svg/${encoded}`;
 
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), DEFAULT_TIMEOUT_MS);

@@ -142,15 +142,14 @@ export interface RenderOptions {
 /**
  * Invalidate the markdown-it cache when path or theme settings change.
  *
- * Compares a composite key of jarPath, javaPath, dotPath, plantumlTheme,
- * renderMode, and serverUrl. When the key differs from the cached one,
+ * Compares a composite key of plantumlJarPath, javaPath, dotPath, plantumlTheme,
+ * renderMode, and plantumlServerUrl. When the key differs from the cached one,
  * both markdown-it instances (with and without source map) are discarded.
  *
  * @param config - Current configuration to check against the cache.
- * @returns
  */
 function invalidateMdCache(config: Config): void {
-    const key = config.jarPath + '\0' + config.javaPath + '\0' + config.dotPath + '\0' + (config.plantumlTheme || 'default') + '\0' + (config.renderMode || 'local-server') + '\0' + (config.serverUrl || '');
+    const key = config.plantumlJarPath + '\0' + config.javaPath + '\0' + config.dotPath + '\0' + (config.plantumlTheme || 'default') + '\0' + (config.renderMode || 'local-server') + '\0' + (config.plantumlServerUrl || '');
     if (mdCacheKey !== key) {
         mdCacheKey = key;
         cachedMd = null;
@@ -181,6 +180,27 @@ function getOrCreateMd(config: Config, withSourceMap?: boolean): MarkdownIt {
 
     const md = new MarkdownIt(MD_OPTIONS);
     plantumlPlugin(md, config);
+
+    // Add id attributes to headings so that anchor links (#section-name) work
+    // in both the preview panel and HTML export.
+    md.core.ruler.push('heading_ids', function (state) {
+        for (let i = 0; i < state.tokens.length; i++) {
+            const token = state.tokens[i];
+            if (token.type === 'heading_open') {
+                const inline = state.tokens[i + 1];
+                if (inline && inline.type === 'inline' && inline.content) {
+                    const slug = inline.content
+                        .toLowerCase()
+                        .replace(/<[^>]*>/g, '')
+                        .replace(/[^\w\s-]/g, '')
+                        .replace(/\s+/g, '-')
+                        .replace(/-+/g, '-')
+                        .replace(/^-|-$/g, '');
+                    if (slug) token.attrSet('id', slug);
+                }
+            }
+        }
+    });
 
     if (withSourceMap) {
         /**
@@ -239,13 +259,13 @@ export async function renderHtmlAsync(source: string, title: string, config: Con
             await waitForLocalServer();
             const localUrl = getLocalServerUrl();
             if (localUrl) {
-                const serverConfig = { ...config, serverUrl: localUrl };
+                const serverConfig = { ...config, plantumlServerUrl: localUrl };
                 preRenderedSvgs = await renderAllServer(blocks, serverConfig, signal, MAX_LOCAL_SERVER_CONCURRENCY);
             } else {
                 const msg = errorHtml(vscode.l10n.t('Local PlantUML server is not running. Check the output panel for details.'));
                 preRenderedSvgs = new Map(blocks.map(b => [b.trim(), msg]));
             }
-        } else if (config.renderMode === 'server' && config.serverUrl) {
+        } else if (config.renderMode === 'server' && config.plantumlServerUrl) {
             preRenderedSvgs = await renderAllServer(blocks, config, signal);
         } else {
             preRenderedSvgs = await renderAllLocal(blocks, config, signal);
