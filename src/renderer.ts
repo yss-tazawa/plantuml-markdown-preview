@@ -85,15 +85,22 @@ export function plantumlPlugin(md: MarkdownIt, config: Config): MarkdownIt {
         const lineAttr = sourceLine != null
             ? ` data-source-line="${sourceLine}"` : '';
 
+        // End-of-fence marker: invisible span at the bottom of the block for scroll sync anchor density
+        const sourceLineEnd = token.meta && token.meta.sourceLineEnd != null
+            ? token.meta.sourceLineEnd : null;
+        const endLineMarker = sourceLineEnd != null
+            ? `<span data-source-line="${sourceLineEnd}" style="display:block;height:0;overflow:hidden;"></span>`
+            : '';
+
         if (lang === 'mermaid') {
             const escaped = md.utils.escapeHtml(token.content);
-            return `<div class="mermaid-diagram"${lineAttr}><pre class="mermaid">${escaped}</pre></div>\n`;
+            return `<div class="mermaid-diagram"${lineAttr}><pre class="mermaid">${escaped}</pre>${endLineMarker}</div>\n`;
         }
 
         if (lang !== 'plantuml') {
             const defaultOutput = defaultFence(tokens, idx, opts, env, self);
             if (lineAttr) {
-                return `<div${lineAttr}>${defaultOutput}</div>\n`;
+                return `<div${lineAttr}>${defaultOutput}${endLineMarker}</div>\n`;
             }
             return defaultOutput;
         }
@@ -104,7 +111,7 @@ export function plantumlPlugin(md: MarkdownIt, config: Config): MarkdownIt {
         const preRendered = preRenderedSvgs?.get(token.content.trim());
         const rawSvg = preRendered ?? renderToSvg(token.content, config);
         const svg = scalePlantUmlSvg(rawSvg, (renderEnv?.plantumlScale as string | undefined) ?? config.plantumlScale);
-        return `<div class="plantuml-diagram"${lineAttr}>${svg}</div>\n`;
+        return `<div class="plantuml-diagram"${lineAttr}>${svg}${endLineMarker}</div>\n`;
     };
 
     return md;

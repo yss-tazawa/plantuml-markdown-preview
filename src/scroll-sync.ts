@@ -85,6 +85,12 @@ export function buildScrollSyncScript(initialLine: number, initialMaxTopLine: nu
 
         for (let i = 0; i < elements.length; i++) {
             const el = elements[i];
+            // PlantUML SVG contains its own data-source-line attributes
+            // (component, use-case, state diagrams). Skip them — SVG layout
+            // is aesthetic, not source-order, so these anchors create
+            // non-monotonic pixel values causing scroll stutter + jumps.
+            // Diagrams use start/end markers for smooth linear interpolation.
+            if (el.closest('svg')) continue;
             const line = parseInt(el.getAttribute('data-source-line'), 10);
             if (!isNaN(line) && line > 0) {
                 const offsetTop = Math.round(el.getBoundingClientRect().top + scrollY);
