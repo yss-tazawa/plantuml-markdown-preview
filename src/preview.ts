@@ -4,8 +4,8 @@
  *
  * Responsibilities:
  * - Create / reuse a WebviewPanel and render Markdown with PlantUML inline SVG
- * - Two-stage debounce: no-PlantUML-change -> debounceNoPlantUmlMs,
- *   PlantUML-change -> debouncePlantUmlMs
+ * - Two-stage debounce: no-diagram-change -> debounceNoDiagramChangeMs,
+ *   diagram-change -> debounceDiagramChangeMs
  * - Immediate refresh on file save (cancels pending debounce)
  * - Bidirectional scroll sync between editor and preview (syncMaster state machine)
  * - Re-render on settings change via updateConfig()
@@ -370,8 +370,8 @@ export function openPreview(filePath: string, config: Config, preserveFocus = fa
             if (debounceTimer) clearTimeout(debounceTimer);
             const text = event.document.getText();
             const currentDiagramContent = extractDiagramContent(text);
-            const { debounceNoPlantUmlMs, debouncePlantUmlMs } = lastConfig;
-            const delay = currentDiagramContent !== lastDiagramContent ? debouncePlantUmlMs : debounceNoPlantUmlMs;
+            const { debounceNoDiagramChangeMs, debounceDiagramChangeMs } = lastConfig;
+            const delay = currentDiagramContent !== lastDiagramContent ? debounceDiagramChangeMs : debounceNoDiagramChangeMs;
             debounceTimer = setTimeout(() => {
                 debounceTimer = null;
                 lastDiagramContent = currentDiagramContent;
@@ -585,7 +585,7 @@ function renderPanelWithLoading(text: string): void {
 }
 
 /** Property keys that affect rendering output (PlantUML paths and themes). */
-const RENDER_KEYS = ['jarPath', 'javaPath', 'dotPath', 'plantumlTheme', 'plantumlScale', 'previewTheme', 'allowLocalImages', 'allowHttpImages', 'renderMode', 'serverUrl', 'mermaidTheme', 'mermaidScale'] as const;
+const RENDER_KEYS = ['jarPath', 'javaPath', 'dotPath', 'plantumlTheme', 'plantumlScale', 'previewTheme', 'allowLocalImages', 'allowHttpImages', 'renderMode', 'serverUrl', 'localServerPort', 'mermaidTheme', 'mermaidScale'] as const;
 
 /**
  * Check which rendering-related properties changed between two configs.
