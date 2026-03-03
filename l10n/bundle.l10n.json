@@ -17,11 +17,11 @@
   "Select theme": "Select theme",
   "(current)": "(current)",
   "Java is not found. PlantUML requires Java for local rendering.": "Java is not found. PlantUML requires Java for local rendering.",
-  "Use Server Mode": "Use Server Mode",
+  "Use Easy Mode": "Use Easy Mode",
   "Install Java": "Install Java",
   "Dismiss": "Dismiss",
-  "Server mode sends your diagrams to an external server ({0}). Continue?": "Server mode sends your diagrams to an external server ({0}). Continue?",
-  "Yes, switch to server mode": "Yes, switch to server mode",
+  "Easy mode sends diagram source to an external server ({0}). Continue?": "Easy mode sends diagram source to an external server ({0}). Continue?",
+  "Yes, switch to Easy mode": "Yes, switch to Easy mode",
   "Cancel": "Cancel",
   "PlantUML server error: {0}": "PlantUML server error: {0}",
   "PlantUML server request timed out": "PlantUML server request timed out",
@@ -35,7 +35,7 @@
   "Local PlantUML server is not running. Check the output panel for details.": "Local PlantUML server is not running. Check the output panel for details.",
   "Local PlantUML server started on port {0}": "Local PlantUML server started on port {0}",
   "Local PlantUML server crashed: {0}": "Local PlantUML server crashed: {0}",
-  "Switch to Local Mode": "Switch to Local Mode",
+  "Switch to Secure Mode": "Switch to Secure Mode",
   "Restart Server": "Restart Server",
   "Local PlantUML server stopped.": "Local PlantUML server stopped."
 }

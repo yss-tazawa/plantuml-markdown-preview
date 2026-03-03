@@ -69,24 +69,26 @@ export function prepareLocalServer(): void {
  * Start the local PlantUML picoweb server.
  * No-op if already running or starting.
  *
- * @param config - Current extension settings (jarPath, javaPath, dotPath, localServerPort).
+ * @param config - Current extension settings (plantumlJarPath, javaPath, dotPath, plantumlLocalServerPort).
  */
 export async function startLocalServer(config: Config): Promise<void> {
     if (serverState === 'running' || serverState === 'starting') return;
 
-    if (!config.jarPath) {
-        log('[local-server] jarPath is not configured, cannot start');
+    if (!config.plantumlJarPath) {
+        log('[local-server] plantumlJarPath is not configured, cannot start');
         return;
     }
 
     serverState = 'starting';
-    readyPromise = new Promise<void>((resolve, reject) => {
-        readyResolve = resolve;
-        readyReject = reject;
-    });
+    if (!readyPromise) {
+        readyPromise = new Promise<void>((resolve, reject) => {
+            readyResolve = resolve;
+            readyReject = reject;
+        });
+    }
 
     try {
-        const port = await findFreePort(config.localServerPort);
+        const port = await findFreePort(config.plantumlLocalServerPort);
         serverPort = port;
 
         const args = buildArgs(config, port);
@@ -160,15 +162,6 @@ export function getLocalServerUrl(): string | null {
 }
 
 /**
- * Whether the server is ready to accept requests.
- *
- * @returns `true` if the server is running and accepting requests.
- */
-export function isLocalServerReady(): boolean {
-    return serverState === 'running';
-}
-
-/**
  * Wait for the server to become ready.
  * Resolves immediately if already running. Returns without error if stopped/error
  * and no pending readyPromise (caller should check getLocalServerUrl).
@@ -205,7 +198,12 @@ export async function restartLocalServer(config: Config): Promise<void> {
 // Internal helpers
 // ---------------------------------------------------------------------------
 
-/** Find a free port. If preferredPort > 0, use it directly; otherwise let the OS assign. */
+/**
+ * Find a free port. If preferredPort > 0, use it directly; otherwise let the OS assign.
+ *
+ * @param preferredPort - Port number to use; 0 means auto-assign.
+ * @returns Resolved port number.
+ */
 async function findFreePort(preferredPort: number): Promise<number> {
     if (preferredPort > 0) return preferredPort;
     return new Promise<number>((resolve, reject) => {
@@ -219,9 +217,15 @@ async function findFreePort(preferredPort: number): Promise<number> {
     });
 }
 
-/** Build Java CLI arguments for the picoweb server. */
+/**
+ * Build Java CLI arguments for the picoweb server.
+ *
+ * @param config - Extension settings (plantumlJarPath, dotPath).
+ * @param port - Port number for the picoweb server.
+ * @returns Array of CLI arguments.
+ */
 function buildArgs(config: Config, port: number): string[] {
-    const args = ['-Djava.awt.headless=true', '-jar', config.jarPath, '-picoweb:' + port + ':127.0.0.1'];
+    const args = ['-Djava.awt.headless=true', '-jar', config.plantumlJarPath, '-picoweb:' + port + ':127.0.0.1'];
     if (config.dotPath && config.dotPath !== 'dot') {
         args.splice(3, 0, '-graphvizdot', config.dotPath);
     }
@@ -231,6 +235,10 @@ function buildArgs(config: Config, port: number): string[] {
 /**
  * Poll the server until it responds with HTTP 200, or timeout.
  * Uses a minimal PlantUML diagram encoded as a URL path segment.
+ *
+ * @param port - Port number to health-check.
+ * @param timeoutMs - Maximum wait time in milliseconds.
+ * @param intervalMs - Polling interval in milliseconds.
  */
 async function waitForReady(port: number, timeoutMs = 15_000, intervalMs = 500): Promise<void> {
     // Minimal encoded PlantUML: @startuml\nBob->Alice:hi\n@enduml
@@ -253,10 +261,17 @@ async function waitForReady(port: number, timeoutMs = 15_000, intervalMs = 500):
     throw new Error(`Server did not become ready within ${timeoutMs}ms`);
 }
 
+/**
+ * Promisified delay for polling loops.
+ *
+ * @param ms - Delay in milliseconds.
+ * @returns Promise that resolves after the delay.
+ */
 function sleep(ms: number): Promise<void> {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
 
+/** Reset all module-level state to initial values. */
 function resetState(): void {
     serverState = 'stopped';
     serverPort = 0;
@@ -266,11 +281,21 @@ function resetState(): void {
     readyReject = null;
 }
 
+/**
+ * Write a message to the PlantUML output channel.
+ *
+ * @param message - Text to append to the output channel.
+ */
 function log(message: string): void {
     outputChannel?.appendLine(message);
 }
 
-/** Handle unexpected server crash: notify user with action buttons. */
+/**
+ * Handle unexpected server crash: notify user with action buttons.
+ *
+ * @param reason - Human-readable crash reason (e.g. exit code or signal).
+ * @param config - Current extension settings for potential restart.
+ */
 function handleCrash(reason: string, config: Config): void {
     if (serverState === 'error') return;
     serverProcess = null;
@@ -278,7 +303,7 @@ function handleCrash(reason: string, config: Config): void {
     serverUrl = null;
     readyReject?.(new Error(reason));
 
-    const switchLabel = vscode.l10n.t('Switch to Local Mode');
+    const switchLabel = vscode.l10n.t('Switch to Secure Mode');
     const restartLabel = vscode.l10n.t('Restart Server');
     const dismissLabel = vscode.l10n.t('Dismiss');
 
@@ -288,7 +313,7 @@ function handleCrash(reason: string, config: Config): void {
     ).then(async (action) => {
         if (action === switchLabel) {
             const cfg = vscode.workspace.getConfiguration(CONFIG_SECTION);
-            await cfg.update('renderMode', 'local', vscode.ConfigurationTarget.Global);
+            await cfg.update('mode', 'secure', vscode.ConfigurationTarget.Global);
         } else if (action === restartLabel) {
             await startLocalServer(config);
         }

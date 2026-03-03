@@ -9,8 +9,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
-- **Local Server rendering mode** — run a PlantUML picoweb server locally for faster diagram rendering without sending data to an external server; set `renderMode` to `local-server`
-- `localServerPort` setting — specify a fixed port for the local server (default: auto-assign)
+- **Preset modes** — single `mode` setting (`fast` / `secure` / `easy`) replaces `renderMode` and controls rendering method, debounce timing, and security defaults together
+  - **Fast** (default) — local PlantUML server on localhost, instant re-renders, debounce 100ms
+  - **Secure** — local rendering only, no network access, local images blocked by default, debounce 300ms
+  - **Easy** — no setup required, diagram source sent to external PlantUML server, debounce 300ms
+- `plantumlLocalServerPort` setting — specify a fixed port for the local server (default: auto-assign)
+- Debounce and `allowLocalImages` settings can still be overridden individually
+- Chinese (Simplified) localization (zh-cn)
+
+### Changed
+
+- **Breaking:** `renderMode` setting replaced by `mode`. Existing `renderMode` values are ignored — set the new `mode` setting instead.
+- **Breaking:** Settings renamed — `jarPath` → `plantumlJarPath`, `serverUrl` → `plantumlServerUrl`, `localServerPort` → `plantumlLocalServerPort`. Existing values under the old names are ignored.
+- **Breaking:** `allowLocalImages` changed from boolean (`true`/`false`) to a three-option dropdown (`mode-default`/`on`/`off`). `mode-default` uses the mode preset (Fast: on, Secure: off, Easy: on). Existing `true`/`false` values are ignored — reset to `mode-default` or set `on`/`off` explicitly.
+- `debounceNoDiagramChangeMs` / `debounceDiagramChangeMs` now show as empty when unset (previously showed `0`); they inherit from the selected mode preset unless explicitly overridden
 
 ### Fixed
 

@@ -63,7 +63,7 @@ interface RenderContext {
  * @returns Render context on success, or error HTML on failure.
  */
 function prepareRenderContext(pumlContent: string, config: Config): { ctx: RenderContext } | { error: string } {
-    const jarPath = config.jarPath || '';
+    const jarPath = config.plantumlJarPath || '';
     const javaPath = config.javaPath || 'java';
     const dotPath = config.dotPath || 'dot';
     const plantumlTheme = config.plantumlTheme || 'default';
@@ -71,7 +71,7 @@ function prepareRenderContext(pumlContent: string, config: Config): { ctx: Rende
     if (!jarPath) {
         return { error: errorHtml(
             vscode.l10n.t('PlantUML jar is not configured.') + '<br>' +
-            '<code>plantumlMarkdownPreview.jarPath</code>'
+            '<code>plantumlMarkdownPreview.plantumlJarPath</code>'
         ) };
     }
 
@@ -178,13 +178,13 @@ export function renderToSvgAsync(pumlContent: string, config: Config, signal?: A
         const onAbort = () => {
             clearTimeout(timer);
             signal?.removeEventListener('abort', onAbort);
-            child.kill('SIGKILL');
+            child.kill('SIGTERM');
             settle('');
         };
         signal?.addEventListener('abort', onAbort, { once: true });
 
         const timer = setTimeout(() => {
-            child.kill('SIGKILL');
+            child.kill('SIGTERM');
             settle(errorHtml(vscode.l10n.t('PlantUML execution error: {0}', vscode.l10n.t('Timed out'))));
         }, 15000);
 
@@ -280,13 +280,13 @@ function spawnBatchJvm(javaPath: string, args: string[], stdinPayload: string, t
         const onAbort = () => {
             clearTimeout(timer);
             signal?.removeEventListener('abort', onAbort);
-            child.kill('SIGKILL');
+            child.kill('SIGTERM');
             settle(new Error('aborted'));
         };
         signal?.addEventListener('abort', onAbort, { once: true });
 
         const timer = setTimeout(() => {
-            child.kill('SIGKILL');
+            child.kill('SIGTERM');
             settle(new Error('Timed out'));
         }, timeout);
 
@@ -367,7 +367,7 @@ async function fallbackToIndividual(
  */
 async function renderBatchLocal(blocks: string[], config: Config, signal?: AbortSignal): Promise<Map<string, string>> {
     const results = new Map<string, string>();
-    const jarPath = config.jarPath || '';
+    const jarPath = config.plantumlJarPath || '';
     const javaPath = config.javaPath || 'java';
     const dotPath = config.dotPath || 'dot';
     const plantumlTheme = config.plantumlTheme || 'default';
@@ -375,7 +375,7 @@ async function renderBatchLocal(blocks: string[], config: Config, signal?: Abort
     if (!jarPath) {
         const err = errorHtml(
             vscode.l10n.t('PlantUML jar is not configured.') + '<br>' +
-            '<code>plantumlMarkdownPreview.jarPath</code>'
+            '<code>plantumlMarkdownPreview.plantumlJarPath</code>'
         );
         for (const b of blocks) results.set(b.trim(), err);
         return results;
@@ -575,8 +575,8 @@ function parseStdrpt(stderr: string): { lineNumber: number; label: string } | nu
  * @param config - Jar and Java paths for cache key matching.
  * @returns Array of theme name strings.
  */
-export function listThemes(config: Pick<Config, 'jarPath' | 'javaPath'>): string[] {
-    const jarPath = config.jarPath || '';
+export function listThemes(config: Pick<Config, 'plantumlJarPath' | 'javaPath'>): string[] {
+    const jarPath = config.plantumlJarPath || '';
     const javaPath = config.javaPath || 'java';
     if (!jarPath) return FALLBACK_PLANTUML_THEMES;
 
@@ -596,8 +596,8 @@ export function listThemes(config: Pick<Config, 'jarPath' | 'javaPath'>): string
  * @param config - Jar and Java paths.
  * @returns Resolves to an array of theme names, or fallback list on error.
  */
-export function listThemesAsync(config: Pick<Config, 'jarPath' | 'javaPath'>): Promise<string[]> {
-    const jarPath = config.jarPath || '';
+export function listThemesAsync(config: Pick<Config, 'plantumlJarPath' | 'javaPath'>): Promise<string[]> {
+    const jarPath = config.plantumlJarPath || '';
     const javaPath = config.javaPath || 'java';
     if (!jarPath) return Promise.resolve(FALLBACK_PLANTUML_THEMES);
 
@@ -656,7 +656,7 @@ export function listThemesAsync(config: Pick<Config, 'jarPath' | 'javaPath'>): P
  *
  * @param config - Jar and Java paths.
  */
-export function prefetchThemes(config: Pick<Config, 'jarPath' | 'javaPath'>): void {
+export function prefetchThemes(config: Pick<Config, 'plantumlJarPath' | 'javaPath'>): void {
     listThemesAsync(config).catch(() => {});
 }
 
@@ -678,7 +678,7 @@ export function clearCache(): void {
     }
     // Kill any in-flight render child processes (e.g. exportToHtml path)
     for (const child of activeChildren) {
-        child.kill('SIGKILL');
+        child.kill('SIGTERM');
     }
     activeChildren.clear();
 }

@@ -585,7 +585,7 @@ function renderPanelWithLoading(text: string): void {
 }
 
 /** Property keys that affect rendering output (PlantUML paths and themes). */
-const RENDER_KEYS = ['jarPath', 'javaPath', 'dotPath', 'plantumlTheme', 'plantumlScale', 'previewTheme', 'allowLocalImages', 'allowHttpImages', 'renderMode', 'serverUrl', 'localServerPort', 'mermaidTheme', 'mermaidScale'] as const;
+const RENDER_KEYS = ['plantumlJarPath', 'javaPath', 'dotPath', 'plantumlTheme', 'plantumlScale', 'previewTheme', 'allowLocalImages', 'allowHttpImages', 'mode', 'plantumlServerUrl', 'plantumlLocalServerPort', 'mermaidTheme', 'mermaidScale'] as const;
 
 /**
  * Check which rendering-related properties changed between two configs.
@@ -676,7 +676,7 @@ export async function changeTheme(): Promise<void> {
     // PlantUML Theme section (async fetch; resolves instantly if cache is warm)
     const plantumlThemes = await vscode.window.withProgress(
         { location: vscode.ProgressLocation.Notification, title: vscode.l10n.t('Fetching PlantUML theme list...') },
-        () => listThemesAsync(lastConfig || { jarPath: '', javaPath: 'java' })
+        () => listThemesAsync(lastConfig || { plantumlJarPath: '', javaPath: 'java' })
     );
     if (!panel) return;
     const plantumlItems = [

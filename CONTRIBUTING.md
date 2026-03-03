@@ -37,7 +37,7 @@ cd plantuml-markdown-preview
 npm install
 ```
 
-The bundled PlantUML jar (LGPL) is used by default. To use a different jar, set `plantumlMarkdownPreview.jarPath` in your VS Code settings. See [README.md](README.md#quick-start) for details.
+The bundled PlantUML jar (LGPL) is used by default. To use a different jar, set `plantumlMarkdownPreview.plantumlJarPath` in your VS Code settings. See [README.md](README.md#quick-start) for details.
 
 ### Build
 
@@ -58,15 +58,17 @@ Press **F5** in VS Code to launch the Extension Development Host with the extens
 ```text
 extension.ts        Entry point — command registration, configuration, activation
 src/
+  config.ts         Configuration types and mode presets
   preview.ts        Webview panel management and debouncing
   renderer.ts       markdown-it plugin — PlantUML fence blocks → SVG
   plantuml.ts       PlantUML local process invocation (sync + async), caching, theme discovery
   plantuml-server.ts PlantUML server rendering (HTTP fetch, encoding, LRU cache)
+  local-server.ts   Local PlantUML picoweb server management
   exporter.ts       HTML export with inline SVG and syntax highlighting
   scroll-sync.ts    Bidirectional editor ↔ preview scroll sync
-  utils.ts          Shared utilities (escapeHtml, getNonce, ensureStartEndTags, errorHtml, fence regex)
+  utils.ts          Shared utilities (escapeHtml, getNonce, errorHtml, fence regex, Java process helpers, LRU cache)
   themes/           CSS theme definitions (14 themes: 8 light + 6 dark)
-l10n/               Localization bundles (English + Japanese)
+l10n/               Localization bundles (Chinese (Simplified) + English + Japanese)
 .github/            GitHub templates (PR template, security policy)
 dist/               Build output (gitignored)
 ```
@@ -82,7 +84,7 @@ dist/               Build output (gitignored)
 
 ## Internationalization
 
-The extension supports English (default) and Japanese. There are two i18n mechanisms:
+The extension supports Chinese (Simplified), English (default), and Japanese. There are two i18n mechanisms:
 
 1. **Runtime strings** (messages shown to users at runtime):
    Use `vscode.l10n.t('...')` in TypeScript. Add the English string to `l10n/bundle.l10n.json`.
