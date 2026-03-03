@@ -5,11 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
-## 0.3.7 - 2026-03-03
+## 0.4.0 - 2026-03-03
+
+### Added
+
+- **Local Server rendering mode** — run a PlantUML picoweb server locally for faster diagram rendering without sending data to an external server; set `renderMode` to `local-server`
+- `localServerPort` setting — specify a fixed port for the local server (default: auto-assign)
 
 ### Fixed
 
-- Fix inaccurate descriptions for `debounceNoPlantUmlMs` / `debouncePlantUmlMs` settings
+- Fix inaccurate descriptions for `debounceNoDiagramChangeMs` / `debounceDiagramChangeMs` settings
 
 ## 0.3.6 - 2026-03-03
 

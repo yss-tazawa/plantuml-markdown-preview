@@ -170,25 +170,28 @@ export async function renderToSvgServer(pumlContent: string, config: Config, sig
     }
 }
 
-/** Maximum number of concurrent HTTP requests to the PlantUML server. */
+/** Maximum number of concurrent HTTP requests to a remote PlantUML server. */
 const MAX_SERVER_CONCURRENCY = 5;
+
+/** Higher concurrency for local-server mode (localhost picoweb). */
+export const MAX_LOCAL_SERVER_CONCURRENCY = 50;
 
 /**
  * Render multiple PlantUML blocks via server with controlled concurrency.
  *
- * Sends up to MAX_SERVER_CONCURRENCY requests in parallel to balance
- * throughput against server load.
- *
  * @param blocks Array of PlantUML source texts.
  * @param config Server URL and theme settings.
+ * @param signal Optional AbortSignal.
+ * @param concurrency Max parallel requests (default: 5 for remote servers).
  * @returns Map from trimmed content -> SVG string.
  */
 export function renderAllServer(
     blocks: string[],
     config: Config,
-    signal?: AbortSignal
+    signal?: AbortSignal,
+    concurrency = MAX_SERVER_CONCURRENCY
 ): Promise<Map<string, string>> {
-    return batchRender(blocks, MAX_SERVER_CONCURRENCY, (content, sig) => renderToSvgServer(content, config, sig), signal);
+    return batchRender(blocks, concurrency, (content, sig) => renderToSvgServer(content, config, sig), signal);
 }
 
 /** Clear the server SVG cache. */

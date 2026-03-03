@@ -31,5 +31,11 @@
   "File not found: {0}": "File not found: {0}",
   "Timed out": "Timed out",
   "Mermaid Theme": "Mermaid Theme",
-  "Rendering diagrams...": "Rendering diagrams..."
+  "Rendering diagrams...": "Rendering diagrams...",
+  "Local PlantUML server is not running. Check the output panel for details.": "Local PlantUML server is not running. Check the output panel for details.",
+  "Local PlantUML server started on port {0}": "Local PlantUML server started on port {0}",
+  "Local PlantUML server crashed: {0}": "Local PlantUML server crashed: {0}",
+  "Switch to Local Mode": "Switch to Local Mode",
+  "Restart Server": "Restart Server",
+  "Local PlantUML server stopped.": "Local PlantUML server stopped."
 }

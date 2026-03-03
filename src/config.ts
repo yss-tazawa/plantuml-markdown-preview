@@ -21,10 +21,12 @@ export interface Config {
     plantumlScale: string;
     /** Preview theme key (e.g. 'github-light', 'dracula'). */
     previewTheme: string;
-    /** Rendering mode: 'local' (Java) or 'server' (HTTP). */
-    renderMode: 'local' | 'server';
+    /** Rendering mode: 'local' (Java CLI), 'server' (HTTP), or 'local-server' (local picoweb). */
+    renderMode: 'local' | 'server' | 'local-server';
     /** PlantUML server base URL (e.g. 'https://www.plantuml.com/plantuml'). */
     serverUrl: string;
+    /** Port for the local PlantUML picoweb server. 0 = auto-assign a free port. Only used in 'local-server' mode. */
+    localServerPort: number;
     /** Mermaid diagram theme (e.g. 'default', 'dark', 'forest'). */
     mermaidTheme: string;
     /** Mermaid diagram scale ('auto' or '50%'–'100%'). */
@@ -38,9 +40,9 @@ export interface Config {
     /** When true, allow loading images over HTTP (unencrypted) in the preview CSP. */
     allowHttpImages: boolean;
     /** Debounce delay (ms) when only non-diagram text changed (diagrams served from cache). */
-    debounceNoPlantUmlMs: number;
+    debounceNoDiagramChangeMs: number;
     /** Debounce delay (ms) when diagram content changed. */
-    debouncePlantUmlMs: number;
+    debounceDiagramChangeMs: number;
     /** Hidden debug flag: simulate Java not found, even when installed. */
     debugSimulateNoJava?: boolean;
 }

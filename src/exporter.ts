@@ -17,9 +17,11 @@ import path from 'path';
 import MarkdownIt from 'markdown-it';
 import hljs from 'highlight.js';
 import { plantumlPlugin } from './renderer.js';
+import * as vscode from 'vscode';
 import { renderAllLocal } from './plantuml.js';
-import { renderAllServer } from './plantuml-server.js';
-import { escapeHtml, extractPlantUmlBlocks } from './utils.js';
+import { renderAllServer, MAX_LOCAL_SERVER_CONCURRENCY } from './plantuml-server.js';
+import { getLocalServerUrl, waitForLocalServer } from './local-server.js';
+import { escapeHtml, extractPlantUmlBlocks, errorHtml } from './utils.js';
 import type { Config } from './config.js';
 
 import {
@@ -148,7 +150,7 @@ export interface RenderOptions {
  * @returns
  */
 function invalidateMdCache(config: Config): void {
-    const key = config.jarPath + '\0' + config.javaPath + '\0' + config.dotPath + '\0' + (config.plantumlTheme || 'default') + '\0' + (config.renderMode || 'local') + '\0' + (config.serverUrl || '');
+    const key = config.jarPath + '\0' + config.javaPath + '\0' + config.dotPath + '\0' + (config.plantumlTheme || 'default') + '\0' + (config.renderMode || 'local-server') + '\0' + (config.serverUrl || '');
     if (mdCacheKey !== key) {
         mdCacheKey = key;
         cachedMd = null;
@@ -233,7 +235,17 @@ export async function renderHtmlAsync(source: string, title: string, config: Con
     let preRenderedSvgs: Map<string, string> | undefined;
 
     if (blocks.length > 0) {
-        if (config.renderMode === 'server' && config.serverUrl) {
+        if (config.renderMode === 'local-server') {
+            await waitForLocalServer();
+            const localUrl = getLocalServerUrl();
+            if (localUrl) {
+                const serverConfig = { ...config, serverUrl: localUrl };
+                preRenderedSvgs = await renderAllServer(blocks, serverConfig, signal, MAX_LOCAL_SERVER_CONCURRENCY);
+            } else {
+                const msg = errorHtml(vscode.l10n.t('Local PlantUML server is not running. Check the output panel for details.'));
+                preRenderedSvgs = new Map(blocks.map(b => [b.trim(), msg]));
+            }
+        } else if (config.renderMode === 'server' && config.serverUrl) {
             preRenderedSvgs = await renderAllServer(blocks, config, signal);
         } else {
             preRenderedSvgs = await renderAllLocal(blocks, config, signal);

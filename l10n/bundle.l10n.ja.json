@@ -31,5 +31,11 @@
   "File not found: {0}": "ファイルが見つかりません: {0}",
   "Timed out": "タイムアウト",
   "Mermaid Theme": "Mermaid テーマ",
-  "Rendering diagrams...": "ダイアグラムを描画中..."
+  "Rendering diagrams...": "ダイアグラムを描画中...",
+  "Local PlantUML server is not running. Check the output panel for details.": "ローカル PlantUML サーバーが起動していません。出力パネルを確認してください。",
+  "Local PlantUML server started on port {0}": "ローカル PlantUML サーバーがポート {0} で起動しました",
+  "Local PlantUML server crashed: {0}": "ローカル PlantUML サーバーがクラッシュしました: {0}",
+  "Switch to Local Mode": "ローカルモードに切り替え",
+  "Restart Server": "サーバーを再起動",
+  "Local PlantUML server stopped.": "ローカル PlantUML サーバーを停止しました"
 }

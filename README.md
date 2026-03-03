@@ -21,8 +21,9 @@
 ## Highlights
 
 - **Inline PlantUML rendering** — diagrams appear directly in your Markdown preview, not in a separate panel
-- **Secure** — CSP nonce-based policy, no code execution from Markdown content
-- **Local & Server rendering** — use Java locally (default, fully async) or render via a PlantUML server (no Java required)
+- **Fully local & secure** — Local mode runs everything on your machine with zero network access — no external servers, no background processes, no data leaves your computer. CSP nonce-based policy blocks all code execution from Markdown content
+- **Instant re-renders** — Local-Server mode keeps a PlantUML server running on localhost, eliminating JVM startup cost and turning every keystroke into an instant diagram update
+- **3 rendering modes** — Local-Server (default, fastest), Local (simplest), or remote Server (no Java required)
 - **Mermaid support** — ```` ```mermaid ```` blocks rendered client-side with theme selection (no Java needed)
 - **Diagram scale control** — adjust PlantUML and Mermaid diagram sizes independently
 - **Self-contained HTML export** — SVG diagrams embedded inline, configurable layout width and alignment
@@ -54,7 +55,7 @@
 - Auto-follow when switching editor tabs
 - Loading indicator during diagram rendering
 - Syntax errors displayed inline with line numbers and source context
-- PlantUML: rendered via Java (local) or PlantUML server — see [Local & Server Rendering](#local--server-rendering)
+- PlantUML: rendered via Java (local), persistent local server (local-server), or remote PlantUML server — see [Rendering Modes](#rendering-modes)
 - Mermaid: rendered client-side using [mermaid.js](https://mermaid.js.org/) — no Java or external tools required
 
 ### Diagram Scale
@@ -64,14 +65,23 @@ Control the display size of PlantUML and Mermaid diagrams independently.
 - **PlantUML scale** — `auto` (shrink to fit) or fixed percentage (70%–120%, default 100%). SVG stays crisp at any scale.
 - **Mermaid scale** — `auto` (fit container) or fixed percentage (50%–100%, default 80%).
 
-### Local & Server Rendering
+### Rendering Modes
 
 Choose how PlantUML diagrams are rendered:
 
-- **Local mode** (default) — uses Java + PlantUML jar on your machine. Diagrams never leave your computer. Rendering is fully asynchronous so the editor stays responsive.
+| | Local | Local-Server | Server |
+|---|---|---|---|
+| **Java required** | Yes | Yes | No |
+| **Network** | None | None (localhost only) | Required |
+| **Privacy** | Diagrams stay on your machine | Diagrams stay on your machine | Sent to external server |
+| **Speed** | JVM starts per render | Persistent JVM — instant re-renders | Depends on network |
+| **Concurrency** | 1 (batch) | 50 (parallel HTTP) | 5 (parallel HTTP) |
+
+- **Local-Server mode** (default) — starts a persistent PlantUML server on `localhost`. Eliminates JVM startup cost on every edit, enabling instant re-renders with high concurrency. Diagrams never leave your machine.
+- **Local mode** — uses Java + PlantUML jar on your machine. Diagrams never leave your computer. Rendering is fully asynchronous so the editor stays responsive.
 - **Server mode** — sends PlantUML text to a PlantUML server for rendering. No Java installation required. Uses the public server (`https://www.plantuml.com/plantuml`) by default, or set your own self-hosted server URL for privacy.
 
-If Java is not found when opening a preview, a notification offers to switch to server mode automatically.
+If Java is not found when opening a preview, a notification offers to switch to server mode.
 
 ### HTML Export
 
@@ -209,9 +219,13 @@ What works depends on your setup:
 
 The extension works out of the box — no configuration is required.
 
-**To use server mode** (no Java needed): Open VS Code settings (`Ctrl+,` / `Cmd+,`), search for `plantumlMarkdownPreview.renderMode`, and set it to `server`. Alternatively, the extension will prompt you to switch when Java is not detected.
+**Local-server mode** (default): The extension works out of the box with a persistent local PlantUML server for fast rendering. Requires Java.
 
-**To use local mode** (default): The bundled LGPL jar supports sequence, activity, mind map, and other diagrams
+**To use local mode**: Set `renderMode` to `"local"`. Uses Java per render without a background server.
+
+**To use server mode** (no Java needed): Set `renderMode` to `"server"`. Diagrams are sent to a PlantUML server for rendering. The extension will also prompt you to switch when Java is not detected.
+
+**Local and local-server modes**: The bundled LGPL jar supports sequence, activity, mind map, and other diagrams
 without extra setup (see [Diagram Support](#diagram-support)).
 To enable class, component, use case, and other layout-dependent diagrams,
 follow the steps for your platform below.
@@ -321,11 +335,12 @@ All settings use the `plantumlMarkdownPreview.` prefix.
 
 | Setting | Default | Description |
 |---------|---------|-------------|
-| `renderMode` | `"local"` | Rendering mode. `"local"` uses Java + PlantUML jar (diagrams stay on your machine). `"server"` sends diagrams to a PlantUML server (no Java required). |
+| `renderMode` | `"local-server"` | Rendering mode. `"local-server"` (default) starts a persistent local PlantUML server for instant re-renders. `"local"` runs Java per render. `"server"` sends diagrams to a remote PlantUML server (no Java required). |
 | `serverUrl` | `"https://www.plantuml.com/plantuml"` | PlantUML server URL for server mode. Set to a self-hosted server URL for privacy. |
-| `javaPath` | `"java"` | Path to Java executable. If set, used as-is; otherwise falls back to `JAVA_HOME/bin/java`, then `java` on PATH. (local mode only) |
-| `jarPath` | `""` | Path to `plantuml.jar`. Leave empty to use the bundled jar (LGPL). (local mode only) |
-| `dotPath` | `"dot"` | Path to Graphviz `dot` executable (local mode only) |
+| `javaPath` | `"java"` | Path to Java executable. If set, used as-is; otherwise falls back to `JAVA_HOME/bin/java`, then `java` on PATH. (local and local-server modes) |
+| `jarPath` | `""` | Path to `plantuml.jar`. Leave empty to use the bundled jar (LGPL). (local and local-server modes) |
+| `dotPath` | `"dot"` | Path to Graphviz `dot` executable (local and local-server modes) |
+| `localServerPort` | `0` | Port for the local PlantUML server (local-server mode only). `0` = auto-assign a free port. |
 | `previewTheme` | `"github-light"` | Preview theme (see [Themes](#themes)) |
 | `plantumlTheme` | `"default"` | PlantUML diagram theme. `"default"` applies no theme. Other values (e.g. `"cyborg"`, `"mars"`) are passed as `-theme` to PlantUML CLI or injected as `!theme` directive in server mode. |
 | `plantumlScale` | `"100%"` | PlantUML diagram scale. `"auto"` shrinks diagrams that exceed container width. A percentage (70%–120%) renders at that fraction of natural size. |
@@ -335,8 +350,8 @@ All settings use the `plantumlMarkdownPreview.` prefix.
 | `htmlAlignment` | `"center"` | HTML body alignment. `"center"` (default) or `"left"`. |
 | `allowLocalImages` | `true` | Resolve relative image paths (e.g. `![](./image.png)`) in the preview. Set to `false` to block all local file access. |
 | `allowHttpImages` | `false` | Allow loading images over HTTP (unencrypted) in the preview. Useful for intranet or local development servers. |
-| `debounceNoPlantUmlMs` | `100` | Debounce delay (ms) for non-diagram text changes (diagrams served from cache) |
-| `debouncePlantUmlMs` | `300` | Debounce delay (ms) for diagram content changes |
+| `debounceNoDiagramChangeMs` | `100` | Debounce delay (ms) for non-diagram text changes (diagrams served from cache) |
+| `debounceDiagramChangeMs` | `100` | Debounce delay (ms) for diagram content changes |
 
 > **Note:** `allowLocalImages` and `allowHttpImages` apply only to the preview panel. HTML export always outputs original image paths without CSP restrictions.
 
@@ -398,13 +413,22 @@ For privacy, you can run your own PlantUML server and set `serverUrl` to its URL
 </details>
 
 <details>
+<summary><strong>Local mode is slow with many diagrams. How can I speed it up?</strong></summary>
+
+Switch to **local-server mode** (`renderMode: "local-server"`). It starts a persistent
+PlantUML server on localhost, so re-renders are instant — no JVM startup cost per edit.
+Concurrency is also much higher (50 parallel requests vs 1 in local mode).
+
+</details>
+
+<details>
 <summary><strong>Is my diagram data safe in server mode?</strong></summary>
 
 In server mode, PlantUML source text is sent to the configured server.
 The default public server (`https://www.plantuml.com/plantuml`) is operated by the
 PlantUML project. If your diagrams contain sensitive information, consider
 running a [self-hosted PlantUML server](https://plantuml.com/server) and setting
-`serverUrl` to its URL, or use local mode (default) where diagrams never leave your machine.
+`serverUrl` to its URL, or use local mode or local-server mode where diagrams never leave your machine.
 
 </details>
 

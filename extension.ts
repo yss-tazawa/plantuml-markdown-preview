@@ -17,6 +17,7 @@ import { exportToHtml, clearMdCache } from './src/exporter.js';
 import { plantumlPlugin } from './src/renderer.js';
 import { clearCache } from './src/plantuml.js';
 import { clearServerCache } from './src/plantuml-server.js';
+import { prepareLocalServer, startLocalServer, stopLocalServer, restartLocalServer, setLocalServerOutputChannel } from './src/local-server.js';
 import { openPreview, getCurrentFilePath, updateConfig, changeTheme, disposePreview, setOutputChannel } from './src/preview.js';
 import { execJava } from './src/utils.js';
 import { CONFIG_SECTION, type Config } from './src/config.js';
@@ -56,15 +57,16 @@ function getConfig(): Config {
         jarPath: userJarPath || resolveBundledJarPath(),
         javaPath: cfg.get<string>('javaPath', 'java'),
         dotPath: cfg.get<string>('dotPath', 'dot'),
-        debounceNoPlantUmlMs: cfg.get<number>('debounceNoPlantUmlMs', 100),
-        debouncePlantUmlMs: cfg.get<number>('debouncePlantUmlMs', 300),
+        debounceNoDiagramChangeMs: cfg.get<number>('debounceNoDiagramChangeMs', 100),
+        debounceDiagramChangeMs: cfg.get<number>('debounceDiagramChangeMs', 100),
         plantumlTheme: cfg.get<string>('plantumlTheme', 'default'),
         plantumlScale: cfg.get<string>('plantumlScale', '100%'),
         previewTheme: cfg.get<string>('previewTheme', 'github-light'),
         allowLocalImages: cfg.get<boolean>('allowLocalImages', true),
         allowHttpImages: cfg.get<boolean>('allowHttpImages', false),
-        renderMode: cfg.get<'local' | 'server'>('renderMode', 'local'),
+        renderMode: cfg.get<'local' | 'server' | 'local-server'>('renderMode', 'local'),
         serverUrl: cfg.get<string>('serverUrl', 'https://www.plantuml.com/plantuml'),
+        localServerPort: cfg.get<number>('localServerPort', 0),
         mermaidTheme: cfg.get<string>('mermaidTheme', 'default'),
         mermaidScale: cfg.get<string>('mermaidScale', '80%'),
         htmlMaxWidth: cfg.get<string>('htmlMaxWidth', '960px'),
@@ -158,14 +160,18 @@ let javaCheckChild: ReturnType<typeof execJava> | null = null;
 /** Reference to the in-flight JVM warmup child process for cleanup on deactivate. */
 let warmupChild: ReturnType<typeof execJava> | null = null;
 
+/** Last known config for detecting local-server relevant changes. */
+let lastKnownConfig: Config | null = null;
+
 /**
  * Check if Java is available. When not found (or debugSimulateNoJava is true),
  * show a notification with options to switch to server mode or install Java.
  *
  * @param config - Current extension settings (javaPath, renderMode, serverUrl).
+ * @returns `true` if Java was found, `false` otherwise.
  */
-async function checkJavaAvailability(config: Config): Promise<void> {
-    if (config.renderMode === 'server') return;
+async function checkJavaAvailability(config: Config): Promise<boolean> {
+    if (config.renderMode === 'server') return true;
 
     const javaFound = await new Promise<boolean>((resolve) => {
         if (config.debugSimulateNoJava) { resolve(false); return; }
@@ -174,7 +180,7 @@ async function checkJavaAvailability(config: Config): Promise<void> {
             resolve(!err);
         });
     });
-    if (javaFound) return;
+    if (javaFound) return true;
 
     const useServer = vscode.l10n.t('Use Server Mode');
     const installJava = vscode.l10n.t('Install Java');
@@ -200,6 +206,7 @@ async function checkJavaAvailability(config: Config): Promise<void> {
     } else if (action === installJava) {
         void vscode.env.openExternal(vscode.Uri.parse('https://www.java.com/en/download/'));
     }
+    return false;
 }
 
 /**
@@ -217,9 +224,11 @@ export function activate(context: vscode.ExtensionContext): { extendMarkdownIt: 
     const channel = vscode.window.createOutputChannel('PlantUML Markdown Preview');
     context.subscriptions.push(channel);
     setOutputChannel(channel);
+    setLocalServerOutputChannel(channel);
 
     // Ensure builtInPreviewConfig has correct values after workspace is fully loaded
     const initialConfig = getConfig();
+    lastKnownConfig = initialConfig;
     syncBuiltInPreviewConfig(initialConfig);
 
     const exportCmd = vscode.commands.registerCommand(
@@ -284,6 +293,11 @@ export function activate(context: vscode.ExtensionContext): { extendMarkdownIt: 
     const configWatcher = vscode.workspace.onDidChangeConfiguration((event) => {
         if (event.affectsConfiguration(CONFIG_SECTION)) {
             const config = getConfig();
+
+            // Manage local-server lifecycle on config change
+            handleLocalServerConfigChange(lastKnownConfig, config);
+            lastKnownConfig = config;
+
             updateConfig(config);
             syncBuiltInPreviewConfig(config);
         }
@@ -291,15 +305,74 @@ export function activate(context: vscode.ExtensionContext): { extendMarkdownIt: 
 
     context.subscriptions.push(exportCmd, exportAndOpenCmd, previewCmd, changeThemeCmd, editorTracker, configWatcher);
 
+    // Start local PlantUML picoweb server if local-server mode is selected.
+    // prepareLocalServer() pre-creates the readyPromise so that any preview
+    // opened while Java is being checked will wait instead of failing immediately.
+    // Check Java availability first — if not found, show the server-mode switch
+    // notification instead of attempting to start the local server.
+    if (initialConfig.renderMode === 'local-server') {
+        prepareLocalServer();
+        checkJavaAvailability(initialConfig).then(javaFound => {
+            if (javaFound) {
+                startLocalServer(initialConfig).catch(err =>
+                    channel.appendLine(`[local-server start error] ${err}`)
+                );
+            } else {
+                stopLocalServer();
+            }
+        }).catch(() => {
+            stopLocalServer();
+        });
+    }
+
     // Warm up JVM/JAR file cache in the background so the first render is faster.
     // On Windows, cold-starting the JVM loads java.exe + plantuml.jar from disk;
     // this fire-and-forget call primes the OS file cache before the user opens preview.
-    if (initialConfig.renderMode !== 'server' && initialConfig.jarPath) {
+    // Only for 'local' mode — 'local-server' has its own startup, 'server' doesn't need Java.
+    if (initialConfig.renderMode === 'local' && initialConfig.jarPath) {
         warmupChild = execJava(initialConfig.javaPath, ['-jar', initialConfig.jarPath, '-version'],
             { timeout: 30000 }, (_err) => { warmupChild = null; /* errors are expected when Java is missing */ });
     }
 
     return { extendMarkdownIt };
+}
+
+/** Keys that affect the local-server process and require a restart when changed. */
+const LOCAL_SERVER_KEYS = ['jarPath', 'javaPath', 'dotPath', 'localServerPort'] as const;
+
+/**
+ * Handle local-server lifecycle when configuration changes.
+ *
+ * - If the user switched TO local-server mode: start the server.
+ * - If the user switched AWAY from local-server mode: stop the server.
+ * - If the user stayed in local-server mode but changed relevant settings: restart.
+ *
+ * @param oldConfig - Previous configuration snapshot, or null on first run.
+ * @param newConfig - Newly read configuration values.
+ */
+function handleLocalServerConfigChange(oldConfig: Config | null, newConfig: Config): void {
+    const wasLocalServer = oldConfig?.renderMode === 'local-server';
+    const isLocalServer = newConfig.renderMode === 'local-server';
+
+    if (!wasLocalServer && isLocalServer) {
+        // Switched TO local-server mode — check Java first
+        prepareLocalServer();
+        checkJavaAvailability(newConfig).then(javaFound => {
+            if (javaFound) startLocalServer(newConfig).catch(() => {});
+            else stopLocalServer();
+        }).catch(() => {
+            stopLocalServer();
+        });
+    } else if (wasLocalServer && !isLocalServer) {
+        // Switched AWAY from local-server mode
+        stopLocalServer();
+    } else if (wasLocalServer && isLocalServer && oldConfig) {
+        // Stayed in local-server mode — check if relevant settings changed
+        const needsRestart = LOCAL_SERVER_KEYS.some(key => oldConfig[key] !== newConfig[key]);
+        if (needsRestart) {
+            restartLocalServer(newConfig).catch(() => {});
+        }
+    }
 }
 
 /**
@@ -317,6 +390,7 @@ export function deactivate(): void {
         warmupChild.kill();
         warmupChild = null;
     }
+    stopLocalServer();
     clearCache();
     clearServerCache();
     clearMdCache();
@@ -345,14 +419,15 @@ const builtInPreviewConfig: Config = {
     previewTheme: 'github-light',
     renderMode: 'local',
     serverUrl: 'https://www.plantuml.com/plantuml',
+    localServerPort: 0,
     mermaidTheme: 'default',
     mermaidScale: '80%',
     htmlMaxWidth: '960px',
     htmlAlignment: 'center',
     allowLocalImages: true,
     allowHttpImages: false,
-    debounceNoPlantUmlMs: 100,
-    debouncePlantUmlMs: 300,
+    debounceNoDiagramChangeMs: 100,
+    debounceDiagramChangeMs: 100,
 };
 
 /**

@@ -2,7 +2,7 @@
   "name": "plantuml-markdown-preview",
   "displayName": "%displayName%",
   "description": "%description%",
-  "version": "0.3.7",
+  "version": "0.4.0",
   "license": "MIT",
   "publisher": "yss-tazawa",
   "icon": "images/icon.png",
@@ -121,14 +121,16 @@
       "properties": {
         "plantumlMarkdownPreview.renderMode": {
           "type": "string",
-          "default": "local",
+          "default": "local-server",
           "enum": [
             "local",
-            "server"
+            "server",
+            "local-server"
           ],
           "enumDescriptions": [
             "%configuration.renderMode.local%",
-            "%configuration.renderMode.server%"
+            "%configuration.renderMode.server%",
+            "%configuration.renderMode.localServer%"
           ],
           "description": "%configuration.renderMode.description%"
         },
@@ -325,15 +327,22 @@
           "default": false,
           "description": "%configuration.allowHttpImages.description%"
         },
-        "plantumlMarkdownPreview.debounceNoPlantUmlMs": {
+        "plantumlMarkdownPreview.debounceNoDiagramChangeMs": {
           "type": "number",
           "default": 100,
-          "description": "%configuration.debounceNoPlantUmlMs.description%"
+          "description": "%configuration.debounceNoDiagramChangeMs.description%"
         },
-        "plantumlMarkdownPreview.debouncePlantUmlMs": {
+        "plantumlMarkdownPreview.debounceDiagramChangeMs": {
           "type": "number",
-          "default": 300,
-          "description": "%configuration.debouncePlantUmlMs.description%"
+          "default": 100,
+          "description": "%configuration.debounceDiagramChangeMs.description%"
+        },
+        "plantumlMarkdownPreview.localServerPort": {
+          "type": "number",
+          "default": 0,
+          "minimum": 0,
+          "maximum": 65535,
+          "description": "%configuration.localServerPort.description%"
         }
       }
     }
