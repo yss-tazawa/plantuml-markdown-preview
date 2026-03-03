@@ -1,6 +1,6 @@
 {
   "displayName": "PlantUML Markdown Preview",
-  "description": "在 Markdown 中内联渲染 PlantUML 图表，导出为自包含 HTML。安全设计。",
+  "description": "3 种模式适配你的工作流。内联渲染 PlantUML 和 Mermaid — 快速、安全或零配置。",
   "submenu.label": "PlantUML Markdown Preview",
   "command.openPreview.title": "在侧边打开预览",
   "command.exportHtml.title": "导出为 HTML",

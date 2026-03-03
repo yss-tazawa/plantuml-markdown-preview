@@ -1,6 +1,6 @@
 {
   "displayName": "PlantUML Markdown Preview",
-  "description": "Markdown 内の PlantUML をインラインプレビュー表示し、自己完結型 HTML へエクスポート。セキュリティを重視した設計。",
+  "description": "3つのモードでワークフローに合わせて使える。PlantUML & Mermaid をインラインでレンダリング — 高速・安全・セットアップ不要。",
   "submenu.label": "PlantUML Markdown Preview",
   "command.openPreview.title": "サイドにプレビューを開く",
   "command.exportHtml.title": "HTML としてエクスポート",
