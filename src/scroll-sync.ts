@@ -33,14 +33,16 @@
  * @param renderSeq - Sequence number to discard stale showLoading messages.
  * @param renderingText - Localized "Rendering..." text for the loading overlay.
  * @param syncMasterTimeoutMs - Timeout in ms before syncMaster resets to 'none'.
+ * @param [initialAtBottom=false] - If true, snap preview to bottom on initial render.
  * @returns HTML `<script nonce="...">` string ready for insertion before `</body>`.
  */
-export function buildScrollSyncScript(initialLine: number, initialMaxTopLine: number, nonce: string, renderSeq: number, renderingText: string, syncMasterTimeoutMs: number): string {
+export function buildScrollSyncScript(initialLine: number, initialMaxTopLine: number, nonce: string, renderSeq: number, renderingText: string, syncMasterTimeoutMs: number, initialAtBottom = false): string {
     return `<script nonce="${nonce}">
 (function() {
     const vscode = acquireVsCodeApi();
     const INITIAL_LINE = ${initialLine};
     const INITIAL_MAX_TOP_LINE = ${initialMaxTopLine};
+    const INITIAL_AT_BOTTOM = ${initialAtBottom};
     const RENDER_SEQ = ${renderSeq};
     const RENDERING_TEXT = ${JSON.stringify(renderingText)};
 
@@ -199,8 +201,16 @@ export function buildScrollSyncScript(initialLine: number, initialMaxTopLine: nu
      *
      * @param {number} topLine - Source line number to scroll to
      * @param {number} maxTopLine - Maximum scroll line of the editor
+     * @param {boolean} [atBottom] - If true, snap preview to absolute bottom
      */
-    function scrollToSourceLine(topLine, maxTopLine) {
+    function scrollToSourceLine(topLine, maxTopLine, atBottom) {
+        if (atBottom) {
+            const ms = Math.max(0, document.body.scrollHeight - window.innerHeight);
+            expectingScrollEvent = true;
+            window.scrollTo({ top: ms, behavior: 'instant' });
+            requestAnimationFrame(function() { expectingScrollEvent = false; });
+            return;
+        }
         const anc = ensureAnchors(maxTopLine);
         if (!anc) return;
 
@@ -241,7 +251,7 @@ export function buildScrollSyncScript(initialLine: number, initialMaxTopLine: nu
         if (message && message.type === 'scrollToLine') {
             if (syncMaster === 'preview') return;
             setSyncMaster('editor');
-            scrollToSourceLine(message.line, message.maxTopLine);
+            scrollToSourceLine(message.line, message.maxTopLine, message.atBottom);
         } else if (message && message.type === 'updateTheme' && typeof message.css === 'string') {
             const styleEl = document.getElementById('theme-css');
             if (styleEl) styleEl.textContent = message.css;
@@ -322,10 +332,10 @@ export function buildScrollSyncScript(initialLine: number, initialMaxTopLine: nu
     observeImages();
 
     /** Restore scroll position after re-render using values embedded by renderPanel(). */
-    if (INITIAL_LINE > 0) {
+    if (INITIAL_AT_BOTTOM || INITIAL_LINE > 0) {
         window.addEventListener('load', function() {
             requestAnimationFrame(function() {
-                scrollToSourceLine(INITIAL_LINE, INITIAL_MAX_TOP_LINE);
+                scrollToSourceLine(INITIAL_LINE, INITIAL_MAX_TOP_LINE, INITIAL_AT_BOTTOM);
             });
         });
     }
