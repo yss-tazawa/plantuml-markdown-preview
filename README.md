@@ -4,7 +4,9 @@
 
 <h1 align="center">PlantUML Markdown Preview</h1>
 
-<h3 align="center">3 modes to fit your workflow. Render PlantUML &amp; Mermaid inline — fast, secure, or zero-setup.</h3>
+<p align="center">
+  <strong>3 modes to fit your workflow. Render PlantUML &amp; Mermaid inline — fast, secure, or zero-setup.</strong>
+</p>
 
 <p align="center">
   <a href="https://marketplace.visualstudio.com/items?itemName=yss-tazawa.plantuml-markdown-preview"><img src="https://img.shields.io/visual-studio-marketplace/v/yss-tazawa.plantuml-markdown-preview" alt="VS Marketplace Version"></a>

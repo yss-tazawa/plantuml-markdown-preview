@@ -92,6 +92,10 @@ let lastDiagramContent = '';
 let lastScrollLine = -1;
 /** Last editor maxTopLine sent to Webview (-1 forces re-sync on next event). */
 let lastMaxTopLine = -1;
+/** Normal visible line count (when not scrolled past the end). Used to detect bottom snap. */
+let normalVisibleLineCount = 0;
+/** Whether the editor is currently scrolled past the end (bottom snap active). */
+let lastAtBottom = false;
 /** Monotonically increasing render sequence number for stale message detection. */
 let renderSeq = 0;
 
@@ -305,6 +309,8 @@ export function openPreview(filePath: string, config: Config, preserveFocus = fa
     if (currentFilePath !== filePath) {
         lastScrollLine = -1;
         lastMaxTopLine = -1;
+        normalVisibleLineCount = 0;
+        lastAtBottom = false;
     }
     currentFilePath = filePath;
 
@@ -395,7 +401,14 @@ export function openPreview(filePath: string, config: Config, preserveFocus = fa
             setSyncMaster('editor');
             lastScrollLine = topLine;
             lastMaxTopLine = maxTopLine;
-            void panel.webview.postMessage({ type: 'scrollToLine', line: topLine, maxTopLine });
+            if (bottomLine < lineCount - 1) {
+                normalVisibleLineCount = visibleLineCount;
+            }
+            const atBottom = bottomLine >= lineCount - 1
+                && normalVisibleLineCount > 0
+                && normalVisibleLineCount - visibleLineCount >= 10;
+            lastAtBottom = atBottom;
+            void panel.webview.postMessage({ type: 'scrollToLine', line: topLine, maxTopLine, atBottom });
         });
 
     }
@@ -463,7 +476,7 @@ async function renderPanel(text: string): Promise<void> {
         const mermaidUri = panel.webview.asWebviewUri(vscode.Uri.file(mermaidPath)).toString();
         const renderOptions = {
             sourceMap: true,
-            scriptHtml: buildScrollSyncScript(lastScrollLine, lastMaxTopLine, nonce, mySeq, vscode.l10n.t('Rendering...'), SYNC_MASTER_TIMEOUT_MS),
+            scriptHtml: buildScrollSyncScript(lastScrollLine, lastMaxTopLine, nonce, mySeq, vscode.l10n.t('Rendering...'), SYNC_MASTER_TIMEOUT_MS, lastAtBottom),
             cspNonce: nonce,
             cspSource: panel.webview.cspSource,
             lang: vscode.env.language,
