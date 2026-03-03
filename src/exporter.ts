@@ -220,6 +220,9 @@ function getOrCreateMd(config: Config, withSourceMap?: boolean): MarkdownIt {
                     } else if (token.nesting === 0 && token.type === 'fence') {
                         token.meta = token.meta || {};
                         token.meta.sourceLine = token.map[0];
+                        token.meta.sourceLineEnd = token.map[1];
+                    } else if (token.nesting === 0 && token.type === 'hr') {
+                        token.attrSet('data-source-line', String(token.map[0]));
                     }
                 }
             }
