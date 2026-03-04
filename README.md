@@ -24,7 +24,7 @@
 |---|---|---|---|
 | | Instant re-renders | Maximum privacy | Zero setup |
 | | Runs a PlantUML server on localhost — no JVM startup cost, instant updates | No network, no background processes — everything stays on your machine | No Java needed — works out of the box with a PlantUML server |
-| **Java** | Required | Required | Not required |
+| **Java** | 11+ required | 11+ required | Not required |
 | **Network** | None | None | Required |
 | **Privacy** | Local only | Local only | Diagram source sent to external server |
 | **Setup** | [Install Java →](#prerequisites) | [Install Java →](#prerequisites) | No setup needed |
@@ -35,7 +35,7 @@ Switch between modes anytime with a single setting — no migration, no restart.
 
 ## Highlights
 
-- **Inline PlantUML rendering** — diagrams appear directly in your Markdown preview, not in a separate panel
+- **Inline PlantUML & Mermaid rendering** — diagrams appear directly in your Markdown preview, not in a separate panel
 - **Secure by design** — CSP nonce-based policy blocks all code execution from Markdown content
 - **Diagram scale control** — adjust PlantUML and Mermaid diagram sizes independently
 - **Self-contained HTML export** — SVG diagrams embedded inline, configurable layout width and alignment
@@ -186,11 +186,11 @@ PlantUML and Mermaid diagrams also render in VS Code's built-in Markdown preview
 
 | Tool | Purpose | Verify |
 |------|---------|--------|
-| [Java (JRE or JDK)](#setup) | Runs PlantUML | `java -version` |
+| [Java 11+ (JRE or JDK)](#setup) | Runs PlantUML (bundled PlantUML 1.2026.2 requires Java 11+) | `java -version` |
 | [Graphviz](https://graphviz.org/) | Optional — needed for class, component, and other layout-dependent diagrams (see [Diagram Support](#diagram-support)) | `dot -V` |
 
-> **Note:** A PlantUML jar (LGPL) is bundled with the extension.
-> No separate download is needed.
+> **Note:** A PlantUML jar (LGPL, v1.2026.2) is bundled with the extension.
+> No separate download is needed. **Java 11 or later is required.**
 >
 > **Tip:** If Java is not installed, the extension will offer to switch to Easy mode when you open a preview.
 
@@ -230,9 +230,9 @@ What works depends on your setup:
 
 ### Setup
 
-**Fast mode** (default): Starts a persistent local PlantUML server for instant re-renders. Requires Java.
+**Fast mode** (default): Starts a persistent local PlantUML server for instant re-renders. Requires Java 11+.
 
-**To use Secure mode**: Set `mode` to `"secure"`. Uses Java per render without a background server or network access.
+**To use Secure mode**: Set `mode` to `"secure"`. Uses Java 11+ per render without a background server or network access.
 
 **To use Easy mode** (no setup required): Set `mode` to `"easy"`. Diagram source is sent to a PlantUML server for rendering. The extension will also prompt you to switch when Java is not detected.
 
@@ -400,7 +400,7 @@ All settings use the `plantumlMarkdownPreview.` prefix.
 <summary><strong>PlantUML diagrams are not rendering</strong></summary>
 
 **Fast / Secure mode:**
-1. Run `java -version` in your terminal to confirm Java is installed
+1. Run `java -version` in your terminal to confirm Java 11 or later is installed
 2. If you use class, component, or other layout-dependent diagrams, run `dot -V` to confirm Graphviz is installed (see [Diagram Support](#diagram-support))
 3. If you set a custom `plantumlJarPath`, verify it points to a valid `plantuml.jar` file. If `plantumlJarPath` is empty (default), the bundled LGPL jar is used automatically
 4. Check the VS Code Output panel for error messages

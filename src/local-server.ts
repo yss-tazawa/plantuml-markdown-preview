@@ -100,19 +100,24 @@ export async function startLocalServer(config: Config): Promise<void> {
         serverProcess = child;
         stoppingIntentionally = false;
 
+        let stderrBuf = '';
         child.stdout?.on('data', (chunk: Buffer) => log(`[local-server stdout] ${chunk.toString().trimEnd()}`));
-        child.stderr?.on('data', (chunk: Buffer) => log(`[local-server stderr] ${chunk.toString().trimEnd()}`));
+        child.stderr?.on('data', (chunk: Buffer) => {
+            const text = chunk.toString().trimEnd();
+            log(`[local-server stderr] ${text}`);
+            stderrBuf += text + '\n';
+        });
 
         child.on('error', (err) => {
             log(`[local-server] Process error: ${err.message}`);
-            handleCrash(err.message, config);
+            handleCrash(err.message, config, stderrBuf);
         });
 
         child.on('exit', (code, signal) => {
             if (stoppingIntentionally) return;
             const reason = signal ? `signal ${signal}` : `exit code ${code}`;
             log(`[local-server] Process exited unexpectedly: ${reason}`);
-            handleCrash(reason, config);
+            handleCrash(reason, config, stderrBuf);
         });
 
         await waitForReady(port);
@@ -295,13 +300,31 @@ function log(message: string): void {
  *
  * @param reason - Human-readable crash reason (e.g. exit code or signal).
  * @param config - Current extension settings for potential restart.
+ * @param [stderr] - Accumulated stderr output for Java version error detection.
  */
-function handleCrash(reason: string, config: Config): void {
+function handleCrash(reason: string, config: Config, stderr?: string): void {
     if (serverState === 'error') return;
     serverProcess = null;
     serverState = 'error';
     serverUrl = null;
     readyReject?.(new Error(reason));
+
+    const isVersionError = stderr?.includes('UnsupportedClassVersionError')
+        || stderr?.includes('class file version');
+
+    if (isVersionError) {
+        const installJava = vscode.l10n.t('Install Java');
+        const dismissLabel = vscode.l10n.t('Dismiss');
+        void vscode.window.showErrorMessage(
+            vscode.l10n.t('The bundled PlantUML requires Java 11 or later. Your Java version is too old. Please upgrade Java.'),
+            installJava, dismissLabel
+        ).then((action) => {
+            if (action === installJava) {
+                void vscode.env.openExternal(vscode.Uri.parse('https://www.java.com/en/download/'));
+            }
+        });
+        return;
+    }
 
     const switchLabel = vscode.l10n.t('Switch to Secure Mode');
     const restartLabel = vscode.l10n.t('Restart Server');

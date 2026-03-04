@@ -479,6 +479,12 @@ export function renderAllLocal(blocks: string[], config: Config, signal?: AbortS
  * @returns Styled HTML error div ready for Webview insertion.
  */
 function buildErrorMessage(stderr: string, displayContent: string, lineOffset: number, exitCode: number): string {
+    if (stderr.includes('UnsupportedClassVersionError') || stderr.includes('class file version')) {
+        return errorHtml(
+            vscode.l10n.t('The bundled PlantUML requires Java 11 or later. Your Java version is too old. Please upgrade Java.')
+        );
+    }
+
     const parsed = parseStdrpt(stderr);
     const lines = displayContent.split('\n');
 
