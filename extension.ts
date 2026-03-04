@@ -183,40 +183,90 @@ let lastKnownConfig: Config | null = null;
 async function checkJavaAvailability(config: Config): Promise<boolean> {
     if (config.renderMode === 'server') return true;
 
-    const javaFound = await new Promise<boolean>((resolve) => {
-        if (config.debugSimulateNoJava) { resolve(false); return; }
-        javaCheckChild = execJava(config.javaPath, ['-version'], { timeout: 5000 }, (err) => {
+    const javaResult = await new Promise<{ found: boolean; versionOutput: string }>((resolve) => {
+        if (config.debugSimulateNoJava) { resolve({ found: false, versionOutput: '' }); return; }
+        javaCheckChild = execJava(config.javaPath, ['-version'], { timeout: 5000 }, (err, _stdout, stderr) => {
             javaCheckChild = null;
-            resolve(!err);
+            resolve({ found: !err, versionOutput: stderr || '' });
         });
     });
-    if (javaFound) return true;
+
+    if (javaResult.found) {
+        const major = parseJavaMajorVersion(javaResult.versionOutput);
+        if (major !== null && major < 11) {
+            const useEasy = vscode.l10n.t('Use Easy Mode');
+            const installJava = vscode.l10n.t('Install Java');
+            const dismiss = vscode.l10n.t('Dismiss');
+            const action = await vscode.window.showWarningMessage(
+                vscode.l10n.t('Java {0} is installed, but the bundled PlantUML requires Java 11 or later. Please upgrade Java.', String(major)),
+                useEasy, installJava, dismiss
+            );
+            if (action === useEasy) {
+                await promptSwitchToEasy(config);
+            } else if (action === installJava) {
+                void vscode.env.openExternal(vscode.Uri.parse('https://www.java.com/en/download/'));
+            }
+            return false;
+        }
+        return true;
+    }
 
     const useEasy = vscode.l10n.t('Use Easy Mode');
     const installJava = vscode.l10n.t('Install Java');
     const dismiss = vscode.l10n.t('Dismiss');
 
     const action = await vscode.window.showWarningMessage(
-        vscode.l10n.t('Java is not found. PlantUML requires Java for local rendering.'),
+        vscode.l10n.t('Java is not found. PlantUML requires Java 11 or later for local rendering.'),
         useEasy, installJava, dismiss
     );
 
     if (action === useEasy) {
-        const serverUrl = config.plantumlServerUrl || 'https://www.plantuml.com/plantuml';
-        const yesLabel = vscode.l10n.t('Yes, switch to Easy mode');
-        const confirm = await vscode.window.showWarningMessage(
-            vscode.l10n.t('Easy mode sends diagram source to an external server ({0}). Continue?', serverUrl),
-            yesLabel,
-            vscode.l10n.t('Cancel')
-        );
-        if (confirm === yesLabel) {
-            const cfg = vscode.workspace.getConfiguration(CONFIG_SECTION);
-            await cfg.update('mode', 'easy', vscode.ConfigurationTarget.Global);
-        }
+        await promptSwitchToEasy(config);
     } else if (action === installJava) {
         void vscode.env.openExternal(vscode.Uri.parse('https://www.java.com/en/download/'));
     }
     return false;
+}
+
+/**
+ * Show a confirmation dialog to switch to Easy mode.
+ *
+ * Warns the user that diagram source will be sent to an external server,
+ * then updates the global mode setting if confirmed.
+ *
+ * @param config - Current extension settings (for server URL display).
+ */
+async function promptSwitchToEasy(config: Config): Promise<void> {
+    const serverUrl = config.plantumlServerUrl || 'https://www.plantuml.com/plantuml';
+    const yesLabel = vscode.l10n.t('Yes, switch to Easy mode');
+    const confirm = await vscode.window.showWarningMessage(
+        vscode.l10n.t('Easy mode sends diagram source to an external server ({0}). Continue?', serverUrl),
+        yesLabel,
+        vscode.l10n.t('Cancel')
+    );
+    if (confirm === yesLabel) {
+        const cfg = vscode.workspace.getConfiguration(CONFIG_SECTION);
+        await cfg.update('mode', 'easy', vscode.ConfigurationTarget.Global);
+    }
+}
+
+/**
+ * Parse the major version number from `java -version` stderr output.
+ *
+ * Handles formats like:
+ *   java version "1.8.0_392"   -> 8
+ *   java version "11.0.24"     -> 11
+ *   openjdk version "21.0.6"   -> 21
+ *
+ * @param versionOutput - Stderr output from `java -version`.
+ * @returns Major version number, or null if parsing fails.
+ */
+function parseJavaMajorVersion(versionOutput: string): number | null {
+    const match = versionOutput.match(/version\s+"(\d+)(?:\.(\d+))?/);
+    if (!match) return null;
+    const major = parseInt(match[1], 10);
+    if (major === 1 && match[2]) return parseInt(match[2], 10);
+    return major;
 }
 
 /**

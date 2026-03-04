@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## 0.4.3 - 2026-03-04
+
+### Added
+
+- Document Java 11+ minimum requirement for the bundled PlantUML jar
+- Show an actionable error message when the installed Java version is too old for the bundled PlantUML
+- Check Java version at startup and warn if below Java 11
+- Add Mermaid to the Highlights section in README
+
 ## 0.4.2 - 2026-03-04
 
 ### Fixed
