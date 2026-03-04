@@ -124,7 +124,7 @@ export async function startLocalServer(config: Config): Promise<void> {
         log(`[local-server] Ready on port ${port}`);
 
         void vscode.window.showInformationMessage(
-            vscode.l10n.t('Local PlantUML server started on port {0}', String(port))
+            vscode.l10n.t('Local PlantUML server started.')
         );
     } catch (err) {
         serverState = 'error';

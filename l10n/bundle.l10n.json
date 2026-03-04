@@ -33,7 +33,7 @@
   "Mermaid Theme": "Mermaid Theme",
   "Rendering diagrams...": "Rendering diagrams...",
   "Local PlantUML server is not running. Check the output panel for details.": "Local PlantUML server is not running. Check the output panel for details.",
-  "Local PlantUML server started on port {0}": "Local PlantUML server started on port {0}",
+  "Local PlantUML server started.": "Local PlantUML server started.",
   "Local PlantUML server crashed: {0}": "Local PlantUML server crashed: {0}",
   "Switch to Secure Mode": "Switch to Secure Mode",
   "Restart Server": "Restart Server",
