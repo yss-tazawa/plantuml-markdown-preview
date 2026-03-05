@@ -63,9 +63,17 @@ export interface Config {
     debounceNoDiagramChangeMs: number;
     /** Debounce delay (ms) when diagram content changed. */
     debounceDiagramChangeMs: number;
+    /** When true, enable KaTeX math rendering ($...$ inline, $$...$$ block). */
+    enableMath: boolean;
     /** Hidden debug flag: simulate Java not found, even when installed. */
     debugSimulateNoJava?: boolean;
 }
+
+/** Mermaid built-in theme keys, ordered for display. */
+export const MERMAID_THEME_KEYS = ['default', 'dark', 'forest', 'neutral', 'base'] as const;
+
+/** Pre-built Set for O(1) validation of Mermaid theme values. */
+export const MERMAID_THEME_SET: ReadonlySet<string> = new Set(MERMAID_THEME_KEYS);
 
 /** VS Code settings section name. */
 export const CONFIG_SECTION = 'plantumlMarkdownPreview';

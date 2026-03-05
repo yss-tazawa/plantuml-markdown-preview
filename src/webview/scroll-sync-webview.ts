@@ -32,6 +32,8 @@ interface Anchor {
     const RENDER_SEQ = Number(script.dataset.renderSeq);
     const RENDERING_TEXT = script.dataset.renderingText!;
     const SYNC_MASTER_TIMEOUT_MS = Number(script.dataset.syncMasterTimeoutMs);
+    /** Offset (px) for TOC active-heading detection: clears the fixed nav-toolbar. */
+    const TOC_SCROLL_OFFSET = 60;
 
     const vscode = acquireVsCodeApi();
 
@@ -317,6 +319,12 @@ interface Anchor {
 
         observeImages();
 
+        // Rebuild TOC if sidebar is open
+        if (tocSidebar && tocSidebar.classList.contains('open')) {
+            buildToc();
+            highlightToc();
+        }
+
         // Scroll to the requested position after file switch
         if (update.scrollTo) {
             const st = update.scrollTo;
@@ -354,6 +362,142 @@ interface Anchor {
         }
     }
     observeImages();
+
+    // --- Navigation toolbar (top-right) ---
+    const navTop = document.getElementById('nav-top');
+    const navBottom = document.getElementById('nav-bottom');
+    const navToc = document.getElementById('nav-toc');
+    const tocSidebar = document.getElementById('toc-sidebar');
+    const tocList = document.getElementById('toc-list');
+
+    if (navTop) navTop.addEventListener('click', function () {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+    if (navBottom) navBottom.addEventListener('click', function () {
+        window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+    });
+
+    // --- TOC sidebar ---
+    interface TocNode { id: string; text: string; level: number; children: TocNode[] }
+
+    /** Build a tree of heading nodes from #preview-content for the TOC sidebar. */
+    function buildTocTree(): TocNode[] {
+        const container = document.getElementById('preview-content');
+        if (!container) return [];
+        const headings = container.querySelectorAll('h1, h2, h3, h4, h5, h6');
+        const root: TocNode[] = [];
+        const stack: { level: number; children: TocNode[] }[] = [{ level: 0, children: root }];
+        for (let i = 0; i < headings.length; i++) {
+            const h = headings[i];
+            const level = parseInt(h.tagName[1], 10);
+            const id = h.id || ('toc-heading-' + i);
+            if (!h.id) h.id = id;
+            const node: TocNode = { id, text: h.textContent || '', level, children: [] };
+            // Pop stack until we find a parent with lower level
+            while (stack.length > 1 && stack[stack.length - 1].level >= level) stack.pop();
+            stack[stack.length - 1].children.push(node);
+            stack.push({ level, children: node.children });
+        }
+        return root;
+    }
+
+    /** Escape a string for use inside an HTML attribute value. */
+    function escAttr(s: string): string { return s.replace(/&/g, '&amp;').replace(/"/g, '&quot;'); }
+
+    /** Convert a TocNode tree into nested HTML list items. */
+    function renderTocHtml(nodes: TocNode[]): string {
+        let html = '';
+        for (let i = 0; i < nodes.length; i++) {
+            const n = nodes[i];
+            const hasChildren = n.children.length > 0;
+            const escaped = n.text.replace(/&/g, '&amp;').replace(/</g, '&lt;');
+            html += '<li class="open">';
+            if (hasChildren) html += '<span class="toc-toggle">▼</span>';
+            html += '<a href="#' + escAttr(n.id) + '" data-toc-id="' + escAttr(n.id) + '">' + escaped + '</a>';
+            if (hasChildren) html += '<ul>' + renderTocHtml(n.children) + '</ul>';
+            html += '</li>';
+        }
+        return html;
+    }
+
+    /** Build the TOC sidebar DOM from current headings and attach toggle handlers. */
+    function buildToc(): void {
+        if (!tocList) return;
+        const tree = buildTocTree();
+        tocList.innerHTML = renderTocHtml(tree);
+        // Attach toggle handlers
+        const toggles = tocList.querySelectorAll('.toc-toggle');
+        for (let i = 0; i < toggles.length; i++) {
+            toggles[i].addEventListener('click', function (e) {
+                e.stopPropagation();
+                const li = (e.target as HTMLElement).parentElement!;
+                li.classList.toggle('open');
+                const toggle = e.target as HTMLElement;
+                toggle.textContent = li.classList.contains('open') ? '▼' : '▶';
+            });
+        }
+    }
+
+    /** Highlight the TOC entry corresponding to the current scroll position. */
+    function highlightToc(): void {
+        if (!tocList || !tocSidebar || !tocSidebar.classList.contains('open')) return;
+        const links = tocList.querySelectorAll('a[data-toc-id]');
+        if (links.length === 0) return;
+        let activeId = '';
+        const scrollY = window.scrollY + TOC_SCROLL_OFFSET;
+        for (let i = links.length - 1; i >= 0; i--) {
+            const id = (links[i] as HTMLElement).dataset.tocId!;
+            const el = document.getElementById(id);
+            if (el && el.getBoundingClientRect().top + window.scrollY <= scrollY) {
+                activeId = id;
+                break;
+            }
+        }
+        for (let i = 0; i < links.length; i++) {
+            const link = links[i] as HTMLElement;
+            if (link.dataset.tocId === activeId) {
+                link.classList.add('active');
+                // Scroll the active item into view within the sidebar
+                const sidebar = tocSidebar!;
+                const linkTop = link.offsetTop;
+                const linkBottom = linkTop + link.offsetHeight;
+                if (linkTop < sidebar.scrollTop || linkBottom > sidebar.scrollTop + sidebar.clientHeight) {
+                    link.scrollIntoView({ block: 'nearest' });
+                }
+            } else {
+                link.classList.remove('active');
+            }
+        }
+    }
+
+    if (navToc && tocSidebar) {
+        navToc.addEventListener('click', function () {
+            const isOpen = tocSidebar!.classList.toggle('open');
+            navToc!.classList.toggle('active', isOpen);
+            if (isOpen) {
+                buildToc();
+                highlightToc();
+            }
+        });
+        // Click TOC item → scroll to heading
+        tocSidebar.addEventListener('click', function (e) {
+            const target = (e.target as HTMLElement).closest('a[data-toc-id]') as HTMLElement | null;
+            if (!target) return;
+            e.preventDefault();
+            const id = target.dataset.tocId!;
+            const el = document.getElementById(id);
+            if (el) el.scrollIntoView({ behavior: 'smooth' });
+        });
+        // Highlight active TOC item on scroll (throttled)
+        let tocHighlightThrottle: ReturnType<typeof setTimeout> | null = null;
+        window.addEventListener('scroll', function () {
+            if (tocHighlightThrottle) return;
+            tocHighlightThrottle = setTimeout(function () {
+                tocHighlightThrottle = null;
+                highlightToc();
+            }, 100);
+        }, { passive: true });
+    }
 
     /** Restore scroll position after re-render using values embedded by renderPanel(). */
     if (INITIAL_AT_BOTTOM || INITIAL_LINE > 0) {

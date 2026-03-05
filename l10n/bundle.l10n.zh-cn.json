@@ -39,5 +39,13 @@
   "Local PlantUML server crashed: {0}": "本地 PlantUML 服务器崩溃: {0}",
   "Switch to Secure Mode": "切换到 Secure 模式",
   "Restart Server": "重启服务器",
-  "Local PlantUML server stopped.": "本地 PlantUML 服务器已停止"
+  "Local PlantUML server stopped.": "本地 PlantUML 服务器已停止",
+  "Go to top": "跳到顶部",
+  "Go to bottom": "跳到底部",
+  "Table of Contents": "目录",
+  "Exporting PDF...": "正在导出 PDF...",
+  "PDF exported: {0}": "PDF 已导出: {0}",
+  "Open": "打开",
+  "Chrome, Edge, or Chromium is required for PDF export. No supported browser was found.": "PDF 导出需要 Chrome、Edge 或 Chromium。未找到支持的浏览器。",
+  "PDF export failed: {0}": "PDF 导出失败: {0}"
 }

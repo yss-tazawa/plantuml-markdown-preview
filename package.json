@@ -2,7 +2,7 @@
   "name": "plantuml-markdown-preview",
   "displayName": "%displayName%",
   "description": "%description%",
-  "version": "0.4.4",
+  "version": "0.4.5",
   "license": "MIT",
   "publisher": "yss-tazawa",
   "icon": "images/icon.png",
@@ -49,6 +49,26 @@
         "category": "%command.category%"
       },
       {
+        "command": "plantuml-markdown-preview.exportHtmlFitToWidth",
+        "title": "%command.exportHtmlFitToWidth.title%",
+        "category": "%command.category%"
+      },
+      {
+        "command": "plantuml-markdown-preview.exportHtmlFitToWidthAndOpen",
+        "title": "%command.exportHtmlFitToWidthAndOpen.title%",
+        "category": "%command.category%"
+      },
+      {
+        "command": "plantuml-markdown-preview.exportPdf",
+        "title": "%command.exportPdf.title%",
+        "category": "%command.category%"
+      },
+      {
+        "command": "plantuml-markdown-preview.exportPdfAndOpen",
+        "title": "%command.exportPdfAndOpen.title%",
+        "category": "%command.category%"
+      },
+      {
         "command": "plantuml-markdown-preview.changeTheme",
         "title": "%command.changeTheme.title%",
         "category": "%command.category%",
@@ -86,11 +106,33 @@
       "webview/context": [
         {
           "command": "plantuml-markdown-preview.exportHtml",
-          "when": "webviewId == 'plantumlMarkdownPreview'"
+          "when": "webviewId == 'plantumlMarkdownPreview'",
+          "group": "2_export@1"
         },
         {
           "command": "plantuml-markdown-preview.exportHtmlAndOpen",
-          "when": "webviewId == 'plantumlMarkdownPreview'"
+          "when": "webviewId == 'plantumlMarkdownPreview'",
+          "group": "2_export@2"
+        },
+        {
+          "command": "plantuml-markdown-preview.exportHtmlFitToWidth",
+          "when": "webviewId == 'plantumlMarkdownPreview'",
+          "group": "3_export_fit@1"
+        },
+        {
+          "command": "plantuml-markdown-preview.exportHtmlFitToWidthAndOpen",
+          "when": "webviewId == 'plantumlMarkdownPreview'",
+          "group": "3_export_fit@2"
+        },
+        {
+          "command": "plantuml-markdown-preview.exportPdf",
+          "when": "webviewId == 'plantumlMarkdownPreview'",
+          "group": "4_pdf@1"
+        },
+        {
+          "command": "plantuml-markdown-preview.exportPdfAndOpen",
+          "when": "webviewId == 'plantumlMarkdownPreview'",
+          "group": "4_pdf@2"
         }
       ],
       "plantuml-markdown-preview.submenu": [
@@ -105,6 +147,22 @@
         {
           "command": "plantuml-markdown-preview.exportHtmlAndOpen",
           "group": "2_export@2"
+        },
+        {
+          "command": "plantuml-markdown-preview.exportHtmlFitToWidth",
+          "group": "3_export_fit@1"
+        },
+        {
+          "command": "plantuml-markdown-preview.exportHtmlFitToWidthAndOpen",
+          "group": "3_export_fit@2"
+        },
+        {
+          "command": "plantuml-markdown-preview.exportPdf",
+          "group": "4_pdf@1"
+        },
+        {
+          "command": "plantuml-markdown-preview.exportPdfAndOpen",
+          "group": "4_pdf@2"
         }
       ]
     },
@@ -220,7 +278,7 @@
           "description": "%configuration.plantumlTheme.description%"
         },
         "plantumlMarkdownPreview.plantumlScale": {
-          "order": 10,
+          "order": 9,
           "type": "string",
           "default": "100%",
           "enum": [
@@ -254,7 +312,7 @@
           "description": "%configuration.plantumlScale.description%"
         },
         "plantumlMarkdownPreview.mermaidTheme": {
-          "order": 9,
+          "order": 10,
           "type": "string",
           "default": "default",
           "enum": [
@@ -345,20 +403,32 @@
           ],
           "description": "%configuration.htmlAlignment.description%"
         },
-        "plantumlMarkdownPreview.debounceNoDiagramChangeMs": {
+        "plantumlMarkdownPreview.enableMath": {
           "order": 14,
-          "type": ["number", "null"],
+          "type": "boolean",
+          "default": true,
+          "description": "%configuration.enableMath.description%"
+        },
+        "plantumlMarkdownPreview.debounceNoDiagramChangeMs": {
+          "order": 15,
+          "type": [
+            "number",
+            "null"
+          ],
           "default": null,
           "description": "%configuration.debounceNoDiagramChangeMs.description%"
         },
         "plantumlMarkdownPreview.debounceDiagramChangeMs": {
-          "order": 15,
-          "type": ["number", "null"],
+          "order": 16,
+          "type": [
+            "number",
+            "null"
+          ],
           "default": null,
           "description": "%configuration.debounceDiagramChangeMs.description%"
         },
         "plantumlMarkdownPreview.plantumlLocalServerPort": {
-          "order": 16,
+          "order": 17,
           "type": "number",
           "default": 0,
           "minimum": 0,
@@ -366,7 +436,7 @@
           "description": "%configuration.plantumlLocalServerPort.description%"
         },
         "plantumlMarkdownPreview.plantumlServerUrl": {
-          "order": 17,
+          "order": 18,
           "type": "string",
           "default": "https://www.plantuml.com/plantuml",
           "description": "%configuration.plantumlServerUrl.description%"
@@ -375,7 +445,9 @@
     }
   },
   "dependencies": {
+    "@traptitech/markdown-it-katex": "^3.6.0",
     "highlight.js": "^11.11.1",
+    "katex": "^0.16.35",
     "markdown-it": "^14.1.1",
     "mermaid": "^11.12.3"
   },
