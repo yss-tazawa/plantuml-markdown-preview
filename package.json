@@ -2,7 +2,7 @@
   "name": "plantuml-markdown-preview",
   "displayName": "%displayName%",
   "description": "%description%",
-  "version": "0.4.3",
+  "version": "0.4.4",
   "license": "MIT",
   "publisher": "yss-tazawa",
   "icon": "images/icon.png",
@@ -396,7 +396,7 @@
   },
   "scripts": {
     "build": "node esbuild.js",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p src/webview/tsconfig.webview.json",
     "package": "npm run typecheck && npm run build && npx @vscode/vsce package"
   }
 }

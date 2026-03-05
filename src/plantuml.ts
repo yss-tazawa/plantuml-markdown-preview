@@ -19,6 +19,29 @@ import type { ChildProcess } from 'child_process';
 import { escapeHtml, ensureStartEndTags, errorHtml, LruCache, computeHash, resolveJavaCommand, spawnJava, spawnJavaSync, execJava } from './utils.js';
 import type { Config } from './config.js';
 
+/** Resolved config paths with defaults applied. */
+interface ResolvedPaths {
+    jarPath: string;
+    javaPath: string;
+    dotPath: string;
+    plantumlTheme: string;
+}
+
+/**
+ * Resolve jar, java, dot paths and theme from config with defaults.
+ *
+ * @param config - Extension configuration.
+ * @returns Resolved path values.
+ */
+function resolveConfigPaths(config: Config): ResolvedPaths {
+    return {
+        jarPath: config.plantumlJarPath || '',
+        javaPath: config.javaPath || 'java',
+        dotPath: config.dotPath || 'dot',
+        plantumlTheme: config.plantumlTheme || 'default',
+    };
+}
+
 /** Set of currently in-flight render child processes (for cleanup on deactivate). */
 const activeChildren = new Set<ChildProcess>();
 
@@ -63,10 +86,7 @@ interface RenderContext {
  * @returns Render context on success, or error HTML on failure.
  */
 function prepareRenderContext(pumlContent: string, config: Config): { ctx: RenderContext } | { error: string } {
-    const jarPath = config.plantumlJarPath || '';
-    const javaPath = config.javaPath || 'java';
-    const dotPath = config.dotPath || 'dot';
-    const plantumlTheme = config.plantumlTheme || 'default';
+    const { jarPath, javaPath, dotPath, plantumlTheme } = resolveConfigPaths(config);
 
     if (!jarPath) {
         return { error: errorHtml(
@@ -367,10 +387,7 @@ async function fallbackToIndividual(
  */
 async function renderBatchLocal(blocks: string[], config: Config, signal?: AbortSignal): Promise<Map<string, string>> {
     const results = new Map<string, string>();
-    const jarPath = config.plantumlJarPath || '';
-    const javaPath = config.javaPath || 'java';
-    const dotPath = config.dotPath || 'dot';
-    const plantumlTheme = config.plantumlTheme || 'default';
+    const { jarPath, javaPath, dotPath, plantumlTheme } = resolveConfigPaths(config);
 
     if (!jarPath) {
         const err = errorHtml(
