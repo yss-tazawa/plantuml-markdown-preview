@@ -28,7 +28,16 @@ import type { Config } from './config.js';
  */
 const PLANTUML_ALPHABET = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz-_';
 
-/** Encode 3 bytes into 4 PlantUML Base64 characters. */
+/**
+ * Encode 3 bytes into 4 PlantUML Base64 characters.
+ *
+ * Each 6-bit group is mapped to a character in PLANTUML_ALPHABET.
+ *
+ * @param b1 - First byte (0-255).
+ * @param b2 - Second byte (0-255).
+ * @param b3 - Third byte (0-255).
+ * @returns 4-character encoded string.
+ */
 function encode3bytes(b1: number, b2: number, b3: number): string {
     const c1 = b1 >> 2;
     const c2 = ((b1 & 0x3) << 4) | (b2 >> 4);
@@ -39,7 +48,12 @@ function encode3bytes(b1: number, b2: number, b3: number): string {
 
 /**
  * Encode a Uint8Array using PlantUML's custom Base64 encoding.
- * Processes 3 bytes at a time, padding final group with zeros.
+ *
+ * Processes 3 bytes at a time, padding the final group with zeros
+ * when the input length is not a multiple of 3.
+ *
+ * @param data - Raw bytes to encode.
+ * @returns PlantUML Base64-encoded string.
  */
 function plantumlEncode(data: Uint8Array): string {
     let result = '';

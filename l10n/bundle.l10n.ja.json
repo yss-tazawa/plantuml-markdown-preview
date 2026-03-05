@@ -39,5 +39,13 @@
   "Local PlantUML server crashed: {0}": "ローカル PlantUML サーバーがクラッシュしました: {0}",
   "Switch to Secure Mode": "Secure モードに切り替え",
   "Restart Server": "サーバーを再起動",
-  "Local PlantUML server stopped.": "ローカル PlantUML サーバーを停止しました"
+  "Local PlantUML server stopped.": "ローカル PlantUML サーバーを停止しました",
+  "Go to top": "先頭に移動",
+  "Go to bottom": "末尾に移動",
+  "Table of Contents": "目次",
+  "Exporting PDF...": "PDF を作成中...",
+  "PDF exported: {0}": "PDF をエクスポートしました: {0}",
+  "Open": "開く",
+  "Chrome, Edge, or Chromium is required for PDF export. No supported browser was found.": "PDF エクスポートには Chrome、Edge、または Chromium が必要です。対応するブラウザが見つかりませんでした。",
+  "PDF export failed: {0}": "PDF エクスポートに失敗しました: {0}"
 }

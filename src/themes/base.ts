@@ -113,7 +113,7 @@ export function buildThemeCss(p: ThemePalette): string {
     h1 { font-size: 2em; border-bottom: 2px solid ${p.border}; padding-bottom: 0.3em; }
     h2 { font-size: 1.5em; border-bottom: 1px solid ${p.border}; padding-bottom: 0.2em; }
     h3 { font-size: 1.25em; }
-    h1, h2, h3, h4, h5, h6 { margin-top: 1.5em; margin-bottom: 0.5em;${headingColor} }
+    h1, h2, h3, h4, h5, h6 { margin-top: 1.5em; margin-bottom: 0.5em; scroll-margin-top: 1.5em;${headingColor} }
     p { margin: 0.8em 0; }
     a { color: ${p.link}; }
     a:visited { color: ${p.linkVisited}; }
@@ -153,6 +153,8 @@ export function buildThemeCss(p: ThemePalette): string {
     .mermaid-diagram pre.mermaid { visibility: hidden; overflow: visible; border: none; padding: 0; }
     .mermaid-diagram svg { visibility: visible; height: auto; }
     .mermaid-error { visibility: visible; color: #d32f2f; border-left: 3px solid #d32f2f; padding: 0.5em; white-space: pre-wrap; font-size: 0.85em; }
+    .katex { color: inherit; }
+    .katex-display { margin: 1em 0; overflow-x: auto; overflow-y: hidden; }
     body.preview { margin: 0; max-width: none; padding: 1em 26px; }
     .hljs { background: ${p.hljsBg}; color: ${hljsText}; }
     .hljs-comment, .hljs-prolog, .hljs-doctype, .hljs-cdata { color: ${p.hljsComment}; font-style: italic; }
@@ -168,5 +170,13 @@ export function buildThemeCss(p: ThemePalette): string {
     .hljs-addition { background: ${p.hljsAdditionBg}; color: ${p.hljsAdditionColor}; }
     .hljs-deletion { background: ${p.hljsDeletionBg}; color: ${p.hljsDeletionColor}; }
     .hljs-strong { font-weight: bold; }
-    .hljs-emphasis { font-style: italic; }`;
+    .hljs-emphasis { font-style: italic; }
+    #toc-sidebar { background-color: ${p.bg}; color: ${p.text}; }
+    #toc-sidebar::before { background-color: ${p.border}; }
+    #toc-sidebar .toc-toggle { color: ${p.text}; }
+    #toc-sidebar a { color: ${p.link}; }
+    #toc-sidebar a:hover { background: ${p.codeBg}; }
+    #toc-sidebar a.active { color: ${p.link}; border-left-color: ${p.link}; }
+    #nav-toolbar button { color: ${p.text}; }
+    #nav-toolbar button:hover, #nav-toolbar button.active { background: ${p.codeBg}; }`;
 }

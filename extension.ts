@@ -3,7 +3,7 @@
  * @description VS Code extension entry point.
  *
  * Responsibilities:
- * - Register commands: openPreview / exportHtml / exportHtmlAndOpen / changeTheme
+ * - Register commands: openPreview / exportHtml / exportHtmlAndOpen / exportHtmlFitToWidth / exportHtmlFitToWidthAndOpen / exportPdf / exportPdfAndOpen / changeTheme
  * - Read VS Code settings (getConfig)
  * - Auto-follow active editor tab (editorTracker)
  * - Propagate settings changes to the preview (configWatcher)
@@ -13,7 +13,7 @@ import * as vscode from 'vscode';
 import path from 'path';
 import { existsSync } from 'fs';
 import { execFile } from 'child_process';
-import { exportToHtml, clearMdCache } from './src/exporter.js';
+import { exportToHtml, exportToPdf, clearMdCache } from './src/exporter.js';
 import { plantumlPlugin } from './src/renderer.js';
 import { clearCache } from './src/plantuml.js';
 import { clearServerCache } from './src/plantuml-server.js';
@@ -23,7 +23,16 @@ import { execJava } from './src/utils.js';
 import { CONFIG_SECTION, MODE_PRESETS, type Config, type Mode } from './src/config.js';
 import type MarkdownIt from 'markdown-it';
 
-/** Resolve the allowLocalImages tri-state ('mode-default' | 'on' | 'off') to a boolean. */
+/**
+ * Resolve the allowLocalImages tri-state setting to a boolean.
+ *
+ * When the user sets `'mode-default'`, the result falls back to the preset's
+ * default value. Explicit `'on'` or `'off'` overrides the preset.
+ *
+ * @param value - User setting: `'mode-default'`, `'on'`, or `'off'`.
+ * @param presetDefault - Default value defined by the active mode preset.
+ * @returns Whether local images should be allowed.
+ */
 function resolveAllowLocalImages(value: string, presetDefault: boolean): boolean {
     if (value === 'on') return true;
     if (value === 'off') return false;
@@ -38,6 +47,8 @@ let extensionPath = '';
  *
  * Returns an empty string when `extensionPath` is not yet set (before activate)
  * or when the bundled jar file does not exist on disk.
+ *
+ * @returns Absolute path to the bundled jar, or empty string if unavailable.
  */
 function resolveBundledJarPath(): string {
     if (!extensionPath) return '';
@@ -81,6 +92,7 @@ function getConfig(): Config {
         mermaidScale: cfg.get<string>('mermaidScale', '80%'),
         htmlMaxWidth: cfg.get<string>('htmlMaxWidth', '960px'),
         htmlAlignment: cfg.get<string>('htmlAlignment', 'center'),
+        enableMath: cfg.get<boolean>('enableMath', true),
         // Intentionally not declared in package.json contributes.configuration (hidden debug setting)
         debugSimulateNoJava: cfg.get<boolean>('debugSimulateNoJava', false),
     };
@@ -107,14 +119,15 @@ function resolveMarkdownPath(uri?: vscode.Uri): string | null {
 }
 
 /**
- * Validate the Markdown file path, verify jarPath setting, and run HTML export.
+ * Validate the Markdown file path, verify jarPath setting, and run export.
  *
  * Shows user-facing error messages when validation fails (not .md, jarPath not set).
  *
  * @param [uri] - URI passed from a command invocation.
- * @returns Absolute path of the generated HTML file, or null on failure.
+ * @param [options] - Export options (fitToWidth, pdf).
+ * @returns Absolute path of the generated file (HTML or PDF), or null on failure.
  */
-async function runExport(uri?: vscode.Uri): Promise<string | null> {
+async function runExport(uri?: vscode.Uri, options?: { fitToWidth?: boolean; pdf?: boolean }): Promise<string | null> {
     const filePath = resolveMarkdownPath(uri);
     if (!filePath) {
         vscode.window.showErrorMessage(vscode.l10n.t('No Markdown file (.md) is selected.'));
@@ -140,7 +153,21 @@ async function runExport(uri?: vscode.Uri): Promise<string | null> {
     }
 
     try {
-        return await exportToHtml(filePath, config);
+        return await vscode.window.withProgress(
+            {
+                location: vscode.ProgressLocation.Notification,
+                title: options?.pdf
+                    ? vscode.l10n.t('Exporting PDF...')
+                    : vscode.l10n.t('Rendering diagrams...'),
+                cancellable: false,
+            },
+            async () => {
+                if (options?.pdf) {
+                    return await exportToPdf(filePath, config);
+                }
+                return await exportToHtml(filePath, config, undefined, options?.fitToWidth);
+            }
+        );
     } catch (err) {
         vscode.window.showErrorMessage(vscode.l10n.t('Export failed: {0}', (err as Error).message));
         return null;
@@ -291,30 +318,51 @@ export function activate(context: vscode.ExtensionContext): { extendMarkdownIt: 
     lastKnownConfig = initialConfig;
     syncBuiltInPreviewConfig(initialConfig);
 
-    const exportCmd = vscode.commands.registerCommand(
-        'plantuml-markdown-preview.exportHtml',
-        async (uri?: vscode.Uri) => {
-            const outputPath = await runExport(uri);
+    function registerExportCommand(
+        id: string,
+        exportOptions: { fitToWidth?: boolean; pdf?: boolean } | undefined,
+        autoOpen: boolean,
+        notificationMsg?: string,
+        openLabel?: string
+    ): vscode.Disposable {
+        return vscode.commands.registerCommand(id, async (uri?: vscode.Uri) => {
+            const outputPath = await runExport(uri, exportOptions);
             if (!outputPath) return;
-            const openInBrowserLabel = vscode.l10n.t('Open in Browser');
-            const action = await vscode.window.showInformationMessage(
-                vscode.l10n.t('HTML exported: {0}', path.basename(outputPath)),
-                openInBrowserLabel
-            );
-            if (action === openInBrowserLabel) {
+            if (autoOpen) {
                 openInDefaultApp(outputPath);
+            } else {
+                const label = vscode.l10n.t(openLabel!);
+                const action = await vscode.window.showInformationMessage(
+                    vscode.l10n.t(notificationMsg!, path.basename(outputPath)),
+                    label
+                );
+                if (action === label) {
+                    openInDefaultApp(outputPath);
+                }
             }
-        }
-    );
+        });
+    }
 
-    const exportAndOpenCmd = vscode.commands.registerCommand(
-        'plantuml-markdown-preview.exportHtmlAndOpen',
-        async (uri?: vscode.Uri) => {
-            const outputPath = await runExport(uri);
-            if (outputPath) {
-                openInDefaultApp(outputPath);
-            }
-        }
+    const exportCmd = registerExportCommand(
+        'plantuml-markdown-preview.exportHtml', undefined, false,
+        'HTML exported: {0}', 'Open in Browser'
+    );
+    const exportAndOpenCmd = registerExportCommand(
+        'plantuml-markdown-preview.exportHtmlAndOpen', undefined, true
+    );
+    const exportHtmlFitCmd = registerExportCommand(
+        'plantuml-markdown-preview.exportHtmlFitToWidth', { fitToWidth: true }, false,
+        'HTML exported: {0}', 'Open in Browser'
+    );
+    const exportHtmlFitAndOpenCmd = registerExportCommand(
+        'plantuml-markdown-preview.exportHtmlFitToWidthAndOpen', { fitToWidth: true }, true
+    );
+    const exportPdfCmd = registerExportCommand(
+        'plantuml-markdown-preview.exportPdf', { pdf: true }, false,
+        'PDF exported: {0}', 'Open'
+    );
+    const exportPdfAndOpenCmd = registerExportCommand(
+        'plantuml-markdown-preview.exportPdfAndOpen', { pdf: true }, true
     );
 
     const previewCmd = vscode.commands.registerCommand(
@@ -363,7 +411,7 @@ export function activate(context: vscode.ExtensionContext): { extendMarkdownIt: 
         }
     });
 
-    context.subscriptions.push(exportCmd, exportAndOpenCmd, previewCmd, changeThemeCmd, editorTracker, configWatcher);
+    context.subscriptions.push(exportCmd, exportAndOpenCmd, exportHtmlFitCmd, exportHtmlFitAndOpenCmd, exportPdfCmd, exportPdfAndOpenCmd, previewCmd, changeThemeCmd, editorTracker, configWatcher);
 
     // Start local PlantUML picoweb server if local-server mode is selected.
     // prepareLocalServer() pre-creates the readyPromise so that any preview
@@ -487,8 +535,10 @@ const builtInPreviewConfig: Config = {
     htmlAlignment: 'center',
     allowLocalImages: true,
     allowHttpImages: false,
+    enableMath: true,
     debounceNoDiagramChangeMs: 100,
     debounceDiagramChangeMs: 100,
+    debugSimulateNoJava: false,
 };
 
 /**

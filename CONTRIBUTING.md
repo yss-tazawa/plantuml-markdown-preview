@@ -24,7 +24,7 @@ Before filing a new issue, please search [existing issues](https://github.com/ys
 | Tool | Purpose | Required | Verify |
 | ---- | ------- | -------- | ------ |
 | [Node.js](https://nodejs.org/) (LTS) | Build toolchain | Yes | `node -v` |
-| Java (JRE or JDK) | Runs PlantUML (local mode) | Yes (local mode) | `java -version` |
+| Java 11+ (JRE or JDK) | Runs PlantUML (local mode) | Yes (local mode) | `java -version` |
 | [Graphviz](https://graphviz.org/) | Renders class / component diagrams | Optional | `dot -V` |
 | [plantuml.jar](https://plantuml.com/download) | PlantUML engine | Optional — bundled jar (LGPL) is included | — |
 | [VS Code](https://code.visualstudio.com/) | Extension host | Yes | — |

@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## 0.4.5 - 2026-03-06
+
+### Added
+
+- Navigation toolbar with go-to-top / go-to-bottom buttons
+- Table of Contents (TOC) sidebar for quick heading navigation
+- PDF export via headless Chromium (Chrome, Edge, or Chromium required)
+- Fit-to-width HTML export option for responsive diagram scaling
+
 ## 0.4.4 - 2026-03-05
 
 ### Changed
@@ -21,7 +30,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 ### Added
 
 - Java 11+ version check at startup with actionable error message for older versions
-- Add Mermaid to the Highlights section in README
 
 ## 0.4.2 - 2026-03-04
 

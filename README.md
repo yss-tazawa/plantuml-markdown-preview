@@ -36,12 +36,14 @@ Switch between modes anytime with a single setting — no migration, no restart.
 ## Highlights
 
 - **Inline PlantUML & Mermaid rendering** — diagrams appear directly in your Markdown preview, not in a separate panel
+- **Math support** — `$...$` inline and `$$...$$` block math rendered with [KaTeX](https://katex.org/)
 - **Secure by design** — CSP nonce-based policy blocks all code execution from Markdown content
 - **Diagram scale control** — adjust PlantUML and Mermaid diagram sizes independently
 - **Self-contained HTML export** — SVG diagrams embedded inline, configurable layout width and alignment
 - **Bidirectional scroll sync** — editor and preview scroll together, both ways
+- **Navigation & TOC** — go-to-top / go-to-bottom buttons and a Table of Contents sidebar in the preview panel
 - **14 preview themes** — 8 light + 6 dark themes including GitHub, Atom, Solarized, Dracula, Monokai, and more
-- **Internationalization** — English, Japanese, and Chinese (Simplified) UI
+- **Internationalization** — English, Chinese (Simplified), and Japanese UI
 
 ## Table of Contents
 
@@ -70,6 +72,16 @@ Switch between modes anytime with a single setting — no migration, no restart.
 - Syntax errors displayed inline with line numbers and source context
 - PlantUML: rendered via Java (Secure / Fast mode) or remote PlantUML server (Easy mode) — see [Rendering Modes](#rendering-modes)
 - Mermaid: rendered client-side using [mermaid.js](https://mermaid.js.org/) — no Java or external tools required
+
+### Math Support
+
+Render mathematical expressions using [KaTeX](https://katex.org/).
+
+- **Inline math** — `$E=mc^2$` renders as an inline formula
+- **Block math** — `$$\int_0^\infty e^{-x}\,dx = 1$$` renders as a centered display formula
+- Server-side rendering — no JavaScript in the Webview, just HTML/CSS
+- Works in both preview and HTML/PDF export
+- Disable with `enableMath: false` if `$` symbols cause unwanted math parsing
 
 ### Diagram Scale
 
@@ -104,6 +116,20 @@ Export your Markdown document to a self-contained HTML file.
 - Syntax highlighting CSS included — no external dependencies
 - Export and open in browser in one command
 - Configurable layout width (640px–1440px or unlimited) and alignment (center or left)
+- **Fit-to-width** option scales diagrams and images to fill the page width
+
+### PDF Export
+
+Export your Markdown document to PDF using a headless Chromium-based browser.
+
+- Requires Chrome, Edge, or Chromium installed on your system
+- Diagrams are automatically scaled to fit the page width
+- Print margins are applied for a clean layout
+
+### Navigation
+
+- **Go to top / Go to bottom** — buttons in the top-right corner of the preview panel
+- **Table of Contents sidebar** — click the TOC button to open a sidebar listing all headings; click a heading to jump to it
 
 ### Bidirectional Scroll Sync
 
@@ -306,9 +332,25 @@ The preview uses its own theming independent of VS Code — default is a white b
 - **Preview panel:** Right-click inside the preview panel → **Export as HTML** or **Export as HTML & Open in Browser**
 - **Command Palette:** `PlantUML Markdown Preview: Export as HTML`
 - **Command Palette:** `PlantUML Markdown Preview: Export as HTML & Open in Browser`
+- **Command Palette:** `PlantUML Markdown Preview: Export as HTML (Fit to Width)`
+- **Command Palette:** `PlantUML Markdown Preview: Export as HTML & Open in Browser (Fit to Width)`
 
 The HTML file is saved alongside the source `.md` file. To export and open in
 your browser in one step, choose **Export as HTML & Open in Browser**.
+
+### Export to PDF
+
+- **Context menu:** Right-click a `.md` file → **PlantUML Markdown Preview** → **Export as PDF**
+- **Preview panel:** Right-click inside the preview panel → **Export as PDF** or **Export as PDF & Open**
+- **Command Palette:** `PlantUML Markdown Preview: Export as PDF`
+- **Command Palette:** `PlantUML Markdown Preview: Export as PDF & Open`
+
+The PDF file is saved alongside the source `.md` file. Chrome, Edge, or Chromium is required.
+
+### Navigation
+
+- **Go to top / Go to bottom:** Buttons in the top-right corner of the preview panel
+- **Table of Contents:** Click the TOC button in the preview panel title bar to open a sidebar listing all headings; click a heading to jump to it
 
 ### Change Theme
 
@@ -340,6 +382,18 @@ graph TD
 ```
 ````
 
+### Math Syntax
+
+Inline math uses single dollar signs, block math uses double:
+
+````markdown
+Einstein's famous equation $E=mc^2$ shows mass-energy equivalence.
+
+$$\int_0^\infty e^{-x}\,dx = 1$$
+````
+
+> Disable with `enableMath: false` if `$` symbols cause unwanted math parsing (e.g. `$100`).
+
 ## Configuration
 
 All settings use the `plantumlMarkdownPreview.` prefix.
@@ -359,6 +413,7 @@ All settings use the `plantumlMarkdownPreview.` prefix.
 | `mermaidScale` | `"80%"` | Mermaid diagram scale. `"auto"` scales to fit container width. A percentage (50%–100%) renders at that fraction of natural size. |
 | `htmlMaxWidth` | `"960px"` | Maximum width of the exported HTML body. Options: `"640px"` – `"1440px"`, or `"none"` for no limit. |
 | `htmlAlignment` | `"center"` | HTML body alignment. `"center"` (default) or `"left"`. |
+| `enableMath` | `true` | Enable KaTeX math rendering. Supports `$...$` (inline) and `$$...$$` (block). Set to `false` if `$` symbols cause unwanted math parsing. |
 | `debounceNoDiagramChangeMs` | _(empty)_ | Debounce delay (ms) for non-diagram text changes (diagrams served from cache). Leave empty to use the mode default (Fast: 100, Secure: 100, Easy: 100). |
 | `debounceDiagramChangeMs` | _(empty)_ | Debounce delay (ms) for diagram content changes. Leave empty to use the mode default (Fast: 100, Secure: 300, Easy: 300). |
 | `plantumlLocalServerPort` | `0` | Port for the local PlantUML server (Fast mode only). `0` = auto-assign a free port. |
@@ -469,6 +524,7 @@ This extension bundles the following third-party software:
 
 - [PlantUML](https://plantuml.com/) (LGPL version) — [GNU Lesser General Public License v3 (LGPL-3.0)](https://www.gnu.org/licenses/lgpl-3.0.html). See the [PlantUML license page](https://plantuml.com/license) for details.
 - [mermaid.js](https://mermaid.js.org/) — [MIT License](https://github.com/mermaid-js/mermaid/blob/develop/LICENSE)
+- [KaTeX](https://katex.org/) — [MIT License](https://github.com/KaTeX/KaTeX/blob/main/LICENSE)
 
 ## License
 

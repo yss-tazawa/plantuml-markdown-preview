@@ -39,5 +39,13 @@
   "Local PlantUML server crashed: {0}": "Local PlantUML server crashed: {0}",
   "Switch to Secure Mode": "Switch to Secure Mode",
   "Restart Server": "Restart Server",
-  "Local PlantUML server stopped.": "Local PlantUML server stopped."
+  "Local PlantUML server stopped.": "Local PlantUML server stopped.",
+  "Go to top": "Go to top",
+  "Go to bottom": "Go to bottom",
+  "Table of Contents": "Table of Contents",
+  "Exporting PDF...": "Exporting PDF...",
+  "PDF exported: {0}": "PDF exported: {0}",
+  "Open": "Open",
+  "Chrome, Edge, or Chromium is required for PDF export. No supported browser was found.": "Chrome, Edge, or Chromium is required for PDF export. No supported browser was found.",
+  "PDF export failed: {0}": "PDF export failed: {0}"
 }

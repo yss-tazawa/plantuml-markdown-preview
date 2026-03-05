@@ -17,13 +17,10 @@ import { renderHtmlAsync, renderBodyAsync, getThemeCss, LIGHT_THEME_KEYS, DARK_T
 import { listThemesAsync, prefetchThemes } from './plantuml.js';
 import { getScrollSyncScriptTag } from './scroll-sync.js';
 import { getNonce, resolveLocalImagePaths, extractPlantUmlBlocks, PLANTUML_FENCE_TEST_RE, extractMermaidBlocks, MERMAID_FENCE_TEST_RE, escapeHtml } from './utils.js';
-import { CONFIG_SECTION, type Config } from './config.js';
-
-/** Mermaid built-in theme keys, ordered for display. */
-const MERMAID_THEME_KEYS = ['default', 'dark', 'forest', 'neutral', 'base'] as const;
+import { CONFIG_SECTION, MERMAID_THEME_KEYS, type Config } from './config.js';
 
 /** Config keys that affect &lt;head&gt; content and require a full HTML reload. */
-const HEAD_KEYS = new Set(['allowLocalImages', 'allowHttpImages', 'mermaidTheme', 'mermaidScale']);
+const HEAD_KEYS = new Set(['allowLocalImages', 'allowHttpImages', 'mermaidTheme', 'mermaidScale', 'enableMath']);
 
 /** Output channel for extension diagnostic messages. Injected by setOutputChannel(). */
 let outputChannel: vscode.OutputChannel | null = null;
@@ -126,11 +123,13 @@ let syncMasterTimer: ReturnType<typeof setTimeout> | null = null;
  */
 function extractDiagramContent(text: string): string {
     const parts: string[] = [];
-    if (PLANTUML_FENCE_TEST_RE.test(text)) {
-        parts.push(...extractPlantUmlBlocks(text).map(b => b.trim()));
+    const plantumlBlocks = extractPlantUmlBlocks(text);
+    if (plantumlBlocks.length) {
+        parts.push(...plantumlBlocks.map(b => b.trim()));
     }
-    if (MERMAID_FENCE_TEST_RE.test(text)) {
-        parts.push(...extractMermaidBlocks(text).map(b => b.trim()));
+    const mermaidBlocks = extractMermaidBlocks(text);
+    if (mermaidBlocks.length) {
+        parts.push(...mermaidBlocks.map(b => b.trim()));
     }
     return parts.join('\n---\n');
 }
@@ -312,8 +311,10 @@ function registerEventHandlers(): void {
             normalVisibleLineCount = visibleLineCount;
         }
         const atBottom = bottomLine >= lineCount - 1
-            && normalVisibleLineCount > 0
-            && normalVisibleLineCount - visibleLineCount >= 10;
+            && topLine > 0
+            && (normalVisibleLineCount > 0
+                ? normalVisibleLineCount - visibleLineCount >= 10
+                : visibleLineCount < lineCount);
         lastAtBottom = atBottom;
         void panel.webview.postMessage({ type: 'scrollToLine', line: topLine, maxTopLine, atBottom });
     });
@@ -515,16 +516,16 @@ async function renderPanel(text: string): Promise<void> {
             const visibleLineCount = bottomLine - lastScrollLine + 1;
             lastMaxTopLine = calcMaxTopLine(lineCount, visibleLineCount);
             lastAtBottom = false;
-            if (normalVisibleLineCount > 0) {
-                // Have baseline: same check as scroll handler
-                if (bottomLine >= lineCount - 1 && normalVisibleLineCount - visibleLineCount >= 10) {
+            if (bottomLine >= lineCount - 1 && lastScrollLine > 0) {
+                if (normalVisibleLineCount > 0) {
+                    // Have baseline: same check as scroll handler
+                    if (normalVisibleLineCount - visibleLineCount >= 10) {
+                        lastAtBottom = true;
+                    }
+                } else if (visibleLineCount < lineCount) {
+                    // No baseline yet but top is not visible — scrolled past end.
                     lastAtBottom = true;
                 }
-            } else if (bottomLine >= lineCount - 1 && lineCount > visibleLineCount * 3 && visibleLineCount < 20) {
-                // Initial open with no baseline: heuristic for scroll-past-end.
-                // Visible range is suspiciously small (< 20 lines) while showing the
-                // last document line — likely scrolled past the end.
-                lastAtBottom = true;
             }
             if (!lastAtBottom && bottomLine < lineCount - 1) {
                 normalVisibleLineCount = visibleLineCount;
@@ -540,6 +541,19 @@ async function renderPanel(text: string): Promise<void> {
             const mermaidUri = panel.webview.asWebviewUri(vscode.Uri.file(mermaidPath)).toString();
             const scrollSyncPath = path.join(__dirname, 'scroll-sync-webview.js');
             const scrollSyncUri = panel.webview.asWebviewUri(vscode.Uri.file(scrollSyncPath)).toString();
+
+            // Build KaTeX CSS with font URIs resolved for Webview
+            let katexCssHtml = '';
+            if (lastConfig.enableMath) {
+                const katexCssPath = path.join(__dirname, 'katex.min.css');
+                try {
+                    let katexCss = fs.readFileSync(katexCssPath, 'utf-8');
+                    const fontsBaseUri = panel.webview.asWebviewUri(vscode.Uri.file(path.join(__dirname, 'fonts'))).toString();
+                    katexCss = katexCss.replace(/url\(fonts\//g, `url(${fontsBaseUri}/`);
+                    katexCssHtml = `\n  <style id="katex-css">${katexCss}</style>`;
+                } catch { /* KaTeX CSS not found — skip */ }
+            }
+
             const renderOptions = {
                 sourceMap: true,
                 scriptHtml: getScrollSyncScriptTag(lastScrollLine, lastMaxTopLine, nonce, mySeq, vscode.l10n.t('Rendering...'), SYNC_MASTER_TIMEOUT_MS, scrollSyncUri, lastAtBottom),
@@ -550,6 +564,11 @@ async function renderPanel(text: string): Promise<void> {
                 mermaidScriptUri: mermaidUri,
                 mermaidTheme: lastConfig.mermaidTheme,
                 mermaidScale: lastConfig.mermaidScale,
+                navTopTitle: vscode.l10n.t('Go to top'),
+                navBottomTitle: vscode.l10n.t('Go to bottom'),
+                navTocTitle: vscode.l10n.t('Table of Contents'),
+                katexCssHtml,
+                enableMath: lastConfig.enableMath,
             };
 
             const html = await renderHtmlAsync(text, makeTitle(), lastConfig, renderOptions, signal);
@@ -689,7 +708,7 @@ function renderPanelWithLoading(text: string): void {
         // Yield to event loop so the webview overlay renders first
         loadingRenderTimer = setTimeout(doRender, 50);
     } else {
-        vscode.window.withProgress(
+        void vscode.window.withProgress(
             { location: vscode.ProgressLocation.Notification, title: vscode.l10n.t('Rendering diagrams...') },
             () => new Promise<void>((resolve) => {
                 loadingResolve = resolve;
@@ -700,7 +719,7 @@ function renderPanelWithLoading(text: string): void {
 }
 
 /** Property keys that affect rendering output (PlantUML paths and themes). */
-const RENDER_KEYS = ['plantumlJarPath', 'javaPath', 'dotPath', 'plantumlTheme', 'plantumlScale', 'previewTheme', 'allowLocalImages', 'allowHttpImages', 'mode', 'plantumlServerUrl', 'plantumlLocalServerPort', 'mermaidTheme', 'mermaidScale'] as const;
+const RENDER_KEYS = ['plantumlJarPath', 'javaPath', 'dotPath', 'plantumlTheme', 'plantumlScale', 'previewTheme', 'allowLocalImages', 'allowHttpImages', 'mode', 'plantumlServerUrl', 'plantumlLocalServerPort', 'mermaidTheme', 'mermaidScale', 'enableMath'] as const;
 
 /**
  * Check which rendering-related properties changed between two configs.
@@ -786,12 +805,13 @@ export async function changeTheme(): Promise<void> {
     const currentMermaidTheme = lastConfig ? lastConfig.mermaidTheme : 'default';
 
     // Helper to build QuickPick items for a set of theme keys
-    const buildPreviewItems = (keys: readonly string[]) => keys.map(key => ({
-        label: key === currentPreviewTheme ? `$(check) ${key}` : `      ${key}`,
-        description: key === currentPreviewTheme ? vscode.l10n.t('(current)') : '',
-        category: 'preview' as const,
-        themeKey: key
-    }));
+    const buildThemeItems = <C extends string>(keys: readonly string[], category: C, currentKey: string) =>
+        keys.map(key => ({
+            label: key === currentKey ? `$(check) ${key}` : `      ${key}`,
+            description: key === currentKey ? vscode.l10n.t('(current)') : '',
+            category,
+            themeKey: key
+        }));
 
     // PlantUML Theme section (async fetch; resolves instantly if cache is warm)
     const plantumlThemes = await vscode.window.withProgress(
@@ -799,35 +819,16 @@ export async function changeTheme(): Promise<void> {
         () => listThemesAsync(lastConfig || { plantumlJarPath: '', javaPath: 'java' })
     );
     if (!panel) return;
-    const plantumlItems = [
-        {
-            label: currentPlantumlTheme === 'default' ? '$(check) default' : '      default',
-            description: currentPlantumlTheme === 'default' ? vscode.l10n.t('(current)') : '',
-            category: 'plantuml' as const,
-            themeKey: 'default'
-        },
-        ...plantumlThemes.map(key => ({
-            label: key === currentPlantumlTheme ? `$(check) ${key}` : `      ${key}`,
-            description: key === currentPlantumlTheme ? vscode.l10n.t('(current)') : '',
-            category: 'plantuml' as const,
-            themeKey: key
-        }))
-    ];
 
     const items = [
         { label: vscode.l10n.t('Preview Theme (Light)'), kind: vscode.QuickPickItemKind.Separator },
-        ...buildPreviewItems(LIGHT_THEME_KEYS),
+        ...buildThemeItems(LIGHT_THEME_KEYS, 'preview' as const, currentPreviewTheme),
         { label: vscode.l10n.t('Preview Theme (Dark)'), kind: vscode.QuickPickItemKind.Separator },
-        ...buildPreviewItems(DARK_THEME_KEYS),
+        ...buildThemeItems(DARK_THEME_KEYS, 'preview' as const, currentPreviewTheme),
         { label: vscode.l10n.t('PlantUML Theme'), kind: vscode.QuickPickItemKind.Separator },
-        ...plantumlItems,
+        ...buildThemeItems(['default', ...plantumlThemes], 'plantuml' as const, currentPlantumlTheme),
         { label: vscode.l10n.t('Mermaid Theme'), kind: vscode.QuickPickItemKind.Separator },
-        ...MERMAID_THEME_KEYS.map(key => ({
-            label: key === currentMermaidTheme ? `$(check) ${key}` : `      ${key}`,
-            description: key === currentMermaidTheme ? vscode.l10n.t('(current)') : '',
-            category: 'mermaid' as const,
-            themeKey: key
-        }))
+        ...buildThemeItems([...MERMAID_THEME_KEYS], 'mermaid' as const, currentMermaidTheme)
     ];
 
     const selected = await vscode.window.showQuickPick(items, {

@@ -13,7 +13,10 @@
  * Theme CSS is defined in src/themes/ and registered in PREVIEW_THEMES.
  */
 import fs from 'fs';
+import os from 'os';
 import path from 'path';
+import url from 'url';
+import { execFile } from 'child_process';
 import MarkdownIt from 'markdown-it';
 import hljs from 'highlight.js';
 import { plantumlPlugin } from './renderer.js';
@@ -22,7 +25,9 @@ import { renderAllLocal } from './plantuml.js';
 import { renderAllServer, MAX_LOCAL_SERVER_CONCURRENCY } from './plantuml-server.js';
 import { getLocalServerUrl, waitForLocalServer } from './local-server.js';
 import { escapeHtml, extractPlantUmlBlocks, errorHtml } from './utils.js';
-import type { Config } from './config.js';
+import { findBrowser } from './browser-finder.js';
+import { MERMAID_THEME_SET, type Config } from './config.js';
+import mk from '@traptitech/markdown-it-katex';
 
 import {
     githubLight, atomLight, oneLight, solarizedLight,
@@ -137,6 +142,18 @@ export interface RenderOptions {
     htmlMaxWidth?: string;
     /** HTML export body alignment ('center' or 'left'). */
     htmlAlignment?: string;
+    /** Tooltip for "Go to top" nav button (preview only). */
+    navTopTitle?: string;
+    /** Tooltip for "Go to bottom" nav button (preview only). */
+    navBottomTitle?: string;
+    /** Tooltip for "TOC" nav button (preview only). */
+    navTocTitle?: string;
+    /** When true, override scales to auto and remove max-width for fit-to-width layout. */
+    fitToWidth?: boolean;
+    /** KaTeX CSS <style> block to inject into <head> (already includes @font-face with resolved URIs). */
+    katexCssHtml?: string;
+    /** When true, relax CSP font-src from 'none' to cspSource for KaTeX fonts. */
+    enableMath?: boolean;
 }
 
 /**
@@ -149,7 +166,15 @@ export interface RenderOptions {
  * @param config - Current configuration to check against the cache.
  */
 function invalidateMdCache(config: Config): void {
-    const key = config.plantumlJarPath + '\0' + config.javaPath + '\0' + config.dotPath + '\0' + (config.plantumlTheme || 'default') + '\0' + (config.renderMode || 'local-server') + '\0' + (config.plantumlServerUrl || '');
+    const key = [
+        config.plantumlJarPath,
+        config.javaPath,
+        config.dotPath,
+        config.plantumlTheme || 'default',
+        config.renderMode || 'local-server',
+        config.plantumlServerUrl || '',
+        config.enableMath ? '1' : '0',
+    ].join('\0');
     if (mdCacheKey !== key) {
         mdCacheKey = key;
         cachedMd = null;
@@ -180,10 +205,23 @@ function getOrCreateMd(config: Config, withSourceMap?: boolean): MarkdownIt {
 
     const md = new MarkdownIt(MD_OPTIONS);
     plantumlPlugin(md, config);
+    if (config.enableMath) {
+        md.use(mk, { throwOnError: false, output: 'html' });
+    }
 
     // Add id attributes to headings so that anchor links (#section-name) work
     // in both the preview panel and HTML export.
+    /**
+     * Core rule that adds id attributes to heading tokens for anchor link navigation.
+     *
+     * Generates URL-friendly slugs from heading text. When duplicate slugs occur,
+     * appends a numeric suffix (e.g. `introduction-1`, `introduction-2`) to ensure
+     * each id is unique within the document.
+     *
+     * @param state - markdown-it core state containing the token stream.
+     */
     md.core.ruler.push('heading_ids', function (state) {
+        const slugCount = new Map<string, number>();
         for (let i = 0; i < state.tokens.length; i++) {
             const token = state.tokens[i];
             if (token.type === 'heading_open') {
@@ -196,7 +234,11 @@ function getOrCreateMd(config: Config, withSourceMap?: boolean): MarkdownIt {
                         .replace(/\s+/g, '-')
                         .replace(/-+/g, '-')
                         .replace(/^-|-$/g, '');
-                    if (slug) token.attrSet('id', slug);
+                    if (slug) {
+                        const count = slugCount.get(slug) ?? 0;
+                        slugCount.set(slug, count + 1);
+                        token.attrSet('id', count === 0 ? slug : `${slug}-${count}`);
+                    }
                 }
             }
         }
@@ -315,20 +357,111 @@ export async function renderHtmlAsync(source: string, title: string, config: Con
  * @param mdFilePath - Absolute path to the Markdown file.
  * @param config - PlantUML and theme configuration.
  * @param [signal] - Optional AbortSignal to cancel in-flight rendering processes.
+ * @param [fitToWidth] - When true, override diagram scales to auto and apply fit-to-width layout.
  * @returns Absolute path of the generated HTML file.
  */
-export async function exportToHtml(mdFilePath: string, config: Config, signal?: AbortSignal): Promise<string> {
+export async function exportToHtml(mdFilePath: string, config: Config, signal?: AbortSignal, fitToWidth?: boolean): Promise<string> {
     const source = await fs.promises.readFile(mdFilePath, 'utf8');
+    const effectiveConfig = fitToWidth ? { ...config, plantumlScale: 'auto' } : config;
     const exportOptions: RenderOptions = {
         mermaidTheme: config.mermaidTheme,
-        mermaidScale: config.mermaidScale,
+        mermaidScale: fitToWidth ? 'auto' : config.mermaidScale,
         htmlMaxWidth: config.htmlMaxWidth,
         htmlAlignment: config.htmlAlignment,
+        fitToWidth,
+        katexCssHtml: config.enableMath ? await buildKatexCdnCssHtml() : '',
+        enableMath: config.enableMath,
     };
-    const fullHtml = await renderHtmlAsync(source, path.basename(mdFilePath, '.md'), config, exportOptions, signal);
+    const fullHtml = await renderHtmlAsync(source, path.basename(mdFilePath, '.md'), effectiveConfig, exportOptions, signal);
     const outputPath = mdFilePath.replace(/\.md$/, '.html');
     await fs.promises.writeFile(outputPath, fullHtml, 'utf8');
     return outputPath;
+}
+
+/** PDF export timeout in milliseconds. */
+const PDF_TIMEOUT_MS = 30_000;
+
+/**
+ * Export a Markdown file to PDF using a headless Chromium-based browser.
+ *
+ * Generates a temporary fit-to-width HTML file, then runs the user's local
+ * Chrome / Edge / Chromium in headless mode with `--print-to-pdf`.
+ * The temporary HTML file is deleted after conversion.
+ *
+ * @param mdFilePath - Absolute path to the Markdown file.
+ * @param config - PlantUML and theme configuration.
+ * @param [signal] - Optional AbortSignal to cancel in-flight rendering.
+ * @returns Absolute path of the generated PDF file.
+ * @throws When no supported browser is found or when the browser process fails.
+ */
+export async function exportToPdf(mdFilePath: string, config: Config, signal?: AbortSignal): Promise<string> {
+    const browserPath = await findBrowser();
+    if (!browserPath) {
+        throw new Error(vscode.l10n.t('Chrome, Edge, or Chromium is required for PDF export. No supported browser was found.'));
+    }
+
+    // Generate fit-to-width HTML to a temporary file
+    const source = await fs.promises.readFile(mdFilePath, 'utf8');
+    const effectiveConfig = { ...config, plantumlScale: 'auto' };
+    const exportOptions: RenderOptions = {
+        mermaidTheme: config.mermaidTheme,
+        mermaidScale: 'auto',
+        htmlMaxWidth: 'none',
+        htmlAlignment: config.htmlAlignment,
+        fitToWidth: true,
+        katexCssHtml: config.enableMath ? await buildKatexCdnCssHtml() : '',
+        enableMath: config.enableMath,
+    };
+    const fullHtml = await renderHtmlAsync(source, path.basename(mdFilePath, '.md'), effectiveConfig, exportOptions, signal);
+    if (signal?.aborted) throw new Error('Aborted');
+
+    // Add @page CSS for print margins (insert before </head> to avoid matching </style> in theme CSS)
+    const printHtml = fullHtml.replace('</head>', '<style>@page{margin:15mm}</style>\n</head>');
+
+    const tmpHtml = path.join(os.tmpdir(), `plantuml-md-preview-${Date.now()}.html`);
+    const outputPath = mdFilePath.replace(/\.md$/, '.pdf');
+
+    try {
+        await fs.promises.writeFile(tmpHtml, printHtml, 'utf8');
+
+        await new Promise<void>((resolve, reject) => {
+            let settled = false;
+            const args = [
+                '--headless',
+                '--disable-gpu',
+                `--print-to-pdf=${outputPath}`,
+                '--no-pdf-header-footer',
+                '--run-all-compositor-stages-before-draw',
+                '--virtual-time-budget=5000',
+                url.pathToFileURL(tmpHtml).href,
+            ];
+            const onAbort = () => {
+                if (settled) return;
+                settled = true;
+                proc.kill();
+                reject(new Error('Aborted'));
+            };
+            // timeout: process-level safety net; signal handles user-initiated cancellation
+            const proc = execFile(browserPath, args, { timeout: PDF_TIMEOUT_MS }, (err, _stdout, stderr) => {
+                if (settled) return;
+                settled = true;
+                signal?.removeEventListener('abort', onAbort);
+                if (err) {
+                    const detail = stderr?.trim() || err.message;
+                    reject(new Error(vscode.l10n.t('PDF export failed: {0}', detail)));
+                } else {
+                    resolve();
+                }
+            });
+            if (signal) {
+                signal.addEventListener('abort', onAbort, { once: true });
+            }
+        });
+
+        return outputPath;
+    } finally {
+        fs.promises.unlink(tmpHtml).catch(() => {});
+    }
 }
 
 /**
@@ -348,6 +481,24 @@ function buildLayoutOverrideStyle(htmlMaxWidth?: string, htmlAlignment?: string)
     return overrides.length ? `\n  <style>body { ${overrides.join('; ')}; }</style>` : '';
 }
 
+/** KaTeX version injected at build time from package.json via esbuild define. */
+declare const __KATEX_VERSION__: string;
+/** Mermaid major version injected at build time from package.json via esbuild define. */
+declare const __MERMAID_MAJOR__: string;
+
+/**
+ * Build a KaTeX CSS `<style>` block for HTML export using CDN font URLs.
+ * Reads katex.min.css from dist/ and replaces relative font paths with CDN URLs.
+ * @returns KaTeX CSS の style ブロック文字列。読み込み失敗時は空文字列。
+ */
+async function buildKatexCdnCssHtml(): Promise<string> {
+    try {
+        let css = await fs.promises.readFile(path.join(__dirname, 'katex.min.css'), 'utf-8');
+        css = css.replace(/url\(fonts\//g, `url(https://cdn.jsdelivr.net/npm/katex@${__KATEX_VERSION__}/dist/fonts/`);
+        return `\n  <style id="katex-css">${css}</style>`;
+    } catch { return ''; }
+}
+
 /**
  * Assemble a complete HTML document from rendered body HTML.
  *
@@ -362,13 +513,18 @@ function buildLayoutOverrideStyle(htmlMaxWidth?: string, htmlAlignment?: string)
  */
 function buildHtml(title: string, body: string, previewTheme?: string, options?: RenderOptions): string {
     const theme = PREVIEW_THEMES[previewTheme || ''] || PREVIEW_THEMES[DEFAULT_PREVIEW_THEME];
-    const { scriptHtml, cspNonce, cspSource, lang, allowHttpImages, mermaidScriptUri, mermaidTheme, mermaidScale, htmlMaxWidth, htmlAlignment } = options || {};
+    const { scriptHtml, cspNonce, cspSource, lang, allowHttpImages, mermaidScriptUri, mermaidTheme, mermaidScale, htmlMaxWidth, htmlAlignment, navTopTitle, navBottomTitle, navTocTitle, fitToWidth, katexCssHtml, enableMath } = options || {};
+    const fontSrc = enableMath && cspSource ? cspSource : "'none'";
     const cspMeta = cspNonce
-        ? `\n  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; font-src 'none'; img-src ${cspSource || "'self'"} https:${allowHttpImages ? ' http:' : ''} data:; script-src 'nonce-${cspNonce}'${cspSource ? ` ${cspSource}` : ''};">`
+        ? `\n  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; font-src ${fontSrc}; img-src ${cspSource || "'self'"} https:${allowHttpImages ? ' http:' : ''} data:; script-src 'nonce-${cspNonce}'${cspSource ? ` ${cspSource}` : ''};">`
         : '';
-    const validMermaidThemes = new Set(['default', 'dark', 'forest', 'neutral', 'base']);
-    const mermaidThemeValue = validMermaidThemes.has(mermaidTheme || '') ? mermaidTheme! : 'default';
+    const mermaidThemeValue = MERMAID_THEME_SET.has(mermaidTheme || '') ? mermaidTheme! : 'default';
     const scaleNum = mermaidScale && mermaidScale !== 'auto' ? parseFloat(mermaidScale) / 100 : 0;
+    // Mermaid initialization & rendering inline script (minified).
+    // 1. mermaid.initialize() — set theme, disable startOnLoad
+    // 2. window.__renderMermaid() — iterate pre.mermaid elements, render SVG via mermaid.render(),
+    //    apply scale factor to SVG width, show error message on failure
+    // 3. Invoke immediately after definition
     const mermaidInitScript = [
         `mermaid.initialize({startOnLoad:false,theme:'${mermaidThemeValue}'});`,
         `window.__renderMermaid=async function(){`,
@@ -395,7 +551,7 @@ function buildHtml(title: string, body: string, previewTheme?: string, options?:
         mermaidHtml = `\n<script nonce="${cspNonce}" src="${mermaidScriptUri}"></script>\n<script nonce="${cspNonce}">${mermaidInitScript}</script>`;
     } else if (hasMermaid && !cspNonce) {
         // HTML export: load from CDN
-        mermaidHtml = `\n<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>\n<script>${mermaidInitScript}</script>`;
+        mermaidHtml = `\n<script src="https://cdn.jsdelivr.net/npm/mermaid@${__MERMAID_MAJOR__}/dist/mermaid.min.js"></script>\n<script>${mermaidInitScript}</script>`;
     }
     return `<!DOCTYPE html>
 <html lang="${escapeHtml(lang || 'en')}">
@@ -405,10 +561,43 @@ function buildHtml(title: string, body: string, previewTheme?: string, options?:
   <title>${escapeHtml(title)}</title>
   <style id="theme-css">
 ${theme.css}
-  </style>${buildLayoutOverrideStyle(htmlMaxWidth, htmlAlignment)}
+  </style>${katexCssHtml || ''}${buildLayoutOverrideStyle(htmlMaxWidth, htmlAlignment)}${fitToWidth ? `
+  <style>.plantuml-diagram svg{max-width:100%;height:auto}pre.mermaid svg{max-width:100%;height:auto}img{max-width:100%;height:auto}table{width:100%;table-layout:fixed}table td,table th{word-break:break-word;overflow-wrap:break-word}</style>` : ''}${cspNonce ? `
+  <style>
+#nav-toolbar{position:fixed;top:8px;right:8px;display:flex;gap:2px;z-index:100}
+#nav-toolbar button{width:32px;height:32px;border:none;border-radius:4px;background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background 0.15s,opacity 0.15s;padding:0;opacity:0.45}
+#nav-toolbar button:hover{opacity:0.85}
+#toc-sidebar{position:fixed;top:0;right:0;width:260px;height:100%;z-index:99;overflow-y:auto;padding:44px 0 16px;box-sizing:border-box;display:none;font-size:13px;line-height:1.6}
+#toc-sidebar::before{content:'';position:absolute;left:0;top:44px;bottom:16px;width:1px}
+#toc-sidebar.open{display:block}
+#toc-sidebar ul{list-style:none;margin:0;padding:0}
+#toc-sidebar li{position:relative}
+#toc-sidebar li>ul{display:none}
+#toc-sidebar li.open>ul{display:block}
+#toc-sidebar .toc-toggle{position:absolute;top:0;left:2px;width:20px;height:26px;display:flex;align-items:center;justify-content:center;cursor:pointer;opacity:0.5;font-size:10px;user-select:none;z-index:1}
+#toc-sidebar .toc-toggle:hover{opacity:0.8}
+#toc-sidebar a{display:block;padding:1px 12px 1px 20px;text-decoration:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;border-left:2px solid transparent;opacity:0.75}
+#toc-sidebar a:hover{opacity:1}
+#toc-sidebar a.active{opacity:1}
+#toc-sidebar>ul>li>a{padding-left:20px}
+#toc-sidebar li ul .toc-toggle{left:14px}
+#toc-sidebar li ul a{padding-left:32px}
+#toc-sidebar li ul li ul .toc-toggle{left:26px}
+#toc-sidebar li ul li ul a{padding-left:44px}
+#toc-sidebar li ul li ul li ul .toc-toggle{left:38px}
+#toc-sidebar li ul li ul li ul a{padding-left:56px}
+#toc-sidebar li ul li ul li ul li ul .toc-toggle{left:50px}
+#toc-sidebar li ul li ul li ul li ul a{padding-left:68px}
+  </style>` : ''}
 </head>
 <body${cspNonce ? ' class="preview"' : ''}>
-<!-- NOTE: This ID is also referenced in src/webview/scroll-sync-webview.ts (applyPendingBodyUpdate). -->
+${cspNonce ? `<div id="nav-toolbar">
+  <button id="nav-top" title="${escapeHtml(navTopTitle || 'Go to top')}"><svg width="20" height="20" viewBox="0 0 16 16"><path d="M3.5 10L8 5.5 12.5 10" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+  <button id="nav-bottom" title="${escapeHtml(navBottomTitle || 'Go to bottom')}"><svg width="20" height="20" viewBox="0 0 16 16"><path d="M3.5 6L8 10.5 12.5 6" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+  <button id="nav-toc" title="${escapeHtml(navTocTitle || 'Table of Contents')}"><svg width="20" height="20" viewBox="0 0 16 16"><circle cx="3" cy="4" r="1.2" fill="currentColor"/><line x1="6" y1="4" x2="13" y2="4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><circle cx="3" cy="8" r="1.2" fill="currentColor"/><line x1="6" y1="8" x2="13" y2="8" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><circle cx="3" cy="12" r="1.2" fill="currentColor"/><line x1="6" y1="12" x2="13" y2="12" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg></button>
+</div>
+<div id="toc-sidebar"><ul id="toc-list"></ul></div>
+` : ''}<!-- NOTE: This ID is also referenced in src/webview/scroll-sync-webview.ts (applyPendingBodyUpdate). -->
 <div id="preview-content">
 ${body}
 </div>${mermaidHtml}
