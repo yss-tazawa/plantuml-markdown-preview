@@ -90,13 +90,7 @@ export const MERMAID_FENCE_RE_SOURCE = '^ {0,3}```mermaid[ \\t]*\\n([\\s\\S]*?)\
  * @returns Array of PlantUML source text strings.
  */
 export function extractPlantUmlBlocks(source: string): string[] {
-    const blocks: string[] = [];
-    const re = new RegExp(PLANTUML_FENCE_RE_SOURCE, 'gim');
-    let match;
-    while ((match = re.exec(source)) !== null) {
-        blocks.push(match[1]);
-    }
-    return blocks;
+    return extractFencedBlocks(source, PLANTUML_FENCE_RE_SOURCE);
 }
 
 /**
@@ -106,8 +100,19 @@ export function extractPlantUmlBlocks(source: string): string[] {
  * @returns Array of Mermaid source text strings.
  */
 export function extractMermaidBlocks(source: string): string[] {
+    return extractFencedBlocks(source, MERMAID_FENCE_RE_SOURCE);
+}
+
+/**
+ * Extract fenced code block contents matching a given regex source.
+ *
+ * @param source - Raw Markdown text.
+ * @param reSource - Regular expression source string with a capture group for block content.
+ * @returns Array of captured block content strings in document order.
+ */
+function extractFencedBlocks(source: string, reSource: string): string[] {
     const blocks: string[] = [];
-    const re = new RegExp(MERMAID_FENCE_RE_SOURCE, 'gim');
+    const re = new RegExp(reSource, 'gim');
     let match;
     while ((match = re.exec(source)) !== null) {
         blocks.push(match[1]);
@@ -124,6 +129,7 @@ export function extractMermaidBlocks(source: string): string[] {
  */
 export class LruCache<V> {
     private readonly map = new Map<string, V>();
+    /** @param maxSize - Maximum number of entries before LRU eviction. */
     constructor(private readonly maxSize: number) {}
 
     /**
@@ -226,6 +232,9 @@ export async function batchRender(
  *
  * All spawn/exec wrappers below call this, so the resolution logic lives in
  * exactly one place.
+ *
+ * @param configJavaPath - The `javaPath` value from extension settings (empty or 'java' for default).
+ * @returns Resolved path to the Java executable.
  */
 export function resolveJavaCommand(configJavaPath: string): string {
     const p = configJavaPath || 'java';

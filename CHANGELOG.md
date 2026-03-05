@@ -5,13 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## 0.4.4 - 2026-03-05
+
+### Changed
+
+- File switching in the preview is now faster with no flickering
+
+### Fixed
+
+- Scroll position is now correctly preserved when switching between files
+- Preview no longer briefly shows the wrong file's content during file switches
+
 ## 0.4.3 - 2026-03-04
 
 ### Added
 
-- Document Java 11+ minimum requirement for the bundled PlantUML jar
-- Show an actionable error message when the installed Java version is too old for the bundled PlantUML
-- Check Java version at startup and warn if below Java 11
+- Java 11+ version check at startup with actionable error message for older versions
 - Add Mermaid to the Highlights section in README
 
 ## 0.4.2 - 2026-03-04

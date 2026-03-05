@@ -13,14 +13,17 @@
 import * as vscode from 'vscode';
 import path from 'path';
 import fs from 'fs';
-import { renderHtmlAsync, getThemeCss, LIGHT_THEME_KEYS, DARK_THEME_KEYS } from './exporter.js';
+import { renderHtmlAsync, renderBodyAsync, getThemeCss, LIGHT_THEME_KEYS, DARK_THEME_KEYS } from './exporter.js';
 import { listThemesAsync, prefetchThemes } from './plantuml.js';
-import { buildScrollSyncScript } from './scroll-sync.js';
+import { getScrollSyncScriptTag } from './scroll-sync.js';
 import { getNonce, resolveLocalImagePaths, extractPlantUmlBlocks, PLANTUML_FENCE_TEST_RE, extractMermaidBlocks, MERMAID_FENCE_TEST_RE, escapeHtml } from './utils.js';
 import { CONFIG_SECTION, type Config } from './config.js';
 
 /** Mermaid built-in theme keys, ordered for display. */
 const MERMAID_THEME_KEYS = ['default', 'dark', 'forest', 'neutral', 'base'] as const;
+
+/** Config keys that affect &lt;head&gt; content and require a full HTML reload. */
+const HEAD_KEYS = new Set(['allowLocalImages', 'allowHttpImages', 'mermaidTheme', 'mermaidScale']);
 
 /** Output channel for extension diagnostic messages. Injected by setOutputChannel(). */
 let outputChannel: vscode.OutputChannel | null = null;
@@ -66,6 +69,8 @@ let currentFilePath: string | null = null;
 /** Most recently applied configuration snapshot (used for diff in updateConfig). */
 let lastConfig: Config | null = null;
 
+/** Disposable for the webview.onDidReceiveMessage listener. */
+let messageDisposable: vscode.Disposable | null = null;
 /** Disposable for the onDidSaveTextDocument listener. */
 let saveDisposable: vscode.Disposable | null = null;
 /** Disposable for the onDidChangeTextDocument listener. */
@@ -98,6 +103,12 @@ let normalVisibleLineCount = 0;
 let lastAtBottom = false;
 /** Monotonically increasing render sequence number for stale message detection. */
 let renderSeq = 0;
+/** Whether the initial full HTML has been set on the webview (enables incremental updates). */
+let initialHtmlSet = false;
+/** Whether the initial full HTML included the Mermaid script (mermaid.min.js). */
+let initialHtmlHadMermaid = false;
+/** True while a file switch is pending — suppresses scroll sync and triggers scroll restore after body update. */
+let pendingScrollRestore = false;
 
 /** Current scroll sync owner: 'none' allows both directions, others block the opposite. */
 let syncMaster: SyncMaster = 'none';
@@ -216,6 +227,7 @@ function applyWebviewOptions(): void {
  * and set to null after disposal to allow safe re-entry.
  */
 function disposeEventHandlers(): void {
+    if (messageDisposable) { messageDisposable.dispose(); messageDisposable = null; }
     if (saveDisposable) { saveDisposable.dispose(); saveDisposable = null; }
     if (changeDisposable) { changeDisposable.dispose(); changeDisposable = null; }
     if (scrollDisposable) { scrollDisposable.dispose(); scrollDisposable = null; }
@@ -224,6 +236,87 @@ function disposeEventHandlers(): void {
     if (loadingResolve) { loadingResolve(); loadingResolve = null; }
     if (syncMasterTimer) { clearTimeout(syncMasterTimer); syncMasterTimer = null; }
     if (renderAbortController) { renderAbortController.abort(); renderAbortController = null; }
+}
+
+/**
+ * Register all VS Code event listeners for the preview panel.
+ *
+ * Sets up message handler (revealLine), save/change/scroll listeners.
+ * Must be called after panel is created or when switching files on
+ * an existing panel (after disposeEventHandlers()).
+ */
+function registerEventHandlers(): void {
+    if (!panel) return;
+
+    messageDisposable = panel.webview.onDidReceiveMessage((message) => {
+        if (message.type === 'revealLine' && typeof message.line === 'number') {
+            if (syncMaster === 'editor') return;
+            const editor = vscode.window.visibleTextEditors.find(
+                e => e.document.uri.fsPath === currentFilePath
+            );
+            if (!editor) return;
+
+            setSyncMaster('preview');
+            const line = Math.max(0, Math.round(message.line));
+            const range = new vscode.Range(line, 0, line, 0);
+            editor.revealRange(range, vscode.TextEditorRevealType.AtTop);
+            lastScrollLine = line;
+        }
+    });
+
+    saveDisposable = vscode.workspace.onDidSaveTextDocument((doc) => {
+        if (!panel || !currentFilePath || doc.uri.fsPath !== currentFilePath) return;
+        if (debounceTimer) { clearTimeout(debounceTimer); debounceTimer = null; }
+        const text = doc.getText();
+        lastDiagramContent = extractDiagramContent(text);
+        void renderPanel(text).catch(err => getOutputChannel().appendLine(`[render error] ${err}`));
+    });
+
+    changeDisposable = vscode.workspace.onDidChangeTextDocument((event) => {
+        if (!panel || !currentFilePath || !lastConfig || event.document.uri.fsPath !== currentFilePath) return;
+        if (debounceTimer) clearTimeout(debounceTimer);
+        const text = event.document.getText();
+        const currentDiagramContent = extractDiagramContent(text);
+        const { debounceNoDiagramChangeMs, debounceDiagramChangeMs } = lastConfig;
+        const delay = currentDiagramContent !== lastDiagramContent ? debounceDiagramChangeMs : debounceNoDiagramChangeMs;
+        debounceTimer = setTimeout(() => {
+            debounceTimer = null;
+            lastDiagramContent = currentDiagramContent;
+            void renderPanel(text).catch(err => getOutputChannel().appendLine(`[render error] ${err}`));
+        }, delay);
+    });
+
+    scrollDisposable = vscode.window.onDidChangeTextEditorVisibleRanges((event) => {
+        if (!panel) return;
+        if (event.textEditor.document.uri.fsPath !== currentFilePath) return;
+        if (event.visibleRanges.length === 0) return;
+        if (syncMaster === 'preview') return;
+        // Skip scroll sync while a file switch is pending — the webview
+        // still shows the previous file's content, so scrolling it would cause
+        // a visible jump to the wrong position before the new content loads.
+        // Note: for long renders this briefly disables editor→preview sync,
+        // but the position self-corrects once rendering completes.
+        if (pendingScrollRestore) return;
+
+        const topLine = event.visibleRanges[0].start.line;
+        const bottomLine = event.visibleRanges[0].end.line;
+        const lineCount = event.textEditor.document.lineCount;
+        const visibleLineCount = bottomLine - topLine + 1;
+        const maxTopLine = calcMaxTopLine(lineCount, visibleLineCount);
+
+        if (topLine === lastScrollLine && maxTopLine === lastMaxTopLine) return;
+        setSyncMaster('editor');
+        lastScrollLine = topLine;
+        lastMaxTopLine = maxTopLine;
+        if (bottomLine < lineCount - 1) {
+            normalVisibleLineCount = visibleLineCount;
+        }
+        const atBottom = bottomLine >= lineCount - 1
+            && normalVisibleLineCount > 0
+            && normalVisibleLineCount - visibleLineCount >= 10;
+        lastAtBottom = atBottom;
+        void panel.webview.postMessage({ type: 'scrollToLine', line: topLine, maxTopLine, atBottom });
+    });
 }
 
 /**
@@ -252,6 +345,9 @@ function resetState(): void {
     lastDiagramContent = '';
     lastScrollLine = -1;
     lastMaxTopLine = -1;
+    initialHtmlSet = false;
+    initialHtmlHadMermaid = false;
+    pendingScrollRestore = false;
     syncMaster = 'none';
     if (firstRenderResolve) { firstRenderResolve(); firstRenderResolve = null; }
     disposeEventHandlers();
@@ -305,18 +401,22 @@ export function openPreview(filePath: string, config: Config, preserveFocus = fa
     // Cancel any pending debounce since we are about to do a fresh render.
     if (debounceTimer) { clearTimeout(debounceTimer); debounceTimer = null; }
 
-    // Reset scroll state on file switch
+    // Reset scroll state on file switch; keep initialHtmlSet so the
+    // incremental path is used (much faster than a full webview reload).
     if (currentFilePath !== filePath) {
         lastScrollLine = -1;
         lastMaxTopLine = -1;
         normalVisibleLineCount = 0;
         lastAtBottom = false;
+        pendingScrollRestore = true;
     }
     currentFilePath = filePath;
 
     if (panel) {
         panel.title = makeTitle();
         applyWebviewOptions();
+        disposeEventHandlers();
+        registerEventHandlers();
         // When auto-following editor changes (preserveFocus=true), skip
         // reveal() — it would bring the preview to the front and cover
         // a file the user just opened in the same column.
@@ -343,74 +443,7 @@ export function openPreview(filePath: string, config: Config, preserveFocus = fa
 </div></body></html>`;
 
         panel.onDidDispose(resetState);
-
-        panel.webview.onDidReceiveMessage((message) => {
-            if (message.type === 'revealLine' && typeof message.line === 'number') {
-                if (syncMaster === 'editor') return;
-                const editor = vscode.window.visibleTextEditors.find(
-                    e => e.document.uri.fsPath === currentFilePath
-                );
-                if (!editor) return;
-
-                setSyncMaster('preview');
-                const line = Math.max(0, Math.round(message.line));
-                const range = new vscode.Range(line, 0, line, 0);
-                editor.revealRange(range, vscode.TextEditorRevealType.AtTop);
-                lastScrollLine = line;
-            }
-        });
-
-        // Event listeners are managed by disposeEventHandlers() (called from
-        // resetState() via panel.onDidDispose) to avoid stale disposable
-        // accumulation on panel re-creation.
-        saveDisposable = vscode.workspace.onDidSaveTextDocument((doc) => {
-            if (!panel || !currentFilePath || doc.uri.fsPath !== currentFilePath) return;
-            if (debounceTimer) { clearTimeout(debounceTimer); debounceTimer = null; }
-            const text = doc.getText();
-            lastDiagramContent = extractDiagramContent(text);
-            void renderPanel(text).catch(err => getOutputChannel().appendLine(`[render error] ${err}`));
-        });
-
-        changeDisposable = vscode.workspace.onDidChangeTextDocument((event) => {
-            if (!panel || !currentFilePath || !lastConfig || event.document.uri.fsPath !== currentFilePath) return;
-            if (debounceTimer) clearTimeout(debounceTimer);
-            const text = event.document.getText();
-            const currentDiagramContent = extractDiagramContent(text);
-            const { debounceNoDiagramChangeMs, debounceDiagramChangeMs } = lastConfig;
-            const delay = currentDiagramContent !== lastDiagramContent ? debounceDiagramChangeMs : debounceNoDiagramChangeMs;
-            debounceTimer = setTimeout(() => {
-                debounceTimer = null;
-                lastDiagramContent = currentDiagramContent;
-                void renderPanel(text).catch(err => getOutputChannel().appendLine(`[render error] ${err}`));
-            }, delay);
-        });
-
-        scrollDisposable = vscode.window.onDidChangeTextEditorVisibleRanges((event) => {
-            if (!panel) return;
-            if (event.textEditor.document.uri.fsPath !== currentFilePath) return;
-            if (event.visibleRanges.length === 0) return;
-            if (syncMaster === 'preview') return;
-
-            const topLine = event.visibleRanges[0].start.line;
-            const bottomLine = event.visibleRanges[0].end.line;
-            const lineCount = event.textEditor.document.lineCount;
-            const visibleLineCount = bottomLine - topLine + 1;
-            const maxTopLine = calcMaxTopLine(lineCount, visibleLineCount);
-
-            if (topLine === lastScrollLine && maxTopLine === lastMaxTopLine) return;
-            setSyncMaster('editor');
-            lastScrollLine = topLine;
-            lastMaxTopLine = maxTopLine;
-            if (bottomLine < lineCount - 1) {
-                normalVisibleLineCount = visibleLineCount;
-            }
-            const atBottom = bottomLine >= lineCount - 1
-                && normalVisibleLineCount > 0
-                && normalVisibleLineCount - visibleLineCount >= 10;
-            lastAtBottom = atBottom;
-            void panel.webview.postMessage({ type: 'scrollToLine', line: topLine, maxTopLine, atBottom });
-        });
-
+        registerEventHandlers();
     }
 
     // Initial display: capture the editor's current top line and maxTopLine
@@ -420,7 +453,6 @@ export function openPreview(filePath: string, config: Config, preserveFocus = fa
         const visibleLineCount = activeEditor.visibleRanges[0].end.line - activeEditor.visibleRanges[0].start.line + 1;
         lastMaxTopLine = calcMaxTopLine(activeEditor.document.lineCount, visibleLineCount);
     }
-
     return new Promise<void>((resolve) => {
         // Settle any previous openPreview Promise (e.g. rapid file switches)
         // so the old "Opening preview..." notification is dismissed.
@@ -470,44 +502,114 @@ async function renderPanel(text: string): Promise<void> {
     const mySeq = ++renderSeq;
     let htmlReplaced = false;
 
-    try {
-        const nonce = getNonce();
-        const mermaidPath = path.join(__dirname, 'mermaid.min.js');
-        const mermaidUri = panel.webview.asWebviewUri(vscode.Uri.file(mermaidPath)).toString();
-        const renderOptions = {
-            sourceMap: true,
-            scriptHtml: buildScrollSyncScript(lastScrollLine, lastMaxTopLine, nonce, mySeq, vscode.l10n.t('Rendering...'), SYNC_MASTER_TIMEOUT_MS, lastAtBottom),
-            cspNonce: nonce,
-            cspSource: panel.webview.cspSource,
-            lang: vscode.env.language,
-            allowHttpImages: lastConfig.allowHttpImages,
-            mermaidScriptUri: mermaidUri,
-            mermaidTheme: lastConfig.mermaidTheme,
-            mermaidScale: lastConfig.mermaidScale,
-        };
-
-        const html = await renderHtmlAsync(text, makeTitle(), lastConfig, renderOptions, signal);
-        // Guard against stale render: renderSeq mismatch means a newer renderPanel
-        // call has started; signal.aborted means disposeEventHandlers() ran mid-flight.
-        if (!panel || !lastConfig || renderSeq !== mySeq || signal.aborted) return;
-
-        let finalHtml = html;
-        if (lastConfig.allowLocalImages && currentFilePath) {
-            const webview = panel.webview;
-            finalHtml = resolveLocalImagePaths(
-                html,
-                path.dirname(currentFilePath),
-                (absPath) => webview.asWebviewUri(vscode.Uri.file(absPath)).toString()
-            );
+    // Re-capture editor scroll position just before rendering.
+    // openPreview() captures it early (before readFileContent + 50ms delay),
+    // but VS Code may not have restored the editor's scroll state yet at that point.
+    // By the time renderPanel runs (~50ms later), the position is reliable.
+    if (!initialHtmlSet || pendingScrollRestore) {
+        const editor = vscode.window.activeTextEditor;
+        if (editor && currentFilePath && editor.document.uri.fsPath === currentFilePath && editor.visibleRanges.length > 0) {
+            lastScrollLine = editor.visibleRanges[0].start.line;
+            const bottomLine = editor.visibleRanges[0].end.line;
+            const lineCount = editor.document.lineCount;
+            const visibleLineCount = bottomLine - lastScrollLine + 1;
+            lastMaxTopLine = calcMaxTopLine(lineCount, visibleLineCount);
+            lastAtBottom = false;
+            if (normalVisibleLineCount > 0) {
+                // Have baseline: same check as scroll handler
+                if (bottomLine >= lineCount - 1 && normalVisibleLineCount - visibleLineCount >= 10) {
+                    lastAtBottom = true;
+                }
+            } else if (bottomLine >= lineCount - 1 && lineCount > visibleLineCount * 3 && visibleLineCount < 20) {
+                // Initial open with no baseline: heuristic for scroll-past-end.
+                // Visible range is suspiciously small (< 20 lines) while showing the
+                // last document line — likely scrolled past the end.
+                lastAtBottom = true;
+            }
+            if (!lastAtBottom && bottomLine < lineCount - 1) {
+                normalVisibleLineCount = visibleLineCount;
+            }
         }
-        panel.webview.html = finalHtml;
-        htmlReplaced = true;
-        // After re-render the scrollMap changes, so force sync on next scroll event
-        lastScrollLine = -1;
-        lastMaxTopLine = -1;
+    }
+
+    try {
+        if (!initialHtmlSet) {
+            // --- First render: full HTML with scripts, CSP, etc. ---
+            const nonce = getNonce();
+            const mermaidPath = path.join(__dirname, 'mermaid.min.js');
+            const mermaidUri = panel.webview.asWebviewUri(vscode.Uri.file(mermaidPath)).toString();
+            const scrollSyncPath = path.join(__dirname, 'scroll-sync-webview.js');
+            const scrollSyncUri = panel.webview.asWebviewUri(vscode.Uri.file(scrollSyncPath)).toString();
+            const renderOptions = {
+                sourceMap: true,
+                scriptHtml: getScrollSyncScriptTag(lastScrollLine, lastMaxTopLine, nonce, mySeq, vscode.l10n.t('Rendering...'), SYNC_MASTER_TIMEOUT_MS, scrollSyncUri, lastAtBottom),
+                cspNonce: nonce,
+                cspSource: panel.webview.cspSource,
+                lang: vscode.env.language,
+                allowHttpImages: lastConfig.allowHttpImages,
+                mermaidScriptUri: mermaidUri,
+                mermaidTheme: lastConfig.mermaidTheme,
+                mermaidScale: lastConfig.mermaidScale,
+            };
+
+            const html = await renderHtmlAsync(text, makeTitle(), lastConfig, renderOptions, signal);
+            if (!panel || !lastConfig || renderSeq !== mySeq || signal.aborted) return;
+
+            let finalHtml = html;
+            if (lastConfig.allowLocalImages && currentFilePath) {
+                const webview = panel.webview;
+                finalHtml = resolveLocalImagePaths(
+                    html,
+                    path.dirname(currentFilePath),
+                    (absPath) => webview.asWebviewUri(vscode.Uri.file(absPath)).toString()
+                );
+            }
+            panel.webview.html = finalHtml;
+            initialHtmlSet = true;
+            initialHtmlHadMermaid = finalHtml.includes('__renderMermaid');
+            pendingScrollRestore = false;
+            htmlReplaced = true;
+            lastScrollLine = -1;
+            lastMaxTopLine = -1;
+        } else {
+            // --- Incremental update: body content only via postMessage ---
+            const renderOptions = { sourceMap: true };
+            const { bodyHtml, hasMermaid } = await renderBodyAsync(text, lastConfig, renderOptions, signal);
+            if (!panel || !lastConfig || renderSeq !== mySeq || signal.aborted) return;
+
+            // Mermaid appeared for the first time but mermaid.min.js was never loaded.
+            // Fall back to a full HTML render so the script is included.
+            if (hasMermaid && !initialHtmlHadMermaid) {
+                initialHtmlSet = false;
+                return renderPanel(text);
+            }
+
+            let finalBody = bodyHtml;
+            if (lastConfig.allowLocalImages && currentFilePath) {
+                const webview = panel.webview;
+                finalBody = resolveLocalImagePaths(
+                    bodyHtml,
+                    path.dirname(currentFilePath),
+                    (absPath) => webview.asWebviewUri(vscode.Uri.file(absPath)).toString()
+                );
+            }
+            const msg: Record<string, unknown> = { type: 'updateBody', html: finalBody, hasMermaid };
+            if (pendingScrollRestore && lastScrollLine >= 0) {
+                msg.scrollTo = { line: lastScrollLine, maxTopLine: lastMaxTopLine, atBottom: lastAtBottom };
+            }
+            pendingScrollRestore = false;
+            void panel.webview.postMessage(msg);
+            htmlReplaced = true;
+        }
     } catch (err) {
         getOutputChannel().appendLine(`[renderPanel error] ${err}`);
     } finally {
+        // Only clear the controller if it is still ours — a recursive call
+        // (e.g. Mermaid fallback at L577) replaces renderAbortController with
+        // a new instance, and we must not overwrite it.
+        if (renderAbortController === myController) {
+            renderAbortController = null;
+        }
         // If HTML was not replaced (stale render or error), dismiss the loading
         // overlay on the current webview to prevent it from staying permanently.
         if (!htmlReplaced && panel) {
@@ -649,6 +751,11 @@ export function updateConfig(config: Config): void {
         // Update webview options when allowLocalImages toggled
         if (changed.has('allowLocalImages')) {
             applyWebviewOptions();
+        }
+
+        // Settings that affect <head> content require a full HTML reload
+        if ([...changed].some(k => HEAD_KEYS.has(k))) {
+            initialHtmlSet = false;
         }
     }
 

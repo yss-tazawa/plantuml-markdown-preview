@@ -236,7 +236,7 @@ function getOrCreateMd(config: Config, withSourceMap?: boolean): MarkdownIt {
 }
 
 /**
- * Render Markdown to HTML — async variant.
+ * Render Markdown to body HTML — async variant.
  *
  * Pre-renders all PlantUML blocks asynchronously (local or server mode)
  * before passing them to md.render() via env.preRenderedSvgs, so the
@@ -247,13 +247,14 @@ function getOrCreateMd(config: Config, withSourceMap?: boolean): MarkdownIt {
  *   blocking the extension host event loop.
  *
  * @param source Raw Markdown text.
- * @param title Document title.
  * @param config PlantUML and theme configuration.
  * @param options Optional flags for source map, script injection, and CSP.
  * @param signal Optional AbortSignal to cancel in-flight rendering processes.
- * @returns Complete HTML document string.
+ * @returns Object with bodyHtml (rendered HTML string) and hasMermaid flag.
  */
-export async function renderHtmlAsync(source: string, title: string, config: Config, options?: RenderOptions, signal?: AbortSignal): Promise<string> {
+export async function renderBodyAsync(
+    source: string, config: Config, options?: RenderOptions, signal?: AbortSignal
+): Promise<{ bodyHtml: string; hasMermaid: boolean }> {
     const blocks = extractPlantUmlBlocks(source);
     let preRenderedSvgs: Map<string, string> | undefined;
 
@@ -278,11 +279,30 @@ export async function renderHtmlAsync(source: string, title: string, config: Con
     // If the signal fired during async rendering the preRenderedSvgs map may be
     // incomplete.  Proceeding to md.render() would cause the fence rule to fall
     // back to synchronous renderToSvg (spawnSync), freezing the extension host.
-    if (signal?.aborted) return '';
+    if (signal?.aborted) return { bodyHtml: '', hasMermaid: false };
 
     const md = getOrCreateMd(config, options?.sourceMap);
     const env: { preRenderedSvgs?: Map<string, string>; plantumlScale?: string } = { preRenderedSvgs, plantumlScale: config.plantumlScale };
     const bodyHtml = md.render(source, env);
+    return { bodyHtml, hasMermaid: bodyHtml.includes('mermaid-diagram') };
+}
+
+/**
+ * Render Markdown source to a complete HTML document.
+ *
+ * Combines {@link renderBodyAsync} and {@link buildHtml} to produce a
+ * standalone `<!DOCTYPE html>` page suitable for preview or export.
+ *
+ * @param source - Raw Markdown text.
+ * @param title - Document title for the `<title>` tag.
+ * @param config - PlantUML and theme configuration.
+ * @param options - Optional flags for source map, script injection, CSP, and Mermaid.
+ * @param signal - Optional AbortSignal to cancel in-flight rendering.
+ * @returns Complete HTML document string, or empty string if aborted.
+ */
+export async function renderHtmlAsync(source: string, title: string, config: Config, options?: RenderOptions, signal?: AbortSignal): Promise<string> {
+    const { bodyHtml } = await renderBodyAsync(source, config, options, signal);
+    if (signal?.aborted) return '';
     return buildHtml(title, bodyHtml, config.previewTheme, options);
 }
 
@@ -349,7 +369,25 @@ function buildHtml(title: string, body: string, previewTheme?: string, options?:
     const validMermaidThemes = new Set(['default', 'dark', 'forest', 'neutral', 'base']);
     const mermaidThemeValue = validMermaidThemes.has(mermaidTheme || '') ? mermaidTheme! : 'default';
     const scaleNum = mermaidScale && mermaidScale !== 'auto' ? parseFloat(mermaidScale) / 100 : 0;
-    const mermaidInitScript = `mermaid.initialize({startOnLoad:false,theme:'${mermaidThemeValue}'});(async function(){var scale=${scaleNum};var els=document.querySelectorAll('pre.mermaid');for(var i=0;i<els.length;i++){var el=els[i];try{var r=await mermaid.render('m'+i,el.textContent||'');el.innerHTML=r.svg}catch(e){var msg=(e.message||String(e)).replace(/</g,'&lt;').replace(/>/g,'&gt;');el.innerHTML='<div class="mermaid-error">'+msg+'</div>'}if(scale>0){var svg=el.querySelector('svg');if(svg){var mw=svg.style.maxWidth;var natW=mw?parseFloat(mw):parseFloat(svg.getAttribute('width'));if(!isNaN(natW)){svg.setAttribute('width',(natW*scale)+'px');svg.style.maxWidth='none';svg.removeAttribute('height');svg.style.height='auto'}}}el.style.visibility='visible'}})();`;
+    const mermaidInitScript = [
+        `mermaid.initialize({startOnLoad:false,theme:'${mermaidThemeValue}'});`,
+        `window.__renderMermaid=async function(){`,
+        `var prefix='m'+Date.now()+'_';`,
+        `var scale=${scaleNum};`,
+        `var els=document.querySelectorAll('pre.mermaid');`,
+        `for(var i=0;i<els.length;i++){`,
+        `var el=els[i];`,
+        `try{var r=await mermaid.render(prefix+i,el.textContent||'');el.innerHTML=r.svg}`,
+        `catch(e){var msg=(e.message||String(e)).replace(/</g,'&lt;').replace(/>/g,'&gt;');`,
+        `el.innerHTML='<div class="mermaid-error">'+msg+'</div>'}`,
+        `if(scale>0){var svg=el.querySelector('svg');`,
+        `if(svg){var mw=svg.style.maxWidth;`,
+        `var natW=mw?parseFloat(mw):parseFloat(svg.getAttribute('width'));`,
+        `if(!isNaN(natW)){svg.setAttribute('width',(natW*scale)+'px');`,
+        `svg.style.maxWidth='none';svg.removeAttribute('height');svg.style.height='auto'}}}`,
+        `el.style.visibility='visible'}};`,
+        `window.__renderMermaid();`,
+    ].join('');
     const hasMermaid = body.includes('mermaid-diagram');
     let mermaidHtml = '';
     if (mermaidScriptUri && cspNonce && hasMermaid) {
@@ -370,7 +408,10 @@ ${theme.css}
   </style>${buildLayoutOverrideStyle(htmlMaxWidth, htmlAlignment)}
 </head>
 <body${cspNonce ? ' class="preview"' : ''}>
-${body}${mermaidHtml}
+<!-- NOTE: This ID is also referenced in src/webview/scroll-sync-webview.ts (applyPendingBodyUpdate). -->
+<div id="preview-content">
+${body}
+</div>${mermaidHtml}
 ${scriptHtml || ''}
 </body>
 </html>`;

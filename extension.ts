@@ -162,7 +162,7 @@ function openInDefaultApp(filePath: string): void {
     }
     const cmd = process.platform === 'win32' ? 'explorer.exe'
         : process.platform === 'darwin' ? 'open' : 'xdg-open';
-    execFile(cmd, [filePath], () => { /* explorer.exe returns exit code 1 on success; ignore all errors */ });
+    void execFile(cmd, [filePath], () => { /* explorer.exe returns exit code 1 on success; ignore all errors */ });
 }
 
 /** Reference to the in-flight Java check child process for cleanup on deactivate. */
