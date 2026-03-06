@@ -21,7 +21,7 @@ import { CONFIG_SECTION, MERMAID_THEME_KEYS, type Config } from './config.js';
 import { openDiagramViewer, updateDiagramViewer, closeStaleViewers, disposeAllViewers } from './diagram-viewer.js';
 
 /** Config keys that affect &lt;head&gt; content and require a full HTML reload. */
-const HEAD_KEYS = new Set(['allowLocalImages', 'allowHttpImages', 'mermaidTheme', 'mermaidScale', 'enableMath']);
+const HEAD_KEYS = new Set(['allowLocalImages', 'allowHttpImages', 'mermaidScale', 'enableMath']);
 
 /** Output channel for extension diagnostic messages. Injected by setOutputChannel(). */
 let outputChannel: vscode.OutputChannel | null = null;
@@ -822,6 +822,14 @@ export function updateConfig(config: Config): void {
 
         // No rendering properties changed (only debounce values)
         if (changed.size === 0) return;
+
+        // Reinit Mermaid theme before the incremental body update arrives
+        if (changed.has('mermaidTheme')) {
+            void panel.webview.postMessage({
+                type: 'reinitMermaid',
+                theme: config.mermaidTheme || 'default'
+            });
+        }
 
         // Update webview options when allowLocalImages toggled
         if (changed.has('allowLocalImages')) {
