@@ -18,7 +18,7 @@ import { plantumlPlugin } from './src/renderer.js';
 import { clearCache } from './src/plantuml.js';
 import { clearServerCache } from './src/plantuml-server.js';
 import { prepareLocalServer, startLocalServer, stopLocalServer, restartLocalServer, setLocalServerOutputChannel } from './src/local-server.js';
-import { openPreview, getCurrentFilePath, updateConfig, changeTheme, disposePreview, setOutputChannel } from './src/preview.js';
+import { openPreview, getCurrentFilePath, getLastRenderFailed, updateConfig, changeTheme, disposePreview, setOutputChannel } from './src/preview.js';
 import { execJava } from './src/utils.js';
 import { CONFIG_SECTION, MODE_PRESETS, type Config, type Mode } from './src/config.js';
 import type MarkdownIt from 'markdown-it';
@@ -394,7 +394,7 @@ export function activate(context: vscode.ExtensionContext): { extendMarkdownIt: 
         if (!getCurrentFilePath()) return;
         const filePath = editor.document.uri.fsPath;
         if (!filePath.endsWith('.md')) return;
-        if (filePath === getCurrentFilePath()) return;
+        if (filePath === getCurrentFilePath() && !getLastRenderFailed()) return;
         void openPreview(filePath, getConfig(), true);
     });
 
