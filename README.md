@@ -420,6 +420,7 @@ All settings use the `plantumlMarkdownPreview.` prefix.
 | `debounceDiagramChangeMs` | _(empty)_ | Debounce delay (ms) for diagram content changes. Leave empty to use the mode default (Fast: 100, Secure: 300, Easy: 300). |
 | `plantumlLocalServerPort` | `0` | Port for the local PlantUML server (Fast mode only). `0` = auto-assign a free port. |
 | `plantumlServerUrl` | `"https://www.plantuml.com/plantuml"` | PlantUML server URL for Easy mode. Set to a self-hosted server URL for privacy. |
+| `retainPreviewContext` | `true` | Retain preview content when the tab is hidden. Prevents re-rendering on tab switch but uses more memory. Requires reopening the preview to take effect. |
 
 > **Note:** `allowLocalImages` and `allowHttpImages` apply only to the preview panel. HTML export always outputs original image paths without CSP restrictions.
 
