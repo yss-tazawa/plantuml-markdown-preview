@@ -87,5 +87,6 @@
   "configuration.previewTheme.dracula": "Dracula — dark background, vibrant colors.",
   "configuration.previewTheme.solarized-dark": "Solarized Dark — deep teal background, eye-friendly colors.",
   "configuration.plantumlLocalServerPort.description": "Port for the local PlantUML server in Fast mode. 0 = auto-assign a free port (recommended). Default: 0",
-  "configuration.previewTheme.monokai": "Monokai — dark background, vivid syntax colors. Sublime Text inspired."
+  "configuration.previewTheme.monokai": "Monokai — dark background, vivid syntax colors. Sublime Text inspired.",
+  "configuration.retainPreviewContext.description": "Retain preview content when the tab is hidden. Prevents re-rendering on tab switch but uses more memory. (Requires reopening the preview)"
 }
