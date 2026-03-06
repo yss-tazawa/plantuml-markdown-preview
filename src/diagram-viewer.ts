@@ -7,7 +7,10 @@
  * editor content changes.
  */
 import * as vscode from 'vscode';
-import { getNonce } from './utils.js';
+import { getNonce, escapeHtml } from './utils.js';
+
+/** Validate that a string looks like a CSS color value (rgb/rgba/hex/named). */
+const CSS_COLOR_RE = /^(#[\da-fA-F]{3,8}|rgba?\(\s*[\d.%,\s/]+\)|transparent|inherit|currentColor|[\w-]+)$/;
 
 /** Active viewer panels keyed by 1-based diagram index. */
 const viewers = new Map<number, vscode.WebviewPanel>();
@@ -24,7 +27,6 @@ const viewers = new Map<number, vscode.WebviewPanel>();
 export function openDiagramViewer(svg: string, diagramIndex: number, bgColor?: string): void {
     const existing = viewers.get(diagramIndex);
     if (existing) {
-        existing.reveal(vscode.ViewColumn.Two);
         existing.webview.postMessage({ type: 'updateSvg', svg, bgColor });
         return;
     }
@@ -56,6 +58,14 @@ export function updateDiagramViewer(diagramIndex: number, svg: string, bgColor?:
     }
 }
 
+/** Close viewer panels whose index exceeds the current diagram count. */
+export function closeStaleViewers(diagramCount: number): void {
+    const stale = [...viewers].filter(([i]) => i > diagramCount);
+    for (const [, panel] of stale) {
+        panel.dispose();
+    }
+}
+
 /** Dispose all open viewer panels (called on extension deactivate). */
 export function disposeAllViewers(): void {
     for (const panel of viewers.values()) {
@@ -65,12 +75,12 @@ export function disposeAllViewers(): void {
 }
 
 function generateViewerHtml(svg: string, nonce: string, bgColor?: string): string {
-    const containerBg = bgColor || '#fff';
+    const containerBg = bgColor && CSS_COLOR_RE.test(bgColor.trim()) ? bgColor.trim() : '#fff';
     const labels = {
-        fit: vscode.l10n.t('Fit'),
-        fitTitle: vscode.l10n.t('Fit to Window'),
-        zoomIn: vscode.l10n.t('Zoom In'),
-        zoomOut: vscode.l10n.t('Zoom Out'),
+        fit: escapeHtml(vscode.l10n.t('Fit')),
+        fitTitle: escapeHtml(vscode.l10n.t('Fit to Window')),
+        zoomIn: escapeHtml(vscode.l10n.t('Zoom In')),
+        zoomOut: escapeHtml(vscode.l10n.t('Zoom Out')),
     };
     return `<!DOCTYPE html>
 <html lang="en">
@@ -234,12 +244,14 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: ${containe
     document.getElementById('btn-zoom-out').addEventListener('click', function() { zoomAtCenter(-ZOOM_STEP); });
 
     // Live update from extension host
+    var cssColorRe = /^(#[\\da-fA-F]{3,8}|rgba?\\(\\s*[\\d.%,\\s\\/]+\\)|transparent|inherit|currentColor|[\\w-]+)$/;
     window.addEventListener('message', function(e) {
         if (e.data.type === 'updateSvg') {
             container.innerHTML = e.data.svg;
-            if (e.data.bgColor) {
-                container.style.background = e.data.bgColor;
-                document.body.style.background = e.data.bgColor;
+            if (e.data.bgColor && cssColorRe.test(e.data.bgColor.trim())) {
+                var bg = e.data.bgColor.trim();
+                container.style.background = bg;
+                document.body.style.background = bg;
             }
             applyTransform();
         }
