@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## 0.4.6 - 2026-03-06
+
+### Fixed
+
+- Preview now shows an error message when rendering fails instead of displaying stale content
+- Re-focusing the editor after a render failure now retries the render automatically
+- Fix a race condition that could show the wrong file's content during rapid file switches
+- Preview now re-renders correctly when the panel becomes visible after being hidden
+
 ## 0.4.5 - 2026-03-06
 
 ### Added

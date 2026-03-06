@@ -54,6 +54,7 @@ interface Anchor {
 
     /**
      * Set syncMaster and auto-reset to 'none' after timeout.
+     * @param who - Origin of the current scroll action ('editor' or 'preview').
      */
     function setSyncMaster(who: 'editor' | 'preview'): void {
         syncMaster = who;
@@ -124,6 +125,8 @@ interface Anchor {
 
     /**
      * Return the anchor array with caching (rebuild if not built or maxTopLine changed).
+     * @param maxTopLine - Maximum editor top line for the synthetic tail anchor.
+     * @returns Cached or freshly built anchor array, or null if no anchors exist.
      */
     function ensureAnchors(maxTopLine: number): Anchor[] | null {
         if (!anchors || maxTopLine !== lastMaxTopLine) {
@@ -135,6 +138,9 @@ interface Anchor {
 
     /**
      * Binary search the anchor array and linearly interpolate source line -> pixel position.
+     * @param anc - Sorted anchor array.
+     * @param topLine - Source line number to convert.
+     * @returns Interpolated pixel offset in the preview.
      */
     function lineToPixel(anc: Anchor[], topLine: number): number {
         if (anc.length === 0) return 0;
@@ -155,6 +161,9 @@ interface Anchor {
 
     /**
      * Binary search the anchor array and linearly interpolate pixel position -> source line.
+     * @param anc - Sorted anchor array.
+     * @param scrollTop - Current scroll position in pixels.
+     * @returns Interpolated source line number.
      */
     function pixelToLine(anc: Anchor[], scrollTop: number): number {
         if (anc.length === 0) return 0;
@@ -179,6 +188,9 @@ interface Anchor {
     /**
      * Scroll the preview to the position corresponding to the given source line.
      * Uses the expectingScrollEvent flag to distinguish programmatic scrolls.
+     * @param topLine - Editor top line to scroll to.
+     * @param maxTopLine - Maximum editor top line for anchor computation.
+     * @param [atBottom] - When true, snap to the bottom of the preview.
      */
     function scrollToSourceLine(topLine: number, maxTopLine: number, atBottom?: boolean): void {
         if (atBottom) {
@@ -335,9 +347,9 @@ interface Anchor {
     }
 
     /**
-     * Invalidate the anchor cache when any image finishes loading, since its
-     * rendered height may change from 0 to its natural size, shifting all
-     * subsequent anchors.
+     * Invalidate the anchor cache when any image finishes loading or errors.
+     * Image rendered height may change from 0 to its natural size, shifting
+     * all subsequent anchors. Re-syncs scroll position to correct layout shift.
      */
     function onImageSettled(): void {
         anchors = null;
@@ -352,6 +364,7 @@ interface Anchor {
             });
         }
     }
+    /** Attach load/error listeners to incomplete images so anchors are rebuilt when they settle. */
     function observeImages(): void {
         const imgs = document.querySelectorAll('img');
         for (let i = 0; i < imgs.length; i++) {
@@ -401,7 +414,11 @@ interface Anchor {
         return root;
     }
 
-    /** Escape a string for use inside an HTML attribute value. */
+    /**
+     * Escape a string for use inside an HTML attribute value.
+     * @param s - Raw string to escape.
+     * @returns Escaped string safe for attribute insertion.
+     */
     function escAttr(s: string): string { return s.replace(/&/g, '&amp;').replace(/"/g, '&quot;'); }
 
     /** Convert a TocNode tree into nested HTML list items. */

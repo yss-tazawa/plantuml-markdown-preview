@@ -20,6 +20,7 @@ import { clearServerCache } from './src/plantuml-server.js';
 import { prepareLocalServer, startLocalServer, stopLocalServer, restartLocalServer, setLocalServerOutputChannel } from './src/local-server.js';
 import { openPreview, getCurrentFilePath, getLastRenderFailed, updateConfig, changeTheme, disposePreview, setOutputChannel } from './src/preview.js';
 import { execJava } from './src/utils.js';
+import { clearBrowserCache } from './src/browser-finder.js';
 import { CONFIG_SECTION, MODE_PRESETS, type Config, type Mode } from './src/config.js';
 import type MarkdownIt from 'markdown-it';
 
@@ -212,6 +213,7 @@ async function checkJavaAvailability(config: Config): Promise<boolean> {
 
     const javaResult = await new Promise<{ found: boolean; versionOutput: string }>((resolve) => {
         if (config.debugSimulateNoJava) { resolve({ found: false, versionOutput: '' }); return; }
+        if (javaCheckChild) { javaCheckChild.kill(); javaCheckChild = null; }
         javaCheckChild = execJava(config.javaPath, ['-version'], { timeout: 5000 }, (err, _stdout, stderr) => {
             javaCheckChild = null;
             resolve({ found: !err, versionOutput: stderr || '' });
@@ -330,10 +332,10 @@ export function activate(context: vscode.ExtensionContext): { extendMarkdownIt: 
             if (!outputPath) return;
             if (autoOpen) {
                 openInDefaultApp(outputPath);
-            } else {
-                const label = vscode.l10n.t(openLabel!);
+            } else if (notificationMsg && openLabel) {
+                const label = vscode.l10n.t(openLabel);
                 const action = await vscode.window.showInformationMessage(
-                    vscode.l10n.t(notificationMsg!, path.basename(outputPath)),
+                    vscode.l10n.t(notificationMsg, path.basename(outputPath)),
                     label
                 );
                 if (action === label) {
@@ -502,6 +504,7 @@ export function deactivate(): void {
     clearCache();
     clearServerCache();
     clearMdCache();
+    clearBrowserCache();
     disposePreview();
 }
 

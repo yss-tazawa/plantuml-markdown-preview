@@ -145,6 +145,9 @@ export function stopLocalServer(): void {
     stoppingIntentionally = true;
     const wasRunning = serverProcess !== null;
     if (serverProcess) {
+        serverProcess.removeAllListeners();
+        serverProcess.stdout?.removeAllListeners();
+        serverProcess.stderr?.removeAllListeners();
         serverProcess.kill('SIGTERM');
         serverProcess = null;
     }

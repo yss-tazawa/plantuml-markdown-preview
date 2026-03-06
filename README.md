@@ -49,6 +49,7 @@ Switch between modes anytime with a single setting — no migration, no restart.
 ## Table of Contents
 
 - [Choose Your Mode](#choose-your-mode)
+- [Highlights](#highlights)
 - [Features](#features)
 - [Quick Start](#quick-start)
   - [Diagram Support](#diagram-support)
@@ -351,7 +352,7 @@ The PDF file is saved alongside the source `.md` file. Chrome, Edge, or Chromium
 ### Navigation
 
 - **Go to top / Go to bottom:** Buttons in the top-right corner of the preview panel
-- **Table of Contents:** Click the TOC button in the preview panel title bar to open a sidebar listing all headings; click a heading to jump to it
+- **Table of Contents:** Click the TOC button in the top-right corner of the preview panel to open a sidebar listing all headings; click a heading to jump to it
 
 ### Change Theme
 
