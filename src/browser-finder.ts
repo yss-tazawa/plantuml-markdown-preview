@@ -35,7 +35,9 @@ const LINUX_COMMANDS = [
 
 /**
  * Resolve a command name to its absolute path via `which` (or `where` on Windows).
- * Returns null when the command is not found on PATH.
+ *
+ * @param cmd - Command name to search for on PATH.
+ * @returns Absolute path to the command, or null when not found.
  */
 function which(cmd: string): Promise<string | null> {
     const bin = process.platform === 'win32' ? 'where' : 'which';
@@ -48,6 +50,16 @@ function which(cmd: string): Promise<string | null> {
 }
 
 let cachedBrowser: string | null | undefined;
+
+/**
+ * Clear the cached browser path.
+ *
+ * Called from deactivate() so a browser install/uninstall is picked up
+ * on the next activation without reloading VS Code.
+ */
+export function clearBrowserCache(): void {
+    cachedBrowser = undefined;
+}
 
 /**
  * Find a Chromium-based browser on the current system.

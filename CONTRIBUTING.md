@@ -27,6 +27,7 @@ Before filing a new issue, please search [existing issues](https://github.com/ys
 | Java 11+ (JRE or JDK) | Runs PlantUML (local mode) | Yes (local mode) | `java -version` |
 | [Graphviz](https://graphviz.org/) | Renders class / component diagrams | Optional | `dot -V` |
 | [plantuml.jar](https://plantuml.com/download) | PlantUML engine | Optional — bundled jar (LGPL) is included | — |
+| Chrome / Edge / Chromium | PDF export via headless browser | Optional | — |
 | [VS Code](https://code.visualstudio.com/) | Extension host | Yes | — |
 
 ### Clone and Install
@@ -44,7 +45,7 @@ The bundled PlantUML jar (LGPL) is used by default. To use a different jar, set 
 | Command | Description |
 | ------- | ----------- |
 | `npm run build` | Bundle source + dependencies into `dist/extension.js` via esbuild |
-| `npm run typecheck` | Type-check with `tsc --noEmit` (no output files) |
+| `npm run typecheck` | Type-check both main and webview code with `tsc --noEmit` (no output files) |
 | `npm run package` | Type-check + build + generate `.vsix` package |
 
 > **Note:** `tsc` is used only for type-checking. esbuild handles all bundling — runtime dependencies are inlined into a single `dist/extension.js`.
@@ -66,7 +67,9 @@ src/
   local-server.ts   Local PlantUML picoweb server management
   exporter.ts       HTML export with inline SVG and syntax highlighting
   scroll-sync.ts    Bidirectional editor ↔ preview scroll sync
+  browser-finder.ts Detect Chrome/Edge/Chromium for headless PDF export
   utils.ts          Shared utilities (escapeHtml, getNonce, errorHtml, fence regex, Java process helpers, LRU cache)
+  webview/          Webview-side TypeScript (bundled separately for the browser context)
   themes/           CSS theme definitions (14 themes: 8 light + 6 dark)
 l10n/               Localization bundles (Chinese (Simplified) + English + Japanese)
 .github/            GitHub templates (PR template, security policy)

@@ -574,7 +574,7 @@ async function renderPanel(text: string): Promise<void> {
             if (lastConfig.enableMath) {
                 const katexCssPath = path.join(__dirname, 'katex.min.css');
                 try {
-                    let katexCss = fs.readFileSync(katexCssPath, 'utf-8');
+                    let katexCss = await fs.promises.readFile(katexCssPath, 'utf-8');
                     const fontsBaseUri = panel.webview.asWebviewUri(vscode.Uri.file(path.join(__dirname, 'fonts'))).toString();
                     katexCss = katexCss.replace(/url\(fonts\//g, `url(${fontsBaseUri}/`);
                     katexCssHtml = `\n  <style id="katex-css">${katexCss}</style>`;

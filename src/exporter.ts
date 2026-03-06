@@ -513,7 +513,13 @@ async function buildKatexCdnCssHtml(): Promise<string> {
  */
 function buildHtml(title: string, body: string, previewTheme?: string, options?: RenderOptions): string {
     const theme = PREVIEW_THEMES[previewTheme || ''] || PREVIEW_THEMES[DEFAULT_PREVIEW_THEME];
-    const { scriptHtml, cspNonce, cspSource, lang, allowHttpImages, mermaidScriptUri, mermaidTheme, mermaidScale, htmlMaxWidth, htmlAlignment, navTopTitle, navBottomTitle, navTocTitle, fitToWidth, katexCssHtml, enableMath } = options || {};
+    const {
+        scriptHtml, cspNonce, cspSource, lang, allowHttpImages,
+        mermaidScriptUri, mermaidTheme, mermaidScale,
+        htmlMaxWidth, htmlAlignment,
+        navTopTitle, navBottomTitle, navTocTitle,
+        fitToWidth, katexCssHtml, enableMath,
+    } = options || {};
     const fontSrc = enableMath && cspSource ? cspSource : "'none'";
     const cspMeta = cspNonce
         ? `\n  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; font-src ${fontSrc}; img-src ${cspSource || "'self'"} https:${allowHttpImages ? ' http:' : ''} data:; script-src 'nonce-${cspNonce}'${cspSource ? ` ${cspSource}` : ''};">`
@@ -525,25 +531,24 @@ function buildHtml(title: string, body: string, previewTheme?: string, options?:
     // 2. window.__renderMermaid() — iterate pre.mermaid elements, render SVG via mermaid.render(),
     //    apply scale factor to SVG width, show error message on failure
     // 3. Invoke immediately after definition
-    const mermaidInitScript = [
-        `mermaid.initialize({startOnLoad:false,theme:'${mermaidThemeValue}'});`,
-        `window.__renderMermaid=async function(){`,
-        `var prefix='m'+Date.now()+'_';`,
-        `var scale=${scaleNum};`,
-        `var els=document.querySelectorAll('pre.mermaid');`,
-        `for(var i=0;i<els.length;i++){`,
-        `var el=els[i];`,
-        `try{var r=await mermaid.render(prefix+i,el.textContent||'');el.innerHTML=r.svg}`,
-        `catch(e){var msg=(e.message||String(e)).replace(/</g,'&lt;').replace(/>/g,'&gt;');`,
-        `el.innerHTML='<div class="mermaid-error">'+msg+'</div>'}`,
-        `if(scale>0){var svg=el.querySelector('svg');`,
-        `if(svg){var mw=svg.style.maxWidth;`,
-        `var natW=mw?parseFloat(mw):parseFloat(svg.getAttribute('width'));`,
-        `if(!isNaN(natW)){svg.setAttribute('width',(natW*scale)+'px');`,
-        `svg.style.maxWidth='none';svg.removeAttribute('height');svg.style.height='auto'}}}`,
-        `el.style.visibility='visible'}};`,
-        `window.__renderMermaid();`,
-    ].join('');
+    const mermaidInitScript =
+        `mermaid.initialize({startOnLoad:false,theme:'${mermaidThemeValue}'});` +
+        `window.__renderMermaid=async function(){` +
+        `var prefix='m'+Date.now()+'_';` +
+        `var scale=${scaleNum};` +
+        `var els=document.querySelectorAll('pre.mermaid');` +
+        `for(var i=0;i<els.length;i++){` +
+        `var el=els[i];` +
+        `try{var r=await mermaid.render(prefix+i,el.textContent||'');el.innerHTML=r.svg}` +
+        `catch(e){var msg=(e.message||String(e)).replace(/</g,'&lt;').replace(/>/g,'&gt;');` +
+        `el.innerHTML='<div class="mermaid-error">'+msg+'</div>'}` +
+        `if(scale>0){var svg=el.querySelector('svg');` +
+        `if(svg){var mw=svg.style.maxWidth;` +
+        `var natW=mw?parseFloat(mw):parseFloat(svg.getAttribute('width'));` +
+        `if(!isNaN(natW)){svg.setAttribute('width',(natW*scale)+'px');` +
+        `svg.style.maxWidth='none';svg.removeAttribute('height');svg.style.height='auto'}}}` +
+        `el.style.visibility='visible'}};` +
+        `window.__renderMermaid();`;
     const hasMermaid = body.includes('mermaid-diagram');
     let mermaidHtml = '';
     if (mermaidScriptUri && cspNonce && hasMermaid) {

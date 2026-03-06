@@ -226,5 +226,5 @@ export function clearServerCache(): void {
  * @returns Modified source with `!theme <name>` inserted after the @start line.
  */
 function injectThemeDirective(content: string, theme: string): string {
-    return content.replace(/^(@start\w+.*)$/gm, `$1\n!theme ${theme}`);
+    return content.replace(/^(@start\w+.*)$/m, `$1\n!theme ${theme}`);
 }
