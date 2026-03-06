@@ -17,7 +17,7 @@ declare function acquireVsCodeApi(): { postMessage(msg: unknown): void };
 
 // Use a typed reference to window for the loading timeout property.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-const win = window as any as Window & { __loadingTimeout: ReturnType<typeof setTimeout> | null; __renderMermaid?: () => Promise<void> };
+const win = window as any as Window & { __loadingTimeout: ReturnType<typeof setTimeout> | null; __renderMermaid?: () => Promise<void>; __renderMermaidDone?: Promise<void> };
 
 interface Anchor {
     line: number;
@@ -244,6 +244,7 @@ interface Anchor {
             const styleEl = document.getElementById('theme-css');
             if (styleEl) styleEl.textContent = message.css;
             anchors = null;
+            requestAnimationFrame(notifyDiagramViewers);
         } else if (message && message.type === 'showLoading') {
             // RENDER_SEQ is set once during the initial full HTML render and is not
             // updated by incremental postMessage updates.  This is safe because the
@@ -331,14 +332,16 @@ interface Anchor {
     /** Notify extension host of current SVGs so open diagram viewers can update. */
     function notifyDiagramViewers(): void {
         const diagrams = document.querySelectorAll('.plantuml-diagram, .mermaid-diagram');
+        const bgColor = getComputedStyle(document.body).backgroundColor;
         for (let i = 0; i < diagrams.length; i++) {
             vscode.postMessage({
                 type: 'updateDiagramViewer',
                 diagramIndex: i + 1,
                 svg: diagrams[i].innerHTML,
-                bgColor: getComputedStyle(document.body).backgroundColor
+                bgColor
             });
         }
+        vscode.postMessage({ type: 'diagramCount', count: diagrams.length });
     }
 
     /**
@@ -566,7 +569,15 @@ interface Anchor {
 
     /** Set up diagram click handlers on initial HTML load. */
     window.addEventListener('load', function () {
-        // Delay to allow Mermaid's auto-invoked __renderMermaid() to complete.
-        setTimeout(setupDiagramClickHandlers, 100);
+        var done = win.__renderMermaidDone;
+        if (done && typeof done.then === 'function') {
+            done.then(function () {
+                setupDiagramClickHandlers();
+                notifyDiagramViewers();
+            });
+        } else {
+            setupDiagramClickHandlers();
+            notifyDiagramViewers();
+        }
     });
 })();

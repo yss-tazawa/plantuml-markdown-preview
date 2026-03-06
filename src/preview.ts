@@ -18,7 +18,7 @@ import { listThemesAsync, prefetchThemes } from './plantuml.js';
 import { getScrollSyncScriptTag } from './scroll-sync.js';
 import { getNonce, resolveLocalImagePaths, extractPlantUmlBlocks, PLANTUML_FENCE_TEST_RE, extractMermaidBlocks, MERMAID_FENCE_TEST_RE, escapeHtml } from './utils.js';
 import { CONFIG_SECTION, MERMAID_THEME_KEYS, type Config } from './config.js';
-import { openDiagramViewer, updateDiagramViewer } from './diagram-viewer.js';
+import { openDiagramViewer, updateDiagramViewer, closeStaleViewers, disposeAllViewers } from './diagram-viewer.js';
 
 /** Config keys that affect &lt;head&gt; content and require a full HTML reload. */
 const HEAD_KEYS = new Set(['allowLocalImages', 'allowHttpImages', 'mermaidTheme', 'mermaidScale', 'enableMath']);
@@ -271,6 +271,8 @@ function registerEventHandlers(): void {
             openDiagramViewer(message.svg, message.diagramIndex, message.bgColor);
         } else if (enableDiagramViewer && message.type === 'updateDiagramViewer') {
             updateDiagramViewer(message.diagramIndex, message.svg, message.bgColor);
+        } else if (enableDiagramViewer && message.type === 'diagramCount') {
+            closeStaleViewers(message.count);
         }
     });
 
@@ -424,6 +426,7 @@ export function openPreview(filePath: string, config: Config, preserveFocus = fa
         lastAtBottom = false;
         pendingScrollRestore = true;
         lastDiagramContent = '';
+        disposeAllViewers();
     }
     currentFilePath = filePath;
 

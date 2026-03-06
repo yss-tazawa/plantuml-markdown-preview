@@ -72,7 +72,7 @@ function plantumlEncode(data: Uint8Array): string {
  *
  * Algorithm: UTF-8 encode -> raw deflate (RFC 1951) -> PlantUML custom Base64.
  *
- * @param content PlantUML source text (must include @startuml/@enduml).
+ * @param content - PlantUML source text (must include @startuml/@enduml).
  * @returns Encoded string for URL path segment.
  */
 export function encodePlantUml(content: string): string {
@@ -110,8 +110,8 @@ function cacheKey(content: string, config: Config): string {
 /**
  * Render PlantUML text to SVG via a PlantUML server (async).
  *
- * @param pumlContent Raw PlantUML source text (with or without @startuml/@enduml).
- * @param config Server URL and theme settings.
+ * @param pumlContent - Raw PlantUML source text (with or without @startuml/@enduml).
+ * @param config - Server URL and theme settings.
  * @returns SVG markup on success, raw SVG on HTTP error with SVG body (e.g. syntax errors), or styled HTML error div on other failures.
  */
 export async function renderToSvgServer(pumlContent: string, config: Config, signal?: AbortSignal): Promise<string> {
@@ -193,10 +193,10 @@ export const MAX_LOCAL_SERVER_CONCURRENCY = 50;
 /**
  * Render multiple PlantUML blocks via server with controlled concurrency.
  *
- * @param blocks Array of PlantUML source texts.
- * @param config Server URL and theme settings.
- * @param signal Optional AbortSignal.
- * @param concurrency Max parallel requests (default: 5 for remote servers).
+ * @param blocks - Array of PlantUML source texts.
+ * @param config - Server URL and theme settings.
+ * @param signal - Optional AbortSignal.
+ * @param concurrency - Max parallel requests (default: 5 for remote servers).
  * @returns Map from trimmed content -> SVG string.
  */
 export function renderAllServer(

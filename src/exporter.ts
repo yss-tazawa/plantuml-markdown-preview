@@ -288,10 +288,10 @@ function getOrCreateMd(config: Config, withSourceMap?: boolean): MarkdownIt {
  * - Local mode: renders blocks sequentially via async spawn to avoid
  *   blocking the extension host event loop.
  *
- * @param source Raw Markdown text.
- * @param config PlantUML and theme configuration.
- * @param options Optional flags for source map, script injection, and CSP.
- * @param signal Optional AbortSignal to cancel in-flight rendering processes.
+ * @param source - Raw Markdown text.
+ * @param config - PlantUML and theme configuration.
+ * @param options - Optional flags for source map, script injection, and CSP.
+ * @param signal - Optional AbortSignal to cancel in-flight rendering processes.
  * @returns Object with bodyHtml (rendered HTML string) and hasMermaid flag.
  */
 export async function renderBodyAsync(
@@ -548,7 +548,7 @@ function buildHtml(title: string, body: string, previewTheme?: string, options?:
         `if(!isNaN(natW)){svg.setAttribute('width',(natW*scale)+'px');` +
         `svg.style.maxWidth='none';svg.removeAttribute('height');svg.style.height='auto'}}}` +
         `el.style.visibility='visible'}};` +
-        `window.__renderMermaid();`;
+        `window.__renderMermaidDone=window.__renderMermaid();`;
     const hasMermaid = body.includes('mermaid-diagram');
     let mermaidHtml = '';
     if (mermaidScriptUri && cspNonce && hasMermaid) {
