@@ -245,6 +245,11 @@ interface Anchor {
             if (styleEl) styleEl.textContent = message.css;
             anchors = null;
             requestAnimationFrame(notifyDiagramViewers);
+        } else if (message && message.type === 'reinitMermaid' && typeof message.theme === 'string') {
+            // Re-initialize Mermaid with a new theme so the next __renderMermaid() uses it.
+            if (typeof (window as any).mermaid !== 'undefined') {
+                (window as any).mermaid.initialize({ startOnLoad: false, theme: message.theme });
+            }
         } else if (message && message.type === 'showLoading') {
             // RENDER_SEQ is set once during the initial full HTML render and is not
             // updated by incremental postMessage updates.  This is safe because the
