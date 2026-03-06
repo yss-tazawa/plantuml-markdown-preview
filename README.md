@@ -36,14 +36,15 @@ Switch between modes anytime with a single setting — no migration, no restart.
 ## Highlights
 
 - **Inline PlantUML & Mermaid rendering** — diagrams appear directly in your Markdown preview, not in a separate panel
-- **Math support** — `$...$` inline and `$$...$$` block math rendered with [KaTeX](https://katex.org/)
 - **Secure by design** — CSP nonce-based policy blocks all code execution from Markdown content
 - **Diagram scale control** — adjust PlantUML and Mermaid diagram sizes independently
 - **Self-contained HTML export** — SVG diagrams embedded inline, configurable layout width and alignment
+- **PDF export** — one-click export via headless Chromium; diagrams auto-scaled to fit the page
 - **Bidirectional scroll sync** — editor and preview scroll together, both ways
 - **Navigation & TOC** — go-to-top / go-to-bottom buttons and a Table of Contents sidebar in the preview panel
 - **14 preview themes** — 8 light + 6 dark themes including GitHub, Atom, Solarized, Dracula, Monokai, and more
 - **Internationalization** — English, Chinese (Simplified), and Japanese UI
+- **Math support** — `$...$` inline and `$$...$$` block math rendered with [KaTeX](https://katex.org/)
 
 ## Table of Contents
 
