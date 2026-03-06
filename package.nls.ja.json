@@ -87,5 +87,6 @@
   "configuration.previewTheme.dracula": "Dracula — ダーク背景・鮮やかなカラーパレット。",
   "configuration.previewTheme.solarized-dark": "Solarized Dark — ディープティール背景・目に優しい配色。",
   "configuration.plantumlLocalServerPort.description": "Fast モードで使用するローカル PlantUML サーバーのポート。0 = 空きポートを自動割り当て（推奨）。デフォルト: 0",
-  "configuration.previewTheme.monokai": "Monokai — ダーク背景・鮮やかなシンタックスカラー。Sublime Text 由来。"
+  "configuration.previewTheme.monokai": "Monokai — ダーク背景・鮮やかなシンタックスカラー。Sublime Text 由来。",
+  "configuration.retainPreviewContext.description": "タブが非表示のときプレビュー内容を保持します。タブ切替時の再描画を防ぎますが、メモリ使用量が増えます。（プレビューの再起動が必要）"
 }
