@@ -21,11 +21,11 @@ const viewers = new Map<number, vscode.WebviewPanel>();
  * @param svg - innerHTML of the .plantuml-diagram element
  * @param diagramIndex - 1-based position of the diagram in the document
  */
-export function openDiagramViewer(svg: string, diagramIndex: number): void {
+export function openDiagramViewer(svg: string, diagramIndex: number, bgColor?: string): void {
     const existing = viewers.get(diagramIndex);
     if (existing) {
         existing.reveal(vscode.ViewColumn.Two);
-        existing.webview.postMessage({ type: 'updateSvg', svg });
+        existing.webview.postMessage({ type: 'updateSvg', svg, bgColor });
         return;
     }
 
@@ -40,7 +40,7 @@ export function openDiagramViewer(svg: string, diagramIndex: number): void {
     panel.onDidDispose(() => { viewers.delete(diagramIndex); });
 
     const nonce = getNonce();
-    panel.webview.html = generateViewerHtml(svg, nonce);
+    panel.webview.html = generateViewerHtml(svg, nonce, bgColor);
 }
 
 /**
@@ -49,10 +49,10 @@ export function openDiagramViewer(svg: string, diagramIndex: number): void {
  * @param diagramIndex - 1-based diagram index
  * @param svg - Updated innerHTML of the .plantuml-diagram element
  */
-export function updateDiagramViewer(diagramIndex: number, svg: string): void {
+export function updateDiagramViewer(diagramIndex: number, svg: string, bgColor?: string): void {
     const panel = viewers.get(diagramIndex);
     if (panel) {
-        void panel.webview.postMessage({ type: 'updateSvg', svg });
+        void panel.webview.postMessage({ type: 'updateSvg', svg, bgColor });
     }
 }
 
@@ -64,7 +64,14 @@ export function disposeAllViewers(): void {
     viewers.clear();
 }
 
-function generateViewerHtml(svg: string, nonce: string): string {
+function generateViewerHtml(svg: string, nonce: string, bgColor?: string): string {
+    const containerBg = bgColor || '#fff';
+    const labels = {
+        fit: vscode.l10n.t('Fit'),
+        fitTitle: vscode.l10n.t('Fit to Window'),
+        zoomIn: vscode.l10n.t('Zoom In'),
+        zoomOut: vscode.l10n.t('Zoom Out'),
+    };
     return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -73,7 +80,7 @@ function generateViewerHtml(svg: string, nonce: string): string {
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <style>
 * { margin: 0; padding: 0; box-sizing: border-box; }
-html, body { width: 100%; height: 100%; overflow: hidden; background: var(--vscode-editor-background); }
+html, body { width: 100%; height: 100%; overflow: hidden; background: ${containerBg}; }
 #toolbar {
     position: fixed; top: 0; left: 0; right: 0; height: 36px;
     display: flex; align-items: center; gap: 4px; padding: 0 8px;
@@ -107,16 +114,17 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: var(--vsco
     transform-origin: 0 0;
     display: inline-block;
     position: absolute; left: 0; top: 0;
+    background: ${containerBg};
 }
 </style>
 </head>
 <body>
 <div id="toolbar">
-    <button id="btn-fit" title="Fit to Window">Fit</button>
+    <button id="btn-fit" title="${labels.fitTitle}">${labels.fit}</button>
     <button id="btn-100" title="1:1">1:1</button>
-    <button id="btn-zoom-out" title="Zoom Out">&minus;</button>
+    <button id="btn-zoom-out" title="${labels.zoomOut}">&minus;</button>
     <span id="zoom-label">100%</span>
-    <button id="btn-zoom-in" title="Zoom In">+</button>
+    <button id="btn-zoom-in" title="${labels.zoomIn}">+</button>
 </div>
 <div id="viewport">
     <div id="svg-container">${svg}</div>
@@ -229,6 +237,10 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: var(--vsco
     window.addEventListener('message', function(e) {
         if (e.data.type === 'updateSvg') {
             container.innerHTML = e.data.svg;
+            if (e.data.bgColor) {
+                container.style.background = e.data.bgColor;
+                document.body.style.background = e.data.bgColor;
+            }
             applyTransform();
         }
     });

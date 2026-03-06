@@ -88,5 +88,6 @@
   "configuration.previewTheme.solarized-dark": "Solarized Dark — 深青色背景、护眼配色。",
   "configuration.plantumlLocalServerPort.description": "Fast 模式下本地 PlantUML 服务器使用的端口。0 = 自动分配空闲端口（推荐）。默认: 0",
   "configuration.previewTheme.monokai": "Monokai — 深色背景、鲜明语法高亮色。Sublime Text 风格。",
+  "configuration.enableDiagramViewer.description": "预览中点击图表以在平移和缩放查看器中打开。（需要重新打开预览）",
   "configuration.retainPreviewContext.description": "标签页隐藏时保留预览内容。防止切换标签页时重新渲染，但会占用更多内存。（需要重新打开预览）"
 }

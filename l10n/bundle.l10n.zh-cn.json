@@ -48,5 +48,9 @@
   "Open": "打开",
   "Chrome, Edge, or Chromium is required for PDF export. No supported browser was found.": "PDF 导出需要 Chrome、Edge 或 Chromium。未找到支持的浏览器。",
   "PDF export failed: {0}": "PDF 导出失败: {0}",
-  "Diagram {0} (Viewer)": "图表 {0}（查看器）"
+  "Diagram {0} (Viewer)": "图表 {0}（查看器）",
+  "Fit": "适应",
+  "Fit to Window": "适应窗口",
+  "Zoom In": "放大",
+  "Zoom Out": "缩小"
 }

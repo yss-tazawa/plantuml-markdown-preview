@@ -48,5 +48,9 @@
   "Open": "開く",
   "Chrome, Edge, or Chromium is required for PDF export. No supported browser was found.": "PDF エクスポートには Chrome、Edge、または Chromium が必要です。対応するブラウザが見つかりませんでした。",
   "PDF export failed: {0}": "PDF エクスポートに失敗しました: {0}",
-  "Diagram {0} (Viewer)": "ダイアグラム {0}（ビューアー）"
+  "Diagram {0} (Viewer)": "ダイアグラム {0}（ビューアー）",
+  "Fit": "全体",
+  "Fit to Window": "画面サイズに合わせる",
+  "Zoom In": "拡大",
+  "Zoom Out": "縮小"
 }

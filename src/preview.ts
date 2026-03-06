@@ -111,6 +111,8 @@ let pendingScrollRestore = false;
 let lastRenderFailed = false;
 /** True after the panel was hidden — VSCode destroys webview DOM on hide, so a re-render is needed on show. */
 let panelWasHidden = false;
+/** Whether clicking a diagram opens the diagram viewer (read once at panel creation). */
+let enableDiagramViewer = true;
 
 /** Current scroll sync owner: 'none' allows both directions, others block the opposite. */
 let syncMaster: SyncMaster = 'none';
@@ -265,10 +267,10 @@ function registerEventHandlers(): void {
             const range = new vscode.Range(line, 0, line, 0);
             editor.revealRange(range, vscode.TextEditorRevealType.AtTop);
             lastScrollLine = line;
-        } else if (message.type === 'openDiagramViewer') {
-            openDiagramViewer(message.svg, message.diagramIndex);
-        } else if (message.type === 'updateDiagramViewer') {
-            updateDiagramViewer(message.diagramIndex, message.svg);
+        } else if (enableDiagramViewer && message.type === 'openDiagramViewer') {
+            openDiagramViewer(message.svg, message.diagramIndex, message.bgColor);
+        } else if (enableDiagramViewer && message.type === 'updateDiagramViewer') {
+            updateDiagramViewer(message.diagramIndex, message.svg, message.bgColor);
         }
     });
 
@@ -437,7 +439,9 @@ export function openPreview(filePath: string, config: Config, preserveFocus = fa
             panel.reveal(vscode.ViewColumn.Two, false);
         }
     } else {
-        const retainCtx = vscode.workspace.getConfiguration('plantumlMarkdownPreview').get<boolean>('retainPreviewContext', true);
+        const pmCfg = vscode.workspace.getConfiguration('plantumlMarkdownPreview');
+        const retainCtx = pmCfg.get<boolean>('retainPreviewContext', true);
+        enableDiagramViewer = pmCfg.get<boolean>('enableDiagramViewer', true);
         panel = vscode.window.createWebviewPanel(
             'plantumlMarkdownPreview',
             makeTitle(),
@@ -592,7 +596,7 @@ async function renderPanel(text: string): Promise<void> {
 
             const renderOptions = {
                 sourceMap: true,
-                scriptHtml: getScrollSyncScriptTag(lastScrollLine, lastMaxTopLine, nonce, mySeq, vscode.l10n.t('Rendering...'), SYNC_MASTER_TIMEOUT_MS, scrollSyncUri, lastAtBottom),
+                scriptHtml: getScrollSyncScriptTag(lastScrollLine, lastMaxTopLine, nonce, mySeq, vscode.l10n.t('Rendering...'), SYNC_MASTER_TIMEOUT_MS, scrollSyncUri, lastAtBottom, enableDiagramViewer),
                 cspNonce: nonce,
                 cspSource: panel.webview.cspSource,
                 lang: vscode.env.language,
