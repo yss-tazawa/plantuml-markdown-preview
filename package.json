@@ -442,8 +442,14 @@
           "default": "https://www.plantuml.com/plantuml",
           "description": "%configuration.plantumlServerUrl.description%"
         },
-        "plantumlMarkdownPreview.retainPreviewContext": {
+        "plantumlMarkdownPreview.enableDiagramViewer": {
           "order": 19,
+          "type": "boolean",
+          "default": true,
+          "description": "%configuration.enableDiagramViewer.description%"
+        },
+        "plantumlMarkdownPreview.retainPreviewContext": {
+          "order": 20,
           "type": "boolean",
           "default": true,
           "description": "%configuration.retainPreviewContext.description%"

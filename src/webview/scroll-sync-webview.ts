@@ -32,6 +32,7 @@ interface Anchor {
     const RENDER_SEQ = Number(script.dataset.renderSeq);
     const RENDERING_TEXT = script.dataset.renderingText!;
     const SYNC_MASTER_TIMEOUT_MS = Number(script.dataset.syncMasterTimeoutMs);
+    const ENABLE_DIAGRAM_VIEWER = script.dataset.enableDiagramViewer !== 'false';
     /** Offset (px) for TOC active-heading detection: clears the fixed nav-toolbar. */
     const TOC_SCROLL_OFFSET = 60;
 
@@ -310,7 +311,8 @@ interface Anchor {
 
     /** Make diagrams clickable to open in the diagram viewer. */
     function setupDiagramClickHandlers(): void {
-        const diagrams = document.querySelectorAll('.plantuml-diagram');
+        if (!ENABLE_DIAGRAM_VIEWER) return;
+        const diagrams = document.querySelectorAll('.plantuml-diagram, .mermaid-diagram');
         for (let i = 0; i < diagrams.length; i++) {
             const el = diagrams[i] as HTMLElement;
             el.style.cursor = 'pointer';
@@ -319,7 +321,8 @@ interface Anchor {
                 vscode.postMessage({
                     type: 'openDiagramViewer',
                     svg: el.innerHTML,
-                    diagramIndex: i + 1
+                    diagramIndex: i + 1,
+                    bgColor: getComputedStyle(document.body).backgroundColor
                 });
             });
         }
@@ -327,12 +330,13 @@ interface Anchor {
 
     /** Notify extension host of current SVGs so open diagram viewers can update. */
     function notifyDiagramViewers(): void {
-        const diagrams = document.querySelectorAll('.plantuml-diagram');
+        const diagrams = document.querySelectorAll('.plantuml-diagram, .mermaid-diagram');
         for (let i = 0; i < diagrams.length; i++) {
             vscode.postMessage({
                 type: 'updateDiagramViewer',
                 diagramIndex: i + 1,
-                svg: diagrams[i].innerHTML
+                svg: diagrams[i].innerHTML,
+                bgColor: getComputedStyle(document.body).backgroundColor
             });
         }
     }

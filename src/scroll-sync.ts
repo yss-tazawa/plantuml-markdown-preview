@@ -19,6 +19,7 @@ import { escapeHtml } from './utils.js';
  * @param syncMasterTimeoutMs - Timeout in ms before syncMaster resets to 'none'.
  * @param scrollSyncUri - Webview URI for the bundled scroll-sync-webview.js.
  * @param [initialAtBottom=false] - If true, snap preview to bottom on initial render.
+ * @param [enableDiagramViewer=true] - If true, diagrams are clickable to open in a viewer.
  * @returns HTML `<script>` tag string ready for insertion before `</body>`.
  */
 export function getScrollSyncScriptTag(
@@ -29,7 +30,8 @@ export function getScrollSyncScriptTag(
     renderingText: string,
     syncMasterTimeoutMs: number,
     scrollSyncUri: string,
-    initialAtBottom = false
+    initialAtBottom = false,
+    enableDiagramViewer = true
 ): string {
-    return `<script nonce="${nonce}" src="${escapeHtml(scrollSyncUri)}" data-initial-line="${initialLine}" data-initial-max-top-line="${initialMaxTopLine}" data-initial-at-bottom="${initialAtBottom}" data-render-seq="${renderSeq}" data-rendering-text="${escapeHtml(renderingText)}" data-sync-master-timeout-ms="${syncMasterTimeoutMs}"></script>`;
+    return `<script nonce="${nonce}" src="${escapeHtml(scrollSyncUri)}" data-initial-line="${initialLine}" data-initial-max-top-line="${initialMaxTopLine}" data-initial-at-bottom="${initialAtBottom}" data-render-seq="${renderSeq}" data-rendering-text="${escapeHtml(renderingText)}" data-sync-master-timeout-ms="${syncMasterTimeoutMs}" data-enable-diagram-viewer="${enableDiagramViewer}"></script>`;
 }
