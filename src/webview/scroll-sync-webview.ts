@@ -50,7 +50,7 @@ interface Anchor {
     let syncMasterTimer: ReturnType<typeof setTimeout> | null = null;
 
     // Coalescing state for rapid updateBody messages
-    let pendingBodyUpdate: { html: string; hasMermaid: boolean; scrollTo: { line: number; maxTopLine: number; atBottom: boolean } | null } | null = null;
+    let pendingBodyUpdate: { html: string; hasMermaid: boolean; scrollTo: { line: number; maxTopLine: number; atBottom: boolean } | null; themeCss: string | null } | null = null;
     let bodyUpdateRafId: number | null = null;
 
     /**
@@ -287,7 +287,7 @@ interface Anchor {
             // quickly in a large file (each debounce-triggered render completes fast
             // with postMessage, unlike the old full-HTML-replace which was throttled
             // by webview reload latency).
-            pendingBodyUpdate = { html: message.html, hasMermaid: !!message.hasMermaid, scrollTo: message.scrollTo || null };
+            pendingBodyUpdate = { html: message.html, hasMermaid: !!message.hasMermaid, scrollTo: message.scrollTo || null, themeCss: message.themeCss || null };
             if (!bodyUpdateRafId) {
                 bodyUpdateRafId = requestAnimationFrame(applyPendingBodyUpdate);
             }
@@ -363,6 +363,11 @@ interface Anchor {
         // NOTE: This ID is defined in src/exporter.ts (buildHtml).
         const container = document.getElementById('preview-content');
         if (container) container.innerHTML = update.html;
+
+        if (update.themeCss) {
+            const styleEl = document.getElementById('theme-css');
+            if (styleEl) styleEl.textContent = update.themeCss;
+        }
 
         anchors = null;
 

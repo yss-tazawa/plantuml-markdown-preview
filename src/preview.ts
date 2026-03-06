@@ -213,16 +213,19 @@ function buildLocalResourceRoots(filePath: string): vscode.Uri[] {
  *
  * No-op when panel, lastConfig, or currentFilePath is null.
  */
-function applyWebviewOptions(): void {
-    if (!panel || !lastConfig || !currentFilePath) return;
-    if (lastConfig.allowLocalImages) {
-        panel.webview.options = {
-            enableScripts: true,
-            localResourceRoots: buildLocalResourceRoots(currentFilePath),
-        };
-    } else {
-        panel.webview.options = { enableScripts: true, localResourceRoots: [vscode.Uri.file(__dirname)] };
+function applyWebviewOptions(): boolean {
+    if (!panel || !lastConfig || !currentFilePath) return false;
+    const newRoots = lastConfig.allowLocalImages
+        ? buildLocalResourceRoots(currentFilePath)
+        : [vscode.Uri.file(__dirname)];
+    // Skip if roots match to avoid triggering a webview reload
+    const old = panel.webview.options.localResourceRoots;
+    if (old && old.length === newRoots.length
+        && old.every((u, i) => u.toString() === newRoots[i].toString())) {
+        return false;
     }
+    panel.webview.options = { enableScripts: true, localResourceRoots: newRoots };
+    return true;
 }
 
 /**
@@ -432,9 +435,15 @@ export function openPreview(filePath: string, config: Config, preserveFocus = fa
 
     if (panel) {
         panel.title = makeTitle();
-        applyWebviewOptions();
+        const optionsChanged = applyWebviewOptions();
         disposeEventHandlers();
         registerEventHandlers();
+        // applyWebviewOptions() may trigger a webview reload from stale
+        // panel.webview.html; force full HTML render so the backing
+        // HTML has the current theme and content.
+        if (optionsChanged) {
+            initialHtmlSet = false;
+        }
         // When auto-following editor changes (preserveFocus=true), skip
         // reveal() — it would bring the preview to the front and cover
         // a file the user just opened in the same column.
@@ -659,6 +668,12 @@ async function renderPanel(text: string): Promise<void> {
             const msg: Record<string, unknown> = { type: 'updateBody', html: finalBody, hasMermaid };
             if (pendingScrollRestore && lastScrollLine >= 0) {
                 msg.scrollTo = { line: lastScrollLine, maxTopLine: lastMaxTopLine, atBottom: lastAtBottom };
+            }
+            // Sync theme CSS on file switch: applyWebviewOptions() may reload
+            // the webview from panel.webview.html which has the initial theme,
+            // discarding any updateTheme changes applied via postMessage.
+            if (pendingScrollRestore) {
+                msg.themeCss = getThemeCss(lastConfig.previewTheme || 'github-light');
             }
             pendingScrollRestore = false;
             void panel.webview.postMessage(msg);
