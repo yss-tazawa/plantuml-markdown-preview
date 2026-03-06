@@ -106,6 +106,8 @@ let initialHtmlSet = false;
 let initialHtmlHadMermaid = false;
 /** True while a file switch is pending — suppresses scroll sync and triggers scroll restore after body update. */
 let pendingScrollRestore = false;
+/** True when the most recent renderPanel call failed (allows re-render on same file re-focus). */
+let lastRenderFailed = false;
 
 /** Current scroll sync owner: 'none' allows both directions, others block the opposite. */
 let syncMaster: SyncMaster = 'none';
@@ -349,6 +351,7 @@ function resetState(): void {
     initialHtmlSet = false;
     initialHtmlHadMermaid = false;
     pendingScrollRestore = false;
+    lastRenderFailed = false;
     syncMaster = 'none';
     if (firstRenderResolve) { firstRenderResolve(); firstRenderResolve = null; }
     disposeEventHandlers();
@@ -410,6 +413,7 @@ export function openPreview(filePath: string, config: Config, preserveFocus = fa
         normalVisibleLineCount = 0;
         lastAtBottom = false;
         pendingScrollRestore = true;
+        lastDiagramContent = '';
     }
     currentFilePath = filePath;
 
@@ -466,6 +470,10 @@ export function openPreview(filePath: string, config: Config, preserveFocus = fa
             if (text === null) {
                 suppressLoadingNotification = false;
                 fireDeferredWork();
+                return;
+            }
+            // Guard: skip if another file switch happened while reading
+            if (currentFilePath !== filePath) {
                 return;
             }
             lastDiagramContent = extractDiagramContent(text);
@@ -588,6 +596,7 @@ async function renderPanel(text: string): Promise<void> {
             initialHtmlHadMermaid = finalHtml.includes('__renderMermaid');
             pendingScrollRestore = false;
             htmlReplaced = true;
+            lastRenderFailed = false;
             lastScrollLine = -1;
             lastMaxTopLine = -1;
         } else {
@@ -619,9 +628,21 @@ async function renderPanel(text: string): Promise<void> {
             pendingScrollRestore = false;
             void panel.webview.postMessage(msg);
             htmlReplaced = true;
+            lastRenderFailed = false;
         }
     } catch (err) {
         getOutputChannel().appendLine(`[renderPanel error] ${err}`);
+        lastRenderFailed = true;
+        // Show error in the preview so the user sees something went wrong
+        // instead of stale content from the previous file.
+        if (panel && initialHtmlSet) {
+            void panel.webview.postMessage({
+                type: 'updateBody',
+                html: `<div style="padding:2em;color:var(--vscode-errorForeground,red);">${escapeHtml(String(err))}</div>`,
+                hasMermaid: false,
+            });
+            htmlReplaced = true;
+        }
     } finally {
         // Only clear the controller if it is still ours — a recursive call
         // (e.g. Mermaid fallback at L577) replaces renderAbortController with
@@ -866,4 +887,14 @@ export async function changeTheme(): Promise<void> {
  */
 export function getCurrentFilePath(): string | null {
     return currentFilePath;
+}
+
+/**
+ * Return whether the most recent render failed.
+ *
+ * Used by extension.ts to allow re-rendering the same file when the user
+ * re-focuses the editor after a render failure.
+ */
+export function getLastRenderFailed(): boolean {
+    return lastRenderFailed;
 }
