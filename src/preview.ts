@@ -472,6 +472,8 @@ export function openPreview(filePath: string, config: Config, preserveFocus = fa
                         getOutputChannel().appendLine(`[re-render on show] ${err}`)
                     );
                 });
+            } else if (retainCtx && lastScrollLine >= 0) {
+                void panel.webview.postMessage({ type: 'scrollToLine', line: lastScrollLine, maxTopLine: lastMaxTopLine, atBottom: lastAtBottom });
             }
         });
         registerEventHandlers();
