@@ -18,6 +18,7 @@ import { listThemesAsync, prefetchThemes } from './plantuml.js';
 import { getScrollSyncScriptTag } from './scroll-sync.js';
 import { getNonce, resolveLocalImagePaths, extractPlantUmlBlocks, PLANTUML_FENCE_TEST_RE, extractMermaidBlocks, MERMAID_FENCE_TEST_RE, escapeHtml } from './utils.js';
 import { CONFIG_SECTION, MERMAID_THEME_KEYS, type Config } from './config.js';
+import { openDiagramViewer, updateDiagramViewer } from './diagram-viewer.js';
 
 /** Config keys that affect &lt;head&gt; content and require a full HTML reload. */
 const HEAD_KEYS = new Set(['allowLocalImages', 'allowHttpImages', 'mermaidTheme', 'mermaidScale', 'enableMath']);
@@ -264,6 +265,10 @@ function registerEventHandlers(): void {
             const range = new vscode.Range(line, 0, line, 0);
             editor.revealRange(range, vscode.TextEditorRevealType.AtTop);
             lastScrollLine = line;
+        } else if (message.type === 'openDiagramViewer') {
+            openDiagramViewer(message.svg, message.diagramIndex);
+        } else if (message.type === 'updateDiagramViewer') {
+            updateDiagramViewer(message.diagramIndex, message.svg);
         }
     });
 

@@ -17,7 +17,7 @@ declare function acquireVsCodeApi(): { postMessage(msg: unknown): void };
 
 // Use a typed reference to window for the loading timeout property.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-const win = window as any as Window & { __loadingTimeout: ReturnType<typeof setTimeout> | null; __renderMermaid?: () => void };
+const win = window as any as Window & { __loadingTimeout: ReturnType<typeof setTimeout> | null; __renderMermaid?: () => Promise<void> };
 
 interface Anchor {
     line: number;
@@ -308,6 +308,35 @@ interface Anchor {
     const observer = new MutationObserver(function () { anchors = null; });
     observer.observe(document.body, { childList: true, subtree: true });
 
+    /** Make diagrams clickable to open in the diagram viewer. */
+    function setupDiagramClickHandlers(): void {
+        const diagrams = document.querySelectorAll('.plantuml-diagram');
+        for (let i = 0; i < diagrams.length; i++) {
+            const el = diagrams[i] as HTMLElement;
+            el.style.cursor = 'pointer';
+            el.addEventListener('click', function () {
+                if (window.getSelection()?.toString().length) return;
+                vscode.postMessage({
+                    type: 'openDiagramViewer',
+                    svg: el.innerHTML,
+                    diagramIndex: i + 1
+                });
+            });
+        }
+    }
+
+    /** Notify extension host of current SVGs so open diagram viewers can update. */
+    function notifyDiagramViewers(): void {
+        const diagrams = document.querySelectorAll('.plantuml-diagram');
+        for (let i = 0; i < diagrams.length; i++) {
+            vscode.postMessage({
+                type: 'updateDiagramViewer',
+                diagramIndex: i + 1,
+                svg: diagrams[i].innerHTML
+            });
+        }
+    }
+
     /**
      * Apply the latest pending body update (coalesced via requestAnimationFrame).
      * Replaces #preview-content innerHTML, invalidates anchors, re-renders
@@ -326,7 +355,13 @@ interface Anchor {
         anchors = null;
 
         if (update.hasMermaid && typeof win.__renderMermaid === 'function') {
-            win.__renderMermaid();
+            win.__renderMermaid().then(function () {
+                setupDiagramClickHandlers();
+                notifyDiagramViewers();
+            });
+        } else {
+            setupDiagramClickHandlers();
+            notifyDiagramViewers();
         }
 
         observeImages();
@@ -524,4 +559,10 @@ interface Anchor {
             });
         });
     }
+
+    /** Set up diagram click handlers on initial HTML load. */
+    window.addEventListener('load', function () {
+        // Delay to allow Mermaid's auto-invoked __renderMermaid() to complete.
+        setTimeout(setupDiagramClickHandlers, 100);
+    });
 })();
