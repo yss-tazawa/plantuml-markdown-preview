@@ -437,6 +437,7 @@ export function openPreview(filePath: string, config: Config, preserveFocus = fa
             panel.reveal(vscode.ViewColumn.Two, false);
         }
     } else {
+        const retainCtx = vscode.workspace.getConfiguration('plantumlMarkdownPreview').get<boolean>('retainPreviewContext', true);
         panel = vscode.window.createWebviewPanel(
             'plantumlMarkdownPreview',
             makeTitle(),
@@ -444,6 +445,7 @@ export function openPreview(filePath: string, config: Config, preserveFocus = fa
             {
                 enableFindWidget: true,
                 enableScripts: true,
+                retainContextWhenHidden: retainCtx,
                 localResourceRoots: config.allowLocalImages ? buildLocalResourceRoots(filePath) : [vscode.Uri.file(__dirname)],
             }
         );
@@ -459,7 +461,7 @@ export function openPreview(filePath: string, config: Config, preserveFocus = fa
         panel.onDidChangeViewState(() => {
             if (!panel) return;
             if (!panel.visible) {
-                panelWasHidden = true;
+                if (!retainCtx) panelWasHidden = true;
                 return;
             }
             if (panelWasHidden && currentFilePath && lastConfig) {
