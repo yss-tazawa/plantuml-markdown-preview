@@ -108,6 +108,8 @@ let initialHtmlHadMermaid = false;
 let pendingScrollRestore = false;
 /** True when the most recent renderPanel call failed (allows re-render on same file re-focus). */
 let lastRenderFailed = false;
+/** True after the panel was hidden — VSCode destroys webview DOM on hide, so a re-render is needed on show. */
+let panelWasHidden = false;
 
 /** Current scroll sync owner: 'none' allows both directions, others block the opposite. */
 let syncMaster: SyncMaster = 'none';
@@ -352,6 +354,7 @@ function resetState(): void {
     initialHtmlHadMermaid = false;
     pendingScrollRestore = false;
     lastRenderFailed = false;
+    panelWasHidden = false;
     syncMaster = 'none';
     if (firstRenderResolve) { firstRenderResolve(); firstRenderResolve = null; }
     disposeEventHandlers();
@@ -448,6 +451,22 @@ export function openPreview(filePath: string, config: Config, preserveFocus = fa
 </div></body></html>`;
 
         panel.onDidDispose(resetState);
+        panel.onDidChangeViewState(() => {
+            if (!panel) return;
+            if (!panel.visible) {
+                panelWasHidden = true;
+                return;
+            }
+            if (panelWasHidden && currentFilePath && lastConfig) {
+                panelWasHidden = false;
+                void readFileContent(currentFilePath).then((text) => {
+                    if (text === null || !panel || !lastConfig) return;
+                    void renderPanel(text).catch(err =>
+                        getOutputChannel().appendLine(`[re-render on show] ${err}`)
+                    );
+                });
+            }
+        });
         registerEventHandlers();
     }
 
