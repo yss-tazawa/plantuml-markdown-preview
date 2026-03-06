@@ -47,5 +47,6 @@
   "PDF exported: {0}": "PDF exported: {0}",
   "Open": "Open",
   "Chrome, Edge, or Chromium is required for PDF export. No supported browser was found.": "Chrome, Edge, or Chromium is required for PDF export. No supported browser was found.",
-  "PDF export failed: {0}": "PDF export failed: {0}"
+  "PDF export failed: {0}": "PDF export failed: {0}",
+  "Diagram {0} (Viewer)": "Diagram {0} (Viewer)"
 }

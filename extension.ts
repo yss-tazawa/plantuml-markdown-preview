@@ -21,6 +21,7 @@ import { prepareLocalServer, startLocalServer, stopLocalServer, restartLocalServ
 import { openPreview, getCurrentFilePath, getLastRenderFailed, updateConfig, changeTheme, disposePreview, setOutputChannel } from './src/preview.js';
 import { execJava } from './src/utils.js';
 import { clearBrowserCache } from './src/browser-finder.js';
+import { disposeAllViewers } from './src/diagram-viewer.js';
 import { CONFIG_SECTION, MODE_PRESETS, type Config, type Mode } from './src/config.js';
 import type MarkdownIt from 'markdown-it';
 
@@ -505,6 +506,7 @@ export function deactivate(): void {
     clearServerCache();
     clearMdCache();
     clearBrowserCache();
+    disposeAllViewers();
     disposePreview();
 }
 
