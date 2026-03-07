@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## 0.4.10 - 2026-03-07
+
+### Fixed
+
+- Diagram Viewer: horizontal mouse wheel now pans the diagram instead of being ignored
+
 ## 0.4.9 - 2026-03-07
 
 ### Added
