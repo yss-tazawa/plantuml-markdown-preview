@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## 0.5.1 - 2026-03-08
+
+### Fixed
+
+- Mermaid preview: stale error SVG (bomb icon) no longer persists in the background after fixing a syntax error
+
 ## 0.5.0 - 2026-03-08
 
 ### Added

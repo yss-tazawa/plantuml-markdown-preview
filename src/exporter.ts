@@ -543,6 +543,8 @@ function buildHtml(title: string, body: string, previewTheme?: string, options?:
         `try{var r=await mermaid.render(prefix+i,el.textContent||'');el.innerHTML=r.svg}` +
         `catch(e){var msg=(e.message||String(e)).replace(/</g,'&lt;').replace(/>/g,'&gt;');` +
         `el.innerHTML='<div class="mermaid-error">'+msg+'</div>'}` +
+        `/* Remove temp divs mermaid leaves on body (not cleaned up on error) */` +
+        `document.querySelectorAll('body>[id^=\"d'+prefix+'\"]').forEach(function(x){x.remove()});` +
         `if(scale>0){var svg=el.querySelector('svg');` +
         `if(svg){var mw=svg.style.maxWidth;` +
         `var natW=mw?parseFloat(mw):parseFloat(svg.getAttribute('width'));` +
