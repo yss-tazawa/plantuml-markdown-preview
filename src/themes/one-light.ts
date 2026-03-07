@@ -8,7 +8,7 @@
 import { buildThemeCss } from './base.js';
 
 /** Complete CSS string for the One Light theme. */
-export const css = buildThemeCss({
+const palette = {
     bg: '#fafafa',
     text: '#383a42',
     border: '#e0e0e0',
@@ -34,4 +34,6 @@ export const css = buildThemeCss({
     hljsAdditionColor: '#50a14f',
     hljsDeletionBg: '#ffeef0',
     hljsDeletionColor: '#e45649',
-});
+};
+export const bg = palette.bg;
+export const css = buildThemeCss(palette);

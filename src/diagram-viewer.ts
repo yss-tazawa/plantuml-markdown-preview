@@ -8,17 +8,7 @@
  */
 import * as vscode from 'vscode';
 import { writeFile } from 'fs/promises';
-import { getNonce, escapeHtml } from './utils.js';
-
-/**
- * Validate that a string looks like a CSS color value (rgb/rgba/hex/named).
- * Used to sanitize user-supplied bgColor before injecting into HTML templates,
- * preventing XSS via malicious CSS values.
- *
- * NOTE: This regex is duplicated as a string literal in the webview script
- * inside {@link getDiagramViewerHtml} (search for `cssColorRe`). Keep both in sync.
- */
-const CSS_COLOR_RE = /^(#[\da-fA-F]{3,8}|rgba?\(\s*[\d.%,\s/]+\)|transparent|inherit|currentColor|[\w-]+)$/;
+import { getNonce, escapeHtml, CSS_COLOR_RE } from './utils.js';
 
 /** Active viewer panels keyed by 1-based diagram index. */
 const viewers = new Map<number, vscode.WebviewPanel>();
@@ -219,7 +209,7 @@ async function handleViewerMessage(msg: { type: string; format?: string; data?: 
  * @param bgColor - Optional CSS background color from the preview theme
  * @returns Complete HTML string for the webview
  */
-function generateViewerHtml(svg: string, nonce: string, bgColor?: string): string {
+export function generateViewerHtml(svg: string, nonce: string, bgColor?: string): string {
     const containerBg = bgColor && CSS_COLOR_RE.test(bgColor.trim()) ? bgColor.trim() : '#fff';
     const labels = {
         fit: escapeHtml(vscode.l10n.t('Fit')),
@@ -286,6 +276,7 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: ${containe
 <div id="viewport">
     <div id="svg-container">${svg}</div>
 </div>
+<!-- TODO: extract shared pan & zoom script (shared with mermaid-preview.ts) -->
 <script nonce="${nonce}">
 (function() {
     var vscode = acquireVsCodeApi();

@@ -43,6 +43,7 @@ Switch between modes anytime with a single setting — no migration, no restart.
 - **Bidirectional scroll sync** — editor and preview scroll together, both ways
 - **Navigation & TOC** — go-to-top / go-to-bottom buttons and a Table of Contents sidebar in the preview panel
 - **Diagram Viewer** — click any diagram to open a pan & zoom panel with live sync and theme-matched background
+- **Standalone diagram preview** — open `.puml` and `.mmd` files directly with pan & zoom, live updates, and theme support — no Markdown wrapper needed
 - **Save diagrams as PNG / SVG** — right-click any diagram in the preview or Diagram Viewer to export it
 - **14 preview themes** — 8 light + 6 dark themes including GitHub, Atom, Solarized, Dracula, Monokai, and more
 - **Internationalization** — English, Chinese (Simplified), and Japanese UI
@@ -56,6 +57,7 @@ Switch between modes anytime with a single setting — no migration, no restart.
 - [Quick Start](#quick-start)
   - [Diagram Support](#diagram-support)
 - [Usage](#usage)
+  - [Open Diagram Preview](#open-diagram-preview)
 - [Configuration](#configuration)
 - [Keyboard Shortcuts](#keyboard-shortcuts)
 - [FAQ](#faq)
@@ -146,6 +148,18 @@ Click any PlantUML or Mermaid diagram in the preview to open it in a separate pa
 - Automatically closed when switching to a different source file
 - **Save as PNG / SVG** — right-click a diagram in the preview or Diagram Viewer to save it as a file
 - Disable with `enableDiagramViewer: false`
+
+### Standalone Diagram Preview
+
+Open `.puml`, `.plantuml`, `.pu`, `.mmd`, or `.mermaid` files directly — no Markdown wrapper needed.
+
+- Same pan & zoom UI as the Diagram Viewer
+- Live preview updates as you type (debounced)
+- Auto-follow when switching between files of the same type
+- Independent theme selection (preview theme + diagram theme)
+- Save as PNG / SVG via right-click
+- PlantUML: supports all three rendering modes (Fast / Secure / Easy)
+- Mermaid: rendered client-side using mermaid.js
 
 ### Bidirectional Scroll Sync
 
@@ -342,6 +356,14 @@ follow the steps for your platform below.
 
 The preview uses its own theming independent of VS Code — default is a white background (GitHub Light).
 
+### Open Diagram Preview
+
+Open `.puml` or `.mmd` files directly in a pan & zoom preview — no Markdown wrapper needed.
+
+- **Keyboard shortcut:** `Cmd+Alt+V` (Mac) / `Ctrl+Alt+V` (Windows / Linux) — same shortcut, auto-selects based on file type
+- **Context menu:** Right-click a `.puml` or `.mmd` file in the Explorer or editor → **Preview PlantUML File** / **Preview Mermaid File**
+- **Command Palette:** `PlantUML Markdown Preview: Preview PlantUML File` or `Preview Mermaid File`
+
 ### Export to HTML
 
 - **Context menu:** Right-click a `.md` file → **PlantUML Markdown Preview** → **Export as HTML**
@@ -367,6 +389,7 @@ The PDF file is saved alongside the source `.md` file. Chrome, Edge, or Chromium
 
 - **Preview panel:** Right-click a diagram → **Save Diagram as PNG** or **Save Diagram as SVG**
 - **Diagram Viewer:** Right-click inside the viewer → **Save Diagram as PNG** or **Save Diagram as SVG**
+- **Standalone diagram preview:** Right-click inside the preview → **Save Diagram as PNG** or **Save Diagram as SVG**
 
 ### Navigation
 
@@ -470,7 +493,9 @@ All settings use the `plantumlMarkdownPreview.` prefix.
 
 | Command | Mac | Windows / Linux |
 |---------|-----|-----------------|
-| Open Preview to Side | `Cmd+Alt+V` | `Ctrl+Alt+V` |
+| Open Preview to Side (Markdown) | `Cmd+Alt+V` | `Ctrl+Alt+V` |
+| Preview PlantUML File | `Cmd+Alt+V` | `Ctrl+Alt+V` |
+| Preview Mermaid File | `Cmd+Alt+V` | `Ctrl+Alt+V` |
 
 ## FAQ
 

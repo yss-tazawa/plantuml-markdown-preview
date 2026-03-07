@@ -8,7 +8,7 @@
 import { buildThemeCss } from './base.js';
 
 /** Complete CSS string for the One Dark theme. */
-export const css = buildThemeCss({
+const palette = {
     bg: '#282c34',
     text: '#abb2bf',
     headingColor: '#e6edf3',
@@ -35,4 +35,6 @@ export const css = buildThemeCss({
     hljsAdditionColor: '#98c379',
     hljsDeletionBg: '#3b1c1c',
     hljsDeletionColor: '#e06c75',
-});
+};
+export const bg = palette.bg;
+export const css = buildThemeCss(palette);

@@ -8,7 +8,7 @@
 import { buildThemeCss } from './base.js';
 
 /** Complete CSS string for the Vue theme. */
-export const css = buildThemeCss({
+const palette = {
     bg: '#ffffff',
     text: '#34495e',
     headingColor: '#2c3e50',
@@ -36,4 +36,6 @@ export const css = buildThemeCss({
     hljsAdditionColor: '#42b983',
     hljsDeletionBg: '#ffeef0',
     hljsDeletionColor: '#c82829',
-});
+};
+export const bg = palette.bg;
+export const css = buildThemeCss(palette);

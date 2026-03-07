@@ -8,7 +8,7 @@
 import { buildThemeCss } from './base.js';
 
 /** Complete CSS string for the GitHub Light theme. */
-export const css = buildThemeCss({
+const palette = {
     bg: '#ffffff',
     text: '#24292e',
     border: '#e1e4e8',
@@ -35,4 +35,6 @@ export const css = buildThemeCss({
     hljsAdditionColor: '#22863a',
     hljsDeletionBg: '#ffeef0',
     hljsDeletionColor: '#b31d28',
-});
+};
+export const bg = palette.bg;
+export const css = buildThemeCss(palette);

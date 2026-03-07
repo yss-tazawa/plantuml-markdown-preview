@@ -3,6 +3,8 @@
   "description": "3 modes to fit your workflow. Render PlantUML & Mermaid inline — fast, secure, or zero-setup.",
   "submenu.label": "PlantUML Markdown Preview",
   "command.openPreview.title": "Open Preview to Side",
+  "command.openPumlPreview.title": "Preview PlantUML File",
+  "command.openMermaidPreview.title": "Preview Mermaid File",
   "command.exportHtml.title": "Export as HTML",
   "command.exportHtmlAndOpen.title": "Export as HTML & Open in Browser",
   "command.exportHtmlFitToWidth.title": "Export as HTML (Fit to Width)",

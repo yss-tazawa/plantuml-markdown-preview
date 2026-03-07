@@ -8,7 +8,7 @@
 import { buildThemeCss } from './base.js';
 
 /** Complete CSS string for the Monokai theme. */
-export const css = buildThemeCss({
+const palette = {
     bg: '#272822',
     text: '#f8f8f2',
     border: '#49483e',
@@ -34,4 +34,6 @@ export const css = buildThemeCss({
     hljsAdditionColor: '#a6e22e',
     hljsDeletionBg: '#3b1818',
     hljsDeletionColor: '#f92672',
-});
+};
+export const bg = palette.bg;
+export const css = buildThemeCss(palette);

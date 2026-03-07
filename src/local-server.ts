@@ -87,54 +87,70 @@ export async function startLocalServer(config: Config): Promise<void> {
         });
     }
 
-    try {
-        const port = await findFreePort(config.plantumlLocalServerPort);
-        serverPort = port;
+    const MAX_PORT_RETRIES = 3;
+    const useAutoPort = config.plantumlLocalServerPort <= 0;
 
-        const args = buildArgs(config, port);
-        log(`[local-server] Starting: java ${args.join(' ')}`);
+    for (let attempt = 0; attempt < MAX_PORT_RETRIES; attempt++) {
+        try {
+            const port = await findFreePort(config.plantumlLocalServerPort);
+            serverPort = port;
 
-        const child = spawnJava(config.javaPath, args, {
-            stdio: ['ignore', 'pipe', 'pipe'],
-        });
-        serverProcess = child;
-        stoppingIntentionally = false;
+            const args = buildArgs(config, port);
+            log(`[local-server] Starting: java ${args.join(' ')}`);
 
-        let stderrBuf = '';
-        child.stdout?.on('data', (chunk: Buffer) => log(`[local-server stdout] ${chunk.toString().trimEnd()}`));
-        child.stderr?.on('data', (chunk: Buffer) => {
-            const text = chunk.toString().trimEnd();
-            log(`[local-server stderr] ${text}`);
-            stderrBuf += text + '\n';
-        });
+            const child = spawnJava(config.javaPath, args, {
+                stdio: ['ignore', 'pipe', 'pipe'],
+            });
+            serverProcess = child;
+            stoppingIntentionally = false;
 
-        child.on('error', (err) => {
-            log(`[local-server] Process error: ${err.message}`);
-            handleCrash(err.message, config, stderrBuf);
-        });
+            let stderrBuf = '';
+            child.stdout?.on('data', (chunk: Buffer) => log(`[local-server stdout] ${chunk.toString().trimEnd()}`));
+            child.stderr?.on('data', (chunk: Buffer) => {
+                const text = chunk.toString().trimEnd();
+                log(`[local-server stderr] ${text}`);
+                stderrBuf += text + '\n';
+            });
 
-        child.on('exit', (code, signal) => {
+            child.on('error', (err) => {
+                log(`[local-server] Process error: ${err.message}`);
+                handleCrash(err.message, config, stderrBuf);
+            });
+
+            child.on('exit', (code, signal) => {
+                if (stoppingIntentionally) return;
+                const reason = signal ? `signal ${signal}` : `exit code ${code}`;
+                log(`[local-server] Process exited unexpectedly: ${reason}`);
+                handleCrash(reason, config, stderrBuf);
+            });
+
+            await waitForReady(port);
             if (stoppingIntentionally) return;
-            const reason = signal ? `signal ${signal}` : `exit code ${code}`;
-            log(`[local-server] Process exited unexpectedly: ${reason}`);
-            handleCrash(reason, config, stderrBuf);
-        });
 
-        await waitForReady(port);
-        if (stoppingIntentionally) return;
+            serverUrl = `http://127.0.0.1:${port}`;
+            serverState = 'running';
+            readyResolve?.();
+            log(`[local-server] Ready on port ${port}`);
 
-        serverUrl = `http://127.0.0.1:${port}`;
-        serverState = 'running';
-        readyResolve?.();
-        log(`[local-server] Ready on port ${port}`);
-
-        void vscode.window.showInformationMessage(
-            vscode.l10n.t('Local PlantUML server started.')
-        );
-    } catch (err) {
-        serverState = 'error';
-        readyReject?.(err as Error);
-        log(`[local-server] Failed to start: ${(err as Error).message}`);
+            void vscode.window.showInformationMessage(
+                vscode.l10n.t('Local PlantUML server started.')
+            );
+            return;
+        } catch (err) {
+            // Kill the failed child process before retrying
+            if (serverProcess && !serverProcess.killed) {
+                stoppingIntentionally = true;
+                serverProcess.kill();
+                serverProcess = null;
+            }
+            if (!useAutoPort || attempt === MAX_PORT_RETRIES - 1) {
+                serverState = 'error';
+                readyReject?.(err as Error);
+                log(`[local-server] Failed to start: ${(err as Error).message}`);
+                return;
+            }
+            log(`[local-server] Port may be in use, retrying (${attempt + 1}/${MAX_PORT_RETRIES})...`);
+        }
     }
 }
 

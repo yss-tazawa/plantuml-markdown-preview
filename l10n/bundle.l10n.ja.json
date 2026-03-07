@@ -58,5 +58,7 @@
   "Diagram saved: {0}": "ダイアグラムを保存しました: {0}",
   "Failed to save diagram: {0}": "ダイアグラムの保存に失敗しました: {0}",
   "No diagram selected. Right-click a diagram or open it in the Diagram Viewer first.": "ダイアグラムが選択されていません。ダイアグラムを右クリックするか、ダイアグラムビューアーで開いてください。",
-  "Failed to open file: {0}": "ファイルを開けませんでした: {0}"
+  "Failed to open file: {0}": "ファイルを開けませんでした: {0}",
+  "No PlantUML file is selected.": "PlantUML ファイルが選択されていません。",
+  "No Mermaid file is selected.": "Mermaid ファイルが選択されていません。"
 }

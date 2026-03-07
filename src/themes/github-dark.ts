@@ -8,7 +8,7 @@
 import { buildThemeCss } from './base.js';
 
 /** Complete CSS string for the GitHub Dark theme. */
-export const css = buildThemeCss({
+const palette = {
     bg: '#0d1117',
     text: '#e6edf3',
     border: '#21262d',
@@ -37,4 +37,6 @@ export const css = buildThemeCss({
     hljsAdditionColor: '#aff5b4',
     hljsDeletionBg: '#67060c',
     hljsDeletionColor: '#ffdcd7',
-});
+};
+export const bg = palette.bg;
+export const css = buildThemeCss(palette);

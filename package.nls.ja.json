@@ -3,6 +3,8 @@
   "description": "3つのモードでワークフローに合わせて使える。PlantUML & Mermaid をインラインでレンダリング — 高速・安全・セットアップ不要。",
   "submenu.label": "PlantUML Markdown Preview",
   "command.openPreview.title": "サイドにプレビューを開く",
+  "command.openPumlPreview.title": "PlantUML ファイルをプレビュー",
+  "command.openMermaidPreview.title": "Mermaid ファイルをプレビュー",
   "command.exportHtml.title": "HTML としてエクスポート",
   "command.exportHtmlAndOpen.title": "HTML にエクスポートしてブラウザで開く",
   "command.exportHtmlFitToWidth.title": "HTML としてエクスポート（幅に合わせる）",

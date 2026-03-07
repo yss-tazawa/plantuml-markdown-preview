@@ -8,7 +8,7 @@
 import { buildThemeCss } from './base.js';
 
 /** Complete CSS string for the Atom Light theme. */
-export const css = buildThemeCss({
+const palette = {
     bg: '#ffffff',
     text: '#555555',
     headingColor: '#111111',
@@ -35,4 +35,6 @@ export const css = buildThemeCss({
     hljsAdditionColor: '#50a14f',
     hljsDeletionBg: '#ffeef0',
     hljsDeletionColor: '#e45649',
-});
+};
+export const bg = palette.bg;
+export const css = buildThemeCss(palette);

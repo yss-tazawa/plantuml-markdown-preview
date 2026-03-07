@@ -2,7 +2,7 @@
   "name": "plantuml-markdown-preview",
   "displayName": "%displayName%",
   "description": "%description%",
-  "version": "0.4.10",
+  "version": "0.5.0",
   "license": "MIT",
   "publisher": "yss-tazawa",
   "icon": "images/icon.png",
@@ -33,11 +33,33 @@
   "activationEvents": [],
   "main": "./dist/extension.js",
   "contributes": {
+    "languages": [
+      {
+        "id": "plantuml",
+        "aliases": ["PlantUML"],
+        "extensions": [".puml", ".plantuml", ".pu"]
+      },
+      {
+        "id": "mermaid",
+        "aliases": ["Mermaid"],
+        "extensions": [".mmd", ".mermaid"]
+      }
+    ],
     "markdown.markdownItPlugins": true,
     "commands": [
       {
         "command": "plantuml-markdown-preview.openPreview",
         "title": "%command.openPreview.title%",
+        "category": "%command.category%"
+      },
+      {
+        "command": "plantuml-markdown-preview.openPumlPreview",
+        "title": "%command.openPumlPreview.title%",
+        "category": "%command.category%"
+      },
+      {
+        "command": "plantuml-markdown-preview.openMermaidPreview",
+        "title": "%command.openMermaidPreview.title%",
         "category": "%command.category%"
       },
       {
@@ -99,6 +121,16 @@
           "submenu": "plantuml-markdown-preview.submenu",
           "when": "resourceExtname == .md",
           "group": "plantuml-markdown-preview"
+        },
+        {
+          "command": "plantuml-markdown-preview.openPumlPreview",
+          "when": "resourceExtname == .puml || resourceExtname == .plantuml || resourceExtname == .pu",
+          "group": "plantuml-markdown-preview"
+        },
+        {
+          "command": "plantuml-markdown-preview.openMermaidPreview",
+          "when": "resourceExtname == .mmd || resourceExtname == .mermaid",
+          "group": "plantuml-markdown-preview"
         }
       ],
       "editor/context": [
@@ -106,12 +138,32 @@
           "submenu": "plantuml-markdown-preview.submenu",
           "when": "editorLangId == markdown",
           "group": "plantuml-markdown-preview"
+        },
+        {
+          "command": "plantuml-markdown-preview.openPumlPreview",
+          "when": "editorLangId == plantuml",
+          "group": "plantuml-markdown-preview"
+        },
+        {
+          "command": "plantuml-markdown-preview.openMermaidPreview",
+          "when": "editorLangId == mermaid",
+          "group": "plantuml-markdown-preview"
         }
       ],
       "editor/title": [
         {
           "command": "plantuml-markdown-preview.changeTheme",
           "when": "activeWebviewPanelId == 'plantumlMarkdownPreview'",
+          "group": "navigation"
+        },
+        {
+          "command": "plantuml-markdown-preview.changeTheme",
+          "when": "activeWebviewPanelId == 'plantumlPumlPreview'",
+          "group": "navigation"
+        },
+        {
+          "command": "plantuml-markdown-preview.changeTheme",
+          "when": "activeWebviewPanelId == 'plantumlMermaidPreview'",
           "group": "navigation"
         }
       ],
@@ -165,6 +217,26 @@
           "command": "plantuml-markdown-preview.saveDiagramAsSvg",
           "when": "webviewId == 'plantumlMarkdownPreview' && webviewSection == 'diagram'",
           "group": "5_diagram@2"
+        },
+        {
+          "command": "plantuml-markdown-preview.saveDiagramAsPng",
+          "when": "webviewId == 'plantumlPumlPreview'",
+          "group": "1_save@1"
+        },
+        {
+          "command": "plantuml-markdown-preview.saveDiagramAsSvg",
+          "when": "webviewId == 'plantumlPumlPreview'",
+          "group": "1_save@2"
+        },
+        {
+          "command": "plantuml-markdown-preview.saveDiagramAsPng",
+          "when": "webviewId == 'plantumlMermaidPreview'",
+          "group": "1_save@1"
+        },
+        {
+          "command": "plantuml-markdown-preview.saveDiagramAsSvg",
+          "when": "webviewId == 'plantumlMermaidPreview'",
+          "group": "1_save@2"
         }
       ],
       "plantuml-markdown-preview.submenu": [
@@ -204,6 +276,18 @@
         "key": "ctrl+alt+v",
         "mac": "cmd+alt+v",
         "when": "editorLangId == markdown"
+      },
+      {
+        "command": "plantuml-markdown-preview.openPumlPreview",
+        "key": "ctrl+alt+v",
+        "mac": "cmd+alt+v",
+        "when": "editorLangId == plantuml"
+      },
+      {
+        "command": "plantuml-markdown-preview.openMermaidPreview",
+        "key": "ctrl+alt+v",
+        "mac": "cmd+alt+v",
+        "when": "editorLangId == mermaid"
       }
     ],
     "configuration": {

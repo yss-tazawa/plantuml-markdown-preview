@@ -8,7 +8,7 @@
 import { buildThemeCss } from './base.js';
 
 /** Complete CSS string for the Pen Paper Coffee theme. */
-export const css = buildThemeCss({
+const palette = {
     bg: '#f5f0e7',
     text: '#4a4543',
     headingColor: '#3b3836',
@@ -35,4 +35,6 @@ export const css = buildThemeCss({
     hljsAdditionColor: '#6b8e23',
     hljsDeletionBg: '#f0d8d8',
     hljsDeletionColor: '#cd5c5c',
-});
+};
+export const bg = palette.bg;
+export const css = buildThemeCss(palette);

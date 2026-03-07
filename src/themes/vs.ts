@@ -8,7 +8,7 @@
 import { buildThemeCss } from './base.js';
 
 /** Complete CSS string for the Visual Studio Light theme. */
-export const css = buildThemeCss({
+const palette = {
     bg: '#ffffff',
     text: '#1e1e1e',
     border: '#e7e7e7',
@@ -34,4 +34,6 @@ export const css = buildThemeCss({
     hljsAdditionColor: '#008000',
     hljsDeletionBg: '#ffeef0',
     hljsDeletionColor: '#a31515',
-});
+};
+export const bg = palette.bg;
+export const css = buildThemeCss(palette);

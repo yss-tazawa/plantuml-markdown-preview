@@ -7,7 +7,7 @@
 import { buildThemeCss } from './base.js';
 
 /** Complete CSS string for the Dracula theme. */
-export const css = buildThemeCss({
+const palette = {
     bg: '#282a36',
     text: '#f8f8f2',
     headingColor: '#f8f8f2',
@@ -34,4 +34,6 @@ export const css = buildThemeCss({
     hljsAdditionColor: '#50fa7b',
     hljsDeletionBg: '#5b1818',
     hljsDeletionColor: '#ff5555',
-});
+};
+export const bg = palette.bg;
+export const css = buildThemeCss(palette);

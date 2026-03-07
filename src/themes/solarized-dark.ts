@@ -7,7 +7,7 @@
 import { buildThemeCss } from './base.js';
 
 /** Complete CSS string for the Solarized Dark theme. */
-export const css = buildThemeCss({
+const palette = {
     bg: '#002b36',
     text: '#839496',
     headingColor: '#93a1a1',
@@ -34,4 +34,6 @@ export const css = buildThemeCss({
     hljsAdditionColor: '#859900',
     hljsDeletionBg: '#3b0a0a',
     hljsDeletionColor: '#dc322f',
-});
+};
+export const bg = palette.bg;
+export const css = buildThemeCss(palette);

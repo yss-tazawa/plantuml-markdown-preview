@@ -7,7 +7,7 @@
 import { buildThemeCss } from './base.js';
 
 /** Complete CSS string for the Solarized Light theme. */
-export const css = buildThemeCss({
+const palette = {
     bg: '#fdf6e3',
     text: '#657b83',
     headingColor: '#586e75',
@@ -35,4 +35,6 @@ export const css = buildThemeCss({
     hljsAdditionColor: '#859900',
     hljsDeletionBg: '#fbe3e3',
     hljsDeletionColor: '#dc322f',
-});
+};
+export const bg = palette.bg;
+export const css = buildThemeCss(palette);
