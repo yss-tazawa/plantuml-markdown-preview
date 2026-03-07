@@ -261,6 +261,12 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: ${containe
     mermaid.initialize({ startOnLoad: false, theme: '${safeMermaidTheme}' });
     var lastSource = '';
 
+    function removeMermaidTempElements() {
+        // mermaid.render() appends temp divs (id="d" + renderId) to document.body
+        // and does NOT remove them when an error is thrown.
+        document.querySelectorAll('body > [id^="dmermaid-svg-"]').forEach(function(el) { el.remove(); });
+    }
+
     async function renderMermaid(source) {
         lastSource = source;
         var id = 'mermaid-svg-' + (renderCounter++);
@@ -293,6 +299,7 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: ${containe
             container.innerHTML = '';
             container.appendChild(errorDiv);
         }
+        removeMermaidTempElements();
     }
 
     // Message handler
