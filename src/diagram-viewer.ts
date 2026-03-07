@@ -23,11 +23,12 @@ const viewers = new Map<number, vscode.WebviewPanel>();
  *
  * @param svg - innerHTML of the .plantuml-diagram element
  * @param diagramIndex - 1-based position of the diagram in the document
+ * @param bgColor - CSS background color from the markdown preview theme
  */
 export function openDiagramViewer(svg: string, diagramIndex: number, bgColor?: string): void {
     const existing = viewers.get(diagramIndex);
     if (existing) {
-        existing.webview.postMessage({ type: 'updateSvg', svg, bgColor });
+        void existing.webview.postMessage({ type: 'updateSvg', svg, bgColor });
         return;
     }
 
@@ -50,6 +51,7 @@ export function openDiagramViewer(svg: string, diagramIndex: number, bgColor?: s
  *
  * @param diagramIndex - 1-based diagram index
  * @param svg - Updated innerHTML of the .plantuml-diagram element
+ * @param bgColor - CSS background color from the markdown preview theme
  */
 export function updateDiagramViewer(diagramIndex: number, svg: string, bgColor?: string): void {
     const panel = viewers.get(diagramIndex);
@@ -79,6 +81,8 @@ function generateViewerHtml(svg: string, nonce: string, bgColor?: string): strin
     const labels = {
         fit: escapeHtml(vscode.l10n.t('Fit')),
         fitTitle: escapeHtml(vscode.l10n.t('Fit to Window')),
+        actualSize: escapeHtml(vscode.l10n.t('Actual Size')),
+        actualSizeTitle: escapeHtml(vscode.l10n.t('Actual Size (1:1)')),
         zoomIn: escapeHtml(vscode.l10n.t('Zoom In')),
         zoomOut: escapeHtml(vscode.l10n.t('Zoom Out')),
     };
@@ -102,7 +106,7 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: ${containe
 #toolbar button {
     background: var(--vscode-button-secondaryBackground, #3a3d41);
     color: var(--vscode-button-secondaryForeground, #ccc);
-    border: none; border-radius: 4px;
+    border: 1px solid var(--vscode-contrastBorder, rgba(255,255,255,0.1)); border-radius: 4px;
     height: 24px; padding: 0 8px;
     font-size: 12px; cursor: pointer;
     display: flex; align-items: center; justify-content: center;
@@ -131,7 +135,7 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: ${containe
 <body>
 <div id="toolbar">
     <button id="btn-fit" title="${labels.fitTitle}">${labels.fit}</button>
-    <button id="btn-100" title="1:1">1:1</button>
+    <button id="btn-100" title="${labels.actualSizeTitle}">${labels.actualSize}</button>
     <button id="btn-zoom-out" title="${labels.zoomOut}">&minus;</button>
     <span id="zoom-label">100%</span>
     <button id="btn-zoom-in" title="${labels.zoomIn}">+</button>

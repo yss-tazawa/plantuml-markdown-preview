@@ -315,22 +315,37 @@ interface Anchor {
     const observer = new MutationObserver(function () { anchors = null; });
     observer.observe(document.body, { childList: true, subtree: true });
 
-    /** Make diagrams clickable to open in the diagram viewer. */
-    function setupDiagramClickHandlers(): void {
-        if (!ENABLE_DIAGRAM_VIEWER) return;
-        const diagrams = document.querySelectorAll('.plantuml-diagram, .mermaid-diagram');
-        for (let i = 0; i < diagrams.length; i++) {
-            const el = diagrams[i] as HTMLElement;
-            el.style.cursor = 'pointer';
-            el.addEventListener('click', function () {
-                if (window.getSelection()?.toString().length) return;
-                vscode.postMessage({
-                    type: 'openDiagramViewer',
-                    svg: el.innerHTML,
-                    diagramIndex: i + 1,
-                    bgColor: getComputedStyle(document.body).backgroundColor
-                });
+    /** Delegated click handler for opening diagrams in the viewer (registered once on body). */
+    if (ENABLE_DIAGRAM_VIEWER) {
+        document.body.addEventListener('click', function (event) {
+            var target = event.target as Element | null;
+            if (!target) return;
+            var svg = target.closest('svg');
+            if (!svg) return;
+            var diagram = svg.closest('.plantuml-diagram, .mermaid-diagram');
+            if (!diagram) return;
+            if (window.getSelection()?.toString().length) return;
+            var diagrams = document.querySelectorAll('.plantuml-diagram, .mermaid-diagram');
+            var index = -1;
+            for (var i = 0; i < diagrams.length; i++) {
+                if (diagrams[i] === diagram) { index = i; break; }
+            }
+            if (index < 0) return;
+            vscode.postMessage({
+                type: 'openDiagramViewer',
+                svg: (diagram as HTMLElement).innerHTML,
+                diagramIndex: index + 1,
+                bgColor: getComputedStyle(document.body).backgroundColor
             });
+        });
+    }
+
+    /** Set pointer cursor on SVGs inside diagram elements. */
+    function updateDiagramCursors(): void {
+        if (!ENABLE_DIAGRAM_VIEWER) return;
+        var svgs = document.querySelectorAll('.plantuml-diagram svg, .mermaid-diagram svg');
+        for (var i = 0; i < svgs.length; i++) {
+            (svgs[i] as HTMLElement).style.cursor = 'pointer';
         }
     }
 
@@ -373,11 +388,11 @@ interface Anchor {
 
         if (update.hasMermaid && typeof win.__renderMermaid === 'function') {
             win.__renderMermaid().then(function () {
-                setupDiagramClickHandlers();
+                updateDiagramCursors();
                 notifyDiagramViewers();
             });
         } else {
-            setupDiagramClickHandlers();
+            updateDiagramCursors();
             notifyDiagramViewers();
         }
 
@@ -577,16 +592,16 @@ interface Anchor {
         });
     }
 
-    /** Set up diagram click handlers on initial HTML load. */
+    /** Set diagram cursor styles on initial HTML load. */
     window.addEventListener('load', function () {
         var done = win.__renderMermaidDone;
         if (done && typeof done.then === 'function') {
             done.then(function () {
-                setupDiagramClickHandlers();
+                updateDiagramCursors();
                 notifyDiagramViewers();
             });
         } else {
-            setupDiagramClickHandlers();
+            updateDiagramCursors();
             notifyDiagramViewers();
         }
     });

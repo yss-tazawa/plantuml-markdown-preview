@@ -51,6 +51,8 @@
   "Diagram {0} (Viewer)": "Diagram {0} (Viewer)",
   "Fit": "Fit",
   "Fit to Window": "Fit to Window",
+  "Actual Size": "Actual Size",
+  "Actual Size (1:1)": "Actual Size (1:1)",
   "Zoom In": "Zoom In",
   "Zoom Out": "Zoom Out"
 }

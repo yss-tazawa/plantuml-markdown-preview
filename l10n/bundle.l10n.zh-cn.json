@@ -51,6 +51,8 @@
   "Diagram {0} (Viewer)": "图表 {0}（查看器）",
   "Fit": "适应",
   "Fit to Window": "适应窗口",
+  "Actual Size": "实际大小",
+  "Actual Size (1:1)": "实际大小 (1:1)",
   "Zoom In": "放大",
   "Zoom Out": "缩小"
 }

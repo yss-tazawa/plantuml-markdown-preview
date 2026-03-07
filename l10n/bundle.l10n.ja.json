@@ -51,6 +51,8 @@
   "Diagram {0} (Viewer)": "ダイアグラム {0}（ビューアー）",
   "Fit": "全体",
   "Fit to Window": "画面サイズに合わせる",
+  "Actual Size": "等倍",
+  "Actual Size (1:1)": "等倍 (1:1)",
   "Zoom In": "拡大",
   "Zoom Out": "縮小"
 }
