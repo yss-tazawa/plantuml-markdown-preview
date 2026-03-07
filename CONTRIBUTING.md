@@ -66,6 +66,10 @@ src/
   plantuml-server.ts PlantUML server rendering (HTTP fetch, encoding, LRU cache)
   local-server.ts   Local PlantUML picoweb server management
   exporter.ts       HTML export with inline SVG and syntax highlighting
+  diagram-viewer.ts Pan & zoom viewer for embedded PlantUML diagrams
+  puml-preview.ts   Standalone PlantUML file preview (.puml / .plantuml / .pu)
+  mermaid-preview.ts Standalone Mermaid file preview (.mmd / .mermaid)
+  export-handler.ts Shared PNG/SVG export handler for viewer webviews
   scroll-sync.ts    Bidirectional editor ↔ preview scroll sync
   browser-finder.ts Detect Chrome/Edge/Chromium for headless PDF export
   utils.ts          Shared utilities (escapeHtml, getNonce, errorHtml, fence regex, Java process helpers, LRU cache)

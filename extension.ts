@@ -22,6 +22,8 @@ import { openPreview, getCurrentFilePath, getLastRenderFailed, updateConfig, cha
 import { execJava } from './src/utils.js';
 import { clearBrowserCache } from './src/browser-finder.js';
 import { disposeAllViewers, saveDiagramFromViewer } from './src/diagram-viewer.js';
+import { openPumlPreview, updatePumlConfig, getCurrentPumlFilePath, disposePumlPreview, getPumlPreviewPanel, changePumlTheme } from './src/puml-preview.js';
+import { openMermaidPreview, updateMermaidConfig, getCurrentMermaidFilePath, disposeMermaidPreview, getMermaidPreviewPanel, changeMermaidTheme } from './src/mermaid-preview.js';
 import { CONFIG_SECTION, MODE_PRESETS, type Config, type Mode } from './src/config.js';
 import type MarkdownIt from 'markdown-it';
 
@@ -120,6 +122,43 @@ function resolveMarkdownPath(uri?: vscode.Uri): string | null {
     return fsPath?.endsWith('.md') ? fsPath : null;
 }
 
+/** PlantUML file extensions supported for standalone preview. */
+const PUML_EXTENSIONS = ['.puml', '.plantuml', '.pu'];
+
+/**
+ * Check whether a file path has a PlantUML extension.
+ */
+function isPumlFile(fsPath: string): boolean {
+    return PUML_EXTENSIONS.some(ext => fsPath.endsWith(ext));
+}
+
+/**
+ * Resolve the target PlantUML file path from available sources.
+ *
+ * @param [uri] - URI passed from a command invocation.
+ * @returns Absolute .puml file path, or null if unavailable.
+ */
+function resolvePumlPath(uri?: vscode.Uri): string | null {
+    const fsPath = uri?.fsPath
+        || vscode.window.activeTextEditor?.document.uri.fsPath
+        || getCurrentPumlFilePath();
+    return fsPath && isPumlFile(fsPath) ? fsPath : null;
+}
+
+/** Mermaid file extensions supported for standalone preview. */
+const MERMAID_EXTENSIONS = ['.mmd', '.mermaid'];
+
+function isMermaidFile(fsPath: string): boolean {
+    return MERMAID_EXTENSIONS.some(ext => fsPath.endsWith(ext));
+}
+
+function resolveMermaidPath(uri?: vscode.Uri): string | null {
+    const fsPath = uri?.fsPath
+        || vscode.window.activeTextEditor?.document.uri.fsPath
+        || getCurrentMermaidFilePath();
+    return fsPath && isMermaidFile(fsPath) ? fsPath : null;
+}
+
 /**
  * Validate the Markdown file path, verify jarPath setting, and run export.
  *
@@ -191,7 +230,7 @@ function openInDefaultApp(filePath: string): void {
     }
     const cmd = process.platform === 'win32' ? 'explorer.exe'
         : process.platform === 'darwin' ? 'open' : 'xdg-open';
-    void execFile(cmd, [filePath], (err) => {
+    execFile(cmd, [filePath], (err) => {
         // explorer.exe returns exit code 1 on success; only show errors on non-Windows platforms
         if (err && process.platform !== 'win32') {
             vscode.window.showErrorMessage(vscode.l10n.t('Failed to open file: {0}', err.message));
@@ -392,24 +431,106 @@ export function activate(context: vscode.ExtensionContext): { extendMarkdownIt: 
         }
     );
 
+    const pumlPreviewCmd = vscode.commands.registerCommand(
+        'plantuml-markdown-preview.openPumlPreview',
+        async (uri?: vscode.Uri) => {
+            const filePath = resolvePumlPath(uri);
+            if (!filePath) {
+                vscode.window.showErrorMessage(vscode.l10n.t('No PlantUML file is selected.'));
+                return;
+            }
+            const config = getConfig();
+            void vscode.window.withProgress(
+                { location: vscode.ProgressLocation.Notification, title: vscode.l10n.t('Opening preview...') },
+                async () => {
+                    await openPumlPreview(filePath, config);
+                    checkJavaAvailability(config).catch(() => {});
+                }
+            );
+        }
+    );
+
+    const mermaidPreviewCmd = vscode.commands.registerCommand(
+        'plantuml-markdown-preview.openMermaidPreview',
+        async (uri?: vscode.Uri) => {
+            const filePath = resolveMermaidPath(uri);
+            if (!filePath) {
+                vscode.window.showErrorMessage(vscode.l10n.t('No Mermaid file is selected.'));
+                return;
+            }
+            const config = getConfig();
+            await openMermaidPreview(filePath, config, context.extensionUri);
+        }
+    );
+
     const changeThemeCmd = vscode.commands.registerCommand(
         'plantuml-markdown-preview.changeTheme',
-        () => void changeTheme()
+        () => {
+            if (getMermaidPreviewPanel()?.active) {
+                void changeMermaidTheme();
+            } else if (getPumlPreviewPanel()?.active) {
+                void changePumlTheme();
+            } else {
+                void changeTheme();
+            }
+        }
     );
 
     const savePngCmd = vscode.commands.registerCommand(
         'plantuml-markdown-preview.saveDiagramAsPng',
-        () => saveDiagramFromViewer('png', getPreviewPanel() ?? undefined)
+        () => {
+            const mermaidPanel = getMermaidPreviewPanel();
+            if (mermaidPanel?.active) {
+                void mermaidPanel.webview.postMessage({ type: 'exportDiagram', format: 'png' });
+                return;
+            }
+            const pumlPanel = getPumlPreviewPanel();
+            if (pumlPanel?.active) {
+                void pumlPanel.webview.postMessage({ type: 'exportDiagram', format: 'png' });
+            } else {
+                saveDiagramFromViewer('png', getPreviewPanel() ?? undefined);
+            }
+        }
     );
     const saveSvgCmd = vscode.commands.registerCommand(
         'plantuml-markdown-preview.saveDiagramAsSvg',
-        () => saveDiagramFromViewer('svg', getPreviewPanel() ?? undefined)
+        () => {
+            const mermaidPanel = getMermaidPreviewPanel();
+            if (mermaidPanel?.active) {
+                void mermaidPanel.webview.postMessage({ type: 'exportDiagram', format: 'svg' });
+                return;
+            }
+            const pumlPanel = getPumlPreviewPanel();
+            if (pumlPanel?.active) {
+                void pumlPanel.webview.postMessage({ type: 'exportDiagram', format: 'svg' });
+            } else {
+                saveDiagramFromViewer('svg', getPreviewPanel() ?? undefined);
+            }
+        }
     );
 
     const editorTracker = vscode.window.onDidChangeActiveTextEditor((editor) => {
         if (!editor) return;
-        if (!getCurrentFilePath()) return;
         const filePath = editor.document.uri.fsPath;
+
+        // Track .mermaid files
+        if (isMermaidFile(filePath) && getCurrentMermaidFilePath()) {
+            if (filePath !== getCurrentMermaidFilePath()) {
+                void openMermaidPreview(filePath, getConfig(), context.extensionUri);
+            }
+            return;
+        }
+
+        // Track .puml files
+        if (isPumlFile(filePath) && getCurrentPumlFilePath()) {
+            if (filePath !== getCurrentPumlFilePath()) {
+                void openPumlPreview(filePath, getConfig());
+            }
+            return;
+        }
+
+        // Track .md files
+        if (!getCurrentFilePath()) return;
         if (!filePath.endsWith('.md')) return;
         if (filePath === getCurrentFilePath() && !getLastRenderFailed()) return;
         void openPreview(filePath, getConfig(), true);
@@ -424,11 +545,13 @@ export function activate(context: vscode.ExtensionContext): { extendMarkdownIt: 
             lastKnownConfig = config;
 
             updateConfig(config);
+            updatePumlConfig(config);
+            updateMermaidConfig(config);
             syncBuiltInPreviewConfig(config);
         }
     });
 
-    context.subscriptions.push(exportCmd, exportAndOpenCmd, exportHtmlFitCmd, exportHtmlFitAndOpenCmd, exportPdfCmd, exportPdfAndOpenCmd, previewCmd, changeThemeCmd, savePngCmd, saveSvgCmd, editorTracker, configWatcher);
+    context.subscriptions.push(exportCmd, exportAndOpenCmd, exportHtmlFitCmd, exportHtmlFitAndOpenCmd, exportPdfCmd, exportPdfAndOpenCmd, previewCmd, pumlPreviewCmd, mermaidPreviewCmd, changeThemeCmd, savePngCmd, saveSvgCmd, editorTracker, configWatcher);
 
     // Start local PlantUML picoweb server if local-server mode is selected.
     // prepareLocalServer() pre-creates the readyPromise so that any preview
@@ -521,6 +644,8 @@ export function deactivate(): void {
     clearMdCache();
     clearBrowserCache();
     disposeAllViewers();
+    disposePumlPreview();
+    disposeMermaidPreview();
     disposePreview();
 }
 

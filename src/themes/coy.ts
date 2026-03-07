@@ -8,7 +8,7 @@
 import { buildThemeCss } from './base.js';
 
 /** Complete CSS string for the Coy theme. */
-export const css = buildThemeCss({
+const palette = {
     bg: '#fdfdfd',
     text: '#333333',
     border: '#e8e8e8',
@@ -34,4 +34,6 @@ export const css = buildThemeCss({
     hljsAdditionColor: '#669900',
     hljsDeletionBg: '#ffeef0',
     hljsDeletionColor: '#dd4a68',
-});
+};
+export const bg = palette.bg;
+export const css = buildThemeCss(palette);

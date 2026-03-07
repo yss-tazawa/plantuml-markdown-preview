@@ -9,6 +9,15 @@ import {
     type ChildProcess, type SpawnOptions, type SpawnSyncOptions, type SpawnSyncReturns,
 } from 'child_process';
 
+/**
+ * Regex for validating CSS color values before injecting into HTML templates.
+ *
+ * Accepts hex (#rgb / #rrggbb / #rrggbbaa), rgb()/rgba() functions,
+ * CSS keywords (transparent, inherit, currentColor, named colors).
+ * Also used as an inline regex inside webview scripts (keep in sync).
+ */
+export const CSS_COLOR_RE = /^(#[\da-fA-F]{3,8}|rgba?\(\s*[\d.%,\s/]+\)|transparent|inherit|currentColor|[\w-]+)$/;
+
 /** Lookup table mapping HTML special characters to their entity references. */
 const HTML_ESCAPE_MAP: Readonly<Record<string, string>> = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
 

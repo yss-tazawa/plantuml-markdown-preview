@@ -3,6 +3,8 @@
   "description": "3 种模式适配你的工作流。内联渲染 PlantUML 和 Mermaid — 快速、安全或零配置。",
   "submenu.label": "PlantUML Markdown Preview",
   "command.openPreview.title": "在侧边打开预览",
+  "command.openPumlPreview.title": "预览 PlantUML 文件",
+  "command.openMermaidPreview.title": "预览 Mermaid 文件",
   "command.exportHtml.title": "导出为 HTML",
   "command.exportHtmlAndOpen.title": "导出为 HTML 并在浏览器中打开",
   "command.exportHtmlFitToWidth.title": "导出为 HTML（适应宽度）",

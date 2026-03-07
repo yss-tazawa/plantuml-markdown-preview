@@ -8,7 +8,7 @@
 import { buildThemeCss } from './base.js';
 
 /** Complete CSS string for the Atom Dark theme. */
-export const css = buildThemeCss({
+const palette = {
     bg: '#1d1f21',
     text: '#c5c8c6',
     headingColor: '#e0e0e0',
@@ -35,4 +35,6 @@ export const css = buildThemeCss({
     hljsAdditionColor: '#b5bd68',
     hljsDeletionBg: '#3b1818',
     hljsDeletionColor: '#cc6666',
-});
+};
+export const bg = palette.bg;
+export const css = buildThemeCss(palette);

@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## 0.5.0 - 2026-03-08
+
+### Added
+
+- Standalone preview for `.puml` and `.mmd` files with pan & zoom, live updates, and theme support — no Markdown wrapper needed
+- Same keyboard shortcut (`Cmd+Alt+V` / `Ctrl+Alt+V`) auto-selects based on file type
+- Save as PNG / SVG from standalone diagram previews via right-click
+
 ## 0.4.10 - 2026-03-07
 
 ### Fixed

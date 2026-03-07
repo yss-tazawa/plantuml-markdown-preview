@@ -51,8 +51,8 @@ export const DARK_THEME_KEYS = [
     'solarized-dark', 'monokai',
 ] as const;
 
-/** Registry mapping theme key to its CSS string. */
-const PREVIEW_THEMES: Record<string, { css: string }> = {
+/** Registry mapping theme key to its CSS string and background color. */
+const PREVIEW_THEMES: Record<string, { css: string; bg: string }> = {
     'github-light':    githubLight,
     'atom-light':      atomLight,
     'one-light':       oneLight,
@@ -550,12 +550,12 @@ function buildHtml(title: string, body: string, previewTheme?: string, options?:
         `svg.style.maxWidth='none';svg.removeAttribute('height');svg.style.height='auto'}}}` +
         `el.style.visibility='visible'}};` +
         `window.__renderMermaidDone=window.__renderMermaid();`;
-    if (hasMermaid === undefined) hasMermaid = body.includes('mermaid-diagram');
+    const includeMermaid = hasMermaid ?? body.includes('mermaid-diagram');
     let mermaidHtml = '';
-    if (mermaidScriptUri && cspNonce && hasMermaid) {
+    if (mermaidScriptUri && cspNonce && includeMermaid) {
         // Webview preview: load from local bundled file
         mermaidHtml = `\n<script nonce="${cspNonce}" src="${mermaidScriptUri}"></script>\n<script nonce="${cspNonce}">${mermaidInitScript}</script>`;
-    } else if (hasMermaid && !cspNonce) {
+    } else if (includeMermaid && !cspNonce) {
         // HTML export: load from CDN
         mermaidHtml = `\n<script src="https://cdn.jsdelivr.net/npm/mermaid@${__MERMAID_MAJOR__}/dist/mermaid.min.js"></script>\n<script>${mermaidInitScript}</script>`;
     }
@@ -634,4 +634,10 @@ export function clearMdCache(): void {
 export function getThemeCss(themeName: string): string {
     const theme = PREVIEW_THEMES[themeName] || PREVIEW_THEMES[DEFAULT_PREVIEW_THEME];
     return theme.css;
+}
+
+/** Get the background color of a preview theme by name. */
+export function getThemeBgColor(themeName: string): string {
+    const theme = PREVIEW_THEMES[themeName] || PREVIEW_THEMES[DEFAULT_PREVIEW_THEME];
+    return theme.bg;
 }
