@@ -348,9 +348,15 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: ${containe
         applyTransform();
     }
 
-    // Mouse wheel zoom (cursor-centered)
+    // Mouse wheel: vertical = zoom (cursor-centered), horizontal = pan
     viewport.addEventListener('wheel', function(e) {
         e.preventDefault();
+        if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) {
+            // Horizontal scroll → horizontal pan
+            translateX -= e.deltaX;
+            applyTransform();
+            return;
+        }
         var prevScale = scale;
         var delta = e.deltaY > 0 ? -ZOOM_STEP : ZOOM_STEP;
         scale = Math.min(MAX_SCALE, Math.max(MIN_SCALE, scale * (1 + delta)));
