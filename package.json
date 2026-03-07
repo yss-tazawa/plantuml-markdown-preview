@@ -2,12 +2,12 @@
   "name": "plantuml-markdown-preview",
   "displayName": "%displayName%",
   "description": "%description%",
-  "version": "0.4.8",
+  "version": "0.4.9",
   "license": "MIT",
   "publisher": "yss-tazawa",
   "icon": "images/icon.png",
   "engines": {
-    "vscode": "^1.82.0"
+    "vscode": "^1.83.0"
   },
   "l10n": "./l10n",
   "categories": [
@@ -21,6 +21,7 @@
     "diagram",
     "uml",
     "svg",
+    "png",
     "export",
     "html",
     "server",
@@ -74,6 +75,16 @@
         "title": "%command.changeTheme.title%",
         "category": "%command.category%",
         "icon": "$(color-mode)"
+      },
+      {
+        "command": "plantuml-markdown-preview.saveDiagramAsPng",
+        "title": "%command.saveDiagramAsPng.title%",
+        "category": "%command.category%"
+      },
+      {
+        "command": "plantuml-markdown-preview.saveDiagramAsSvg",
+        "title": "%command.saveDiagramAsSvg.title%",
+        "category": "%command.category%"
       }
     ],
     "submenus": [
@@ -134,6 +145,26 @@
           "command": "plantuml-markdown-preview.exportPdfAndOpen",
           "when": "webviewId == 'plantumlMarkdownPreview'",
           "group": "4_pdf@2"
+        },
+        {
+          "command": "plantuml-markdown-preview.saveDiagramAsPng",
+          "when": "webviewId == 'plantumlDiagramViewer'",
+          "group": "1_save@1"
+        },
+        {
+          "command": "plantuml-markdown-preview.saveDiagramAsSvg",
+          "when": "webviewId == 'plantumlDiagramViewer'",
+          "group": "1_save@2"
+        },
+        {
+          "command": "plantuml-markdown-preview.saveDiagramAsPng",
+          "when": "webviewId == 'plantumlMarkdownPreview' && webviewSection == 'diagram'",
+          "group": "5_diagram@1"
+        },
+        {
+          "command": "plantuml-markdown-preview.saveDiagramAsSvg",
+          "when": "webviewId == 'plantumlMarkdownPreview' && webviewSection == 'diagram'",
+          "group": "5_diagram@2"
         }
       ],
       "plantuml-markdown-preview.submenu": [
@@ -467,7 +498,7 @@
   "devDependencies": {
     "@types/markdown-it": "^14.1.2",
     "@types/node": "^20.17.0",
-    "@types/vscode": "^1.82.0",
+    "@types/vscode": "^1.83.0",
     "esbuild": "^0.27.3",
     "typescript": "^5.9.3"
   },

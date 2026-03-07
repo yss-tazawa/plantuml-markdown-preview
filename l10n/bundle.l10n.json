@@ -54,5 +54,9 @@
   "Actual Size": "Actual Size",
   "Actual Size (1:1)": "Actual Size (1:1)",
   "Zoom In": "Zoom In",
-  "Zoom Out": "Zoom Out"
+  "Zoom Out": "Zoom Out",
+  "Diagram saved: {0}": "Diagram saved: {0}",
+  "Failed to save diagram: {0}": "Failed to save diagram: {0}",
+  "No diagram selected. Right-click a diagram or open it in the Diagram Viewer first.": "No diagram selected. Right-click a diagram or open it in the Diagram Viewer first.",
+  "Failed to open file: {0}": "Failed to open file: {0}"
 }

@@ -43,6 +43,7 @@ Switch between modes anytime with a single setting — no migration, no restart.
 - **Bidirectional scroll sync** — editor and preview scroll together, both ways
 - **Navigation & TOC** — go-to-top / go-to-bottom buttons and a Table of Contents sidebar in the preview panel
 - **Diagram Viewer** — click any diagram to open a pan & zoom panel with live sync and theme-matched background
+- **Save diagrams as PNG / SVG** — right-click any diagram in the preview or Diagram Viewer to export it
 - **14 preview themes** — 8 light + 6 dark themes including GitHub, Atom, Solarized, Dracula, Monokai, and more
 - **Internationalization** — English, Chinese (Simplified), and Japanese UI
 - **Math support** — `$...$` inline and `$$...$$` block math rendered with [KaTeX](https://katex.org/)
@@ -143,6 +144,7 @@ Click any PlantUML or Mermaid diagram in the preview to open it in a separate pa
 - Live sync — editor changes are reflected in real time while preserving your zoom position
 - Background color matches the current preview theme
 - Automatically closed when switching to a different source file
+- **Save as PNG / SVG** — right-click a diagram in the preview or Diagram Viewer to save it as a file
 - Disable with `enableDiagramViewer: false`
 
 ### Bidirectional Scroll Sync
@@ -360,6 +362,11 @@ your browser in one step, choose **Export as HTML & Open in Browser**.
 - **Command Palette:** `PlantUML Markdown Preview: Export as PDF & Open`
 
 The PDF file is saved alongside the source `.md` file. Chrome, Edge, or Chromium is required.
+
+### Save Diagram as PNG / SVG
+
+- **Preview panel:** Right-click a diagram → **Save Diagram as PNG** or **Save Diagram as SVG**
+- **Diagram Viewer:** Right-click inside the viewer → **Save Diagram as PNG** or **Save Diagram as SVG**
 
 ### Navigation
 

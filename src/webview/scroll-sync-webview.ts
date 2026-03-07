@@ -227,6 +227,58 @@ interface Anchor {
         vscode.postMessage({ type: 'revealLine', line: line });
     }
 
+    /**
+     * Convert SVG HTML to PNG via canvas and send result back to extension host.
+     *
+     * NOTE: This canvas conversion logic is duplicated in diagram-viewer.ts
+     * (viewer webview). The two run in separate webview contexts and cannot
+     * share code directly.
+     *
+     * @param svgHtml - innerHTML string containing an SVG element to convert
+     */
+    function exportSvgAsPng(svgHtml: string): void {
+        var tmp = document.createElement('div');
+        tmp.innerHTML = svgHtml;
+        var svgEl = tmp.querySelector('svg');
+        if (!svgEl) {
+            vscode.postMessage({ type: 'exportDiagramFromPreview', data: '' });
+            return;
+        }
+        var svgData = new XMLSerializer().serializeToString(svgEl);
+        var vb = svgEl.getAttribute('viewBox');
+        var w = 100, h = 100;
+        if (vb) {
+            var parts = vb.split(/[\s,]+/);
+            if (parts.length === 4) { w = parseFloat(parts[2]); h = parseFloat(parts[3]); }
+        }
+        if (!w || !h) {
+            w = parseFloat(svgEl.getAttribute('width') || '') || 100;
+            h = parseFloat(svgEl.getAttribute('height') || '') || 100;
+        }
+        var dpr = 2;
+        var canvas = document.createElement('canvas');
+        canvas.width = w * dpr;
+        canvas.height = h * dpr;
+        var ctx = canvas.getContext('2d');
+        if (!ctx) {
+            vscode.postMessage({ type: 'exportDiagramFromPreview', data: '' });
+            return;
+        }
+        var img = new Image();
+        img.onload = function () {
+            ctx!.drawImage(img, 0, 0, canvas.width, canvas.height);
+            try {
+                vscode.postMessage({ type: 'exportDiagramFromPreview', data: canvas.toDataURL('image/png') });
+            } catch (e) {
+                vscode.postMessage({ type: 'exportDiagramFromPreview', data: '' });
+            }
+        };
+        img.onerror = function () {
+            vscode.postMessage({ type: 'exportDiagramFromPreview', data: '' });
+        };
+        img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svgData);
+    }
+
     // --- Event listeners ---
 
     /**
@@ -291,6 +343,8 @@ interface Anchor {
             if (!bodyUpdateRafId) {
                 bodyUpdateRafId = requestAnimationFrame(applyPendingBodyUpdate);
             }
+        } else if (message && message.type === 'exportDiagramAsPng' && typeof message.svg === 'string') {
+            exportSvgAsPng(message.svg);
         }
     });
 
@@ -314,6 +368,28 @@ interface Anchor {
     /** Invalidate the anchor cache when DOM content changes (e.g. re-render, theme swap). */
     const observer = new MutationObserver(function () { anchors = null; });
     observer.observe(document.body, { childList: true, subtree: true });
+
+    /** Delegated contextmenu handler: store diagram context for Save as PNG/SVG commands. */
+    if (ENABLE_DIAGRAM_VIEWER) {
+        document.body.addEventListener('contextmenu', function (event) {
+            var target = event.target as Element | null;
+            if (!target) return;
+            var diagram = target.closest('.plantuml-diagram, .mermaid-diagram');
+            if (!diagram) return;
+            var diagrams = document.querySelectorAll('.plantuml-diagram, .mermaid-diagram');
+            var index = -1;
+            for (var i = 0; i < diagrams.length; i++) {
+                if (diagrams[i] === diagram) { index = i; break; }
+            }
+            if (index < 0) return;
+            vscode.postMessage({
+                type: 'saveDiagramContext',
+                svg: (diagram as HTMLElement).innerHTML,
+                diagramIndex: index + 1,
+                bgColor: getComputedStyle(document.body).backgroundColor
+            });
+        });
+    }
 
     /** Delegated click handler for opening diagrams in the viewer (registered once on body). */
     if (ENABLE_DIAGRAM_VIEWER) {
@@ -340,12 +416,16 @@ interface Anchor {
         });
     }
 
-    /** Set pointer cursor on SVGs inside diagram elements. */
+    /** Set pointer cursor on SVGs inside diagram elements and add data-vscode-context for context menus. */
     function updateDiagramCursors(): void {
         if (!ENABLE_DIAGRAM_VIEWER) return;
         var svgs = document.querySelectorAll('.plantuml-diagram svg, .mermaid-diagram svg');
         for (var i = 0; i < svgs.length; i++) {
             (svgs[i] as HTMLElement).style.cursor = 'pointer';
+        }
+        var diagrams = document.querySelectorAll('.plantuml-diagram, .mermaid-diagram');
+        for (var i = 0; i < diagrams.length; i++) {
+            (diagrams[i] as HTMLElement).setAttribute('data-vscode-context', JSON.stringify({ webviewSection: 'diagram', preventDefaultContextMenuItems: true }));
         }
     }
 
