@@ -5,32 +5,42 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## 0.4.9 - 2026-03-07
+
+### Added
+
+- Save any diagram as PNG or SVG via right-click in the preview or Diagram Viewer
+
+### Changed
+
+- Minimum VS Code version bumped from 1.82.0 to 1.83.0
+
 ## 0.4.8 - 2026-03-07
 
-**Changed:**
+### Changed
 
 - Diagram Viewer: localize the "1:1" button label
 - Diagram Viewer: add subtle button borders for better visibility in dark themes
 
-**Fixed:**
+### Fixed
 
 - Clicking whitespace next to a diagram no longer opens the Diagram Viewer — only clicks on the diagram itself trigger it
 
 ## 0.4.7 - 2026-03-07
 
-**Added:**
+### Added
 
 - Diagram Viewer: click any PlantUML or Mermaid diagram to open a separate pan & zoom panel with live sync, theme-matched background, and localized toolbar
 - `enableDiagramViewer` setting to disable the click-to-open behavior (default: `true`)
 - `retainPreviewContext` setting to control whether the preview retains its content when the tab is hidden (default: `true`). Prevents unnecessary re-rendering on tab switch at the cost of slightly higher memory usage.
 
-**Fixed:**
+### Fixed
 
 - Fix theme flash when switching between files after changing the preview theme
 
 ## 0.4.6 - 2026-03-06
 
-**Fixed:**
+### Fixed
 
 - Preview now shows an error message when rendering fails instead of displaying stale content
 - Re-focusing the editor after a render failure now retries the render automatically
@@ -39,7 +49,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## 0.4.5 - 2026-03-06
 
-**Added:**
+### Added
 
 - Navigation toolbar with go-to-top / go-to-bottom buttons
 - Table of Contents (TOC) sidebar for quick heading navigation
@@ -48,36 +58,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## 0.4.4 - 2026-03-05
 
-**Changed:**
+### Changed
 
 - File switching in the preview is now faster with no flickering
 
-**Fixed:**
+### Fixed
 
 - Scroll position is now correctly preserved when switching between files
 - Preview no longer briefly shows the wrong file's content during file switches
 
 ## 0.4.3 - 2026-03-04
 
-**Added:**
+### Added
 
 - Java 11+ version check at startup with actionable error message for older versions
 
 ## 0.4.2 - 2026-03-04
 
-**Fixed:**
+### Fixed
 
 - Fix local server startup notification message
 
 ## 0.4.1 - 2026-03-04
 
-**Fixed:**
+### Fixed
 
 - Improve scroll sync accuracy for PlantUML documents
 
 ## 0.4.0 - 2026-03-03
 
-**Added:**
+### Added
 
 - **Preset modes** — single `mode` setting (`fast` / `secure` / `easy`) replaces `renderMode` and controls rendering method, debounce timing, and security defaults together
   - **Fast** (default) — local PlantUML server on localhost, instant re-renders, debounce 100ms
@@ -87,26 +97,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Debounce and `allowLocalImages` settings can still be overridden individually
 - Chinese (Simplified) localization (zh-cn)
 
-**Changed:**
+### Changed
 
 - **Breaking:** `renderMode` setting replaced by `mode`. Existing `renderMode` values are ignored — set the new `mode` setting instead.
 - **Breaking:** Settings renamed — `jarPath` → `plantumlJarPath`, `serverUrl` → `plantumlServerUrl`, `localServerPort` → `plantumlLocalServerPort`. Existing values under the old names are ignored.
 - **Breaking:** `allowLocalImages` changed from boolean (`true`/`false`) to a three-option dropdown (`mode-default`/`on`/`off`). `mode-default` uses the mode preset (Fast: on, Secure: off, Easy: on). Existing `true`/`false` values are ignored — reset to `mode-default` or set `on`/`off` explicitly.
 - `debounceNoDiagramChangeMs` / `debounceDiagramChangeMs` now show as empty when unset (previously showed `0`); they inherit from the selected mode preset unless explicitly overridden
 
-**Fixed:**
+### Fixed
 
 - Fix inaccurate descriptions for `debounceNoDiagramChangeMs` / `debounceDiagramChangeMs` settings
 
 ## 0.3.6 - 2026-03-03
 
-**Fixed:**
+### Fixed
 
 - Server render mode only showed "HTTP 400 Bad Request" for PlantUML syntax errors. Now the error diagram from the server is displayed, showing exactly where the syntax error occurred
 
 ## 0.3.5 - 2026-03-02
 
-**Fixed:**
+### Fixed
 
 - HTML export "Open in Browser" failing on Windows when the file path contains non-ASCII characters (e.g. Japanese)
 - "Rendering diagrams..." notification not appearing when switching between Markdown files
@@ -114,33 +124,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## 0.3.4 - 2026-03-02
 
-**Fixed:**
+### Fixed
 
 - Exported HTML had excessive top padding compared to the preview panel
 
 ## 0.3.3 - 2026-03-02
 
-**Fixed:**
+### Fixed
 
 - Fix some PlantUML diagrams not rendering when a document contains duplicate diagram blocks
 - Faster PlantUML rendering for documents with multiple diagrams
 
 ## 0.3.2 - 2026-03-02
 
-**Fixed:**
+### Fixed
 
 - Java not detected on Windows when VS Code is launched from a shortcut
 - Java path resolution now checks `JAVA_HOME` environment variable before falling back to `java` on PATH
 
 ## 0.3.1 - 2026-03-02
 
-**Fixed:**
+### Fixed
 
 - Mermaid diagrams not rendering — webview's `localResourceRoots` was missing the extension's dist directory, blocking mermaid.min.js from loading
 
 ## 0.3.0 - 2026-03-02
 
-**Added:**
+### Added
 
 - **Mermaid diagram support** — render `mermaid` code blocks in the preview and HTML export using client-side mermaid.js; no Java required
 - `mermaidTheme` setting — choose from 5 themes (default / dark / forest / neutral / base) with QuickPick integration
@@ -151,106 +161,106 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## 0.2.2 - 2026-03-01
 
-**Fixed:**
+### Fixed
 
 - Excessive top margin in the preview panel — now matches VS Code's built-in Markdown preview
 
 ## 0.2.1 - 2026-03-01
 
-**Changed:**
+### Changed
 
 - Preview no longer freezes while rendering PlantUML diagrams in local mode
 - Preview opens instantly with a progress notification
 
-**Fixed:**
+### Fixed
 
 - XSS vulnerability in error messages displayed in the preview
 - Scroll sync drifting after images finish loading
 
 ## 0.2.0 - 2026-02-28
 
-**Added:**
+### Added
 
 - **Server rendering mode** — render diagrams via an external PlantUML server without requiring Java; set `renderMode` to `server` and optionally configure `serverUrl`
 - `renderMode` setting — choose between `local` (default) and `server`
 - `serverUrl` setting — PlantUML server URL (default: `https://www.plantuml.com/plantuml`)
 - Notification when Java is not found, offering to switch to server mode
 
-**Changed:**
+### Changed
 
 - HTML export supports server rendering mode
 - PlantUML themes now work in server mode
 
 ## 0.1.9 - 2026-02-28
 
-**Added:**
+### Added
 
 - Bundled PlantUML jar — no separate download required; works out of the box with Java
 
 ## 0.1.8 - 2026-02-28
 
-**Added:**
+### Added
 
 - `allowLocalImages` setting — resolve relative image paths in the preview (enabled by default)
 - `allowHttpImages` setting — allow loading images over HTTP in the preview (disabled by default)
 
 ## 0.1.7 - 2026-02-27
 
-**Changed:**
+### Changed
 
 - Tables scroll horizontally for wide content
 - Long unbroken text wraps at container boundaries
 - Preview uses full viewport width
 
-**Fixed:**
+### Fixed
 
 - Unwanted horizontal scrollbar on PlantUML diagrams in HTML export
 
 ## 0.1.6 - 2026-02-27
 
-**Changed:**
+### Changed
 
 - Preview uses full-width left-aligned layout
 - PlantUML diagrams are left-aligned in both preview and HTML export
 
 ## 0.1.5 - 2026-02-27
 
-**Fixed:**
+### Fixed
 
 - PlantUML diagrams shrinking when the preview or browser window is narrowed
 
 ## 0.1.4 - 2026-02-26
 
-**Fixed:**
+### Fixed
 
 - HTML export "Open in Browser" failing on Windows with non-ASCII file paths
 
 ## 0.1.3 - 2026-02-26
 
-**Fixed:**
+### Fixed
 
 - Excessive vertical spacing inside blockquotes
 
 ## 0.1.2 - 2026-02-26
 
-**Added:**
+### Added
 
 - 8 new preview themes (14 total): Atom Light, One Light, Vue, Pen Paper Coffee, Coy, VS, Atom Dark, Monokai
 - Light/Dark separator labels in the theme picker
 
-**Changed:**
+### Changed
 
 - Default `debouncePlantUmlMs` changed from 100 to 300
 - Support all PlantUML diagram types (mind map, WBS, etc.)
 - Improved settings descriptions
 
-**Fixed:**
+### Fixed
 
 - Fonts not loading in the preview panel
 
 ## 0.1.1 - 2026-02-25
 
-**Changed:**
+### Changed
 
 - Loading overlay no longer appears during typing and file save
 
@@ -258,7 +268,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 Initial release.
 
-**Added:**
+### Added
 
 - **Inline PlantUML preview** — render PlantUML code blocks as SVG in the Markdown preview with real-time updates and inline error display
 - **HTML export** — export Markdown to a self-contained HTML file with inline SVG diagrams

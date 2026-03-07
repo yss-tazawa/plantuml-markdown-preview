@@ -18,7 +18,7 @@ import { listThemesAsync, prefetchThemes } from './plantuml.js';
 import { getScrollSyncScriptTag } from './scroll-sync.js';
 import { getNonce, resolveLocalImagePaths, extractPlantUmlBlocks, PLANTUML_FENCE_TEST_RE, extractMermaidBlocks, MERMAID_FENCE_TEST_RE, escapeHtml } from './utils.js';
 import { CONFIG_SECTION, MERMAID_THEME_KEYS, type Config } from './config.js';
-import { openDiagramViewer, updateDiagramViewer, closeStaleViewers, disposeAllViewers } from './diagram-viewer.js';
+import { openDiagramViewer, updateDiagramViewer, closeStaleViewers, disposeAllViewers, setPendingSaveDiagram, handlePngFromPreview } from './diagram-viewer.js';
 
 /** Config keys that affect &lt;head&gt; content and require a full HTML reload. */
 const HEAD_KEYS = new Set(['allowLocalImages', 'allowHttpImages', 'mermaidScale', 'enableMath']);
@@ -62,6 +62,13 @@ type SyncMaster = 'none' | 'editor' | 'preview';
 
 /** The active WebviewPanel instance, or null when no preview is open. */
 let panel: vscode.WebviewPanel | null = null;
+
+/**
+ * Return the active preview panel (if any) for use by other modules.
+ *
+ * @returns The current WebviewPanel, or null if the preview is not open.
+ */
+export function getPreviewPanel(): vscode.WebviewPanel | null { return panel; }
 /** Absolute path of the Markdown file currently displayed in the preview. */
 let currentFilePath: string | null = null;
 /** Most recently applied configuration snapshot (used for diff in updateConfig). */
@@ -276,6 +283,10 @@ function registerEventHandlers(): void {
             updateDiagramViewer(message.diagramIndex, message.svg, message.bgColor);
         } else if (enableDiagramViewer && message.type === 'diagramCount') {
             closeStaleViewers(message.count);
+        } else if (enableDiagramViewer && message.type === 'saveDiagramContext') {
+            setPendingSaveDiagram(message.svg, message.diagramIndex);
+        } else if (enableDiagramViewer && message.type === 'exportDiagramFromPreview') {
+            void handlePngFromPreview(message.data);
         }
     });
 

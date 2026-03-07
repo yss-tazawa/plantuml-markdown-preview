@@ -61,7 +61,7 @@ extension.ts        Entry point — command registration, configuration, activat
 src/
   config.ts         Configuration types and mode presets
   preview.ts        Webview panel management and debouncing
-  renderer.ts       markdown-it plugin — PlantUML fence blocks → SVG
+  renderer.ts       markdown-it plugin — PlantUML & Mermaid fence blocks → SVG
   plantuml.ts       PlantUML local process invocation (sync + async), caching, theme discovery
   plantuml-server.ts PlantUML server rendering (HTTP fetch, encoding, LRU cache)
   local-server.ts   Local PlantUML picoweb server management

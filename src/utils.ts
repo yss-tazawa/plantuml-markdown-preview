@@ -86,7 +86,7 @@ export const MERMAID_FENCE_RE_SOURCE = '^ {0,3}```mermaid[ \\t]*\\n([\\s\\S]*?)\
 /**
  * Extract PlantUML block contents from Markdown source in document order.
  *
- * @param source Raw Markdown text.
+ * @param source - Raw Markdown text.
  * @returns Array of PlantUML source text strings.
  */
 export function extractPlantUmlBlocks(source: string): string[] {
@@ -96,7 +96,7 @@ export function extractPlantUmlBlocks(source: string): string[] {
 /**
  * Extract Mermaid block contents from Markdown source in document order.
  *
- * @param source Raw Markdown text.
+ * @param source - Raw Markdown text.
  * @returns Array of Mermaid source text strings.
  */
 export function extractMermaidBlocks(source: string): string[] {
@@ -129,8 +129,10 @@ function extractFencedBlocks(source: string, reSource: string): string[] {
  */
 export class LruCache<V> {
     private readonly map = new Map<string, V>();
-    /** @param maxSize - Maximum number of entries before LRU eviction. */
-    constructor(private readonly maxSize: number) {}
+    /** @param maxSize - Maximum number of entries before LRU eviction. Must be at least 1. */
+    constructor(private readonly maxSize: number) {
+        if (maxSize < 1) throw new RangeError(`LruCache maxSize must be >= 1, got ${maxSize}`);
+    }
 
     /**
      * Retrieve a value and promote it to most-recently-used.

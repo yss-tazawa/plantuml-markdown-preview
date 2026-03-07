@@ -3,7 +3,7 @@
  * @description VS Code extension entry point.
  *
  * Responsibilities:
- * - Register commands: openPreview / exportHtml / exportHtmlAndOpen / exportHtmlFitToWidth / exportHtmlFitToWidthAndOpen / exportPdf / exportPdfAndOpen / changeTheme
+ * - Register commands: openPreview / exportHtml / exportHtmlAndOpen / exportHtmlFitToWidth / exportHtmlFitToWidthAndOpen / exportPdf / exportPdfAndOpen / changeTheme / saveDiagramAsPng / saveDiagramAsSvg
  * - Read VS Code settings (getConfig)
  * - Auto-follow active editor tab (editorTracker)
  * - Propagate settings changes to the preview (configWatcher)
@@ -18,10 +18,10 @@ import { plantumlPlugin } from './src/renderer.js';
 import { clearCache } from './src/plantuml.js';
 import { clearServerCache } from './src/plantuml-server.js';
 import { prepareLocalServer, startLocalServer, stopLocalServer, restartLocalServer, setLocalServerOutputChannel } from './src/local-server.js';
-import { openPreview, getCurrentFilePath, getLastRenderFailed, updateConfig, changeTheme, disposePreview, setOutputChannel } from './src/preview.js';
+import { openPreview, getCurrentFilePath, getLastRenderFailed, updateConfig, changeTheme, disposePreview, setOutputChannel, getPreviewPanel } from './src/preview.js';
 import { execJava } from './src/utils.js';
 import { clearBrowserCache } from './src/browser-finder.js';
-import { disposeAllViewers } from './src/diagram-viewer.js';
+import { disposeAllViewers, saveDiagramFromViewer } from './src/diagram-viewer.js';
 import { CONFIG_SECTION, MODE_PRESETS, type Config, type Mode } from './src/config.js';
 import type MarkdownIt from 'markdown-it';
 
@@ -191,7 +191,12 @@ function openInDefaultApp(filePath: string): void {
     }
     const cmd = process.platform === 'win32' ? 'explorer.exe'
         : process.platform === 'darwin' ? 'open' : 'xdg-open';
-    void execFile(cmd, [filePath], () => { /* explorer.exe returns exit code 1 on success; ignore all errors */ });
+    void execFile(cmd, [filePath], (err) => {
+        // explorer.exe returns exit code 1 on success; only show errors on non-Windows platforms
+        if (err && process.platform !== 'win32') {
+            vscode.window.showErrorMessage(vscode.l10n.t('Failed to open file: {0}', err.message));
+        }
+    });
 }
 
 /** Reference to the in-flight Java check child process for cleanup on deactivate. */
@@ -392,6 +397,15 @@ export function activate(context: vscode.ExtensionContext): { extendMarkdownIt: 
         () => void changeTheme()
     );
 
+    const savePngCmd = vscode.commands.registerCommand(
+        'plantuml-markdown-preview.saveDiagramAsPng',
+        () => saveDiagramFromViewer('png', getPreviewPanel() ?? undefined)
+    );
+    const saveSvgCmd = vscode.commands.registerCommand(
+        'plantuml-markdown-preview.saveDiagramAsSvg',
+        () => saveDiagramFromViewer('svg', getPreviewPanel() ?? undefined)
+    );
+
     const editorTracker = vscode.window.onDidChangeActiveTextEditor((editor) => {
         if (!editor) return;
         if (!getCurrentFilePath()) return;
@@ -414,7 +428,7 @@ export function activate(context: vscode.ExtensionContext): { extendMarkdownIt: 
         }
     });
 
-    context.subscriptions.push(exportCmd, exportAndOpenCmd, exportHtmlFitCmd, exportHtmlFitAndOpenCmd, exportPdfCmd, exportPdfAndOpenCmd, previewCmd, changeThemeCmd, editorTracker, configWatcher);
+    context.subscriptions.push(exportCmd, exportAndOpenCmd, exportHtmlFitCmd, exportHtmlFitAndOpenCmd, exportPdfCmd, exportPdfAndOpenCmd, previewCmd, changeThemeCmd, savePngCmd, saveSvgCmd, editorTracker, configWatcher);
 
     // Start local PlantUML picoweb server if local-server mode is selected.
     // prepareLocalServer() pre-creates the readyPromise so that any preview

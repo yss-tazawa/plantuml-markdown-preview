@@ -7,13 +7,27 @@
  * editor content changes.
  */
 import * as vscode from 'vscode';
+import { writeFile } from 'fs/promises';
 import { getNonce, escapeHtml } from './utils.js';
 
-/** Validate that a string looks like a CSS color value (rgb/rgba/hex/named). */
+/**
+ * Validate that a string looks like a CSS color value (rgb/rgba/hex/named).
+ * Used to sanitize user-supplied bgColor before injecting into HTML templates,
+ * preventing XSS via malicious CSS values.
+ *
+ * NOTE: This regex is duplicated as a string literal in the webview script
+ * inside {@link getDiagramViewerHtml} (search for `cssColorRe`). Keep both in sync.
+ */
 const CSS_COLOR_RE = /^(#[\da-fA-F]{3,8}|rgba?\(\s*[\d.%,\s/]+\)|transparent|inherit|currentColor|[\w-]+)$/;
 
 /** Active viewer panels keyed by 1-based diagram index. */
 const viewers = new Map<number, vscode.WebviewPanel>();
+
+/** Index of the most recently focused viewer panel. */
+let activeViewerIndex = -1;
+
+/** Pending diagram data from a preview right-click (for Save as PNG/SVG). */
+let pendingSave: { svg: string; diagramIndex: number } | null = null;
 
 /**
  * Open (or reveal) a diagram viewer panel for the given diagram index.
@@ -40,7 +54,17 @@ export function openDiagramViewer(svg: string, diagramIndex: number, bgColor?: s
     );
 
     viewers.set(diagramIndex, panel);
-    panel.onDidDispose(() => { viewers.delete(diagramIndex); });
+    activeViewerIndex = diagramIndex;
+    // These Disposables are not stored — they are automatically disposed
+    // when the owning panel is disposed.
+    panel.onDidDispose(() => {
+        viewers.delete(diagramIndex);
+        if (activeViewerIndex === diagramIndex) activeViewerIndex = -1;
+    });
+    panel.onDidChangeViewState((e) => {
+        if (e.webviewPanel.active) activeViewerIndex = diagramIndex;
+    });
+    panel.webview.onDidReceiveMessage((msg) => { void handleViewerMessage(msg); });
 
     const nonce = getNonce();
     panel.webview.html = generateViewerHtml(svg, nonce, bgColor);
@@ -60,7 +84,11 @@ export function updateDiagramViewer(diagramIndex: number, svg: string, bgColor?:
     }
 }
 
-/** Close viewer panels whose index exceeds the current diagram count. */
+/**
+ * Close viewer panels whose index exceeds the current diagram count.
+ *
+ * @param diagramCount - Current number of diagrams in the document.
+ */
 export function closeStaleViewers(diagramCount: number): void {
     const stale = [...viewers].filter(([i]) => i > diagramCount);
     for (const [, panel] of stale) {
@@ -76,6 +104,121 @@ export function disposeAllViewers(): void {
     viewers.clear();
 }
 
+/**
+ * Store diagram data from a preview right-click so that the next
+ * saveDiagramFromViewer() call can save it without requiring an open viewer.
+ */
+export function setPendingSaveDiagram(svg: string, diagramIndex: number): void {
+    pendingSave = { svg, diagramIndex };
+}
+
+/**
+ * Request the active viewer to export its diagram as PNG or SVG.
+ *
+ * If a viewer panel is active, delegates to its webview for canvas rendering.
+ * Otherwise, falls back to pending diagram data from a preview right-click.
+ *
+ * @param format - 'png' or 'svg'
+ * @param previewPanel - optional preview webview panel for PNG canvas conversion
+ */
+export function saveDiagramFromViewer(format: 'png' | 'svg', previewPanel?: vscode.WebviewPanel): void {
+    // Try active viewer panel first
+    const viewerPanel = viewers.get(activeViewerIndex);
+    if (viewerPanel) {
+        void viewerPanel.webview.postMessage({ type: 'exportDiagram', format });
+        return;
+    }
+
+    // Fall back to pending diagram data from preview right-click
+    if (!pendingSave) {
+        vscode.window.showWarningMessage(vscode.l10n.t('No diagram selected. Right-click a diagram or open it in the Diagram Viewer first.'));
+        return;
+    }
+    const { svg, diagramIndex } = pendingSave;
+
+    if (format === 'svg') {
+        // Extract the SVG element from the innerHTML
+        void saveSvgFromHtml(svg, diagramIndex);
+    } else {
+        // PNG: need canvas conversion — send to preview webview
+        if (previewPanel) {
+            void previewPanel.webview.postMessage({ type: 'exportDiagramAsPng', svg });
+        }
+    }
+}
+
+/**
+ * Show a save dialog and write diagram data to the chosen file.
+ *
+ * @param data - File content (Buffer for PNG, string for SVG)
+ * @param diagramIndex - 1-based diagram index for the default filename
+ * @param format - 'png' or 'svg'
+ */
+async function saveDiagramToFile(data: Buffer | string, diagramIndex: number, format: 'png' | 'svg'): Promise<void> {
+    const filters: Record<string, string[]> = format === 'png'
+        ? { 'PNG Image': ['png'] }
+        : { 'SVG Image': ['svg'] };
+    const uri = await vscode.window.showSaveDialog({
+        filters,
+        defaultUri: vscode.Uri.file(`diagram-${diagramIndex}.${format}`),
+    });
+    if (!uri) return;
+    try {
+        await writeFile(uri.fsPath, data, typeof data === 'string' ? 'utf-8' : undefined);
+        vscode.window.showInformationMessage(vscode.l10n.t('Diagram saved: {0}', uri.fsPath));
+    } catch (err) {
+        vscode.window.showErrorMessage(vscode.l10n.t('Failed to save diagram: {0}', (err as Error).message));
+    }
+}
+
+/**
+ * Save SVG extracted from diagram innerHTML.
+ *
+ * @param html - innerHTML of the .plantuml-diagram element containing an SVG
+ * @param diagramIndex - 1-based diagram index for the default filename
+ */
+async function saveSvgFromHtml(html: string, diagramIndex: number): Promise<void> {
+    // Extract the first <svg …>…</svg> from the innerHTML
+    const match = html.match(/<svg[\s\S]*<\/svg>/i);
+    if (!match) return;
+    await saveDiagramToFile(match[0], diagramIndex, 'svg');
+    pendingSave = null;
+}
+
+/**
+ * Handle PNG data returned from the preview webview after canvas conversion.
+ *
+ * @param data - Base64-encoded PNG data URI from the webview canvas.
+ */
+export async function handlePngFromPreview(data: string): Promise<void> {
+    if (!data || !pendingSave) return;
+    const { diagramIndex } = pendingSave;
+    await saveDiagramToFile(Buffer.from(data.replace(/^data:image\/png;base64,/, ''), 'base64'), diagramIndex, 'png');
+    pendingSave = null;
+}
+
+/** Handle messages sent from the viewer webview (runtime-validated by type guard). */
+async function handleViewerMessage(msg: { type: string; format?: string; data?: string }): Promise<void> {
+    if (msg.type !== 'exportDiagramResult' || !msg.format || !msg.data) return;
+    if (msg.format !== 'png' && msg.format !== 'svg') return;
+
+    const viewerIndex = activeViewerIndex;
+    if (viewerIndex < 1) return;
+    const format = msg.format;
+    const fileData = format === 'png'
+        ? Buffer.from(msg.data.replace(/^data:image\/png;base64,/, ''), 'base64')
+        : msg.data;
+    await saveDiagramToFile(fileData, viewerIndex, format);
+}
+
+/**
+ * Generate the full HTML for a Diagram Viewer webview panel.
+ *
+ * @param svg - innerHTML of the .plantuml-diagram element
+ * @param nonce - CSP nonce for the inline script
+ * @param bgColor - Optional CSS background color from the preview theme
+ * @returns Complete HTML string for the webview
+ */
 function generateViewerHtml(svg: string, nonce: string, bgColor?: string): string {
     const containerBg = bgColor && CSS_COLOR_RE.test(bgColor.trim()) ? bgColor.trim() : '#fff';
     const labels = {
@@ -132,7 +275,7 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: ${containe
 }
 </style>
 </head>
-<body>
+<body data-vscode-context='{"preventDefaultContextMenuItems":true}'>
 <div id="toolbar">
     <button id="btn-fit" title="${labels.fitTitle}">${labels.fit}</button>
     <button id="btn-100" title="${labels.actualSizeTitle}">${labels.actualSize}</button>
@@ -258,8 +401,43 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: ${containe
                 document.body.style.background = bg;
             }
             applyTransform();
+        } else if (e.data.type === 'exportDiagram') {
+            exportDiagram(e.data.format);
         }
     });
+
+    // NOTE: This SVG-to-PNG canvas conversion logic is duplicated in
+    // scroll-sync-webview.ts (exportSvgAsPng). The two run in separate
+    // webview contexts and cannot share code directly.
+    function exportDiagram(format) {
+        var svgEl = container.querySelector('svg');
+        if (!svgEl) return;
+        if (format === 'svg') {
+            vscode.postMessage({ type: 'exportDiagramResult', format: 'svg', data: svgEl.outerHTML });
+            return;
+        }
+        // PNG: render SVG to canvas
+        var svgData = new XMLSerializer().serializeToString(svgEl);
+        var sz = getSvgNaturalSize();
+        var dpr = 2; // export at 2x for crisp output
+        var canvas = document.createElement('canvas');
+        canvas.width = sz.w * dpr;
+        canvas.height = sz.h * dpr;
+        var ctx = canvas.getContext('2d');
+        var img = new Image();
+        img.onload = function() {
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+            try {
+                vscode.postMessage({ type: 'exportDiagramResult', format: 'png', data: canvas.toDataURL('image/png') });
+            } catch (e) {
+                vscode.postMessage({ type: 'exportDiagramResult', format: 'png', data: '' });
+            }
+        };
+        img.onerror = function() {
+            vscode.postMessage({ type: 'exportDiagramResult', format: 'png', data: '' });
+        };
+        img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svgData);
+    }
 
     // Initial fit
     fitToWindow();

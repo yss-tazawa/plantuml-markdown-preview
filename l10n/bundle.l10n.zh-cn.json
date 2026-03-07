@@ -35,11 +35,11 @@
   "Mermaid Theme": "Mermaid 主题",
   "Rendering diagrams...": "正在渲染图表...",
   "Local PlantUML server is not running. Check the output panel for details.": "本地 PlantUML 服务器未运行。请查看输出面板了解详情。",
-  "Local PlantUML server started.": "本地 PlantUML 服务器已启动",
+  "Local PlantUML server started.": "本地 PlantUML 服务器已启动。",
   "Local PlantUML server crashed: {0}": "本地 PlantUML 服务器崩溃: {0}",
   "Switch to Secure Mode": "切换到 Secure 模式",
   "Restart Server": "重启服务器",
-  "Local PlantUML server stopped.": "本地 PlantUML 服务器已停止",
+  "Local PlantUML server stopped.": "本地 PlantUML 服务器已停止。",
   "Go to top": "跳到顶部",
   "Go to bottom": "跳到底部",
   "Table of Contents": "目录",
@@ -54,5 +54,9 @@
   "Actual Size": "实际大小",
   "Actual Size (1:1)": "实际大小 (1:1)",
   "Zoom In": "放大",
-  "Zoom Out": "缩小"
+  "Zoom Out": "缩小",
+  "Diagram saved: {0}": "图表已保存: {0}",
+  "Failed to save diagram: {0}": "图表保存失败: {0}",
+  "No diagram selected. Right-click a diagram or open it in the Diagram Viewer first.": "未选择图表。请右键单击图表或在图表查看器中打开。",
+  "Failed to open file: {0}": "文件打开失败: {0}"
 }

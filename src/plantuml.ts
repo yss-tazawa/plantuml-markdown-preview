@@ -457,8 +457,9 @@ async function renderBatchLocal(blocks: string[], config: Config, signal?: Abort
             const detailed = await renderToSvgAsync(uncached[i].trimmed, config, signal);
             results.set(uncached[i].trimmed, detailed);
         }
-    } catch {
+    } catch (e) {
         // Batch JVM failed: fall back to individual rendering
+        console.warn('PlantUML batch rendering failed, falling back to individual rendering:', e);
         return fallbackToIndividual(uncached, results, config, signal);
     }
 

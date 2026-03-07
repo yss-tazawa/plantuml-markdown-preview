@@ -343,9 +343,9 @@ export async function renderBodyAsync(
  * @returns Complete HTML document string, or empty string if aborted.
  */
 export async function renderHtmlAsync(source: string, title: string, config: Config, options?: RenderOptions, signal?: AbortSignal): Promise<string> {
-    const { bodyHtml } = await renderBodyAsync(source, config, options, signal);
+    const { bodyHtml, hasMermaid } = await renderBodyAsync(source, config, options, signal);
     if (signal?.aborted) return '';
-    return buildHtml(title, bodyHtml, config.previewTheme, options);
+    return buildHtml(title, bodyHtml, config.previewTheme, options, hasMermaid);
 }
 
 /**
@@ -509,9 +509,10 @@ async function buildKatexCdnCssHtml(): Promise<string> {
  * @param body - Rendered HTML body content.
  * @param [previewTheme] - Theme key for CSS selection.
  * @param [options] - CSP nonce, script HTML, and CSP source.
+ * @param [hasMermaid] - Whether the body contains Mermaid diagrams.
  * @returns Complete `<!DOCTYPE html>` document string.
  */
-function buildHtml(title: string, body: string, previewTheme?: string, options?: RenderOptions): string {
+function buildHtml(title: string, body: string, previewTheme?: string, options?: RenderOptions, hasMermaid?: boolean): string {
     const theme = PREVIEW_THEMES[previewTheme || ''] || PREVIEW_THEMES[DEFAULT_PREVIEW_THEME];
     const {
         scriptHtml, cspNonce, cspSource, lang, allowHttpImages,
@@ -549,7 +550,7 @@ function buildHtml(title: string, body: string, previewTheme?: string, options?:
         `svg.style.maxWidth='none';svg.removeAttribute('height');svg.style.height='auto'}}}` +
         `el.style.visibility='visible'}};` +
         `window.__renderMermaidDone=window.__renderMermaid();`;
-    const hasMermaid = body.includes('mermaid-diagram');
+    if (hasMermaid === undefined) hasMermaid = body.includes('mermaid-diagram');
     let mermaidHtml = '';
     if (mermaidScriptUri && cspNonce && hasMermaid) {
         // Webview preview: load from local bundled file

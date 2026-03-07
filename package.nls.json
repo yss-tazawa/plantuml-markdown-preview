@@ -9,6 +9,8 @@
   "command.exportHtmlFitToWidthAndOpen.title": "Export as HTML & Open in Browser (Fit to Width)",
   "command.exportPdf.title": "Export as PDF",
   "command.exportPdfAndOpen.title": "Export as PDF & Open",
+  "command.saveDiagramAsPng.title": "Save Diagram as PNG",
+  "command.saveDiagramAsSvg.title": "Save Diagram as SVG",
   "command.changeTheme.title": "Change Preview Theme",
   "command.category": "PlantUML Markdown Preview",
   "configuration.title": "PlantUML Markdown Preview",
