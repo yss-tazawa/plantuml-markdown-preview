@@ -2,7 +2,7 @@
  * @module puml-preview
  * @description Standalone PlantUML file preview with pan & zoom.
  *
- * Opens a WebviewPanel to preview .puml / .plantuml / .pu files directly,
+ * Opens a WebviewPanel to preview .puml / .plantuml files directly,
  * without requiring a Markdown wrapper. Reuses the Diagram Viewer HTML
  * (pan & zoom) and renders via renderToSvgAsync / renderToSvgServer.
  */

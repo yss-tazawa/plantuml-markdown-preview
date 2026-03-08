@@ -124,7 +124,7 @@ function resolveMarkdownPath(uri?: vscode.Uri): string | null {
 }
 
 /** PlantUML file extensions supported for standalone preview. */
-const PUML_EXTENSIONS = ['.puml', '.plantuml', '.pu'];
+const PUML_EXTENSIONS = ['.puml', '.plantuml'];
 
 /**
  * Check whether a file path has a PlantUML extension.
