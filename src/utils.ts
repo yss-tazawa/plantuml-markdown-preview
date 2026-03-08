@@ -4,6 +4,7 @@
  */
 import crypto from 'crypto';
 import path from 'path';
+import * as vscode from 'vscode';
 import {
     spawn as nodeSpawn, spawnSync as nodeSpawnSync, execFile as nodeExecFile,
     type ChildProcess, type SpawnOptions, type SpawnSyncOptions, type SpawnSyncReturns,
@@ -356,6 +357,22 @@ export function execJava(
         options, cb,
     );
 }
+
+/**
+ * Build QuickPick items for a set of theme keys with a check mark on the current selection.
+ *
+ * @param keys - Array of theme key strings.
+ * @param category - Category label attached to each item (e.g. 'preview', 'plantuml').
+ * @param currentKey - The currently active theme key (will display a check mark).
+ * @returns Array of QuickPick-compatible items.
+ */
+export const buildThemeItems = <C extends string>(keys: readonly string[], category: C, currentKey: string) =>
+    keys.map(key => ({
+        label: key === currentKey ? `$(check) ${key}` : `      ${key}`,
+        description: key === currentKey ? vscode.l10n.t('(current)') : '',
+        category,
+        themeKey: key
+    }));
 
 /** Regex matching <img ...src="..." ...> or <img ...src='...' ...> tags. Captures prefix, quote, src value, and suffix. */
 const IMG_SRC_RE = /<img\s([^>]*?)src=(["'])(.*?)\2([^>]*?)>/gi;

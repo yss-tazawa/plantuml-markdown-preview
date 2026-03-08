@@ -2,7 +2,7 @@
   "name": "plantuml-markdown-preview",
   "displayName": "%displayName%",
   "description": "%description%",
-  "version": "0.5.3",
+  "version": "0.5.4",
   "license": "MIT",
   "publisher": "yss-tazawa",
   "icon": "images/icon.png",
@@ -350,13 +350,13 @@
           "description": "%configuration.allowLocalImages.description%"
         },
         "plantumlMarkdownPreview.allowHttpImages": {
-          "order": 6,
+          "order": 7,
           "type": "boolean",
           "default": false,
           "description": "%configuration.allowHttpImages.description%"
         },
         "plantumlMarkdownPreview.previewTheme": {
-          "order": 7,
+          "order": 8,
           "type": "string",
           "default": "github-light",
           "enum": [
@@ -394,13 +394,13 @@
           "description": "%configuration.previewTheme.description%"
         },
         "plantumlMarkdownPreview.plantumlTheme": {
-          "order": 8,
+          "order": 9,
           "type": "string",
           "default": "default",
           "description": "%configuration.plantumlTheme.description%"
         },
         "plantumlMarkdownPreview.plantumlScale": {
-          "order": 9,
+          "order": 10,
           "type": "string",
           "default": "100%",
           "enum": [
@@ -434,7 +434,7 @@
           "description": "%configuration.plantumlScale.description%"
         },
         "plantumlMarkdownPreview.mermaidTheme": {
-          "order": 10,
+          "order": 11,
           "type": "string",
           "default": "default",
           "enum": [
@@ -454,7 +454,7 @@
           "description": "%configuration.mermaidTheme.description%"
         },
         "plantumlMarkdownPreview.mermaidScale": {
-          "order": 11,
+          "order": 12,
           "type": "string",
           "default": "80%",
           "enum": [
@@ -488,7 +488,7 @@
           "description": "%configuration.mermaidScale.description%"
         },
         "plantumlMarkdownPreview.htmlMaxWidth": {
-          "order": 12,
+          "order": 13,
           "type": "string",
           "default": "960px",
           "enum": [
@@ -512,7 +512,7 @@
           "description": "%configuration.htmlMaxWidth.description%"
         },
         "plantumlMarkdownPreview.htmlAlignment": {
-          "order": 13,
+          "order": 14,
           "type": "string",
           "default": "center",
           "enum": [
@@ -526,13 +526,13 @@
           "description": "%configuration.htmlAlignment.description%"
         },
         "plantumlMarkdownPreview.enableMath": {
-          "order": 14,
+          "order": 15,
           "type": "boolean",
           "default": true,
           "description": "%configuration.enableMath.description%"
         },
         "plantumlMarkdownPreview.debounceNoDiagramChangeMs": {
-          "order": 15,
+          "order": 16,
           "type": [
             "number",
             "null"
@@ -541,7 +541,7 @@
           "description": "%configuration.debounceNoDiagramChangeMs.description%"
         },
         "plantumlMarkdownPreview.debounceDiagramChangeMs": {
-          "order": 16,
+          "order": 17,
           "type": [
             "number",
             "null"
@@ -550,7 +550,7 @@
           "description": "%configuration.debounceDiagramChangeMs.description%"
         },
         "plantumlMarkdownPreview.plantumlLocalServerPort": {
-          "order": 17,
+          "order": 18,
           "type": "number",
           "default": 0,
           "minimum": 0,
@@ -558,19 +558,19 @@
           "description": "%configuration.plantumlLocalServerPort.description%"
         },
         "plantumlMarkdownPreview.plantumlServerUrl": {
-          "order": 18,
+          "order": 19,
           "type": "string",
           "default": "https://www.plantuml.com/plantuml",
           "description": "%configuration.plantumlServerUrl.description%"
         },
         "plantumlMarkdownPreview.enableDiagramViewer": {
-          "order": 19,
+          "order": 20,
           "type": "boolean",
           "default": true,
           "description": "%configuration.enableDiagramViewer.description%"
         },
         "plantumlMarkdownPreview.retainPreviewContext": {
-          "order": 20,
+          "order": 21,
           "type": "boolean",
           "default": true,
           "description": "%configuration.retainPreviewContext.description%"

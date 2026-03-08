@@ -13,7 +13,7 @@ import { renderToSvgAsync, listThemesAsync, prefetchThemes } from './plantuml.js
 import { renderToSvgServer } from './plantuml-server.js';
 import { LIGHT_THEME_KEYS, DARK_THEME_KEYS, getThemeBgColor } from './exporter.js';
 import { getLocalServerUrl, waitForLocalServer } from './local-server.js';
-import { getNonce, errorHtml } from './utils.js';
+import { getNonce, errorHtml, buildThemeItems } from './utils.js';
 import { CONFIG_SECTION, type Config } from './config.js';
 import { handleExportMessage } from './export-handler.js';
 
@@ -270,14 +270,6 @@ export async function changePumlTheme(): Promise<void> {
 
     const currentPreviewTheme = getPreviewTheme();
     const currentPlantumlTheme = getPlantumlTheme();
-
-    const buildThemeItems = <C extends string>(keys: readonly string[], category: C, currentKey: string) =>
-        keys.map(key => ({
-            label: key === currentKey ? `$(check) ${key}` : `      ${key}`,
-            description: key === currentKey ? vscode.l10n.t('(current)') : '',
-            category,
-            themeKey: key
-        }));
 
     // listThemesAsync caches internally; prefetchThemes is called on first open
     const plantumlThemes = await listThemesAsync(lastConfig || { plantumlJarPath: '', javaPath: 'java' });

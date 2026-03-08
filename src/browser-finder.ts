@@ -42,7 +42,7 @@ const LINUX_COMMANDS = [
 function which(cmd: string): Promise<string | null> {
     const bin = process.platform === 'win32' ? 'where' : 'which';
     return new Promise(resolve => {
-        execFile(bin, [cmd], (err, stdout) => {
+        execFile(bin, [cmd], { timeout: 5000 }, (err, stdout) => {
             if (err || !stdout.trim()) return resolve(null);
             resolve(stdout.trim().split(/\r?\n/)[0]);
         });
