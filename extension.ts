@@ -79,7 +79,7 @@ function getConfig(): Config {
     const preset = MODE_PRESETS[mode] ?? MODE_PRESETS.fast;
     return {
         mode,
-        plantumlJarPath: userJarPath || resolveBundledJarPath(),
+        plantumlJarPath: (userJarPath && existsSync(userJarPath) ? userJarPath : '') || resolveBundledJarPath(),
         javaPath: cfg.get<string>('javaPath', 'java'),
         dotPath: cfg.get<string>('dotPath', 'dot'),
         debounceNoDiagramChangeMs: cfg.get<number>('debounceNoDiagramChangeMs') ?? preset.debounceNoDiagramChangeMs,
@@ -379,6 +379,15 @@ export function activate(context: vscode.ExtensionContext): { extendMarkdownIt: 
 
     // Ensure builtInPreviewConfig has correct values after workspace is fully loaded
     const initialConfig = getConfig();
+
+    // Notify if user-specified plantumlJarPath was invalid and fell back to bundled jar
+    const userJarPathAtStartup = vscode.workspace.getConfiguration(CONFIG_SECTION).get<string>('plantumlJarPath', '');
+    if (userJarPathAtStartup && !existsSync(userJarPathAtStartup)) {
+        void vscode.window.showWarningMessage(
+            vscode.l10n.t('PlantUML jar "{0}" does not exist. Using bundled jar instead.', userJarPathAtStartup)
+        );
+    }
+
     lastKnownConfig = initialConfig;
     syncBuiltInPreviewConfig(initialConfig);
 
@@ -558,8 +567,7 @@ export function activate(context: vscode.ExtensionContext): { extendMarkdownIt: 
             const config = getConfig();
 
             // Reject invalid javaPath: keep using the previous config
-            if (config.renderMode !== 'server'
-                && config.javaPath !== 'java'
+            if (config.javaPath !== 'java'
                 && !existsSync(config.javaPath)) {
                 const openSettings = vscode.l10n.t('Open Settings');
                 void vscode.window.showErrorMessage(
@@ -570,7 +578,30 @@ export function activate(context: vscode.ExtensionContext): { extendMarkdownIt: 
                         void vscode.commands.executeCommand('workbench.action.openSettings', 'plantumlMarkdownPreview.javaPath');
                     }
                 });
+                // Remember the rejected javaPath so that fixing it later triggers a change notification
+                if (lastKnownConfig) { lastKnownConfig.javaPath = config.javaPath; }
                 return;  // don't update lastKnownConfig — keep old valid config
+            }
+
+            // Notify if user-specified plantumlJarPath fell back to bundled jar
+            const userJarPath = vscode.workspace.getConfiguration(CONFIG_SECTION).get<string>('plantumlJarPath', '');
+            const jarFellBackToBundled = !!userJarPath && !existsSync(userJarPath);
+            if (jarFellBackToBundled) {
+                void vscode.window.showWarningMessage(
+                    vscode.l10n.t('PlantUML jar "{0}" does not exist. Using bundled jar instead.', userJarPath)
+                );
+            }
+
+            // Notify when javaPath or plantumlJarPath changed successfully
+            if (lastKnownConfig && lastKnownConfig.javaPath !== config.javaPath) {
+                void vscode.window.showInformationMessage(
+                    vscode.l10n.t('Java path changed to: {0}', config.javaPath)
+                );
+            }
+            if (!jarFellBackToBundled && lastKnownConfig && lastKnownConfig.plantumlJarPath !== config.plantumlJarPath) {
+                void vscode.window.showInformationMessage(
+                    vscode.l10n.t('PlantUML jar path changed to: {0}', config.plantumlJarPath)
+                );
             }
 
             // Manage local-server lifecycle on config change
@@ -606,13 +637,14 @@ export function activate(context: vscode.ExtensionContext): { extendMarkdownIt: 
         });
     }
 
-    // Warm up JVM/JAR file cache in the background so the first render is faster.
-    // On Windows, cold-starting the JVM loads java.exe + plantuml.jar from disk;
-    // this fire-and-forget call primes the OS file cache before the user opens preview.
-    // Only for 'local' mode — 'local-server' has its own startup, 'server' doesn't need Java.
-    if (initialConfig.renderMode === 'local' && initialConfig.plantumlJarPath) {
-        warmupChild = execJava(initialConfig.javaPath, ['-jar', initialConfig.plantumlJarPath, '-version'],
-            { timeout: 30000 }, (_err) => { warmupChild = null; /* errors are expected when Java is missing */ });
+    // For 'local' (secure) mode, check Java availability at startup and warm up JVM cache.
+    if (initialConfig.renderMode === 'local') {
+        checkJavaAvailability(initialConfig).then(javaFound => {
+            if (javaFound && initialConfig.plantumlJarPath) {
+                warmupChild = execJava(initialConfig.javaPath, ['-jar', initialConfig.plantumlJarPath, '-version'],
+                    { timeout: 30000 }, (_err) => { warmupChild = null; });
+            }
+        }).catch(() => { /* checkJavaAvailability handles the error dialog */ });
     }
 
     return { extendMarkdownIt };

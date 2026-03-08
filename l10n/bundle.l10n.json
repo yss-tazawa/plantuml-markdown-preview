@@ -61,5 +61,8 @@
   "No diagram selected. Right-click a diagram or open it in the Diagram Viewer first.": "No diagram selected. Right-click a diagram or open it in the Diagram Viewer first.",
   "Failed to open file: {0}": "Failed to open file: {0}",
   "No PlantUML file is selected.": "No PlantUML file is selected.",
-  "No Mermaid file is selected.": "No Mermaid file is selected."
+  "No Mermaid file is selected.": "No Mermaid file is selected.",
+  "Java path changed to: {0}": "Java path changed to: {0}",
+  "PlantUML jar path changed to: {0}": "PlantUML jar path changed to: {0}",
+  "PlantUML jar \"{0}\" does not exist. Using bundled jar instead.": "PlantUML jar \"{0}\" does not exist. Using bundled jar instead."
 }
