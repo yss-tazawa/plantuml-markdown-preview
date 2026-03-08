@@ -14,7 +14,7 @@ import * as vscode from 'vscode';
 import path from 'path';
 import fs from 'fs';
 import { renderHtmlAsync, renderBodyAsync, getThemeCss, LIGHT_THEME_KEYS, DARK_THEME_KEYS } from './exporter.js';
-import { listThemesAsync, prefetchThemes, clearCache } from './plantuml.js';
+import { listThemesAsync, prefetchThemes, clearCache, resolveIncludePath } from './plantuml.js';
 import { clearServerCache } from './plantuml-server.js';
 import { restartLocalServer } from './local-server.js';
 import { getScrollSyncScriptTag } from './scroll-sync.js';
@@ -875,22 +875,31 @@ export function updateConfig(config: Config): void {
             applyWebviewOptions();
         }
 
-        // Handle include path changes (affects cwd for all local modes)
+        // Mode or include path change: clear all cached SVGs and show loading
+        // page immediately so the user never sees stale content.
+        if (changed.has('mode') || changed.has('plantumlIncludePath')) {
+            clearCache();
+            clearServerCache();
+            initialHtmlSet = false;
+            panel.webview.html = `<!DOCTYPE html>
+<html><head><meta charset="UTF-8"></head><body>
+<div style="position:fixed;top:0;left:0;width:100%;height:100%;background:var(--vscode-editor-background,#fff);display:flex;align-items:center;justify-content:center;">
+<div style="color:var(--vscode-editor-foreground,#333);font-size:14px;">${escapeHtml(vscode.l10n.t('Rendering...'))}</div>
+</div></body></html>`;
+        }
+
+        // Include path specific: show notification, warn on invalid path,
+        // restart local server so its cwd picks up the new path.
         if (changed.has('plantumlIncludePath')) {
-            let effectivePath: string;
-            if (config.plantumlIncludePath && !fs.existsSync(config.plantumlIncludePath)) {
-                effectivePath = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath || '';
+            const resolved = resolveIncludePath(config) || '';
+            if (config.plantumlIncludePath && resolved !== config.plantumlIncludePath) {
                 void vscode.window.showWarningMessage(
                     vscode.l10n.t('PlantUML include path "{0}" does not exist. Using workspace root instead.', config.plantumlIncludePath)
                 );
-            } else {
-                effectivePath = config.plantumlIncludePath || vscode.workspace.workspaceFolders?.[0]?.uri.fsPath || '';
             }
             void vscode.window.showInformationMessage(
-                vscode.l10n.t('PlantUML include path changed to: {0}', effectivePath)
+                vscode.l10n.t('PlantUML include path changed to: {0}', resolved)
             );
-            clearCache();
-            clearServerCache();
             if (config.renderMode === 'local-server') {
                 void restartLocalServer(config);
             }
