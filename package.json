@@ -37,7 +37,7 @@
       {
         "id": "plantuml",
         "aliases": ["PlantUML"],
-        "extensions": [".puml", ".plantuml", ".pu"]
+        "extensions": [".puml", ".plantuml"]
       },
       {
         "id": "mermaid",
@@ -124,7 +124,7 @@
         },
         {
           "command": "plantuml-markdown-preview.openPumlPreview",
-          "when": "resourceExtname == .puml || resourceExtname == .plantuml || resourceExtname == .pu",
+          "when": "resourceExtname == .puml || resourceExtname == .plantuml",
           "group": "plantuml-markdown-preview"
         },
         {

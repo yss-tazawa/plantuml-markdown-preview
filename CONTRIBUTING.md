@@ -67,7 +67,7 @@ src/
   local-server.ts   Local PlantUML picoweb server management
   exporter.ts       HTML export with inline SVG and syntax highlighting
   diagram-viewer.ts Pan & zoom viewer for embedded PlantUML diagrams
-  puml-preview.ts   Standalone PlantUML file preview (.puml / .plantuml / .pu)
+  puml-preview.ts   Standalone PlantUML file preview (.puml / .plantuml)
   mermaid-preview.ts Standalone Mermaid file preview (.mmd / .mermaid)
   export-handler.ts Shared PNG/SVG export handler for viewer webviews
   scroll-sync.ts    Bidirectional editor ↔ preview scroll sync

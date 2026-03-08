@@ -149,7 +149,7 @@ Click any PlantUML or Mermaid diagram in the preview to open it in a separate pa
 
 ### Standalone Diagram Preview
 
-Open `.puml`, `.plantuml`, `.pu`, `.mmd`, or `.mermaid` files directly — no Markdown wrapper needed.
+Open `.puml`, `.plantuml`, `.mmd`, or `.mermaid` files directly — no Markdown wrapper needed.
 
 - Same pan & zoom UI as the Diagram Viewer
 - Live preview updates as you type (debounced)
