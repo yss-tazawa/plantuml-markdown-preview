@@ -14,7 +14,6 @@ import { escapeHtml } from './utils.js';
  * @param initialLine - Editor top line to restore after re-render (-1 = no restore).
  * @param initialMaxTopLine - Editor max top line for the tail anchor.
  * @param nonce - CSP nonce string to authorize the script.
- * @param renderSeq - Sequence number to discard stale showLoading messages.
  * @param renderingText - Localized "Rendering..." text for the loading overlay.
  * @param syncMasterTimeoutMs - Timeout in ms before syncMaster resets to 'none'.
  * @param scrollSyncUri - Webview URI for the bundled scroll-sync-webview.js.
@@ -26,12 +25,11 @@ export function getScrollSyncScriptTag(
     initialLine: number,
     initialMaxTopLine: number,
     nonce: string,
-    renderSeq: number,
     renderingText: string,
     syncMasterTimeoutMs: number,
     scrollSyncUri: string,
     initialAtBottom = false,
     enableDiagramViewer = true
 ): string {
-    return `<script nonce="${nonce}" src="${escapeHtml(scrollSyncUri)}" data-initial-line="${initialLine}" data-initial-max-top-line="${initialMaxTopLine}" data-initial-at-bottom="${initialAtBottom}" data-render-seq="${renderSeq}" data-rendering-text="${escapeHtml(renderingText)}" data-sync-master-timeout-ms="${syncMasterTimeoutMs}" data-enable-diagram-viewer="${enableDiagramViewer}"></script>`;
+    return `<script nonce="${nonce}" src="${escapeHtml(scrollSyncUri)}" data-initial-line="${initialLine}" data-initial-max-top-line="${initialMaxTopLine}" data-initial-at-bottom="${initialAtBottom}" data-rendering-text="${escapeHtml(renderingText)}" data-sync-master-timeout-ms="${syncMasterTimeoutMs}" data-enable-diagram-viewer="${enableDiagramViewer}"></script>`;
 }

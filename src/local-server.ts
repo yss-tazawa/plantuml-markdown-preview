@@ -98,16 +98,10 @@ export async function startLocalServer(config: Config): Promise<void> {
 
             const args = buildArgs(config, port);
 
+            // Warning for invalid path is shown once by preview.ts updateConfig.
             let includePath: string | undefined;
-            if (config.plantumlIncludePath) {
-                if (existsSync(config.plantumlIncludePath)) {
-                    includePath = config.plantumlIncludePath;
-                } else {
-                    void vscode.window.showWarningMessage(
-                        vscode.l10n.t('PlantUML include path "{0}" does not exist. Using workspace root instead.', config.plantumlIncludePath)
-                    );
-                    includePath = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
-                }
+            if (config.plantumlIncludePath && existsSync(config.plantumlIncludePath)) {
+                includePath = config.plantumlIncludePath;
             } else {
                 includePath = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
             }

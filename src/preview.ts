@@ -633,7 +633,7 @@ async function renderPanel(text: string): Promise<void> {
 
             const renderOptions = {
                 sourceMap: true,
-                scriptHtml: getScrollSyncScriptTag(lastScrollLine, lastMaxTopLine, nonce, mySeq, vscode.l10n.t('Rendering...'), SYNC_MASTER_TIMEOUT_MS, scrollSyncUri, lastAtBottom, enableDiagramViewer),
+                scriptHtml: getScrollSyncScriptTag(lastScrollLine, lastMaxTopLine, nonce, vscode.l10n.t('Rendering...'), SYNC_MASTER_TIMEOUT_MS, scrollSyncUri, lastAtBottom, enableDiagramViewer),
                 cspNonce: nonce,
                 cspSource: panel.webview.cspSource,
                 lang: vscode.env.language,
@@ -779,12 +779,10 @@ function renderPanelWithLoading(text: string): void {
         return;
     }
 
-    // Send showLoading with the *current* (pre-increment) renderSeq.
-    // renderPanel() will ++renderSeq and embed the new value as RENDER_SEQ in
-    // the replacement HTML. Because the seq values differ, the new HTML's
-    // message handler ignores this stale showLoading — which is intentional:
-    // the overlay should only appear on the *old* HTML that is about to be replaced.
-    void panel.webview.postMessage({ type: 'showLoading', seq: renderSeq });
+    // Show loading overlay. On the full-HTML path the overlay is destroyed
+    // when panel.webview.html is replaced; on the incremental path updateBody
+    // dismisses it explicitly.
+    void panel.webview.postMessage({ type: 'showLoading' });
 
     // When the caller already shows a notification (e.g. "Opening preview..."),
     // skip the separate "Rendering diagrams..." notification to avoid duplicates.
@@ -877,16 +875,22 @@ export function updateConfig(config: Config): void {
             applyWebviewOptions();
         }
 
-        // Restart local server when include path changes (cwd is fixed at process start)
+        // Handle include path changes (affects cwd for all local modes)
         if (changed.has('plantumlIncludePath')) {
+            let effectivePath: string;
             if (config.plantumlIncludePath && !fs.existsSync(config.plantumlIncludePath)) {
-                // resolveIncludePath() will show the warning and fall back to workspace root
-            } else {
-                const effectivePath = config.plantumlIncludePath || vscode.workspace.workspaceFolders?.[0]?.uri.fsPath || '';
-                void vscode.window.showInformationMessage(
-                    vscode.l10n.t('PlantUML include path changed to: {0}', effectivePath)
+                effectivePath = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath || '';
+                void vscode.window.showWarningMessage(
+                    vscode.l10n.t('PlantUML include path "{0}" does not exist. Using workspace root instead.', config.plantumlIncludePath)
                 );
+            } else {
+                effectivePath = config.plantumlIncludePath || vscode.workspace.workspaceFolders?.[0]?.uri.fsPath || '';
             }
+            void vscode.window.showInformationMessage(
+                vscode.l10n.t('PlantUML include path changed to: {0}', effectivePath)
+            );
+            clearCache();
+            clearServerCache();
             if (config.renderMode === 'local-server') {
                 void restartLocalServer(config);
             }

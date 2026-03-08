@@ -47,9 +47,7 @@ function resolveConfigPaths(config: Config): ResolvedPaths {
 function resolveIncludePath(config: Config): string | undefined {
     if (config.plantumlIncludePath) {
         if (existsSync(config.plantumlIncludePath)) return config.plantumlIncludePath;
-        void vscode.window.showWarningMessage(
-            vscode.l10n.t('PlantUML include path "{0}" does not exist. Using workspace root instead.', config.plantumlIncludePath)
-        );
+        // Warning is shown once by preview.ts updateConfig; no duplicate here.
     }
     return vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
 }
