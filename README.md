@@ -148,6 +148,15 @@ Click any PlantUML or Mermaid diagram in the preview to open it in a separate pa
 - **Save as PNG / SVG** — right-click a diagram in the preview or Diagram Viewer to save it as a file
 - Disable with `enableDiagramViewer: false`
 
+### PlantUML `!include` Support
+
+Use `!include` directives to share common styles, macros, and component definitions across diagrams.
+
+- Included files are resolved relative to the workspace root (or the directory set in `plantumlIncludePath`)
+- Click the **Reload** button (↻) in the preview toolbar to refresh after editing an included file
+- Click an included `.puml` file reference in a diagram to open its standalone preview
+- Works in Fast and Secure modes. Not available in Easy mode (the remote server cannot access local files).
+
 ### Standalone Diagram Preview
 
 Open `.puml`, `.plantuml`, `.mmd`, or `.mermaid` files directly — no Markdown wrapper needed.
@@ -393,6 +402,7 @@ The PDF file is saved alongside the source `.md` file. Chrome, Edge, or Chromium
 ### Navigation
 
 - **Go to top / Go to bottom:** Buttons in the top-right corner of the preview panel
+- **Reload:** Click the ↻ button to refresh the preview (useful after editing `!include`d files)
 - **Table of Contents:** Click the TOC button in the top-right corner of the preview panel to open a sidebar listing all headings; click a heading to jump to it
 
 ### Change Theme
@@ -551,6 +561,17 @@ running a [self-hosted PlantUML server](https://plantuml.com/server) and setting
 
 Set a diagram theme to match your preview theme. Open the theme picker from the
 title bar icon and select a dark PlantUML theme (e.g. `cyborg`, `mars`) or set the Mermaid theme to `dark`.
+
+</details>
+
+<details>
+<summary><strong><code>!include</code> is not working</strong></summary>
+
+`!include` requires Fast or Secure mode — it does not work in Easy mode because
+the remote server cannot access your local files.
+
+- Paths are resolved relative to the workspace root by default. Set `plantumlIncludePath` to use a different base directory.
+- After editing an included file, click the **Reload** button (↻) in the preview toolbar to refresh.
 
 </details>
 
