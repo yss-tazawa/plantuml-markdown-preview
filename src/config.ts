@@ -65,6 +65,8 @@ export interface Config {
     debounceDiagramChangeMs: number;
     /** When true, enable KaTeX math rendering ($...$ inline, $$...$$ block). */
     enableMath: boolean;
+    /** Base directory for PlantUML `!include` directives. Empty string = workspace root. */
+    plantumlIncludePath: string;
     /** Hidden debug flag: simulate Java not found, even when installed. */
     debugSimulateNoJava?: boolean;
 }

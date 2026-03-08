@@ -19,6 +19,7 @@
   "configuration.plantumlJarPath.description": "PlantUML jar 文件路径。留空则使用内置 jar（LGPL）。示例: /usr/local/lib/plantuml.jar",
   "configuration.javaPath.description": "Java 可执行文件路径（需要 Java 11+）。设置后直接使用该路径。未设置时优先尝试 JAVA_HOME/bin/java，其次使用 PATH 中的 'java'。默认: java",
   "configuration.dotPath.description": "Graphviz dot 可执行文件路径（默认: dot）",
+  "configuration.plantumlIncludePath.description": "PlantUML !include 指令的基准目录。!include 中的路径相对于此目录解析。留空则使用工作区根目录。Easy 模式（远程服务器）下不可用。默认:（空）",
   "configuration.debounceNoDiagramChangeMs.description": "非图表文本变更时的防抖延迟（毫秒）。图表从缓存中获取，更新速度快。留空则使用模式默认值（Fast: 100, Secure: 100, Easy: 100）。",
   "configuration.debounceDiagramChangeMs.description": "图表内容变更时的防抖延迟（毫秒），会触发重新渲染。留空则使用模式默认值（Fast: 100, Secure: 300, Easy: 300）。",
   "configuration.plantumlTheme.description": "PlantUML 图表主题。'default' 表示无主题（使用 PlantUML 默认样式）。指定主题名称（如 'cyborg'、'mars'）会向 PlantUML CLI 传递 -theme 参数。默认: default",

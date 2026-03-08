@@ -13,6 +13,7 @@
 import * as net from 'net';
 import * as vscode from 'vscode';
 import type { ChildProcess } from 'child_process';
+import { existsSync } from 'fs';
 import { spawnJava } from './utils.js';
 import type { Config } from './config.js';
 import { CONFIG_SECTION } from './config.js';
@@ -96,10 +97,24 @@ export async function startLocalServer(config: Config): Promise<void> {
             serverPort = port;
 
             const args = buildArgs(config, port);
-            log(`[local-server] Starting: java ${args.join(' ')}`);
 
+            let includePath: string | undefined;
+            if (config.plantumlIncludePath) {
+                if (existsSync(config.plantumlIncludePath)) {
+                    includePath = config.plantumlIncludePath;
+                } else {
+                    void vscode.window.showWarningMessage(
+                        vscode.l10n.t('PlantUML include path "{0}" does not exist. Using workspace root instead.', config.plantumlIncludePath)
+                    );
+                    includePath = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+                }
+            } else {
+                includePath = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+            }
+            log(`[local-server] Starting: java ${args.join(' ')}`);
             const child = spawnJava(config.javaPath, args, {
                 stdio: ['ignore', 'pipe', 'pipe'],
+                cwd: includePath,
             });
             serverProcess = child;
             stoppingIntentionally = false;

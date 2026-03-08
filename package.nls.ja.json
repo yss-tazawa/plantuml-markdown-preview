@@ -19,6 +19,7 @@
   "configuration.plantumlJarPath.description": "PlantUML jar ファイルへのパス。空欄の場合は同梱の jar（LGPL）を使用します。例: /usr/local/lib/plantuml.jar",
   "configuration.javaPath.description": "Java 実行ファイルへのパス（Java 11 以上が必要）。設定するとその値をそのまま使用します。未設定の場合は JAVA_HOME/bin/java を優先し、なければ PATH 上の 'java' を使用します。デフォルト: java",
   "configuration.dotPath.description": "Graphviz dot 実行ファイルへのパス（デフォルト: dot）",
+  "configuration.plantumlIncludePath.description": "PlantUML !include ディレクティブの基準ディレクトリ。!include のパスはこのディレクトリからの相対パスで解決されます。空欄の場合はワークスペースルートを使用します。Easy モード（リモートサーバー）では利用できません。デフォルト:（空欄）",
   "configuration.debounceNoDiagramChangeMs.description": "ダイアグラム以外のテキスト変更時のデバウンス待機時間（ms）。ダイアグラムはキャッシュから取得されるため高速。空欄の場合はモードのデフォルト値を使用します（Fast: 100, Secure: 100, Easy: 100）。",
   "configuration.debounceDiagramChangeMs.description": "ダイアグラム内容変更時のデバウンス待機時間（ms）。ダイアグラムの再レンダリングが発生します。空欄の場合はモードのデフォルト値を使用します（Fast: 100, Secure: 300, Easy: 300）。",
   "configuration.plantumlTheme.description": "PlantUML 図のテーマ。'default' はテーマなし（PlantUML デフォルト）。テーマ名（例: 'cyborg', 'mars'）を指定すると PlantUML CLI に -theme を渡します。デフォルト: default",
