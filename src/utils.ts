@@ -129,6 +129,46 @@ function extractFencedBlocks(source: string, reSource: string): string[] {
     return blocks;
 }
 
+/** A diagram block with its type tag, extracted in document order. */
+export interface DiagramBlock {
+    type: 'plantuml' | 'mermaid';
+    content: string;
+}
+
+/**
+ * Extract all PlantUML and Mermaid blocks from Markdown source in document order.
+ *
+ * Unlike the separate extract functions, this returns an interleaved list
+ * matching the DOM order used by the webview's combined `diagramIndex`.
+ */
+export function extractAllDiagramBlocks(source: string): DiagramBlock[] {
+    const re = new RegExp(
+        '^ {0,3}```(plantuml|mermaid)[ \\t]*\\n([\\s\\S]*?)\\n {0,3}```[ \\t]*$',
+        'gim'
+    );
+    const blocks: DiagramBlock[] = [];
+    let match;
+    while ((match = re.exec(source)) !== null) {
+        blocks.push({ type: match[1].toLowerCase() as 'plantuml' | 'mermaid', content: match[2] });
+    }
+    return blocks;
+}
+
+/**
+ * Extract file paths from `!include` / `!includesub` directives in PlantUML source.
+ *
+ * Handles `!includesub file.puml!section` by stripping the `!section` suffix.
+ */
+export function extractIncludeFiles(pumlSource: string): string[] {
+    const re = /^!include(?:sub)?\s+(.+?)(?:![^\s]*)?$/gim;
+    const files: string[] = [];
+    let match;
+    while ((match = re.exec(pumlSource)) !== null) {
+        files.push(match[1].trim());
+    }
+    return files;
+}
+
 /**
  * Simple LRU cache backed by a Map.
  *
