@@ -61,5 +61,8 @@
   "No diagram selected. Right-click a diagram or open it in the Diagram Viewer first.": "ダイアグラムが選択されていません。ダイアグラムを右クリックするか、ダイアグラムビューアーで開いてください。",
   "Failed to open file: {0}": "ファイルを開けませんでした: {0}",
   "No PlantUML file is selected.": "PlantUML ファイルが選択されていません。",
-  "No Mermaid file is selected.": "Mermaid ファイルが選択されていません。"
+  "No Mermaid file is selected.": "Mermaid ファイルが選択されていません。",
+  "Java path changed to: {0}": "Java パスを変更しました: {0}",
+  "PlantUML jar path changed to: {0}": "PlantUML jar パスを変更しました: {0}",
+  "PlantUML jar \"{0}\" does not exist. Using bundled jar instead.": "PlantUML jar「{0}」が存在しません。同梱版の jar を使用します。"
 }

@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## 0.5.3 - 2026-03-08
+
+### Fixed
+
+- Non-existent `plantumlJarPath` no longer causes render errors — automatically falls back to the bundled jar with a warning
+- Secure mode now checks Java availability at startup, matching Fast mode behavior
+
+### Changed
+
+- Notification shown when `javaPath` or `plantumlJarPath` is changed to confirm the new setting is applied
+
 ## 0.5.2 - 2026-03-08
 
 ### Fixed

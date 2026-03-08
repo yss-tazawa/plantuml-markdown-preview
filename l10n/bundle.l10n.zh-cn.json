@@ -61,5 +61,8 @@
   "No diagram selected. Right-click a diagram or open it in the Diagram Viewer first.": "未选择图表。请右键单击图表或在图表查看器中打开。",
   "Failed to open file: {0}": "文件打开失败: {0}",
   "No PlantUML file is selected.": "未选择 PlantUML 文件。",
-  "No Mermaid file is selected.": "未选择 Mermaid 文件。"
+  "No Mermaid file is selected.": "未选择 Mermaid 文件。",
+  "Java path changed to: {0}": "Java 路径已更改为: {0}",
+  "PlantUML jar path changed to: {0}": "PlantUML jar 路径已更改为: {0}",
+  "PlantUML jar \"{0}\" does not exist. Using bundled jar instead.": "PlantUML jar"{0}"不存在。将使用内置 jar。"
 }
