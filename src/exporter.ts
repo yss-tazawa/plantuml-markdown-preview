@@ -146,6 +146,8 @@ export interface RenderOptions {
     navTopTitle?: string;
     /** Tooltip for "Go to bottom" nav button (preview only). */
     navBottomTitle?: string;
+    /** Tooltip for "Reload" nav button (preview only). */
+    navReloadTitle?: string;
     /** Tooltip for "TOC" nav button (preview only). */
     navTocTitle?: string;
     /** When true, override scales to auto and remove max-width for fit-to-width layout. */
@@ -518,7 +520,7 @@ function buildHtml(title: string, body: string, previewTheme?: string, options?:
         scriptHtml, cspNonce, cspSource, lang, allowHttpImages,
         mermaidScriptUri, mermaidTheme, mermaidScale,
         htmlMaxWidth, htmlAlignment,
-        navTopTitle, navBottomTitle, navTocTitle,
+        navTopTitle, navBottomTitle, navReloadTitle, navTocTitle,
         fitToWidth, katexCssHtml, enableMath,
     } = options || {};
     const fontSrc = enableMath && cspSource ? cspSource : "'none'";
@@ -602,6 +604,7 @@ ${theme.css}
 ${cspNonce ? `<div id="nav-toolbar">
   <button id="nav-top" title="${escapeHtml(navTopTitle || 'Go to top')}"><svg width="20" height="20" viewBox="0 0 16 16"><path d="M3.5 10L8 5.5 12.5 10" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
   <button id="nav-bottom" title="${escapeHtml(navBottomTitle || 'Go to bottom')}"><svg width="20" height="20" viewBox="0 0 16 16"><path d="M3.5 6L8 10.5 12.5 6" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+  <button id="nav-reload" title="${escapeHtml(navReloadTitle || 'Reload')}"><svg width="20" height="20" viewBox="0 0 16 16"><path d="M13 8A5 5 0 1 1 8 3" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round"/><path d="M8 0.5L11 3 8 5.5" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
   <button id="nav-toc" title="${escapeHtml(navTocTitle || 'Table of Contents')}"><svg width="20" height="20" viewBox="0 0 16 16"><circle cx="3" cy="4" r="1.2" fill="currentColor"/><line x1="6" y1="4" x2="13" y2="4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><circle cx="3" cy="8" r="1.2" fill="currentColor"/><line x1="6" y1="8" x2="13" y2="8" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><circle cx="3" cy="12" r="1.2" fill="currentColor"/><line x1="6" y1="12" x2="13" y2="12" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg></button>
 </div>
 <div id="toc-sidebar"><ul id="toc-list"></ul></div>

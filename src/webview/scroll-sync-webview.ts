@@ -537,6 +537,11 @@ interface Anchor {
         window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
     });
 
+    const navReload = document.getElementById('nav-reload');
+    if (navReload) navReload.addEventListener('click', function () {
+        vscode.postMessage({ type: 'reload' });
+    });
+
     // --- TOC sidebar ---
     interface TocNode { id: string; text: string; level: number; children: TocNode[] }
 

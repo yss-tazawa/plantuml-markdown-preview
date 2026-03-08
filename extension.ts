@@ -97,6 +97,7 @@ function getConfig(): Config {
         htmlMaxWidth: cfg.get<string>('htmlMaxWidth', '960px'),
         htmlAlignment: cfg.get<string>('htmlAlignment', 'center'),
         enableMath: cfg.get<boolean>('enableMath', true),
+        plantumlIncludePath: cfg.get<string>('plantumlIncludePath', ''),
         // Intentionally not declared in package.json contributes.configuration (hidden debug setting)
         debugSimulateNoJava: cfg.get<boolean>('debugSimulateNoJava', false),
     };
@@ -680,6 +681,7 @@ const builtInPreviewConfig: Config = {
     allowLocalImages: true,
     allowHttpImages: false,
     enableMath: true,
+    plantumlIncludePath: '',
     debounceNoDiagramChangeMs: 100,
     debounceDiagramChangeMs: 100,
     debugSimulateNoJava: false,

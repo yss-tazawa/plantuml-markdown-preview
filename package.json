@@ -327,8 +327,14 @@
           "default": "dot",
           "description": "%configuration.dotPath.description%"
         },
-        "plantumlMarkdownPreview.allowLocalImages": {
+        "plantumlMarkdownPreview.plantumlIncludePath": {
           "order": 5,
+          "type": "string",
+          "default": "",
+          "description": "%configuration.plantumlIncludePath.description%"
+        },
+        "plantumlMarkdownPreview.allowLocalImages": {
+          "order": 6,
           "type": "string",
           "default": "mode-default",
           "enum": [

@@ -16,6 +16,7 @@
  */
 import * as vscode from 'vscode';
 import type { ChildProcess } from 'child_process';
+import { existsSync } from 'fs';
 import { escapeHtml, ensureStartEndTags, errorHtml, LruCache, computeHash, resolveJavaCommand, spawnJava, spawnJavaSync, execJava } from './utils.js';
 import type { Config } from './config.js';
 
@@ -40,6 +41,17 @@ function resolveConfigPaths(config: Config): ResolvedPaths {
         dotPath: config.dotPath || 'dot',
         plantumlTheme: config.plantumlTheme || 'default',
     };
+}
+
+/** Resolve the base directory for PlantUML `!include` directives. */
+function resolveIncludePath(config: Config): string | undefined {
+    if (config.plantumlIncludePath) {
+        if (existsSync(config.plantumlIncludePath)) return config.plantumlIncludePath;
+        void vscode.window.showWarningMessage(
+            vscode.l10n.t('PlantUML include path "{0}" does not exist. Using workspace root instead.', config.plantumlIncludePath)
+        );
+    }
+    return vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
 }
 
 /** Set of currently in-flight render child processes (for cleanup on deactivate). */
@@ -72,6 +84,7 @@ interface RenderContext {
     trimmed: string;
     tagsAdded: boolean;
     hash: string;
+    includePath: string | undefined;
 }
 
 /**
@@ -108,7 +121,7 @@ function prepareRenderContext(pumlContent: string, config: Config): { ctx: Rende
         args.push('-theme', plantumlTheme);
     }
 
-    return { ctx: { javaPath, args, content, trimmed, tagsAdded, hash } };
+    return { ctx: { javaPath, args, content, trimmed, tagsAdded, hash, includePath: resolveIncludePath(config) } };
 }
 
 /**
@@ -128,7 +141,7 @@ function prepareRenderContext(pumlContent: string, config: Config): { ctx: Rende
 export function renderToSvg(pumlContent: string, config: Config): string {
     const prepared = prepareRenderContext(pumlContent, config);
     if ('error' in prepared) return prepared.error;
-    const { javaPath, args, content, trimmed, tagsAdded, hash } = prepared.ctx;
+    const { javaPath, args, content, trimmed, tagsAdded, hash, includePath } = prepared.ctx;
 
     const cached = cache.get(hash);
     if (cached !== undefined) return cached;
@@ -142,6 +155,7 @@ export function renderToSvg(pumlContent: string, config: Config): string {
             timeout: 15000,
             // SIGTERM allows Java to clean up temporary files gracefully on timeout.
             killSignal: 'SIGTERM',
+            cwd: includePath,
         }
     );
 
@@ -173,7 +187,7 @@ export function renderToSvg(pumlContent: string, config: Config): string {
 export function renderToSvgAsync(pumlContent: string, config: Config, signal?: AbortSignal): Promise<string> {
     const prepared = prepareRenderContext(pumlContent, config);
     if ('error' in prepared) return Promise.resolve(prepared.error);
-    const { javaPath, args, content, trimmed, tagsAdded, hash } = prepared.ctx;
+    const { javaPath, args, content, trimmed, tagsAdded, hash, includePath } = prepared.ctx;
 
     const cached = cache.get(hash);
     if (cached !== undefined) return Promise.resolve(cached);
@@ -181,7 +195,7 @@ export function renderToSvgAsync(pumlContent: string, config: Config, signal?: A
     if (signal?.aborted) return Promise.resolve('');
 
     return new Promise<string>((resolve) => {
-        const child = spawnJava(javaPath, args, { stdio: ['pipe', 'pipe', 'pipe'] });
+        const child = spawnJava(javaPath, args, { stdio: ['pipe', 'pipe', 'pipe'], cwd: includePath });
         activeChildren.add(child);
         const stdoutBufs: Buffer[] = [];
         const stderrBufs: Buffer[] = [];
@@ -282,9 +296,9 @@ function isErrorSvg(svg: string): boolean {
  * @returns Stdout content on success.
  * @throws Error on spawn failure, timeout, abort, or non-zero exit with empty stdout.
  */
-function spawnBatchJvm(javaPath: string, args: string[], stdinPayload: string, timeout: number, signal?: AbortSignal): Promise<string> {
+function spawnBatchJvm(javaPath: string, args: string[], stdinPayload: string, timeout: number, signal?: AbortSignal, cwd?: string): Promise<string> {
     return new Promise<string>((resolve, reject) => {
-        const child = spawnJava(javaPath, args, { stdio: ['pipe', 'pipe', 'pipe'] });
+        const child = spawnJava(javaPath, args, { stdio: ['pipe', 'pipe', 'pipe'], cwd });
         activeChildren.add(child);
         const stdoutBufs: Buffer[] = [];
         let settled = false;
@@ -430,7 +444,7 @@ async function renderBatchLocal(blocks: string[], config: Config, signal?: Abort
     const stdinPayload = uncached.map(b => b.content).join('\n');
 
     try {
-        const stdout = await spawnBatchJvm(javaPath, args, stdinPayload, timeout, signal);
+        const stdout = await spawnBatchJvm(javaPath, args, stdinPayload, timeout, signal, resolveIncludePath(config));
         const svgs = splitSvgOutput(stdout);
 
         if (svgs.length !== uncached.length) {

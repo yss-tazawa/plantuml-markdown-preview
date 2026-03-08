@@ -14,7 +14,9 @@ import * as vscode from 'vscode';
 import path from 'path';
 import fs from 'fs';
 import { renderHtmlAsync, renderBodyAsync, getThemeCss, LIGHT_THEME_KEYS, DARK_THEME_KEYS } from './exporter.js';
-import { listThemesAsync, prefetchThemes } from './plantuml.js';
+import { listThemesAsync, prefetchThemes, clearCache } from './plantuml.js';
+import { clearServerCache } from './plantuml-server.js';
+import { restartLocalServer } from './local-server.js';
 import { getScrollSyncScriptTag } from './scroll-sync.js';
 import { getNonce, resolveLocalImagePaths, extractPlantUmlBlocks, PLANTUML_FENCE_TEST_RE, extractMermaidBlocks, MERMAID_FENCE_TEST_RE, escapeHtml } from './utils.js';
 import { CONFIG_SECTION, MERMAID_THEME_KEYS, type Config } from './config.js';
@@ -287,6 +289,18 @@ function registerEventHandlers(): void {
             setPendingSaveDiagram(message.svg, message.diagramIndex);
         } else if (enableDiagramViewer && message.type === 'exportDiagramFromPreview') {
             void handlePngFromPreview(message.data);
+        } else if (message.type === 'reload') {
+            clearCache();
+            clearServerCache();
+            if (currentFilePath) {
+                const editor = vscode.window.visibleTextEditors.find(
+                    e => e.document.uri.fsPath === currentFilePath
+                );
+                const text = editor?.document.getText();
+                if (text !== undefined) {
+                    renderPanelWithLoading(text);
+                }
+            }
         }
     });
 
@@ -629,6 +643,7 @@ async function renderPanel(text: string): Promise<void> {
                 mermaidScale: lastConfig.mermaidScale,
                 navTopTitle: vscode.l10n.t('Go to top'),
                 navBottomTitle: vscode.l10n.t('Go to bottom'),
+                navReloadTitle: vscode.l10n.t('Reload'),
                 navTocTitle: vscode.l10n.t('Table of Contents'),
                 katexCssHtml,
                 enableMath: lastConfig.enableMath,
@@ -801,7 +816,7 @@ function renderPanelWithLoading(text: string): void {
 }
 
 /** Property keys that affect rendering output (PlantUML paths and themes). */
-const RENDER_KEYS = ['plantumlJarPath', 'javaPath', 'dotPath', 'plantumlTheme', 'plantumlScale', 'previewTheme', 'allowLocalImages', 'allowHttpImages', 'mode', 'plantumlServerUrl', 'plantumlLocalServerPort', 'mermaidTheme', 'mermaidScale', 'enableMath'] as const;
+const RENDER_KEYS = ['plantumlJarPath', 'javaPath', 'dotPath', 'plantumlTheme', 'plantumlScale', 'previewTheme', 'allowLocalImages', 'allowHttpImages', 'mode', 'plantumlServerUrl', 'plantumlLocalServerPort', 'mermaidTheme', 'mermaidScale', 'enableMath', 'plantumlIncludePath'] as const;
 
 /**
  * Check which rendering-related properties changed between two configs.
@@ -860,6 +875,21 @@ export function updateConfig(config: Config): void {
         // Update webview options when allowLocalImages toggled
         if (changed.has('allowLocalImages')) {
             applyWebviewOptions();
+        }
+
+        // Restart local server when include path changes (cwd is fixed at process start)
+        if (changed.has('plantumlIncludePath')) {
+            if (config.plantumlIncludePath && !fs.existsSync(config.plantumlIncludePath)) {
+                // resolveIncludePath() will show the warning and fall back to workspace root
+            } else {
+                const effectivePath = config.plantumlIncludePath || vscode.workspace.workspaceFolders?.[0]?.uri.fsPath || '';
+                void vscode.window.showInformationMessage(
+                    vscode.l10n.t('PlantUML include path changed to: {0}', effectivePath)
+                );
+            }
+            if (config.renderMode === 'local-server') {
+                void restartLocalServer(config);
+            }
         }
 
         // Settings that affect <head> content require a full HTML reload
