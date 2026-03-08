@@ -18,7 +18,7 @@ import { listThemesAsync, prefetchThemes, clearCache, resolveIncludePath } from 
 import { clearServerCache } from './plantuml-server.js';
 import { restartLocalServer } from './local-server.js';
 import { getScrollSyncScriptTag } from './scroll-sync.js';
-import { getNonce, resolveLocalImagePaths, extractPlantUmlBlocks, PLANTUML_FENCE_TEST_RE, extractMermaidBlocks, MERMAID_FENCE_TEST_RE, escapeHtml, extractAllDiagramBlocks, extractIncludeFiles } from './utils.js';
+import { getNonce, resolveLocalImagePaths, extractPlantUmlBlocks, PLANTUML_FENCE_TEST_RE, extractMermaidBlocks, MERMAID_FENCE_TEST_RE, escapeHtml, extractAllDiagramBlocks, extractIncludeFiles, buildThemeItems } from './utils.js';
 import { CONFIG_SECTION, MERMAID_THEME_KEYS, type Config } from './config.js';
 import { openDiagramViewer, updateDiagramViewer, closeStaleViewers, disposeAllViewers, setPendingSaveDiagram, handlePngFromPreview } from './diagram-viewer.js';
 import { openPumlPreview } from './puml-preview.js';
@@ -966,15 +966,6 @@ export async function changeTheme(): Promise<void> {
     const currentPreviewTheme = lastConfig ? lastConfig.previewTheme : 'github-light';
     const currentPlantumlTheme = lastConfig ? lastConfig.plantumlTheme : 'default';
     const currentMermaidTheme = lastConfig ? lastConfig.mermaidTheme : 'default';
-
-    // Helper to build QuickPick items for a set of theme keys
-    const buildThemeItems = <C extends string>(keys: readonly string[], category: C, currentKey: string) =>
-        keys.map(key => ({
-            label: key === currentKey ? `$(check) ${key}` : `      ${key}`,
-            description: key === currentKey ? vscode.l10n.t('(current)') : '',
-            category,
-            themeKey: key
-        }));
 
     // PlantUML Theme section (async fetch; resolves instantly if cache is warm)
     const plantumlThemes = await vscode.window.withProgress(

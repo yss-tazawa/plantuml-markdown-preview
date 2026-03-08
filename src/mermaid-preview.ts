@@ -9,8 +9,9 @@ import * as vscode from 'vscode';
 import { readFile } from 'fs/promises';
 import { CONFIG_SECTION, MERMAID_THEME_KEYS, MERMAID_THEME_SET, type Config } from './config.js';
 import { LIGHT_THEME_KEYS, DARK_THEME_KEYS, getThemeBgColor } from './exporter.js';
-import { getNonce, escapeHtml, CSS_COLOR_RE } from './utils.js';
+import { getNonce, escapeHtml, CSS_COLOR_RE, buildThemeItems } from './utils.js';
 import { handleExportMessage } from './export-handler.js';
+import { getPanZoomScript } from './webview/pan-zoom-script.js';
 
 /** The singleton preview panel. */
 let panel: vscode.WebviewPanel | null = null;
@@ -157,119 +158,13 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: ${containe
 </div>
 <textarea id="initial-source" style="display:none;">${escapedSource}</textarea>
 <script nonce="${nonce}" src="${mermaidScriptUri}"></script>
-<!-- TODO: extract shared pan & zoom script (shared with diagram-viewer.ts) -->
 <script nonce="${nonce}">
 (function() {
     var vscodeApi = acquireVsCodeApi();
-    var viewport = document.getElementById('viewport');
-    var container = document.getElementById('svg-container');
-    var zoomLabel = document.getElementById('zoom-label');
-    var MIN_SCALE = 0.1, MAX_SCALE = 20, ZOOM_STEP = 0.15;
-    var scale = 1, translateX = 0, translateY = 0;
-    var isDragging = false, dragStartX = 0, dragStartY = 0, dragStartTX = 0, dragStartTY = 0;
+${getPanZoomScript()}
+    // Mermaid rendering
     var renderCounter = 0;
     var isFirstRender = true;
-
-    function applyTransform() {
-        container.style.transform = 'translate(' + translateX + 'px,' + translateY + 'px) scale(' + scale + ')';
-        zoomLabel.textContent = Math.round(scale * 100) + '%';
-    }
-
-    function getSvgNaturalSize() {
-        var svg = container.querySelector('svg');
-        if (!svg) return { w: 100, h: 100 };
-        var vb = svg.getAttribute('viewBox');
-        if (vb) {
-            var parts = vb.split(/[\\s,]+/);
-            if (parts.length === 4) return { w: parseFloat(parts[2]), h: parseFloat(parts[3]) };
-        }
-        var w = parseFloat(svg.getAttribute('width')) || svg.getBoundingClientRect().width;
-        var h = parseFloat(svg.getAttribute('height')) || svg.getBoundingClientRect().height;
-        return { w: w || 100, h: h || 100 };
-    }
-
-    function fitToWindow() {
-        var sz = getSvgNaturalSize();
-        var vpW = viewport.clientWidth;
-        var vpH = viewport.clientHeight;
-        var pad = 20;
-        scale = Math.min((vpW - pad * 2) / sz.w, (vpH - pad * 2) / sz.h);
-        scale = Math.max(MIN_SCALE, Math.min(MAX_SCALE, scale));
-        translateX = (vpW - sz.w * scale) / 2;
-        translateY = (vpH - sz.h * scale) / 2;
-        applyTransform();
-    }
-
-    function resetZoom() {
-        var sz = getSvgNaturalSize();
-        var vpW = viewport.clientWidth;
-        var vpH = viewport.clientHeight;
-        scale = 1;
-        translateX = (vpW - sz.w) / 2;
-        translateY = (vpH - sz.h) / 2;
-        applyTransform();
-    }
-
-    function zoomAtCenter(delta) {
-        var prevScale = scale;
-        scale = Math.min(MAX_SCALE, Math.max(MIN_SCALE, scale * (1 + delta)));
-        var vpW = viewport.clientWidth;
-        var vpH = viewport.clientHeight;
-        var cx = vpW / 2, cy = vpH / 2;
-        var ratio = scale / prevScale;
-        translateX = cx - (cx - translateX) * ratio;
-        translateY = cy - (cy - translateY) * ratio;
-        applyTransform();
-    }
-
-    // Mouse wheel: vertical = zoom (cursor-centered), horizontal = pan
-    viewport.addEventListener('wheel', function(e) {
-        e.preventDefault();
-        if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) {
-            translateX -= e.deltaX;
-            applyTransform();
-            return;
-        }
-        var prevScale = scale;
-        var delta = e.deltaY > 0 ? -ZOOM_STEP : ZOOM_STEP;
-        scale = Math.min(MAX_SCALE, Math.max(MIN_SCALE, scale * (1 + delta)));
-        var rect = viewport.getBoundingClientRect();
-        var cursorX = e.clientX - rect.left;
-        var cursorY = e.clientY - rect.top;
-        var ratio = scale / prevScale;
-        translateX = cursorX - (cursorX - translateX) * ratio;
-        translateY = cursorY - (cursorY - translateY) * ratio;
-        applyTransform();
-    }, { passive: false });
-
-    // Drag to pan
-    viewport.addEventListener('mousedown', function(e) {
-        if (e.button !== 0) return;
-        isDragging = true;
-        viewport.classList.add('dragging');
-        dragStartX = e.clientX; dragStartY = e.clientY;
-        dragStartTX = translateX; dragStartTY = translateY;
-        e.preventDefault();
-    });
-    window.addEventListener('mousemove', function(e) {
-        if (!isDragging) return;
-        translateX = dragStartTX + (e.clientX - dragStartX);
-        translateY = dragStartTY + (e.clientY - dragStartY);
-        applyTransform();
-    });
-    window.addEventListener('mouseup', function() {
-        if (!isDragging) return;
-        isDragging = false;
-        viewport.classList.remove('dragging');
-    });
-
-    // Toolbar buttons
-    document.getElementById('btn-fit').addEventListener('click', fitToWindow);
-    document.getElementById('btn-100').addEventListener('click', resetZoom);
-    document.getElementById('btn-zoom-in').addEventListener('click', function() { zoomAtCenter(ZOOM_STEP); });
-    document.getElementById('btn-zoom-out').addEventListener('click', function() { zoomAtCenter(-ZOOM_STEP); });
-
-    // Mermaid rendering
     mermaid.initialize({ startOnLoad: false, theme: '${safeMermaidTheme}' });
     var lastSource = '';
 
@@ -315,7 +210,6 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: ${containe
     }
 
     // Message handler
-    var cssColorRe = /^(#[\\da-fA-F]{3,8}|rgba?\\(\\s*[\\d.%,\\s\\/]+\\)|transparent|inherit|currentColor|[\\w-]+)$/;
     window.addEventListener('message', function(e) {
         if (e.data.type === 'updateSource') {
             renderMermaid(e.data.source);
@@ -333,35 +227,6 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: ${containe
         }
     });
 
-    function exportDiagram(format) {
-        var svgEl = container.querySelector('svg');
-        if (!svgEl) return;
-        if (format === 'svg') {
-            vscodeApi.postMessage({ type: 'exportDiagramResult', format: 'svg', data: svgEl.outerHTML });
-            return;
-        }
-        var svgData = new XMLSerializer().serializeToString(svgEl);
-        var sz = getSvgNaturalSize();
-        var dpr = 2;
-        var canvas = document.createElement('canvas');
-        canvas.width = sz.w * dpr;
-        canvas.height = sz.h * dpr;
-        var ctx = canvas.getContext('2d');
-        var img = new Image();
-        img.onload = function() {
-            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-            try {
-                vscodeApi.postMessage({ type: 'exportDiagramResult', format: 'png', data: canvas.toDataURL('image/png') });
-            } catch (e) {
-                vscodeApi.postMessage({ type: 'exportDiagramResult', format: 'png', data: '' });
-            }
-        };
-        img.onerror = function() {
-            vscodeApi.postMessage({ type: 'exportDiagramResult', format: 'png', data: '' });
-        };
-        img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svgData);
-    }
-
     // Render initial source
     var initialEl = document.getElementById('initial-source');
     if (initialEl && initialEl.textContent) {
@@ -377,12 +242,18 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: ${containe
 // Panel lifecycle
 // ---------------------------------------------------------------------------
 
+/** Resolve the webview URI for the bundled mermaid.min.js script. */
 function getMermaidScriptUri(): string {
     if (!cachedExtensionUri || !panel) return '';
     const onDisk = vscode.Uri.joinPath(cachedExtensionUri, 'dist', 'mermaid.min.js');
     return panel.webview.asWebviewUri(onDisk).toString();
 }
 
+/**
+ * Build the full webview HTML for the current Mermaid preview.
+ *
+ * @param source - Mermaid diagram source text to render on first load.
+ */
 function buildHtml(source: string): string {
     return generateMermaidViewerHtml(
         getMermaidScriptUri(),
@@ -415,6 +286,13 @@ async function sendCurrentSource(): Promise<void> {
 // Export API
 // ---------------------------------------------------------------------------
 
+/**
+ * Open (or reveal) a standalone Mermaid file preview panel.
+ *
+ * @param filePath - Absolute path to the .mmd / .mermaid file.
+ * @param config - Current extension configuration snapshot.
+ * @param extensionUri - Extension root URI for resolving bundled assets.
+ */
 export async function openMermaidPreview(filePath: string, config: Config, extensionUri: vscode.Uri): Promise<void> {
     lastConfig = config;
     currentFilePath = filePath;
@@ -472,7 +350,11 @@ export async function openMermaidPreview(filePath: string, config: Config, exten
     );
 }
 
-/** Update config reference. Called when settings change. */
+/**
+ * Update config reference. Called when settings change.
+ *
+ * @param config - New extension configuration snapshot.
+ */
 export function updateMermaidConfig(config: Config): void {
     lastConfig = config;
 }
@@ -500,14 +382,6 @@ export function disposeMermaidPreview(): void {
 /** Show a theme QuickPick for the Mermaid preview. */
 export async function changeMermaidTheme(): Promise<void> {
     if (!panel) return;
-
-    const buildThemeItems = <C extends string>(keys: readonly string[], category: C, currentKey: string) =>
-        keys.map(key => ({
-            label: key === currentKey ? `$(check) ${key}` : `      ${key}`,
-            description: key === currentKey ? vscode.l10n.t('(current)') : '',
-            category,
-            themeKey: key
-        }));
 
     const items = [
         { label: vscode.l10n.t('Preview Theme (Light)'), kind: vscode.QuickPickItemKind.Separator },
@@ -540,6 +414,11 @@ export async function changeMermaidTheme(): Promise<void> {
 // Internal
 // ---------------------------------------------------------------------------
 
+/**
+ * Handle messages sent from the Mermaid viewer webview.
+ *
+ * @param msg - Message payload from the webview (export requests).
+ */
 async function handleViewerMessage(msg: { type: string; format?: string; data?: string }): Promise<void> {
     return handleExportMessage(msg, currentFilePath);
 }

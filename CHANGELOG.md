@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## 0.5.4 - 2026-03-09
+
+### Added
+
+- PlantUML `!include` support — included files are resolved and rendered inline; use the toolbar reload button to refresh after editing included files
+- `plantumlIncludePath` setting to specify a custom base directory for `!include` resolution
+- Click an included `.puml` file reference in the diagram to open its standalone preview
+
+### Changed
+
+- Bundled PlantUML jar updated to 1.2026.2
+
+### Fixed
+
+- Diagram Viewer zoom resets to fit-to-window when the diagram updates
+
 ## 0.5.3 - 2026-03-08
 
 ### Fixed

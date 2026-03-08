@@ -43,6 +43,7 @@ Switch between modes anytime with a single setting — no migration, no restart.
 - **Bidirectional scroll sync** — editor and preview scroll together, both ways
 - **Navigation & TOC** — go-to-top / go-to-bottom buttons and a Table of Contents sidebar in the preview panel
 - **Diagram Viewer** — click any diagram to open a pan & zoom panel with live sync and theme-matched background
+- **PlantUML `!include` support** — included files are resolved and rendered inline
 - **Standalone diagram preview** — open `.puml` and `.mmd` files directly with pan & zoom, live updates, and theme support — no Markdown wrapper needed
 - **Save diagrams as PNG / SVG** — right-click any diagram in the preview or Diagram Viewer to export it
 - **14 preview themes** — 8 light + 6 dark themes including GitHub, Atom, Solarized, Dracula, Monokai, and more
@@ -356,10 +357,10 @@ The preview uses its own theming independent of VS Code — default is a white b
 
 ### Open Diagram Preview
 
-Open `.puml` or `.mmd` files directly in a pan & zoom preview — no Markdown wrapper needed.
+Open `.puml` / `.plantuml` or `.mmd` / `.mermaid` files directly in a pan & zoom preview — no Markdown wrapper needed.
 
 - **Keyboard shortcut:** `Cmd+Alt+V` (Mac) / `Ctrl+Alt+V` (Windows / Linux) — same shortcut, auto-selects based on file type
-- **Context menu:** Right-click a `.puml` or `.mmd` file in the Explorer or editor → **Preview PlantUML File** / **Preview Mermaid File**
+- **Context menu:** Right-click a `.puml` / `.plantuml` or `.mmd` / `.mermaid` file in the Explorer or editor → **Preview PlantUML File** / **Preview Mermaid File**
 - **Command Palette:** `PlantUML Markdown Preview: Preview PlantUML File` or `Preview Mermaid File`
 
 ### Export to HTML
@@ -446,6 +447,7 @@ All settings use the `plantumlMarkdownPreview.` prefix.
 | `javaPath` | `"java"` | Path to Java executable. If set, used as-is; otherwise falls back to `JAVA_HOME/bin/java`, then `java` on PATH. (Fast and Secure modes) |
 | `plantumlJarPath` | `""` | Path to `plantuml.jar`. Leave empty to use the bundled jar (LGPL). (Fast and Secure modes) |
 | `dotPath` | `"dot"` | Path to Graphviz `dot` executable (Fast and Secure modes) |
+| `plantumlIncludePath` | `""` | Base directory for PlantUML `!include` directives. Leave empty to use the workspace root. Not available in Easy mode. |
 | `allowLocalImages` | `"mode-default"` | Resolve relative image paths (e.g. `![](./image.png)`) in the preview. `"mode-default"` uses the mode preset (Fast: on, Secure: off, Easy: on). `"on"` / `"off"` to override. |
 | `allowHttpImages` | `false` | Allow loading images over HTTP (unencrypted) in the preview. Useful for intranet or local development servers. |
 | `previewTheme` | `"github-light"` | Preview theme (see [Themes](#themes)) |
