@@ -40,10 +40,12 @@ const panelDisposables: vscode.Disposable[] = [];
 // Helpers
 // ---------------------------------------------------------------------------
 
+/** Get the background color for the current preview theme. */
 function getCurrentBgColor(): string {
     return getThemeBgColor(localPreviewTheme);
 }
 
+/** Generate a panel title from the file path. */
 function makePanelTitle(filePath: string): string {
     const name = filePath.split(/[/\\]/).pop() ?? 'Mermaid';
     return `${name} ${vscode.l10n.t('(Preview)')}`;
@@ -64,6 +66,16 @@ async function readSource(filePath: string): Promise<string | null> {
 // Webview HTML generation
 // ---------------------------------------------------------------------------
 
+/**
+ * Generate the full HTML for the Mermaid viewer webview panel.
+ *
+ * @param mermaidScriptUri - Webview URI pointing to the bundled mermaid.min.js.
+ * @param nonce - CSP nonce for inline scripts.
+ * @param bgColor - Background color derived from the current preview theme.
+ * @param mermaidTheme - Mermaid theme name (e.g. 'default', 'dark', 'forest').
+ * @param initialSource - Mermaid diagram source to render on first load.
+ * @returns Complete HTML string for the webview.
+ */
 function generateMermaidViewerHtml(
     mermaidScriptUri: string,
     nonce: string,
