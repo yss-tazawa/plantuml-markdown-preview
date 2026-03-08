@@ -132,7 +132,7 @@ export async function startLocalServer(config: Config): Promise<void> {
                 handleCrash(err.message, config, stderrBuf);
             });
 
-            child.on('exit', (code, signal) => {
+            child.on('close', (code, signal) => {
                 if (stoppingIntentionally) return;
                 const reason = signal ? `signal ${signal}` : `exit code ${code}`;
                 log(`[local-server] Process exited unexpectedly: ${reason}`);
@@ -165,6 +165,10 @@ export async function startLocalServer(config: Config): Promise<void> {
                 return;
             }
             log(`[local-server] Port may be in use, retrying (${attempt + 1}/${MAX_PORT_RETRIES})...`);
+            readyPromise = new Promise<void>((resolve, reject) => {
+                readyResolve = resolve;
+                readyReject = reject;
+            });
         }
     }
 }

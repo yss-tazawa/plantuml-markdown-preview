@@ -503,7 +503,7 @@ All settings use the `plantumlMarkdownPreview.` prefix.
 **Fast / Secure mode:**
 1. Run `java -version` in your terminal to confirm Java 11 or later is installed
 2. If you use class, component, or other layout-dependent diagrams, run `dot -V` to confirm Graphviz is installed (see [Diagram Support](#diagram-support))
-3. If you set a custom `plantumlJarPath`, verify it points to a valid `plantuml.jar` file. If `plantumlJarPath` is empty (default), the bundled LGPL jar is used automatically
+3. If you set a custom `plantumlJarPath`, verify it points to a valid `plantuml.jar` file. If the path does not exist, the extension falls back to the bundled jar with a warning. If `plantumlJarPath` is empty (default), the bundled LGPL jar is used automatically
 4. Check the VS Code Output panel for error messages
 
 **Easy mode:**
