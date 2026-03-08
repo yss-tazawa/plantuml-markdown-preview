@@ -29,7 +29,6 @@ interface Anchor {
     const INITIAL_LINE = Number(script.dataset.initialLine);
     const INITIAL_MAX_TOP_LINE = Number(script.dataset.initialMaxTopLine);
     const INITIAL_AT_BOTTOM = script.dataset.initialAtBottom === 'true';
-    const RENDER_SEQ = Number(script.dataset.renderSeq);
     const RENDERING_TEXT = script.dataset.renderingText!;
     const SYNC_MASTER_TIMEOUT_MS = Number(script.dataset.syncMasterTimeoutMs);
     const ENABLE_DIAGRAM_VIEWER = script.dataset.enableDiagramViewer !== 'false';
@@ -303,11 +302,6 @@ interface Anchor {
                 (window as any).mermaid.initialize({ startOnLoad: false, theme: message.theme });
             }
         } else if (message && message.type === 'showLoading') {
-            // RENDER_SEQ is set once during the initial full HTML render and is not
-            // updated by incremental postMessage updates.  This is safe because the
-            // incremental update path never sends showLoading — only the extension
-            // host does, and it always includes the current seq.
-            if (message.seq !== undefined && message.seq !== RENDER_SEQ) return;
             let overlay = document.getElementById('loading-overlay');
             if (!overlay) {
                 overlay = document.createElement('div');
