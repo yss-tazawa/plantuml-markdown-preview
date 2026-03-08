@@ -293,13 +293,10 @@ function registerEventHandlers(): void {
             clearCache();
             clearServerCache();
             if (currentFilePath) {
-                const editor = vscode.window.visibleTextEditors.find(
-                    e => e.document.uri.fsPath === currentFilePath
-                );
-                const text = editor?.document.getText();
-                if (text !== undefined) {
+                void readFileContent(currentFilePath).then((text) => {
+                    if (text === null) return;
                     renderPanelWithLoading(text);
-                }
+                });
             }
         }
     });
