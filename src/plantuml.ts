@@ -43,11 +43,15 @@ function resolveConfigPaths(config: Config): ResolvedPaths {
     };
 }
 
-/** Resolve the base directory for PlantUML `!include` directives. */
-function resolveIncludePath(config: Config): string | undefined {
+/**
+ * Resolve the base directory for PlantUML `!include` directives.
+ *
+ * @param config - Extension configuration containing plantumlIncludePath.
+ * @returns The include base directory, or undefined if no workspace is open.
+ */
+export function resolveIncludePath(config: Config): string | undefined {
     if (config.plantumlIncludePath) {
         if (existsSync(config.plantumlIncludePath)) return config.plantumlIncludePath;
-        // Warning is shown once by preview.ts updateConfig; no duplicate here.
     }
     return vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
 }
