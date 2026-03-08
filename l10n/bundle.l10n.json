@@ -1,6 +1,7 @@
 {
   "No Markdown file (.md) is selected.": "No Markdown file (.md) is selected.",
   "PlantUML jar is not configured. Open settings?": "PlantUML jar is not configured. Open settings?",
+  "Java path \"{0}\" does not exist. Check the plantumlMarkdownPreview.javaPath setting.": "Java path \"{0}\" does not exist. Check the plantumlMarkdownPreview.javaPath setting.",
   "Open Settings": "Open Settings",
   "Export failed: {0}": "Export failed: {0}",
   "HTML exported: {0}": "HTML exported: {0}",

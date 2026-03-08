@@ -1,6 +1,7 @@
 {
   "No Markdown file (.md) is selected.": "未选择 Markdown 文件 (.md)。",
   "PlantUML jar is not configured. Open settings?": "PlantUML jar 未配置。是否打开设置？",
+  "Java path \"{0}\" does not exist. Check the plantumlMarkdownPreview.javaPath setting.": "Java 路径"{0}"不存在。请检查 plantumlMarkdownPreview.javaPath 设置。",
   "Open Settings": "打开设置",
   "Export failed: {0}": "导出失败: {0}",
   "HTML exported: {0}": "HTML 已导出: {0}",

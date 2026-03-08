@@ -256,6 +256,23 @@ let lastKnownConfig: Config | null = null;
 async function checkJavaAvailability(config: Config): Promise<boolean> {
     if (config.renderMode === 'server') return true;
 
+    // Pre-check: if user specified an explicit path, verify it exists on disk
+    const resolvedJava = config.javaPath;
+    if (resolvedJava !== 'java' && !existsSync(resolvedJava)) {
+        const openSettings = vscode.l10n.t('Open Settings');
+        const useEasy = vscode.l10n.t('Use Easy Mode');
+        const action = await vscode.window.showErrorMessage(
+            vscode.l10n.t('Java path "{0}" does not exist. Check the plantumlMarkdownPreview.javaPath setting.', resolvedJava),
+            openSettings, useEasy
+        );
+        if (action === openSettings) {
+            void vscode.commands.executeCommand('workbench.action.openSettings', 'plantumlMarkdownPreview.javaPath');
+        } else if (action === useEasy) {
+            await promptSwitchToEasy(config);
+        }
+        return false;
+    }
+
     const javaResult = await new Promise<{ found: boolean; versionOutput: string }>((resolve) => {
         if (config.debugSimulateNoJava) { resolve({ found: false, versionOutput: '' }); return; }
         if (javaCheckChild) { javaCheckChild.kill(); javaCheckChild = null; }
@@ -539,6 +556,22 @@ export function activate(context: vscode.ExtensionContext): { extendMarkdownIt: 
     const configWatcher = vscode.workspace.onDidChangeConfiguration((event) => {
         if (event.affectsConfiguration(CONFIG_SECTION)) {
             const config = getConfig();
+
+            // Reject invalid javaPath: keep using the previous config
+            if (config.renderMode !== 'server'
+                && config.javaPath !== 'java'
+                && !existsSync(config.javaPath)) {
+                const openSettings = vscode.l10n.t('Open Settings');
+                void vscode.window.showErrorMessage(
+                    vscode.l10n.t('Java path "{0}" does not exist. Check the plantumlMarkdownPreview.javaPath setting.', config.javaPath),
+                    openSettings
+                ).then((action) => {
+                    if (action === openSettings) {
+                        void vscode.commands.executeCommand('workbench.action.openSettings', 'plantumlMarkdownPreview.javaPath');
+                    }
+                });
+                return;  // don't update lastKnownConfig — keep old valid config
+            }
 
             // Manage local-server lifecycle on config change
             handleLocalServerConfigChange(lastKnownConfig, config);
