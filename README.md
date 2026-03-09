@@ -26,7 +26,7 @@
 | | Runs a PlantUML server on localhost — no JVM startup cost, instant updates | No network, no background processes — everything stays on your machine | No Java needed — works out of the box with a PlantUML server |
 | **Java** | 11+ required | 11+ required | Not required |
 | **Network** | None | None | Required |
-| **Privacy** | Local only | Local only | Diagram source sent to external server |
+| **Privacy** | Local only | Local only | Diagram source sent to PlantUML server |
 | **Setup** | [Install Java →](#prerequisites) | [Install Java →](#prerequisites) | No setup needed |
 
 Switch between modes anytime with a single setting — no migration, no restart.
@@ -47,6 +47,7 @@ Switch between modes anytime with a single setting — no migration, no restart.
 - **Standalone diagram preview** — open `.puml` and `.mmd` files directly with pan & zoom, live updates, and theme support — no Markdown wrapper needed
 - **Save diagrams as PNG / SVG** — right-click any diagram in the preview or Diagram Viewer to export it
 - **14 preview themes** — 8 light + 6 dark themes including GitHub, Atom, Solarized, Dracula, Monokai, and more
+- **Code snippets** — type `plantuml-sequence` or `mermaid-sequence` in Markdown, or `seq` inside a fenced block, to expand diagram templates instantly
 - **Internationalization** — English, Chinese (Simplified), and Japanese UI
 - **Math support** — `$...$` inline and `$$...$$` block math rendered with [KaTeX](https://katex.org/)
 
@@ -58,6 +59,7 @@ Switch between modes anytime with a single setting — no migration, no restart.
 - [Quick Start](#quick-start)
 - [Usage](#usage)
 - [Configuration](#configuration)
+- [Snippets](#snippets)
 - [Keyboard Shortcuts](#keyboard-shortcuts)
 - [FAQ](#faq)
 - [Contributing](#contributing)
@@ -103,7 +105,7 @@ Choose a preset mode that controls how PlantUML diagrams are rendered:
 |---|---|---|---|
 | **Java required** | Yes | Yes | No |
 | **Network** | None (localhost only) | None | Required |
-| **Privacy** | Diagrams stay on your machine | Diagrams stay on your machine | Diagram source sent to external server |
+| **Privacy** | Diagrams stay on your machine | Diagrams stay on your machine | Diagram source sent to PlantUML server |
 | **Speed** | Persistent PlantUML server — instant re-renders | JVM starts per render | Depends on network |
 | **Concurrency** | 50 (parallel HTTP) | 1 (batch) | 5 (parallel HTTP) |
 
@@ -447,13 +449,94 @@ $$\int_0^\infty e^{-x}\,dx = 1$$
 
 > Disable with `enableMath: false` if `$` symbols cause unwanted math parsing (e.g. `$100`).
 
+## Snippets
+
+Type a snippet prefix and press `Tab` to expand. Two sets of snippets are available:
+
+### Markdown Snippets (outside fenced blocks)
+
+Expand a complete `` ```plantuml ... ``` `` block including fences:
+
+| Prefix | Diagram |
+| --- | --- |
+| `plantuml` | Empty PlantUML block |
+| `plantuml-sequence` | Sequence diagram |
+| `plantuml-class` | Class diagram |
+| `plantuml-activity` | Activity diagram |
+| `plantuml-usecase` | Use case diagram |
+| `plantuml-component` | Component diagram |
+| `plantuml-state` | State diagram |
+| `plantuml-er` | ER diagram |
+| `plantuml-object` | Object diagram |
+| `plantuml-deployment` | Deployment diagram |
+| `plantuml-mindmap` | Mindmap |
+| `plantuml-gantt` | Gantt chart |
+
+### PlantUML Snippets (inside fenced blocks)
+
+Expand diagram body only (short prefixes):
+
+| Prefix | Content |
+| --- | --- |
+| `seq` | Sequence diagram |
+| `cls` | Class definition |
+| `act` | Activity diagram |
+| `uc` | Use case diagram |
+| `comp` | Component diagram |
+| `state` | State diagram |
+| `er` | Entity definition |
+| `obj` | Object diagram |
+| `deploy` | Deployment diagram |
+| `mind` | Mindmap |
+| `gantt` | Gantt chart |
+| `part` | participant declaration |
+| `actor` | actor declaration |
+| `note` | Note block |
+| `intf` | interface definition |
+| `pkg` | package definition |
+
+### Mermaid Markdown Snippets (outside fenced blocks)
+
+Expand a complete `` ```mermaid ... ``` `` block including fences:
+
+| Prefix | Diagram |
+| --- | --- |
+| `mermaid` | Empty Mermaid block |
+| `mermaid-flowchart` | Flowchart |
+| `mermaid-sequence` | Sequence diagram |
+| `mermaid-class` | Class diagram |
+| `mermaid-state` | State diagram |
+| `mermaid-er` | ER diagram |
+| `mermaid-gantt` | Gantt chart |
+| `mermaid-pie` | Pie chart |
+| `mermaid-mindmap` | Mindmap |
+| `mermaid-timeline` | Timeline |
+| `mermaid-git` | Git graph |
+
+### Mermaid Snippets (inside fenced blocks)
+
+Expand diagram body only (short prefixes):
+
+| Prefix | Content |
+| --- | --- |
+| `flow` | Flowchart |
+| `seq` | Sequence diagram |
+| `cls` | Class diagram |
+| `state` | State diagram |
+| `er` | ER diagram |
+| `gantt` | Gantt chart |
+| `pie` | Pie chart |
+| `mind` | Mindmap |
+| `timeline` | Timeline |
+| `git` | Git graph |
+
 ## Configuration
 
 All settings use the `plantumlMarkdownPreview.` prefix.
 
 | Setting | Default | Description |
 |---------|---------|-------------|
-| `mode` | `"fast"` | Preset mode. `"fast"` (default) — local server, instant re-renders. `"secure"` — no network, highest security. `"easy"` — no setup required (diagram source sent to external server). |
+| `mode` | `"fast"` | Preset mode. `"fast"` (default) — local server, instant re-renders. `"secure"` — no network, highest security. `"easy"` — no setup required (diagram source sent to PlantUML server). |
 | `javaPath` | `"java"` | Path to Java executable. If set, used as-is; otherwise falls back to `JAVA_HOME/bin/java`, then `java` on PATH. (Fast and Secure modes) |
 | `plantumlJarPath` | `""` | Path to `plantuml.jar`. Leave empty to use the bundled jar (LGPL). (Fast and Secure modes) |
 | `dotPath` | `"dot"` | Path to Graphviz `dot` executable (Fast and Secure modes) |

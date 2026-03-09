@@ -323,7 +323,7 @@ async function checkJavaAvailability(config: Config): Promise<boolean> {
 /**
  * Show a confirmation dialog to switch to Easy mode.
  *
- * Warns the user that diagram source will be sent to an external server,
+ * Warns the user that diagram source will be sent to a PlantUML server,
  * then updates the global mode setting if confirmed.
  *
  * @param config - Current extension settings (for server URL display).
@@ -332,7 +332,7 @@ async function promptSwitchToEasy(config: Config): Promise<void> {
     const serverUrl = config.plantumlServerUrl || 'https://www.plantuml.com/plantuml';
     const yesLabel = vscode.l10n.t('Yes, switch to Easy mode');
     const confirm = await vscode.window.showWarningMessage(
-        vscode.l10n.t('Easy mode sends diagram source to an external server ({0}). Continue?', serverUrl),
+        vscode.l10n.t('Easy mode sends diagram source to a PlantUML server ({0}). Continue?', serverUrl),
         yesLabel,
         vscode.l10n.t('Cancel')
     );

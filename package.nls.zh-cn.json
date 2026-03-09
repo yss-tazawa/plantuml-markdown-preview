@@ -75,7 +75,7 @@
   "configuration.mode.description": "预设模式。通过一个设置统一控制渲染方式、防抖时间和安全默认值。",
   "configuration.mode.fast": "快速（默认） — 本地服务器，即时渲染。需要 Java 11+。数据不会离开本机。",
   "configuration.mode.secure": "安全 — 无网络访问，最高安全性。需要 Java 11+。本地图片默认被阻止。",
-  "configuration.mode.easy": "简易 — 无需配置（图表源码将发送到外部服务器）。",
+  "configuration.mode.easy": "简易 — 无需配置（图表源码将发送到 PlantUML 服务器）。",
   "configuration.plantumlServerUrl.description": "Easy 模式使用的 PlantUML 服务器 URL。默认: https://www.plantuml.com/plantuml。可设置为自建服务器 URL 以保护隐私。",
   "configuration.previewTheme.description": "预览主题。同时控制文档整体样式和代码块语法高亮。默认: github-light",
   "configuration.previewTheme.github-light": "GitHub Light（默认）— 白色背景、深色文字。代码块: github-dark-dimmed",
