@@ -23,7 +23,7 @@
   "Use Easy Mode": "使用 Easy 模式",
   "Install Java": "安装 Java",
   "Dismiss": "关闭",
-  "Easy mode sends diagram source to an external server ({0}). Continue?": "Easy 模式会将图表源码发送到外部服务器（{0}）。是否继续？",
+  "Easy mode sends diagram source to a PlantUML server ({0}). Continue?": "Easy 模式会将图表源码发送到 PlantUML 服务器（{0}）。是否继续？",
   "Yes, switch to Easy mode": "是，切换到 Easy 模式",
   "Cancel": "取消",
   "PlantUML server error: {0}": "PlantUML 服务器错误: {0}",

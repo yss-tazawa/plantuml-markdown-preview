@@ -23,7 +23,7 @@
   "Use Easy Mode": "Use Easy Mode",
   "Install Java": "Install Java",
   "Dismiss": "Dismiss",
-  "Easy mode sends diagram source to an external server ({0}). Continue?": "Easy mode sends diagram source to an external server ({0}). Continue?",
+  "Easy mode sends diagram source to a PlantUML server ({0}). Continue?": "Easy mode sends diagram source to a PlantUML server ({0}). Continue?",
   "Yes, switch to Easy mode": "Yes, switch to Easy mode",
   "Cancel": "Cancel",
   "PlantUML server error: {0}": "PlantUML server error: {0}",

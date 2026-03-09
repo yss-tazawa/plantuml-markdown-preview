@@ -75,7 +75,7 @@
   "configuration.mode.description": "Preset mode. Controls rendering method, debounce timing, and security defaults in one setting.",
   "configuration.mode.fast": "Fast (default) — Local server, instant re-renders. Requires Java 11+. Nothing leaves your machine.",
   "configuration.mode.secure": "Secure — No network access, highest security. Requires Java 11+. Local images blocked by default.",
-  "configuration.mode.easy": "Easy — No setup required (diagram source sent to external server).",
+  "configuration.mode.easy": "Easy — No setup required (diagram source sent to PlantUML server).",
   "configuration.plantumlServerUrl.description": "PlantUML server URL for Easy mode. Default: https://www.plantuml.com/plantuml. Set to a self-hosted server URL for privacy.",
   "configuration.previewTheme.description": "Preview theme. Controls the overall document style and code block syntax highlight together. Default: github-light",
   "configuration.previewTheme.github-light": "GitHub Light (Default) — white background, dark text. Code blocks: github-dark-dimmed",

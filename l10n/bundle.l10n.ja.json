@@ -23,7 +23,7 @@
   "Use Easy Mode": "Easy モードを使用",
   "Install Java": "Java をインストール",
   "Dismiss": "閉じる",
-  "Easy mode sends diagram source to an external server ({0}). Continue?": "Easy モードではダイアグラムソースを外部サーバー（{0}）に送信します。続行しますか？",
+  "Easy mode sends diagram source to a PlantUML server ({0}). Continue?": "Easy モードではダイアグラムソースを PlantUML サーバー（{0}）に送信します。続行しますか？",
   "Yes, switch to Easy mode": "はい、Easy モードに切り替える",
   "Cancel": "キャンセル",
   "PlantUML server error: {0}": "PlantUML サーバーエラー: {0}",

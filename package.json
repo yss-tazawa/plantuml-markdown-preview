@@ -2,7 +2,7 @@
   "name": "plantuml-markdown-preview",
   "displayName": "%displayName%",
   "description": "%description%",
-  "version": "0.5.5",
+  "version": "0.5.6",
   "license": "MIT",
   "publisher": "yss-tazawa",
   "icon": "images/icon.png",
@@ -45,6 +45,52 @@
         "id": "mermaid",
         "aliases": ["Mermaid"],
         "extensions": [".mmd", ".mermaid"]
+      }
+    ],
+    "grammars": [
+      {
+        "language": "plantuml",
+        "scopeName": "source.plantuml",
+        "path": "./syntaxes/plantuml.tmLanguage.json"
+      },
+      {
+        "language": "mermaid",
+        "scopeName": "source.mermaid",
+        "path": "./syntaxes/mermaid.tmLanguage.json"
+      },
+      {
+        "scopeName": "markdown.plantuml.codeblock",
+        "path": "./syntaxes/plantuml.injection.tmLanguage.json",
+        "injectTo": ["text.html.markdown"],
+        "embeddedLanguages": {
+          "meta.embedded.block.plantuml": "plantuml"
+        }
+      },
+      {
+        "scopeName": "markdown.mermaid.codeblock",
+        "path": "./syntaxes/mermaid.injection.tmLanguage.json",
+        "injectTo": ["text.html.markdown"],
+        "embeddedLanguages": {
+          "meta.embedded.block.mermaid": "mermaid"
+        }
+      }
+    ],
+    "snippets": [
+      {
+        "language": "markdown",
+        "path": "./snippets/plantuml-markdown.json"
+      },
+      {
+        "language": "plantuml",
+        "path": "./snippets/plantuml.json"
+      },
+      {
+        "language": "markdown",
+        "path": "./snippets/mermaid-markdown.json"
+      },
+      {
+        "language": "mermaid",
+        "path": "./snippets/mermaid.json"
       }
     ],
     "markdown.markdownItPlugins": true,
