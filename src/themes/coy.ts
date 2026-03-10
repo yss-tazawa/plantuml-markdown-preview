@@ -7,7 +7,7 @@
  */
 import { buildThemeCss } from './base.js';
 
-/** Complete CSS string for the Coy theme. */
+/** Color palette for the Coy theme. */
 const palette = {
     bg: '#fdfdfd',
     text: '#333333',

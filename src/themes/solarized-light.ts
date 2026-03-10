@@ -6,7 +6,7 @@
  */
 import { buildThemeCss } from './base.js';
 
-/** Complete CSS string for the Solarized Light theme. */
+/** Color palette for the Solarized Light theme. */
 const palette = {
     bg: '#fdf6e3',
     text: '#657b83',

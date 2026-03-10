@@ -7,7 +7,7 @@
  */
 import { buildThemeCss } from './base.js';
 
-/** Complete CSS string for the Vue theme. */
+/** Color palette for the Vue theme. */
 const palette = {
     bg: '#ffffff',
     text: '#34495e',

@@ -7,7 +7,7 @@
  */
 import { buildThemeCss } from './base.js';
 
-/** Complete CSS string for the One Dark theme. */
+/** Color palette for the One Dark theme. */
 const palette = {
     bg: '#282c34',
     text: '#abb2bf',

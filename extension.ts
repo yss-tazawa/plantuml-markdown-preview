@@ -149,10 +149,19 @@ function resolvePumlPath(uri?: vscode.Uri): string | null {
 /** Mermaid file extensions supported for standalone preview. */
 const MERMAID_EXTENSIONS = ['.mmd', '.mermaid'];
 
+/**
+ * Check whether a file path has a Mermaid extension.
+ */
 function isMermaidFile(fsPath: string): boolean {
     return MERMAID_EXTENSIONS.some(ext => fsPath.endsWith(ext));
 }
 
+/**
+ * Resolve the target Mermaid file path from available sources.
+ *
+ * @param [uri] - URI passed from a command invocation.
+ * @returns Absolute .mmd/.mermaid file path, or null if unavailable.
+ */
 function resolveMermaidPath(uri?: vscode.Uri): string | null {
     const fsPath = uri?.fsPath
         || vscode.window.activeTextEditor?.document.uri.fsPath

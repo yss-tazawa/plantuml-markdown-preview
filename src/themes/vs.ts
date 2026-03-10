@@ -7,7 +7,7 @@
  */
 import { buildThemeCss } from './base.js';
 
-/** Complete CSS string for the Visual Studio Light theme. */
+/** Color palette for the Visual Studio Light theme. */
 const palette = {
     bg: '#ffffff',
     text: '#1e1e1e',

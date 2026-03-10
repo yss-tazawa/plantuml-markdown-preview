@@ -6,7 +6,7 @@
  */
 import { buildThemeCss } from './base.js';
 
-/** Complete CSS string for the Dracula theme. */
+/** Color palette for the Dracula theme. */
 const palette = {
     bg: '#282a36',
     text: '#f8f8f2',

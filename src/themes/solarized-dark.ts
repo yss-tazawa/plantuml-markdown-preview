@@ -6,7 +6,7 @@
  */
 import { buildThemeCss } from './base.js';
 
-/** Complete CSS string for the Solarized Dark theme. */
+/** Color palette for the Solarized Dark theme. */
 const palette = {
     bg: '#002b36',
     text: '#839496',

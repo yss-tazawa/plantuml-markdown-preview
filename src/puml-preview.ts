@@ -128,6 +128,8 @@ export async function openPumlPreview(filePath: string, config: Config): Promise
 
 /**
  * Update config reference. Called when settings change.
+ *
+ * @param config - The new extension configuration.
  */
 export function updatePumlConfig(config: Config): void {
     const prevConfig = lastConfig;
@@ -142,6 +144,8 @@ export function updatePumlConfig(config: Config): void {
 
 /**
  * Get the currently previewed .puml file path.
+ *
+ * @returns Absolute file path, or null if no preview is open.
  */
 export function getCurrentPumlFilePath(): string | null {
     return currentFilePath;
@@ -149,6 +153,8 @@ export function getCurrentPumlFilePath(): string | null {
 
 /**
  * Get the preview panel (for save commands).
+ *
+ * @returns The active WebviewPanel, or null if no preview is open.
  */
 export function getPumlPreviewPanel(): vscode.WebviewPanel | null {
     return panel;

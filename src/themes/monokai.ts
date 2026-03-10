@@ -7,7 +7,7 @@
  */
 import { buildThemeCss } from './base.js';
 
-/** Complete CSS string for the Monokai theme. */
+/** Color palette for the Monokai theme. */
 const palette = {
     bg: '#272822',
     text: '#f8f8f2',

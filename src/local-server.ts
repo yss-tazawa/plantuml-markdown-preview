@@ -170,8 +170,14 @@ export function stopLocalServer(): void {
         serverProcess.removeAllListeners();
         serverProcess.stdout?.removeAllListeners();
         serverProcess.stderr?.removeAllListeners();
-        serverProcess.kill('SIGTERM');
+        const proc = serverProcess;
         serverProcess = null;
+        proc.kill('SIGTERM');
+        // SIGKILL fallback if SIGTERM doesn't terminate within 3 seconds
+        const killTimer = setTimeout(() => {
+            try { proc.kill('SIGKILL'); } catch { /* already exited */ }
+        }, 3000);
+        proc.once('exit', () => clearTimeout(killTimer));
     }
     resetState();
     log('[local-server] Stopped');
@@ -360,11 +366,13 @@ function handleCrash(reason: string, config: Config, stderr?: string): void {
         vscode.l10n.t('Local PlantUML server crashed: {0}', reason),
         switchLabel, restartLabel, dismissLabel
     ).then(async (action) => {
-        if (action === switchLabel) {
-            const cfg = vscode.workspace.getConfiguration(CONFIG_SECTION);
-            await cfg.update('mode', 'secure', vscode.ConfigurationTarget.Global);
-        } else if (action === restartLabel) {
-            await startLocalServer(config);
-        }
+        try {
+            if (action === switchLabel) {
+                const cfg = vscode.workspace.getConfiguration(CONFIG_SECTION);
+                await cfg.update('mode', 'secure', vscode.ConfigurationTarget.Global);
+            } else if (action === restartLabel) {
+                await startLocalServer(config);
+            }
+        } catch { /* already logged */ }
     });
 }
