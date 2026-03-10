@@ -335,7 +335,7 @@ interface Anchor {
             // by webview reload latency).
             pendingBodyUpdate = { html: message.html, hasMermaid: !!message.hasMermaid, scrollTo: message.scrollTo || null, themeCss: message.themeCss || null };
             if (!bodyUpdateRafId) {
-                bodyUpdateRafId = requestAnimationFrame(applyPendingBodyUpdate);
+                bodyUpdateRafId = setTimeout(applyPendingBodyUpdate, 0) as unknown as number;
             }
         } else if (message && message.type === 'exportDiagramAsPng' && typeof message.svg === 'string') {
             exportSvgAsPng(message.svg);

@@ -14,6 +14,9 @@ import { getPanZoomScript } from './webview/pan-zoom-script.js';
 /** Active viewer panels keyed by 1-based diagram index. */
 const viewers = new Map<number, vscode.WebviewPanel>();
 
+/** Latest SVG/bgColor per viewer, for re-sending after webview reload (e.g. panel move). */
+const latestState = new Map<number, { svg: string; bgColor?: string }>();
+
 /** Index of the most recently focused viewer panel. */
 let activeViewerIndex = -1;
 
@@ -50,10 +53,18 @@ export function openDiagramViewer(svg: string, diagramIndex: number, bgColor?: s
     // when the owning panel is disposed.
     panel.onDidDispose(() => {
         viewers.delete(diagramIndex);
+        latestState.delete(diagramIndex);
         if (activeViewerIndex === diagramIndex) activeViewerIndex = -1;
     });
     panel.onDidChangeViewState((e) => {
         if (e.webviewPanel.active) activeViewerIndex = diagramIndex;
+        // Re-send latest SVG after potential webview reload (e.g. panel move)
+        if (e.webviewPanel.visible) {
+            const latest = latestState.get(diagramIndex);
+            if (latest) {
+                void e.webviewPanel.webview.postMessage({ type: 'updateSvg', svg: latest.svg, bgColor: latest.bgColor });
+            }
+        }
     });
     panel.webview.onDidReceiveMessage((msg) => { void handleViewerMessage(msg); });
 
@@ -71,6 +82,7 @@ export function openDiagramViewer(svg: string, diagramIndex: number, bgColor?: s
 export function updateDiagramViewer(diagramIndex: number, svg: string, bgColor?: string): void {
     const panel = viewers.get(diagramIndex);
     if (panel) {
+        latestState.set(diagramIndex, { svg, bgColor });
         void panel.webview.postMessage({ type: 'updateSvg', svg, bgColor });
     }
 }
@@ -93,6 +105,7 @@ export function disposeAllViewers(): void {
         panel.dispose();
     }
     viewers.clear();
+    latestState.clear();
 }
 
 /**
