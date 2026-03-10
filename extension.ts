@@ -3,7 +3,7 @@
  * @description VS Code extension entry point.
  *
  * Responsibilities:
- * - Register commands: openPreview / exportHtml / exportHtmlAndOpen / exportHtmlFitToWidth / exportHtmlFitToWidthAndOpen / exportPdf / exportPdfAndOpen / changeTheme / saveDiagramAsPng / saveDiagramAsSvg
+ * - Register commands: openPreview / exportHtml / exportHtmlAndOpen / exportHtmlFitToWidth / exportHtmlFitToWidthAndOpen / exportPdf / exportPdfAndOpen / changeTheme / saveDiagramAsPng / saveDiagramAsSvg / copyDiagramAsPng
  * - Read VS Code settings (getConfig)
  * - Auto-follow active editor tab (editorTracker)
  * - Propagate settings changes to the preview (configWatcher)
@@ -21,7 +21,7 @@ import { prepareLocalServer, startLocalServer, stopLocalServer, restartLocalServ
 import { openPreview, getCurrentFilePath, getLastRenderFailed, updateConfig, changeTheme, disposePreview, setOutputChannel, getPreviewPanel } from './src/preview.js';
 import { execJava } from './src/utils.js';
 import { clearBrowserCache } from './src/browser-finder.js';
-import { disposeAllViewers, saveDiagramFromViewer } from './src/diagram-viewer.js';
+import { disposeAllViewers, diagramAction } from './src/diagram-viewer.js';
 import { openPumlPreview, updatePumlConfig, getCurrentPumlFilePath, disposePumlPreview, getPumlPreviewPanel, changePumlTheme } from './src/puml-preview.js';
 import { openMermaidPreview, updateMermaidConfig, getCurrentMermaidFilePath, disposeMermaidPreview, getMermaidPreviewPanel, changeMermaidTheme } from './src/mermaid-preview.js';
 import { CONFIG_SECTION, MODE_PRESETS, type Config, type Mode } from './src/config.js';
@@ -240,12 +240,13 @@ function openInDefaultApp(filePath: string): void {
     }
     const cmd = process.platform === 'win32' ? 'explorer.exe'
         : process.platform === 'darwin' ? 'open' : 'xdg-open';
-    execFile(cmd, [filePath], (err) => {
+    const child = execFile(cmd, [filePath], (err) => {
         // explorer.exe returns exit code 1 on success; only show errors on non-Windows platforms
         if (err && process.platform !== 'win32') {
             vscode.window.showErrorMessage(vscode.l10n.t('Failed to open file: {0}', err.message));
         }
     });
+    child.unref();
 }
 
 /** Reference to the in-flight Java check child process for cleanup on deactivate. */
@@ -405,44 +406,51 @@ export function activate(context: vscode.ExtensionContext): { extendMarkdownIt: 
         id: string,
         exportOptions: { fitToWidth?: boolean; pdf?: boolean } | undefined,
         autoOpen: boolean,
-        notificationMsg?: string,
-        openLabel?: string
+        showNotification?: (outputPath: string) => Thenable<void>
     ): vscode.Disposable {
         return vscode.commands.registerCommand(id, async (uri?: vscode.Uri) => {
             const outputPath = await runExport(uri, exportOptions);
             if (!outputPath) return;
             if (autoOpen) {
                 openInDefaultApp(outputPath);
-            } else if (notificationMsg && openLabel) {
-                const label = vscode.l10n.t(openLabel);
-                const action = await vscode.window.showInformationMessage(
-                    vscode.l10n.t(notificationMsg, path.basename(outputPath)),
-                    label
-                );
-                if (action === label) {
-                    openInDefaultApp(outputPath);
-                }
+            } else if (showNotification) {
+                await showNotification(outputPath);
             }
         });
     }
 
+    async function notifyHtmlExported(outputPath: string): Promise<void> {
+        const label = vscode.l10n.t('Open in Browser');
+        const action = await vscode.window.showInformationMessage(
+            vscode.l10n.t('HTML exported: {0}', path.basename(outputPath)),
+            label
+        );
+        if (action === label) openInDefaultApp(outputPath);
+    }
+
+    async function notifyPdfExported(outputPath: string): Promise<void> {
+        const label = vscode.l10n.t('Open');
+        const action = await vscode.window.showInformationMessage(
+            vscode.l10n.t('PDF exported: {0}', path.basename(outputPath)),
+            label
+        );
+        if (action === label) openInDefaultApp(outputPath);
+    }
+
     const exportCmd = registerExportCommand(
-        'plantuml-markdown-preview.exportHtml', undefined, false,
-        'HTML exported: {0}', 'Open in Browser'
+        'plantuml-markdown-preview.exportHtml', undefined, false, notifyHtmlExported
     );
     const exportAndOpenCmd = registerExportCommand(
         'plantuml-markdown-preview.exportHtmlAndOpen', undefined, true
     );
     const exportHtmlFitCmd = registerExportCommand(
-        'plantuml-markdown-preview.exportHtmlFitToWidth', { fitToWidth: true }, false,
-        'HTML exported: {0}', 'Open in Browser'
+        'plantuml-markdown-preview.exportHtmlFitToWidth', { fitToWidth: true }, false, notifyHtmlExported
     );
     const exportHtmlFitAndOpenCmd = registerExportCommand(
         'plantuml-markdown-preview.exportHtmlFitToWidthAndOpen', { fitToWidth: true }, true
     );
     const exportPdfCmd = registerExportCommand(
-        'plantuml-markdown-preview.exportPdf', { pdf: true }, false,
-        'PDF exported: {0}', 'Open'
+        'plantuml-markdown-preview.exportPdf', { pdf: true }, false, notifyPdfExported
     );
     const exportPdfAndOpenCmd = registerExportCommand(
         'plantuml-markdown-preview.exportPdfAndOpen', { pdf: true }, true
@@ -512,38 +520,28 @@ export function activate(context: vscode.ExtensionContext): { extendMarkdownIt: 
         }
     );
 
+    /** Dispatch a save/copy diagram command to the appropriate webview panel. */
+    function handleDiagramCommand(action: 'save' | 'copy', format: 'png' | 'svg'): void {
+        const msgType = action === 'copy' ? 'copyDiagram' : 'exportDiagram';
+        const mermaidPanel = getMermaidPreviewPanel();
+        if (mermaidPanel?.active) {
+            void mermaidPanel.webview.postMessage({ type: msgType, format });
+            return;
+        }
+        const pumlPanel = getPumlPreviewPanel();
+        if (pumlPanel?.active) {
+            void pumlPanel.webview.postMessage({ type: msgType, format });
+        } else {
+            diagramAction(action, format, getPreviewPanel() ?? undefined);
+        }
+    }
+
     const savePngCmd = vscode.commands.registerCommand(
-        'plantuml-markdown-preview.saveDiagramAsPng',
-        () => {
-            const mermaidPanel = getMermaidPreviewPanel();
-            if (mermaidPanel?.active) {
-                void mermaidPanel.webview.postMessage({ type: 'exportDiagram', format: 'png' });
-                return;
-            }
-            const pumlPanel = getPumlPreviewPanel();
-            if (pumlPanel?.active) {
-                void pumlPanel.webview.postMessage({ type: 'exportDiagram', format: 'png' });
-            } else {
-                saveDiagramFromViewer('png', getPreviewPanel() ?? undefined);
-            }
-        }
-    );
+        'plantuml-markdown-preview.saveDiagramAsPng', () => handleDiagramCommand('save', 'png'));
     const saveSvgCmd = vscode.commands.registerCommand(
-        'plantuml-markdown-preview.saveDiagramAsSvg',
-        () => {
-            const mermaidPanel = getMermaidPreviewPanel();
-            if (mermaidPanel?.active) {
-                void mermaidPanel.webview.postMessage({ type: 'exportDiagram', format: 'svg' });
-                return;
-            }
-            const pumlPanel = getPumlPreviewPanel();
-            if (pumlPanel?.active) {
-                void pumlPanel.webview.postMessage({ type: 'exportDiagram', format: 'svg' });
-            } else {
-                saveDiagramFromViewer('svg', getPreviewPanel() ?? undefined);
-            }
-        }
-    );
+        'plantuml-markdown-preview.saveDiagramAsSvg', () => handleDiagramCommand('save', 'svg'));
+    const copyPngCmd = vscode.commands.registerCommand(
+        'plantuml-markdown-preview.copyDiagramAsPng', () => handleDiagramCommand('copy', 'png'));
 
     const editorTracker = vscode.window.onDidChangeActiveTextEditor((editor) => {
         if (!editor) return;
@@ -625,7 +623,7 @@ export function activate(context: vscode.ExtensionContext): { extendMarkdownIt: 
         }
     });
 
-    context.subscriptions.push(exportCmd, exportAndOpenCmd, exportHtmlFitCmd, exportHtmlFitAndOpenCmd, exportPdfCmd, exportPdfAndOpenCmd, previewCmd, pumlPreviewCmd, mermaidPreviewCmd, changeThemeCmd, savePngCmd, saveSvgCmd, editorTracker, configWatcher);
+    context.subscriptions.push(exportCmd, exportAndOpenCmd, exportHtmlFitCmd, exportHtmlFitAndOpenCmd, exportPdfCmd, exportPdfAndOpenCmd, previewCmd, pumlPreviewCmd, mermaidPreviewCmd, changeThemeCmd, savePngCmd, saveSvgCmd, copyPngCmd, editorTracker, configWatcher);
 
     // Start local PlantUML picoweb server if local-server mode is selected.
     // prepareLocalServer() pre-creates the readyPromise so that any preview

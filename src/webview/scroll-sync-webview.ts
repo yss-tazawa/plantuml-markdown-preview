@@ -50,7 +50,7 @@ interface Anchor {
 
     // Coalescing state for rapid updateBody messages
     let pendingBodyUpdate: { html: string; hasMermaid: boolean; scrollTo: { line: number; maxTopLine: number; atBottom: boolean } | null; themeCss: string | null } | null = null;
-    let bodyUpdateRafId: number | null = null;
+    let bodyUpdateTimerId: ReturnType<typeof setTimeout> | null = null;
 
     /**
      * Set syncMaster and auto-reset to 'none' after timeout.
@@ -227,20 +227,26 @@ interface Anchor {
     }
 
     /**
-     * Convert SVG HTML to PNG via canvas and send result back to extension host.
+     * Convert SVG HTML to PNG and either save (send data URL to extension host)
+     * or copy (write PNG blob to clipboard).
      *
-     * NOTE: This canvas conversion logic is duplicated in diagram-viewer.ts
-     * (viewer webview). The two run in separate webview contexts and cannot
-     * share code directly.
+     * NOTE: This canvas conversion logic is duplicated in pan-zoom-script.ts
+     * (handleDiagramAction). The two run in separate webview contexts and
+     * cannot share code directly.
      *
+     * @param action - 'save' sends data URL to extension host; 'copy' writes to clipboard
      * @param svgHtml - innerHTML string containing an SVG element to convert
      */
-    function exportSvgAsPng(svgHtml: string): void {
+    function handleSvgAsPng(action: 'save' | 'copy', svgHtml: string): void {
         var tmp = document.createElement('div');
         tmp.innerHTML = svgHtml;
         var svgEl = tmp.querySelector('svg');
         if (!svgEl) {
-            vscode.postMessage({ type: 'exportDiagramFromPreview', data: '' });
+            if (action === 'copy') {
+                vscode.postMessage({ type: 'copyDiagramFromPreview', success: false, format: 'png' });
+            } else {
+                vscode.postMessage({ type: 'exportDiagramFromPreview', data: '' });
+            }
             return;
         }
         var svgData = new XMLSerializer().serializeToString(svgEl);
@@ -260,20 +266,42 @@ interface Anchor {
         canvas.height = h * dpr;
         var ctx = canvas.getContext('2d');
         if (!ctx) {
-            vscode.postMessage({ type: 'exportDiagramFromPreview', data: '' });
+            if (action === 'copy') {
+                vscode.postMessage({ type: 'copyDiagramFromPreview', success: false, format: 'png' });
+            } else {
+                vscode.postMessage({ type: 'exportDiagramFromPreview', data: '' });
+            }
             return;
         }
         var img = new Image();
         img.onload = function () {
             ctx!.drawImage(img, 0, 0, canvas.width, canvas.height);
-            try {
-                vscode.postMessage({ type: 'exportDiagramFromPreview', data: canvas.toDataURL('image/png') });
-            } catch (e) {
-                vscode.postMessage({ type: 'exportDiagramFromPreview', data: '' });
+            if (action === 'copy') {
+                canvas.toBlob(function (blob) {
+                    if (!blob) {
+                        vscode.postMessage({ type: 'copyDiagramFromPreview', success: false, format: 'png' });
+                        return;
+                    }
+                    navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]).then(function () {
+                        vscode.postMessage({ type: 'copyDiagramFromPreview', success: true, format: 'png' });
+                    }, function () {
+                        vscode.postMessage({ type: 'copyDiagramFromPreview', success: false, format: 'png' });
+                    });
+                }, 'image/png');
+            } else {
+                try {
+                    vscode.postMessage({ type: 'exportDiagramFromPreview', data: canvas.toDataURL('image/png') });
+                } catch (e) {
+                    vscode.postMessage({ type: 'exportDiagramFromPreview', data: '' });
+                }
             }
         };
         img.onerror = function () {
-            vscode.postMessage({ type: 'exportDiagramFromPreview', data: '' });
+            if (action === 'copy') {
+                vscode.postMessage({ type: 'copyDiagramFromPreview', success: false, format: 'png' });
+            } else {
+                vscode.postMessage({ type: 'exportDiagramFromPreview', data: '' });
+            }
         };
         img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svgData);
     }
@@ -334,11 +362,13 @@ interface Anchor {
             // with postMessage, unlike the old full-HTML-replace which was throttled
             // by webview reload latency).
             pendingBodyUpdate = { html: message.html, hasMermaid: !!message.hasMermaid, scrollTo: message.scrollTo || null, themeCss: message.themeCss || null };
-            if (!bodyUpdateRafId) {
-                bodyUpdateRafId = setTimeout(applyPendingBodyUpdate, 0) as unknown as number;
+            if (!bodyUpdateTimerId) {
+                bodyUpdateTimerId = setTimeout(applyPendingBodyUpdate, 0);
             }
         } else if (message && message.type === 'exportDiagramAsPng' && typeof message.svg === 'string') {
-            exportSvgAsPng(message.svg);
+            handleSvgAsPng('save', message.svg);
+        } else if (message && message.type === 'copyDiagramAsPng' && typeof message.svg === 'string') {
+            handleSvgAsPng('copy', message.svg);
         }
     });
 
@@ -439,12 +469,12 @@ interface Anchor {
     }
 
     /**
-     * Apply the latest pending body update (coalesced via requestAnimationFrame).
+     * Apply the latest pending body update (coalesced via setTimeout).
      * Replaces #preview-content innerHTML, invalidates anchors, re-renders
      * Mermaid diagrams if needed, and observes new images.
      */
     function applyPendingBodyUpdate(): void {
-        bodyUpdateRafId = null;
+        bodyUpdateTimerId = null;
         if (!pendingBodyUpdate) return;
         const update = pendingBodyUpdate;
         pendingBodyUpdate = null;

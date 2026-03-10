@@ -2,6 +2,9 @@
  * @module preview
  * @description WebviewPanel-based Markdown preview manager.
  *
+ * TODO: Consider refactoring the ~28 module-level state variables into a
+ * PreviewManager class to improve testability and reduce implicit coupling.
+ *
  * Responsibilities:
  * - Create / reuse a WebviewPanel and render Markdown with PlantUML inline SVG
  * - Two-stage debounce: no-diagram-change -> debounceNoDiagramChangeMs,
@@ -20,7 +23,7 @@ import { restartLocalServer } from './local-server.js';
 import { getScrollSyncScriptTag } from './scroll-sync.js';
 import { getNonce, resolveLocalImagePaths, extractPlantUmlBlocks, PLANTUML_FENCE_TEST_RE, extractMermaidBlocks, MERMAID_FENCE_TEST_RE, escapeHtml, buildThemeItems } from './utils.js';
 import { CONFIG_SECTION, MERMAID_THEME_KEYS, type Config } from './config.js';
-import { openDiagramViewer, updateDiagramViewer, closeStaleViewers, disposeAllViewers, setPendingSaveDiagram, handlePngFromPreview } from './diagram-viewer.js';
+import { openDiagramViewer, updateDiagramViewer, closeStaleViewers, disposeAllViewers, setPendingSaveDiagram, handlePngFromPreview, handleCopyResult } from './diagram-viewer.js';
 
 /** Config keys that affect &lt;head&gt; content and require a full HTML reload. */
 const HEAD_KEYS = new Set(['allowLocalImages', 'allowHttpImages', 'mermaidScale', 'enableMath']);
@@ -106,6 +109,12 @@ let lastScrollLine = -1;
 let lastMaxTopLine = -1;
 /** Normal visible line count (when not scrolled past the end). Used to detect bottom snap. */
 let normalVisibleLineCount = 0;
+/**
+ * When the visible line count shrinks by at least this many lines while at the
+ * bottom, the editor is considered "scrolled past the end" (VS Code expands
+ * the viewport when the user scrolls beyond the last line).
+ */
+const AT_BOTTOM_LINE_THRESHOLD = 10;
 /** Whether the editor is currently scrolled past the end (bottom snap active). */
 let lastAtBottom = false;
 /** Monotonically increasing render sequence number for stale message detection. */
@@ -289,6 +298,8 @@ function registerEventHandlers(): void {
             setPendingSaveDiagram(message.svg, message.diagramIndex);
         } else if (enableDiagramViewer && message.type === 'exportDiagramFromPreview') {
             void handlePngFromPreview(message.data);
+        } else if (enableDiagramViewer && message.type === 'copyDiagramFromPreview') {
+            handleCopyResult(!!message.success);
         } else if (message.type === 'reload') {
             clearCache();
             clearServerCache();
@@ -351,7 +362,7 @@ function registerEventHandlers(): void {
         const atBottom = bottomLine >= lineCount - 1
             && topLine > 0
             && (normalVisibleLineCount > 0
-                ? normalVisibleLineCount - visibleLineCount >= 10
+                ? normalVisibleLineCount - visibleLineCount >= AT_BOTTOM_LINE_THRESHOLD
                 : visibleLineCount < lineCount);
         lastAtBottom = atBottom;
         void panel.webview.postMessage({ type: 'scrollToLine', line: topLine, maxTopLine, atBottom });
@@ -593,7 +604,7 @@ async function renderPanel(text: string): Promise<void> {
             if (bottomLine >= lineCount - 1 && lastScrollLine > 0) {
                 if (normalVisibleLineCount > 0) {
                     // Have baseline: same check as scroll handler
-                    if (normalVisibleLineCount - visibleLineCount >= 10) {
+                    if (normalVisibleLineCount - visibleLineCount >= AT_BOTTOM_LINE_THRESHOLD) {
                         lastAtBottom = true;
                     }
                 } else if (visibleLineCount < lineCount) {
@@ -673,7 +684,10 @@ async function renderPanel(text: string): Promise<void> {
             if (!panel || !lastConfig || renderSeq !== mySeq || signal.aborted) return;
 
             // Mermaid appeared for the first time but mermaid.min.js was never loaded.
-            // Fall back to a full HTML render so the script is included.
+            // Fall back to a full HTML render so the <script> tag is included.
+            // Safe single-depth recursion: on re-entry initialHtmlSet is false,
+            // so the full-HTML branch runs and sets initialHtmlHadMermaid = true,
+            // preventing further recursion.
             if (hasMermaid && !initialHtmlHadMermaid) {
                 initialHtmlSet = false;
                 return renderPanel(text);

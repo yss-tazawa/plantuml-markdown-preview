@@ -16,7 +16,7 @@
  *
  * Exposes these functions to the surrounding IIFE scope:
  * `applyTransform`, `getSvgNaturalSize`, `fitToWindow`, `resetZoom`,
- * `zoomAtCenter`, `exportDiagram`, and the `cssColorRe` regex.
+ * `zoomAtCenter`, `handleDiagramAction`, and the `cssColorRe` regex.
  */
 
 /**
@@ -43,7 +43,7 @@ export function getPanZoomScript(): string {
         if (!svg) return { w: 100, h: 100 };
         var vb = svg.getAttribute('viewBox');
         if (vb) {
-            var parts = vb.split(/[\\\\s,]+/);
+            var parts = vb.split(/[\\\\s,]+/); // regex: /[\s,]+/ (double-escaped for string template)
             if (parts.length === 4) return { w: parseFloat(parts[2]), h: parseFloat(parts[3]) };
         }
         var w = parseFloat(svg.getAttribute('width')) || svg.getBoundingClientRect().width;
@@ -136,9 +136,14 @@ export function getPanZoomScript(): string {
     var cssColorRe = /^(#[\\\\da-fA-F]{3,8}|rgba?\\\\(\\\\s*[\\\\d.%,\\\\s\\\\/]+\\\\)|transparent|inherit|currentColor|[\\\\w-]+)$/;
 
     // NOTE: This SVG-to-PNG canvas conversion logic is duplicated in
-    // scroll-sync-webview.ts (exportSvgAsPng). The two run in separate
+    // scroll-sync-webview.ts (handleSvgAsPng). The two run in separate
     // webview contexts and cannot share code directly.
-    function exportDiagram(format) {
+
+    /**
+     * Save or copy a diagram. action='save' sends data to extension host
+     * for file save; action='copy' writes directly to clipboard.
+     */
+    function handleDiagramAction(action, format) {
         var svgEl = container.querySelector('svg');
         if (!svgEl) return;
         if (format === 'svg') {
@@ -148,7 +153,7 @@ export function getPanZoomScript(): string {
         // PNG: render SVG to canvas
         var svgData = new XMLSerializer().serializeToString(svgEl);
         var sz = getSvgNaturalSize();
-        var dpr = 2; // export at 2x for crisp output
+        var dpr = 2;
         var canvas = document.createElement('canvas');
         canvas.width = sz.w * dpr;
         canvas.height = sz.h * dpr;
@@ -156,14 +161,32 @@ export function getPanZoomScript(): string {
         var img = new Image();
         img.onload = function() {
             ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-            try {
-                vscodeApi.postMessage({ type: 'exportDiagramResult', format: 'png', data: canvas.toDataURL('image/png') });
-            } catch (e) {
-                vscodeApi.postMessage({ type: 'exportDiagramResult', format: 'png', data: '' });
+            if (action === 'copy') {
+                canvas.toBlob(function(blob) {
+                    if (!blob) {
+                        vscodeApi.postMessage({ type: 'copyDiagramResult', success: false, format: 'png' });
+                        return;
+                    }
+                    navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]).then(function() {
+                        vscodeApi.postMessage({ type: 'copyDiagramResult', success: true, format: 'png' });
+                    }, function() {
+                        vscodeApi.postMessage({ type: 'copyDiagramResult', success: false, format: 'png' });
+                    });
+                }, 'image/png');
+            } else {
+                try {
+                    vscodeApi.postMessage({ type: 'exportDiagramResult', format: 'png', data: canvas.toDataURL('image/png') });
+                } catch (e) {
+                    vscodeApi.postMessage({ type: 'exportDiagramResult', format: 'png', data: '' });
+                }
             }
         };
         img.onerror = function() {
-            vscodeApi.postMessage({ type: 'exportDiagramResult', format: 'png', data: '' });
+            if (action === 'copy') {
+                vscodeApi.postMessage({ type: 'copyDiagramResult', success: false, format: 'png' });
+            } else {
+                vscodeApi.postMessage({ type: 'exportDiagramResult', format: 'png', data: '' });
+            }
         };
         img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svgData);
     }

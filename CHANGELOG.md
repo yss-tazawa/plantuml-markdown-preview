@@ -5,12 +5,28 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## 0.5.8 - 2026-03-10
+
+### Added
+
+- Copy Diagram as PNG command — right-click a diagram and copy it to the clipboard instantly
+
+### Changed
+
+- Diagram right-click menu now shows: Copy PNG, Save PNG, Save SVG (copy first for quick access)
+- Diagram context menu items appear immediately when the preview opens, without waiting for scripts to load
+- Webview text right-click menu now shows Cut/Copy/Paste before export items
+
 ## 0.5.7 - 2026-03-10
 
 ### Fixed
 
-- Fixed `!include`/`!includesub` diagrams showing wrong content when clicked in markdown preview; removed the click-to-open standalone preview feature for included file references
+- Fixed `!include`/`!includesub` diagrams showing wrong content when clicked in markdown preview
 - Diagram viewer now updates correctly when the preview panel is hidden behind it
+
+### Removed
+
+- Click-to-open standalone preview feature for included file references
 
 ## 0.5.6 - 2026-03-10
 
@@ -173,7 +189,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - **Preset modes** — single `mode` setting (`fast` / `secure` / `easy`) replaces `renderMode` and controls rendering method, debounce timing, and security defaults together
   - **Fast** (default) — local PlantUML server on localhost, instant re-renders, debounce 100ms
   - **Secure** — local rendering only, no network access, local images blocked by default, debounce 300ms
-  - **Easy** — no setup required, diagram source sent to external PlantUML server, debounce 300ms
+  - **Easy** — no setup required, diagram source sent to PlantUML server, debounce 300ms
 - `plantumlLocalServerPort` setting — specify a fixed port for the local server (default: auto-assign)
 - Debounce and `allowLocalImages` settings can still be overridden individually
 - Chinese (Simplified) localization (zh-cn)
