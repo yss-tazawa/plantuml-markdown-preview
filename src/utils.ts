@@ -15,7 +15,11 @@ import {
  *
  * Accepts hex (#rgb / #rrggbb / #rrggbbaa), rgb()/rgba() functions,
  * CSS keywords (transparent, inherit, currentColor, named colors).
- * Also used as an inline regex inside webview scripts (keep in sync).
+ *
+ * DUPLICATION NOTE: This pattern is duplicated as an inline string in
+ * pan-zoom-script.ts (cssColorRe) and scroll-sync-webview.ts because
+ * those run in separate webview contexts and cannot import this module.
+ * Keep all copies in sync when updating.
  */
 export const CSS_COLOR_RE = /^(#[\da-fA-F]{3,8}|rgba?\(\s*[\d.%,\s/]+\)|transparent|inherit|currentColor|[\w-]+)$/;
 

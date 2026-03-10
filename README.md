@@ -45,7 +45,7 @@ Switch between modes anytime with a single setting — no migration, no restart.
 - **Diagram Viewer** — click any diagram to open a pan & zoom panel with live sync and theme-matched background
 - **PlantUML `!include` support** — included files are resolved and rendered inline
 - **Standalone diagram preview** — open `.puml` and `.mmd` files directly with pan & zoom, live updates, and theme support — no Markdown wrapper needed
-- **Save diagrams as PNG / SVG** — right-click any diagram in the preview or Diagram Viewer to export it
+- **Save or copy diagrams as PNG / SVG** — right-click any diagram in the preview or Diagram Viewer to save or copy to clipboard
 - **14 preview themes** — 8 light + 6 dark themes including GitHub, Atom, Solarized, Dracula, Monokai, and more
 - **Code snippets** — type `plantuml-sequence` or `mermaid-sequence` in Markdown, or `seq` inside a fenced block, to expand diagram templates instantly
 - **Internationalization** — English, Chinese (Simplified), and Japanese UI
@@ -147,7 +147,7 @@ Click any PlantUML or Mermaid diagram in the preview to open it in a separate pa
 - Live sync — editor changes are reflected in real time while preserving your zoom position
 - Background color matches the current preview theme
 - Automatically closed when switching to a different source file
-- **Save as PNG / SVG** — right-click a diagram in the preview or Diagram Viewer to save it as a file
+- **Save or copy as PNG / SVG** — right-click a diagram in the preview or Diagram Viewer to save it as a file or copy PNG to clipboard
 - Disable with `enableDiagramViewer: false`
 
 ### PlantUML `!include` Support
@@ -166,7 +166,7 @@ Open `.puml`, `.plantuml`, `.mmd`, or `.mermaid` files directly — no Markdown 
 - Live preview updates as you type (debounced)
 - Auto-follow when switching between files of the same type
 - Independent theme selection (preview theme + diagram theme)
-- Save as PNG / SVG via right-click
+- Save or copy as PNG / SVG via right-click
 - PlantUML: supports all three rendering modes (Fast / Secure / Easy)
 - Mermaid: rendered client-side using mermaid.js
 
@@ -394,11 +394,11 @@ your browser in one step, choose **Export as HTML & Open in Browser**.
 
 The PDF file is saved alongside the source `.md` file. Chrome, Edge, or Chromium is required.
 
-### Save Diagram as PNG / SVG
+### Save / Copy Diagram as PNG / SVG
 
-- **Preview panel:** Right-click a diagram → **Save Diagram as PNG** or **Save Diagram as SVG**
-- **Diagram Viewer:** Right-click inside the viewer → **Save Diagram as PNG** or **Save Diagram as SVG**
-- **Standalone diagram preview:** Right-click inside the preview → **Save Diagram as PNG** or **Save Diagram as SVG**
+- **Preview panel:** Right-click a diagram → **Copy Diagram as PNG**, **Save Diagram as PNG**, or **Save Diagram as SVG**
+- **Diagram Viewer:** Right-click inside the viewer → **Copy Diagram as PNG**, **Save Diagram as PNG**, or **Save Diagram as SVG**
+- **Standalone diagram preview:** Right-click inside the preview → **Copy Diagram as PNG**, **Save Diagram as PNG**, or **Save Diagram as SVG**
 
 ### Navigation
 

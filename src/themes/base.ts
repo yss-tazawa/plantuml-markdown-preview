@@ -102,7 +102,7 @@ export function buildThemeCss(p: ThemePalette): string {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
                    'Helvetica Neue', Arial, sans-serif;
       font-size: 16px;
-      max-width: 960px;
+      max-width: 960px; /* matches GitHub / VS Code markdown preview width */
       margin: 0 auto;
       padding: 1em 1.5rem 4rem;
       line-height: 1.7;

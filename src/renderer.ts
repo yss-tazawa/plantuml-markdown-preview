@@ -24,6 +24,9 @@ import type { Config } from './config.js';
  */
 function scalePlantUmlSvg(svg: string, scale: string | undefined): string {
     if (!scale || scale === '100%') return svg;
+    // The regex patterns below assume PlantUML's SVG output writes inline
+    // styles as "width:Xpx;height:Ypx;" in that specific order with separate
+    // width/height attributes. Tested against PlantUML v1.2024+.
     if (scale === 'auto') {
         // Keep natural width as fixed size; max-width:100% shrinks when container is narrower
         return svg
@@ -94,7 +97,7 @@ export function plantumlPlugin(md: MarkdownIt, config: Config): MarkdownIt {
 
         if (lang === 'mermaid') {
             const escaped = md.utils.escapeHtml(token.content);
-            return `<div class="mermaid-diagram"${lineAttr}><pre class="mermaid">${escaped}</pre>${endLineMarker}</div>\n`;
+            return `<div class="mermaid-diagram"${lineAttr} data-vscode-context='{"webviewSection":"diagram","preventDefaultContextMenuItems":true}'><pre class="mermaid">${escaped}</pre>${endLineMarker}</div>\n`;
         }
 
         if (lang !== 'plantuml') {
@@ -111,7 +114,7 @@ export function plantumlPlugin(md: MarkdownIt, config: Config): MarkdownIt {
         const preRendered = preRenderedSvgs?.get(token.content.trim());
         const rawSvg = preRendered ?? renderToSvg(token.content, config);
         const svg = scalePlantUmlSvg(rawSvg, (renderEnv?.plantumlScale as string | undefined) ?? config.plantumlScale);
-        return `<div class="plantuml-diagram"${lineAttr}>${svg}${endLineMarker}</div>\n`;
+        return `<div class="plantuml-diagram"${lineAttr} data-vscode-context='{"webviewSection":"diagram","preventDefaultContextMenuItems":true}'>${svg}${endLineMarker}</div>\n`;
     };
 
     return md;

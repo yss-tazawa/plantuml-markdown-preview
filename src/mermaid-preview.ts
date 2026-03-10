@@ -11,6 +11,7 @@ import { CONFIG_SECTION, MERMAID_THEME_KEYS, MERMAID_THEME_SET, type Config } fr
 import { LIGHT_THEME_KEYS, DARK_THEME_KEYS, getThemeBgColor } from './exporter.js';
 import { getNonce, escapeHtml, CSS_COLOR_RE, buildThemeItems } from './utils.js';
 import { handleExportMessage } from './export-handler.js';
+import { handleCopyResult } from './diagram-viewer.js';
 import { getPanZoomScript } from './webview/pan-zoom-script.js';
 
 /** The singleton preview panel. */
@@ -223,7 +224,9 @@ ${getPanZoomScript()}
             mermaid.initialize({ startOnLoad: false, theme: e.data.theme });
             if (lastSource) renderMermaid(lastSource);
         } else if (e.data.type === 'exportDiagram') {
-            exportDiagram(e.data.format);
+            handleDiagramAction('save', e.data.format);
+        } else if (e.data.type === 'copyDiagram') {
+            handleDiagramAction('copy', e.data.format);
         }
     });
 
@@ -321,13 +324,13 @@ export async function openMermaidPreview(filePath: string, config: Config, exten
 
     panel.webview.html = buildHtml(source);
 
-    panel.onDidDispose(() => {
+    panelDisposables.push(panel.onDidDispose(() => {
         panel = null;
         currentFilePath = null;
         for (const d of panelDisposables) d.dispose();
         panelDisposables.length = 0;
         if (debounceTimer) { clearTimeout(debounceTimer); debounceTimer = null; }
-    });
+    }));
 
     panel.webview.onDidReceiveMessage((msg) => {
         void handleViewerMessage(msg);
@@ -417,8 +420,12 @@ export async function changeMermaidTheme(): Promise<void> {
 /**
  * Handle messages sent from the Mermaid viewer webview.
  *
- * @param msg - Message payload from the webview (export requests).
+ * @param msg - Message payload from the webview (export + copy requests).
  */
-async function handleViewerMessage(msg: { type: string; format?: string; data?: string }): Promise<void> {
+async function handleViewerMessage(msg: { type: string; format?: string; data?: string; success?: boolean }): Promise<void> {
+    if (msg.type === 'copyDiagramResult') {
+        handleCopyResult(!!msg.success);
+        return;
+    }
     return handleExportMessage(msg, currentFilePath);
 }

@@ -49,6 +49,13 @@ function which(cmd: string): Promise<string | null> {
     });
 }
 
+/**
+ * Cached browser path (three-state):
+ * - `undefined` — not yet searched (initial state)
+ * - `null` — searched but no browser found (negative cache; call
+ *   {@link clearBrowserCache} to force a re-search)
+ * - `string` — resolved browser executable path
+ */
 let cachedBrowser: string | null | undefined;
 
 /**

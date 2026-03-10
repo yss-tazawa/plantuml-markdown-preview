@@ -90,10 +90,12 @@ export async function startLocalServer(config: Config): Promise<void> {
 
     const MAX_PORT_RETRIES = 3;
     const useAutoPort = config.plantumlLocalServerPort <= 0;
+    const usedPorts = new Set<number>();
 
     for (let attempt = 0; attempt < MAX_PORT_RETRIES; attempt++) {
         try {
-            const port = await findFreePort(config.plantumlLocalServerPort);
+            const port = await findFreePort(config.plantumlLocalServerPort, usedPorts);
+            usedPorts.add(port);
             serverPort = port;
 
             const args = buildArgs(config, port);
@@ -238,17 +240,35 @@ export async function restartLocalServer(config: Config): Promise<void> {
 /**
  * Find a free port. If preferredPort > 0, use it directly; otherwise let the OS assign.
  *
+ * Note: When auto-assigning (preferredPort <= 0), there is an inherent TOCTOU
+ * race between releasing the probed port and the Java server binding to it.
+ * The caller mitigates this with a retry loop and a usedPorts set to avoid
+ * re-selecting the same port.
+ *
  * @param preferredPort - Port number to use; 0 means auto-assign.
+ * @param excludePorts - Ports to skip (already tried and failed).
  * @returns Resolved port number.
  */
-async function findFreePort(preferredPort: number): Promise<number> {
+async function findFreePort(preferredPort: number, excludePorts?: Set<number>): Promise<number> {
     if (preferredPort > 0) return preferredPort;
+    const MAX_PROBE = 5;
+    for (let i = 0; i < MAX_PROBE; i++) {
+        const port = await new Promise<number>((resolve, reject) => {
+            const srv = net.createServer();
+            srv.listen(0, '127.0.0.1', () => {
+                const addr = srv.address() as net.AddressInfo;
+                srv.close(() => resolve(addr.port));
+            });
+            srv.on('error', reject);
+        });
+        if (!excludePorts?.has(port)) return port;
+    }
+    // Give up excluding — return whatever the OS gives
     return new Promise<number>((resolve, reject) => {
         const srv = net.createServer();
         srv.listen(0, '127.0.0.1', () => {
             const addr = srv.address() as net.AddressInfo;
-            const port = addr.port;
-            srv.close(() => resolve(port));
+            srv.close(() => resolve(addr.port));
         });
         srv.on('error', reject);
     });
@@ -340,6 +360,9 @@ function handleCrash(reason: string, config: Config, stderr?: string): void {
     serverState = 'error';
     serverUrl = null;
     readyReject?.(new Error(reason));
+    readyPromise = null;
+    readyResolve = null;
+    readyReject = null;
 
     const isVersionError = stderr?.includes('UnsupportedClassVersionError')
         || stderr?.includes('class file version');
@@ -371,6 +394,7 @@ function handleCrash(reason: string, config: Config, stderr?: string): void {
                 const cfg = vscode.workspace.getConfiguration(CONFIG_SECTION);
                 await cfg.update('mode', 'secure', vscode.ConfigurationTarget.Global);
             } else if (action === restartLabel) {
+                prepareLocalServer();
                 await startLocalServer(config);
             }
         } catch { /* already logged */ }

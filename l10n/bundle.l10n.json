@@ -62,6 +62,8 @@
   "Diagram saved: {0}": "Diagram saved: {0}",
   "Failed to save diagram: {0}": "Failed to save diagram: {0}",
   "No diagram selected. Right-click a diagram or open it in the Diagram Viewer first.": "No diagram selected. Right-click a diagram or open it in the Diagram Viewer first.",
+  "Diagram copied as PNG": "Diagram copied as PNG",
+  "Failed to copy diagram to clipboard": "Failed to copy diagram to clipboard",
   "Failed to open file: {0}": "Failed to open file: {0}",
   "No PlantUML file is selected.": "No PlantUML file is selected.",
   "No Mermaid file is selected.": "No Mermaid file is selected.",

@@ -8,7 +8,7 @@
  */
 import * as vscode from 'vscode';
 import { readFile } from 'fs/promises';
-import { generateViewerHtml } from './diagram-viewer.js';
+import { generateViewerHtml, handleCopyResult } from './diagram-viewer.js';
 import { renderToSvgAsync, listThemesAsync, prefetchThemes } from './plantuml.js';
 import { renderToSvgServer } from './plantuml-server.js';
 import { LIGHT_THEME_KEYS, DARK_THEME_KEYS, getThemeBgColor } from './exporter.js';
@@ -262,8 +262,12 @@ async function renderSvg(content: string, config: Config, signal?: AbortSignal):
     return renderToSvgAsync(content, config, signal);
 }
 
-/** Handle messages from the viewer webview (PNG/SVG export). */
-async function handleViewerMessage(msg: { type: string; format?: string; data?: string }): Promise<void> {
+/** Handle messages from the viewer webview (PNG/SVG export + clipboard copy). */
+async function handleViewerMessage(msg: { type: string; format?: string; data?: string; success?: boolean }): Promise<void> {
+    if (msg.type === 'copyDiagramResult') {
+        handleCopyResult(!!msg.success);
+        return;
+    }
     return handleExportMessage(msg, currentFilePath);
 }
 

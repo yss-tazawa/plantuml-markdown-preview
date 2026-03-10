@@ -20,7 +20,7 @@ const latestState = new Map<number, { svg: string; bgColor?: string }>();
 /** Index of the most recently focused viewer panel. */
 let activeViewerIndex = -1;
 
-/** Pending diagram data from a preview right-click (for Save as PNG/SVG). */
+/** Pending diagram data from a preview right-click (for Save/Copy as PNG/SVG). */
 let pendingSave: { svg: string; diagramIndex: number } | null = null;
 
 /**
@@ -117,19 +117,21 @@ export function setPendingSaveDiagram(svg: string, diagramIndex: number): void {
 }
 
 /**
- * Request the active viewer to export its diagram as PNG or SVG.
+ * Save or copy a diagram as PNG or SVG.
  *
- * If a viewer panel is active, delegates to its webview for canvas rendering.
+ * If a viewer panel is active, delegates to its webview.
  * Otherwise, falls back to pending diagram data from a preview right-click.
  *
+ * @param action - 'save' (file dialog) or 'copy' (clipboard)
  * @param format - 'png' or 'svg'
  * @param previewPanel - optional preview webview panel for PNG canvas conversion
  */
-export function saveDiagramFromViewer(format: 'png' | 'svg', previewPanel?: vscode.WebviewPanel): void {
+export function diagramAction(action: 'save' | 'copy', format: 'png' | 'svg', previewPanel?: vscode.WebviewPanel): void {
     // Try active viewer panel first
     const viewerPanel = viewers.get(activeViewerIndex);
     if (viewerPanel) {
-        void viewerPanel.webview.postMessage({ type: 'exportDiagram', format });
+        const msgType = action === 'copy' ? 'copyDiagram' : 'exportDiagram';
+        void viewerPanel.webview.postMessage({ type: msgType, format });
         return;
     }
 
@@ -140,23 +142,21 @@ export function saveDiagramFromViewer(format: 'png' | 'svg', previewPanel?: vsco
     }
     const { svg, diagramIndex } = pendingSave;
 
-    if (format === 'svg') {
-        // Extract the SVG element from the innerHTML
+    if (format === 'svg' && action === 'save') {
         void saveSvgFromHtml(svg, diagramIndex);
-    } else {
+    } else if (format === 'png') {
         // PNG: need canvas conversion — send to preview webview
+        const msgType = action === 'copy' ? 'copyDiagramAsPng' : 'exportDiagramAsPng';
         if (previewPanel) {
-            void previewPanel.webview.postMessage({ type: 'exportDiagramAsPng', svg });
+            void previewPanel.webview.postMessage({ type: msgType, svg });
         }
     }
+    // NOTE: SVG copy (format==='svg' && action==='copy') is not implemented
+    // in this fallback path; handled directly via webview clipboard API.
 }
 
 /**
  * Show a save dialog and write diagram data to the chosen file.
- *
- * @param data - File content (Buffer for PNG, string for SVG)
- * @param diagramIndex - 1-based diagram index for the default filename
- * @param format - 'png' or 'svg'
  */
 async function saveDiagramToFile(data: Buffer | string, diagramIndex: number, format: 'png' | 'svg'): Promise<void> {
     const filters: Record<string, string[]> = format === 'png'
@@ -176,13 +176,9 @@ async function saveDiagramToFile(data: Buffer | string, diagramIndex: number, fo
 }
 
 /**
- * Save SVG extracted from diagram innerHTML.
- *
- * @param html - innerHTML of the .plantuml-diagram element containing an SVG
- * @param diagramIndex - 1-based diagram index for the default filename
+ * Extract SVG from innerHTML and save to file.
  */
 async function saveSvgFromHtml(html: string, diagramIndex: number): Promise<void> {
-    // Extract the first <svg …>…</svg> from the innerHTML
     const match = html.match(/<svg[\s\S]*<\/svg>/i);
     if (!match) return;
     await saveDiagramToFile(match[0], diagramIndex, 'svg');
@@ -191,8 +187,6 @@ async function saveSvgFromHtml(html: string, diagramIndex: number): Promise<void
 
 /**
  * Handle PNG data returned from the preview webview after canvas conversion.
- *
- * @param data - Base64-encoded PNG data URI from the webview canvas.
  */
 export async function handlePngFromPreview(data: string): Promise<void> {
     if (!data || !pendingSave) return;
@@ -201,8 +195,24 @@ export async function handlePngFromPreview(data: string): Promise<void> {
     pendingSave = null;
 }
 
+/**
+ * Show a notification after a webview copy operation completes.
+ */
+export function handleCopyResult(success: boolean): void {
+    if (success) {
+        vscode.window.showInformationMessage(vscode.l10n.t('Diagram copied as PNG'));
+    } else {
+        vscode.window.showErrorMessage(vscode.l10n.t('Failed to copy diagram to clipboard'));
+    }
+    pendingSave = null;
+}
+
 /** Handle messages sent from the viewer webview (runtime-validated by type guard). */
-async function handleViewerMessage(msg: { type: string; format?: string; data?: string }): Promise<void> {
+async function handleViewerMessage(msg: { type: string; format?: string; data?: string; success?: boolean }): Promise<void> {
+    if (msg.type === 'copyDiagramResult') {
+        handleCopyResult(!!msg.success);
+        return;
+    }
     if (msg.type !== 'exportDiagramResult' || !msg.format || !msg.data) return;
     if (msg.format !== 'png' && msg.format !== 'svg') return;
 
@@ -305,7 +315,9 @@ ${getPanZoomScript()}
             }
             fitToWindow();
         } else if (e.data.type === 'exportDiagram') {
-            exportDiagram(e.data.format);
+            handleDiagramAction('save', e.data.format);
+        } else if (e.data.type === 'copyDiagram') {
+            handleDiagramAction('copy', e.data.format);
         }
     });
 

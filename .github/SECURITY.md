@@ -38,6 +38,6 @@ This extension is built with security in mind:
 - Local image loading is controlled by `allowLocalImages` (default: mode-default — Fast: on, Secure: off, Easy: on); when disabled, `localResourceRoots` is restricted to the extension's own directory only (for bundled assets such as mermaid.js)
 - HTTP image loading is off by default (`allowHttpImages`); enabling adds `http:` to the CSP `img-src` directive
 - Resolved image URIs are HTML-escaped to prevent attribute injection
-- Easy mode (`mode: "easy"`) sends PlantUML text to an external server; defaults to the public PlantUML server — users can set a self-hosted server URL for privacy; Fast and Secure modes (default) keep all diagrams on the machine
+- Easy mode (`mode: "easy"`) sends PlantUML text to a PlantUML server; defaults to the public PlantUML server — users can set a self-hosted server URL for privacy; Fast and Secure modes (default) keep all diagrams on the machine
 
 See the [Security section in README](../README.md#security) for details.
