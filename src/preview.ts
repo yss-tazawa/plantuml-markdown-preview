@@ -18,10 +18,9 @@ import { listThemesAsync, prefetchThemes, clearCache, resolveIncludePath } from 
 import { clearServerCache } from './plantuml-server.js';
 import { restartLocalServer } from './local-server.js';
 import { getScrollSyncScriptTag } from './scroll-sync.js';
-import { getNonce, resolveLocalImagePaths, extractPlantUmlBlocks, PLANTUML_FENCE_TEST_RE, extractMermaidBlocks, MERMAID_FENCE_TEST_RE, escapeHtml, extractAllDiagramBlocks, extractIncludeFiles, buildThemeItems } from './utils.js';
+import { getNonce, resolveLocalImagePaths, extractPlantUmlBlocks, PLANTUML_FENCE_TEST_RE, extractMermaidBlocks, MERMAID_FENCE_TEST_RE, escapeHtml, buildThemeItems } from './utils.js';
 import { CONFIG_SECTION, MERMAID_THEME_KEYS, type Config } from './config.js';
 import { openDiagramViewer, updateDiagramViewer, closeStaleViewers, disposeAllViewers, setPendingSaveDiagram, handlePngFromPreview } from './diagram-viewer.js';
-import { openPumlPreview } from './puml-preview.js';
 
 /** Config keys that affect &lt;head&gt; content and require a full HTML reload. */
 const HEAD_KEYS = new Set(['allowLocalImages', 'allowHttpImages', 'mermaidScale', 'enableMath']);
@@ -281,11 +280,7 @@ function registerEventHandlers(): void {
             editor.revealRange(range, vscode.TextEditorRevealType.AtTop);
             lastScrollLine = line;
         } else if (enableDiagramViewer && message.type === 'openDiagramViewer') {
-            void tryOpenIncludePreview(message.diagramIndex).then(handled => {
-                if (!handled) {
-                    openDiagramViewer(message.svg, message.diagramIndex, message.bgColor);
-                }
-            });
+            openDiagramViewer(message.svg, message.diagramIndex, message.bgColor);
         } else if (enableDiagramViewer && message.type === 'updateDiagramViewer') {
             updateDiagramViewer(message.diagramIndex, message.svg, message.bgColor);
         } else if (enableDiagramViewer && message.type === 'diagramCount') {
@@ -423,34 +418,6 @@ async function readFileContent(filePath: string): Promise<string | null> {
         vscode.window.showErrorMessage(`[PlantUML Markdown Preview] ${(err as Error).message}`);
         return null;
     }
-}
-
-/**
- * If the clicked diagram contains `!include`, open the included .puml file
- * in puml-preview instead of diagram-viewer.
- *
- * @returns true if a .puml file was opened, false to fall back to diagram-viewer.
- */
-async function tryOpenIncludePreview(diagramIndex: number): Promise<boolean> {
-    if (!currentFilePath || !lastConfig) return false;
-    const text = await readFileContent(currentFilePath);
-    if (!text) return false;
-    const blocks = extractAllDiagramBlocks(text);
-    const block = blocks[diagramIndex - 1];
-    if (!block || block.type !== 'plantuml') return false;
-    const includeFiles = extractIncludeFiles(block.content);
-    if (includeFiles.length === 0) return false;
-    const includePath = resolveIncludePath(lastConfig);
-    for (const relPath of includeFiles) {
-        if (!includePath) continue;
-        const absPath = path.resolve(includePath, relPath);
-        try {
-            await fs.promises.access(absPath);
-            await openPumlPreview(absPath, lastConfig);
-            return true;
-        } catch { /* not found, try next */ }
-    }
-    return false;
 }
 
 /**
