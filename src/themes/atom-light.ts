@@ -7,7 +7,7 @@
  */
 import { buildThemeCss } from './base.js';
 
-/** Complete CSS string for the Atom Light theme. */
+/** Color palette for the Atom Light theme. */
 const palette = {
     bg: '#ffffff',
     text: '#555555',

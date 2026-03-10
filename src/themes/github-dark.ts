@@ -7,7 +7,7 @@
  */
 import { buildThemeCss } from './base.js';
 
-/** Complete CSS string for the GitHub Dark theme. */
+/** Color palette for the GitHub Dark theme. */
 const palette = {
     bg: '#0d1117',
     text: '#e6edf3',

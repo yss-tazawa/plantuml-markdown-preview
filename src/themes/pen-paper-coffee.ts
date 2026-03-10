@@ -7,7 +7,7 @@
  */
 import { buildThemeCss } from './base.js';
 
-/** Complete CSS string for the Pen Paper Coffee theme. */
+/** Color palette for the Pen Paper Coffee theme. */
 const palette = {
     bg: '#f5f0e7',
     text: '#4a4543',

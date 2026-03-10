@@ -7,7 +7,7 @@
  */
 import { buildThemeCss } from './base.js';
 
-/** Complete CSS string for the Atom Dark theme. */
+/** Color palette for the Atom Dark theme. */
 const palette = {
     bg: '#1d1f21',
     text: '#c5c8c6',

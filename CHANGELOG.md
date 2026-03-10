@@ -5,16 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## 0.5.7 - 2026-03-10
+
+### Fixed
+
+- Fixed `!include`/`!includesub` diagrams showing wrong content when clicked in markdown preview; removed the click-to-open standalone preview feature for included file references
+- Diagram viewer now updates correctly when the preview panel is hidden behind it
+
 ## 0.5.6 - 2026-03-10
 
 ### Added
 
 - PlantUML code snippets for Markdown files — type `plantuml-sequence`, `plantuml-class`, etc. to insert full fenced code blocks
 - PlantUML snippets inside fenced blocks — type `seq`, `cls`, `act`, etc. for diagram templates
-- Injection grammar for `plantuml` fenced code blocks in Markdown
+- Syntax highlighting for `plantuml` fenced code blocks in Markdown
 - Mermaid code snippets for Markdown files — type `mermaid-sequence`, `mermaid-flowchart`, etc. to insert full fenced code blocks
 - Mermaid snippets inside fenced blocks — type `seq`, `cls`, `flow`, etc. for diagram templates
-- Injection grammar for `mermaid` fenced code blocks in Markdown
+- Syntax highlighting for `mermaid` fenced code blocks in Markdown
 
 ### Changed
 

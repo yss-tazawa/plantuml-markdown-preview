@@ -7,7 +7,7 @@
  */
 import { buildThemeCss } from './base.js';
 
-/** Complete CSS string for the One Light theme. */
+/** Color palette for the One Light theme. */
 const palette = {
     bg: '#fafafa',
     text: '#383a42',

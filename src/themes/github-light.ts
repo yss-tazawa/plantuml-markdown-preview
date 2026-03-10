@@ -7,7 +7,7 @@
  */
 import { buildThemeCss } from './base.js';
 
-/** Complete CSS string for the GitHub Light theme. */
+/** Color palette for the GitHub Light theme. */
 const palette = {
     bg: '#ffffff',
     text: '#24292e',
