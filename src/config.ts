@@ -67,6 +67,12 @@ export interface Config {
     enableMath: boolean;
     /** Base directory for PlantUML `!include` directives. Empty string = workspace root. */
     plantumlIncludePath: string;
+    /** D2 diagram theme name (maps to a themeID internally). */
+    d2Theme: string;
+    /** D2 layout engine: 'dagre' or 'elk'. */
+    d2Layout: string;
+    /** D2 diagram scale ('auto', '70%'–'120%'). 'auto' = shrink to fit. */
+    d2Scale: string;
     /** Hidden debug flag: simulate Java not found, even when installed. */
     debugSimulateNoJava: boolean;
 }
@@ -76,6 +82,30 @@ export const MERMAID_THEME_KEYS = ['default', 'dark', 'forest', 'neutral', 'base
 
 /** Pre-built Set for O(1) validation of Mermaid theme values. */
 export const MERMAID_THEME_SET: ReadonlySet<string> = new Set(MERMAID_THEME_KEYS);
+
+/** D2 theme keys ordered for display, with name → themeID mapping. */
+export const D2_THEME_KEYS = [
+    'Neutral Default', 'Neutral Grey', 'Flagship Terrastruct', 'Cool Classics',
+    'Mixed Berry Blue', 'Grape Soda', 'Aubergine', 'Colorblind Clear',
+    'Vanilla Nitro Cola', 'Orange Creamsicle', 'Shirley Temple', 'Earth Tones',
+    'Everglade Green', 'Buttered Toast',
+    'Dark Mauve', 'Dark Flagship Terrastruct',
+    'Terminal', 'Terminal Grayscale', 'Origami',
+] as const;
+
+/** Map from theme display name to D2 themeID number. */
+export const D2_THEME_MAP: ReadonlyMap<string, number> = new Map([
+    ['Neutral Default', 0], ['Neutral Grey', 1], ['Flagship Terrastruct', 3],
+    ['Cool Classics', 4], ['Mixed Berry Blue', 5], ['Grape Soda', 6],
+    ['Aubergine', 7], ['Colorblind Clear', 8],
+    ['Vanilla Nitro Cola', 100], ['Orange Creamsicle', 101], ['Shirley Temple', 102],
+    ['Earth Tones', 103], ['Everglade Green', 104], ['Buttered Toast', 105],
+    ['Dark Mauve', 200], ['Dark Flagship Terrastruct', 201],
+    ['Terminal', 300], ['Terminal Grayscale', 301], ['Origami', 302],
+]);
+
+/** D2 layout engine keys. */
+export const D2_LAYOUT_KEYS = ['dagre', 'elk'] as const;
 
 /** VS Code settings section name. */
 export const CONFIG_SECTION = 'plantumlMarkdownPreview';

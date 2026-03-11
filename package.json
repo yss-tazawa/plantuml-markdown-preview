@@ -28,6 +28,7 @@
     "java",
     "local",
     "mermaid",
+    "d2",
     "pdf"
   ],
   "activationEvents": [
@@ -38,13 +39,32 @@
     "languages": [
       {
         "id": "plantuml",
-        "aliases": ["PlantUML"],
-        "extensions": [".puml", ".plantuml"]
+        "aliases": [
+          "PlantUML"
+        ],
+        "extensions": [
+          ".puml",
+          ".plantuml"
+        ]
       },
       {
         "id": "mermaid",
-        "aliases": ["Mermaid"],
-        "extensions": [".mmd", ".mermaid"]
+        "aliases": [
+          "Mermaid"
+        ],
+        "extensions": [
+          ".mmd",
+          ".mermaid"
+        ]
+      },
+      {
+        "id": "d2",
+        "aliases": [
+          "D2"
+        ],
+        "extensions": [
+          ".d2"
+        ]
       }
     ],
     "grammars": [
@@ -61,7 +81,9 @@
       {
         "scopeName": "markdown.plantuml.codeblock",
         "path": "./syntaxes/plantuml.injection.tmLanguage.json",
-        "injectTo": ["text.html.markdown"],
+        "injectTo": [
+          "text.html.markdown"
+        ],
         "embeddedLanguages": {
           "meta.embedded.block.plantuml": "plantuml"
         }
@@ -69,9 +91,26 @@
       {
         "scopeName": "markdown.mermaid.codeblock",
         "path": "./syntaxes/mermaid.injection.tmLanguage.json",
-        "injectTo": ["text.html.markdown"],
+        "injectTo": [
+          "text.html.markdown"
+        ],
         "embeddedLanguages": {
           "meta.embedded.block.mermaid": "mermaid"
+        }
+      },
+      {
+        "language": "d2",
+        "scopeName": "source.d2",
+        "path": "./syntaxes/d2.tmLanguage.json"
+      },
+      {
+        "scopeName": "markdown.d2.codeblock",
+        "path": "./syntaxes/d2.injection.tmLanguage.json",
+        "injectTo": [
+          "text.html.markdown"
+        ],
+        "embeddedLanguages": {
+          "meta.embedded.block.d2": "d2"
         }
       }
     ],
@@ -91,6 +130,14 @@
       {
         "language": "mermaid",
         "path": "./snippets/mermaid.json"
+      },
+      {
+        "language": "markdown",
+        "path": "./snippets/d2-markdown.json"
+      },
+      {
+        "language": "d2",
+        "path": "./snippets/d2.json"
       }
     ],
     "markdown.markdownItPlugins": true,
@@ -108,6 +155,11 @@
       {
         "command": "plantuml-markdown-preview.openMermaidPreview",
         "title": "%command.openMermaidPreview.title%",
+        "category": "%command.category%"
+      },
+      {
+        "command": "plantuml-markdown-preview.openD2Preview",
+        "title": "%command.openD2Preview.title%",
         "category": "%command.category%"
       },
       {
@@ -184,6 +236,11 @@
           "command": "plantuml-markdown-preview.openMermaidPreview",
           "when": "resourceExtname == .mmd || resourceExtname == .mermaid",
           "group": "plantuml-markdown-preview"
+        },
+        {
+          "command": "plantuml-markdown-preview.openD2Preview",
+          "when": "resourceExtname == .d2",
+          "group": "plantuml-markdown-preview"
         }
       ],
       "editor/context": [
@@ -201,6 +258,11 @@
           "command": "plantuml-markdown-preview.openMermaidPreview",
           "when": "editorLangId == mermaid",
           "group": "plantuml-markdown-preview"
+        },
+        {
+          "command": "plantuml-markdown-preview.openD2Preview",
+          "when": "editorLangId == d2",
+          "group": "plantuml-markdown-preview"
         }
       ],
       "editor/title": [
@@ -217,6 +279,11 @@
         {
           "command": "plantuml-markdown-preview.changeTheme",
           "when": "activeWebviewPanelId == 'plantumlMermaidPreview'",
+          "group": "navigation"
+        },
+        {
+          "command": "plantuml-markdown-preview.changeTheme",
+          "when": "activeWebviewPanelId == 'plantumlD2Preview'",
           "group": "navigation"
         }
       ],
@@ -310,6 +377,21 @@
           "command": "plantuml-markdown-preview.saveDiagramAsSvg",
           "when": "webviewId == 'plantumlMermaidPreview'",
           "group": "1_diagram@3"
+        },
+        {
+          "command": "plantuml-markdown-preview.copyDiagramAsPng",
+          "when": "webviewId == 'plantumlD2Preview'",
+          "group": "1_diagram@1"
+        },
+        {
+          "command": "plantuml-markdown-preview.saveDiagramAsPng",
+          "when": "webviewId == 'plantumlD2Preview'",
+          "group": "1_diagram@2"
+        },
+        {
+          "command": "plantuml-markdown-preview.saveDiagramAsSvg",
+          "when": "webviewId == 'plantumlD2Preview'",
+          "group": "1_diagram@3"
         }
       ],
       "plantuml-markdown-preview.submenu": [
@@ -361,6 +443,12 @@
         "key": "ctrl+alt+v",
         "mac": "cmd+alt+v",
         "when": "editorLangId == mermaid"
+      },
+      {
+        "command": "plantuml-markdown-preview.openD2Preview",
+        "key": "ctrl+alt+v",
+        "mac": "cmd+alt+v",
+        "when": "editorLangId == d2"
       }
     ],
     "configuration": {
@@ -560,8 +648,83 @@
           ],
           "description": "%configuration.mermaidScale.description%"
         },
-        "plantumlMarkdownPreview.htmlMaxWidth": {
+        "plantumlMarkdownPreview.d2Theme": {
           "order": 13,
+          "type": "string",
+          "default": "Neutral Default",
+          "enum": [
+            "Neutral Default",
+            "Neutral Grey",
+            "Flagship Terrastruct",
+            "Cool Classics",
+            "Mixed Berry Blue",
+            "Grape Soda",
+            "Aubergine",
+            "Colorblind Clear",
+            "Vanilla Nitro Cola",
+            "Orange Creamsicle",
+            "Shirley Temple",
+            "Earth Tones",
+            "Everglade Green",
+            "Buttered Toast",
+            "Dark Mauve",
+            "Dark Flagship Terrastruct",
+            "Terminal",
+            "Terminal Grayscale",
+            "Origami"
+          ],
+          "description": "%configuration.d2Theme.description%"
+        },
+        "plantumlMarkdownPreview.d2Layout": {
+          "order": 14,
+          "type": "string",
+          "default": "dagre",
+          "enum": [
+            "dagre",
+            "elk"
+          ],
+          "enumDescriptions": [
+            "%configuration.d2Layout.dagre%",
+            "%configuration.d2Layout.elk%"
+          ],
+          "description": "%configuration.d2Layout.description%"
+        },
+        "plantumlMarkdownPreview.d2Scale": {
+          "order": 15,
+          "type": "string",
+          "default": "80%",
+          "enum": [
+            "auto",
+            "100%",
+            "95%",
+            "90%",
+            "85%",
+            "80%",
+            "75%",
+            "70%",
+            "65%",
+            "60%",
+            "55%",
+            "50%"
+          ],
+          "enumDescriptions": [
+            "%configuration.d2Scale.auto%",
+            "%configuration.d2Scale.100%",
+            "%configuration.d2Scale.95%",
+            "%configuration.d2Scale.90%",
+            "%configuration.d2Scale.85%",
+            "%configuration.d2Scale.80%",
+            "%configuration.d2Scale.75%",
+            "%configuration.d2Scale.70%",
+            "%configuration.d2Scale.65%",
+            "%configuration.d2Scale.60%",
+            "%configuration.d2Scale.55%",
+            "%configuration.d2Scale.50%"
+          ],
+          "description": "%configuration.d2Scale.description%"
+        },
+        "plantumlMarkdownPreview.htmlMaxWidth": {
+          "order": 16,
           "type": "string",
           "default": "960px",
           "enum": [
@@ -585,7 +748,7 @@
           "description": "%configuration.htmlMaxWidth.description%"
         },
         "plantumlMarkdownPreview.htmlAlignment": {
-          "order": 14,
+          "order": 17,
           "type": "string",
           "default": "center",
           "enum": [
@@ -599,13 +762,13 @@
           "description": "%configuration.htmlAlignment.description%"
         },
         "plantumlMarkdownPreview.enableMath": {
-          "order": 15,
+          "order": 18,
           "type": "boolean",
           "default": true,
           "description": "%configuration.enableMath.description%"
         },
         "plantumlMarkdownPreview.debounceNoDiagramChangeMs": {
-          "order": 16,
+          "order": 19,
           "type": [
             "number",
             "null"
@@ -614,7 +777,7 @@
           "description": "%configuration.debounceNoDiagramChangeMs.description%"
         },
         "plantumlMarkdownPreview.debounceDiagramChangeMs": {
-          "order": 17,
+          "order": 20,
           "type": [
             "number",
             "null"
@@ -623,7 +786,7 @@
           "description": "%configuration.debounceDiagramChangeMs.description%"
         },
         "plantumlMarkdownPreview.plantumlLocalServerPort": {
-          "order": 18,
+          "order": 21,
           "type": "number",
           "default": 0,
           "minimum": 0,
@@ -631,19 +794,19 @@
           "description": "%configuration.plantumlLocalServerPort.description%"
         },
         "plantumlMarkdownPreview.plantumlServerUrl": {
-          "order": 19,
+          "order": 22,
           "type": "string",
           "default": "https://www.plantuml.com/plantuml",
           "description": "%configuration.plantumlServerUrl.description%"
         },
         "plantumlMarkdownPreview.enableDiagramViewer": {
-          "order": 20,
+          "order": 23,
           "type": "boolean",
           "default": true,
           "description": "%configuration.enableDiagramViewer.description%"
         },
         "plantumlMarkdownPreview.retainPreviewContext": {
-          "order": 21,
+          "order": 24,
           "type": "boolean",
           "default": true,
           "description": "%configuration.retainPreviewContext.description%"
@@ -652,6 +815,7 @@
     }
   },
   "dependencies": {
+    "@terrastruct/d2": "^0.1.33",
     "@traptitech/markdown-it-katex": "^3.6.0",
     "highlight.js": "^11.11.1",
     "katex": "^0.16.35",

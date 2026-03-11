@@ -153,6 +153,9 @@ export function buildThemeCss(p: ThemePalette): string {
     .mermaid-diagram pre.mermaid { visibility: hidden; overflow: visible; border: none; padding: 0; }
     .mermaid-diagram svg { visibility: visible; height: auto; }
     .mermaid-error { visibility: visible; color: #d32f2f; border-left: 3px solid #d32f2f; padding: 0.5em; white-space: pre-wrap; font-size: 0.85em; }
+    .d2-diagram { margin: 1.5em 0; text-align: left; }
+    .d2-diagram svg { height: auto; }
+    .d2-error { color: #d32f2f; border-left: 3px solid #d32f2f; padding: 0.5em; white-space: pre-wrap; font-size: 0.85em; }
     .katex { color: inherit; }
     .katex-display { margin: 1em 0; overflow-x: auto; overflow-y: hidden; }
     body.preview { margin: 0; max-width: none; padding: 1em 26px; }

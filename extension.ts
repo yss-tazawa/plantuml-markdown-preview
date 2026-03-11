@@ -24,6 +24,8 @@ import { clearBrowserCache } from './src/browser-finder.js';
 import { disposeAllViewers, diagramAction } from './src/diagram-viewer.js';
 import { openPumlPreview, updatePumlConfig, getCurrentPumlFilePath, disposePumlPreview, getPumlPreviewPanel, changePumlTheme } from './src/puml-preview.js';
 import { openMermaidPreview, updateMermaidConfig, getCurrentMermaidFilePath, disposeMermaidPreview, getMermaidPreviewPanel, changeMermaidTheme } from './src/mermaid-preview.js';
+import { openD2Preview, updateD2Config, getCurrentD2FilePath, disposeD2Preview, getD2PreviewPanel, changeD2Theme } from './src/d2-preview.js';
+import { initD2, disposeD2 } from './src/d2-renderer.js';
 import { CONFIG_SECTION, MODE_PRESETS, type Config, type Mode } from './src/config.js';
 import type MarkdownIt from 'markdown-it';
 
@@ -98,6 +100,9 @@ function getConfig(): Config {
         htmlAlignment: cfg.get<string>('htmlAlignment', 'center'),
         enableMath: cfg.get<boolean>('enableMath', true),
         plantumlIncludePath: cfg.get<string>('plantumlIncludePath', ''),
+        d2Theme: cfg.get<string>('d2Theme', 'Neutral Default'),
+        d2Layout: cfg.get<string>('d2Layout', 'dagre'),
+        d2Scale: cfg.get<string>('d2Scale', '80%'),
         // Intentionally not declared in package.json contributes.configuration (hidden debug setting)
         debugSimulateNoJava: cfg.get<boolean>('debugSimulateNoJava', false),
     };
@@ -167,6 +172,29 @@ function resolveMermaidPath(uri?: vscode.Uri): string | null {
         || vscode.window.activeTextEditor?.document.uri.fsPath
         || getCurrentMermaidFilePath();
     return fsPath && isMermaidFile(fsPath) ? fsPath : null;
+}
+
+/** D2 file extensions supported for standalone preview. */
+const D2_EXTENSIONS = ['.d2'];
+
+/**
+ * Check whether a file path has a D2 extension.
+ */
+function isD2File(fsPath: string): boolean {
+    return D2_EXTENSIONS.some(ext => fsPath.endsWith(ext));
+}
+
+/**
+ * Resolve the target D2 file path from available sources.
+ *
+ * @param [uri] - URI passed from a command invocation.
+ * @returns Absolute .d2 file path, or null if unavailable.
+ */
+function resolveD2Path(uri?: vscode.Uri): string | null {
+    const fsPath = uri?.fsPath
+        || vscode.window.activeTextEditor?.document.uri.fsPath
+        || getCurrentD2FilePath();
+    return fsPath && isD2File(fsPath) ? fsPath : null;
 }
 
 /**
@@ -402,6 +430,9 @@ export function activate(context: vscode.ExtensionContext): { extendMarkdownIt: 
     lastKnownConfig = initialConfig;
     syncBuiltInPreviewConfig(initialConfig);
 
+    // Start D2 Wasm worker (non-blocking; first render awaits readiness)
+    initD2().catch(err => channel.appendLine(`[d2] init error: ${err}`));
+
     function registerExportCommand(
         id: string,
         exportOptions: { fitToWidth?: boolean; pdf?: boolean } | undefined,
@@ -507,10 +538,30 @@ export function activate(context: vscode.ExtensionContext): { extendMarkdownIt: 
         }
     );
 
+    const d2PreviewCmd = vscode.commands.registerCommand(
+        'plantuml-markdown-preview.openD2Preview',
+        async (uri?: vscode.Uri) => {
+            const filePath = resolveD2Path(uri);
+            if (!filePath) {
+                vscode.window.showErrorMessage(vscode.l10n.t('No D2 file is selected.'));
+                return;
+            }
+            const config = getConfig();
+            void vscode.window.withProgress(
+                { location: vscode.ProgressLocation.Notification, title: vscode.l10n.t('Opening preview...') },
+                async () => {
+                    await openD2Preview(filePath, config);
+                }
+            );
+        }
+    );
+
     const changeThemeCmd = vscode.commands.registerCommand(
         'plantuml-markdown-preview.changeTheme',
         () => {
-            if (getMermaidPreviewPanel()?.active) {
+            if (getD2PreviewPanel()?.active) {
+                void changeD2Theme();
+            } else if (getMermaidPreviewPanel()?.active) {
                 void changeMermaidTheme();
             } else if (getPumlPreviewPanel()?.active) {
                 void changePumlTheme();
@@ -523,6 +574,11 @@ export function activate(context: vscode.ExtensionContext): { extendMarkdownIt: 
     /** Dispatch a save/copy diagram command to the appropriate webview panel. */
     function handleDiagramCommand(action: 'save' | 'copy', format: 'png' | 'svg'): void {
         const msgType = action === 'copy' ? 'copyDiagram' : 'exportDiagram';
+        const d2Panel = getD2PreviewPanel();
+        if (d2Panel?.active) {
+            void d2Panel.webview.postMessage({ type: msgType, format });
+            return;
+        }
         const mermaidPanel = getMermaidPreviewPanel();
         if (mermaidPanel?.active) {
             void mermaidPanel.webview.postMessage({ type: msgType, format });
@@ -546,6 +602,14 @@ export function activate(context: vscode.ExtensionContext): { extendMarkdownIt: 
     const editorTracker = vscode.window.onDidChangeActiveTextEditor((editor) => {
         if (!editor) return;
         const filePath = editor.document.uri.fsPath;
+
+        // Track .d2 files
+        if (isD2File(filePath) && getCurrentD2FilePath()) {
+            if (filePath !== getCurrentD2FilePath()) {
+                void openD2Preview(filePath, getConfig());
+            }
+            return;
+        }
 
         // Track .mermaid files
         if (isMermaidFile(filePath) && getCurrentMermaidFilePath()) {
@@ -619,11 +683,12 @@ export function activate(context: vscode.ExtensionContext): { extendMarkdownIt: 
             updateConfig(config);
             updatePumlConfig(config);
             updateMermaidConfig(config);
+            updateD2Config(config);
             syncBuiltInPreviewConfig(config);
         }
     });
 
-    context.subscriptions.push(exportCmd, exportAndOpenCmd, exportHtmlFitCmd, exportHtmlFitAndOpenCmd, exportPdfCmd, exportPdfAndOpenCmd, previewCmd, pumlPreviewCmd, mermaidPreviewCmd, changeThemeCmd, savePngCmd, saveSvgCmd, copyPngCmd, editorTracker, configWatcher);
+    context.subscriptions.push(exportCmd, exportAndOpenCmd, exportHtmlFitCmd, exportHtmlFitAndOpenCmd, exportPdfCmd, exportPdfAndOpenCmd, previewCmd, pumlPreviewCmd, mermaidPreviewCmd, d2PreviewCmd, changeThemeCmd, savePngCmd, saveSvgCmd, copyPngCmd, editorTracker, configWatcher);
 
     // Start local PlantUML picoweb server if local-server mode is selected.
     // prepareLocalServer() pre-creates the readyPromise so that any preview
@@ -719,7 +784,9 @@ export function deactivate(): void {
     disposeAllViewers();
     disposePumlPreview();
     disposeMermaidPreview();
+    disposeD2Preview();
     disposePreview();
+    disposeD2();
 }
 
 /**
@@ -754,6 +821,9 @@ const builtInPreviewConfig: Config = {
     allowHttpImages: false,
     enableMath: true,
     plantumlIncludePath: '',
+    d2Theme: 'Neutral Default',
+    d2Layout: 'dagre',
+    d2Scale: '80%',
     debounceNoDiagramChangeMs: 100,
     debounceDiagramChangeMs: 100,
     debugSimulateNoJava: false,

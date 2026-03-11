@@ -21,8 +21,8 @@ import { listThemesAsync, prefetchThemes, clearCache, resolveIncludePath } from 
 import { clearServerCache } from './plantuml-server.js';
 import { restartLocalServer } from './local-server.js';
 import { getScrollSyncScriptTag } from './scroll-sync.js';
-import { getNonce, resolveLocalImagePaths, extractPlantUmlBlocks, PLANTUML_FENCE_TEST_RE, extractMermaidBlocks, MERMAID_FENCE_TEST_RE, escapeHtml, buildThemeItems } from './utils.js';
-import { CONFIG_SECTION, MERMAID_THEME_KEYS, type Config } from './config.js';
+import { getNonce, resolveLocalImagePaths, extractPlantUmlBlocks, PLANTUML_FENCE_TEST_RE, extractMermaidBlocks, MERMAID_FENCE_TEST_RE, extractD2Blocks, D2_FENCE_TEST_RE, escapeHtml, buildThemeItems } from './utils.js';
+import { CONFIG_SECTION, MERMAID_THEME_KEYS, D2_THEME_KEYS, D2_LAYOUT_KEYS, type Config } from './config.js';
 import { openDiagramViewer, updateDiagramViewer, closeStaleViewers, disposeAllViewers, setPendingSaveDiagram, handlePngFromPreview, handleCopyResult } from './diagram-viewer.js';
 
 /** Config keys that affect &lt;head&gt; content and require a full HTML reload. */
@@ -155,6 +155,10 @@ function extractDiagramContent(text: string): string {
     const mermaidBlocks = extractMermaidBlocks(text);
     if (mermaidBlocks.length) {
         parts.push(...mermaidBlocks.map(b => b.trim()));
+    }
+    const d2Blocks = extractD2Blocks(text);
+    if (d2Blocks.length) {
+        parts.push(...d2Blocks.map(b => b.trim()));
     }
     return parts.join('\n---\n');
 }
@@ -779,7 +783,7 @@ function renderPanelWithLoading(text: string): void {
     if (loadingRenderTimer) { clearTimeout(loadingRenderTimer); loadingRenderTimer = null; }
     if (loadingResolve) { loadingResolve(); loadingResolve = null; }
 
-    const hasDiagram = PLANTUML_FENCE_TEST_RE.test(text) || MERMAID_FENCE_TEST_RE.test(text);
+    const hasDiagram = PLANTUML_FENCE_TEST_RE.test(text) || MERMAID_FENCE_TEST_RE.test(text) || D2_FENCE_TEST_RE.test(text);
     if (!hasDiagram) {
         suppressLoadingNotification = false;
         void renderPanel(text).catch(err => {
@@ -825,7 +829,7 @@ function renderPanelWithLoading(text: string): void {
 }
 
 /** Property keys that affect rendering output (PlantUML paths and themes). */
-const RENDER_KEYS = ['plantumlJarPath', 'javaPath', 'dotPath', 'plantumlTheme', 'plantumlScale', 'previewTheme', 'allowLocalImages', 'allowHttpImages', 'mode', 'plantumlServerUrl', 'plantumlLocalServerPort', 'mermaidTheme', 'mermaidScale', 'enableMath', 'plantumlIncludePath'] as const;
+const RENDER_KEYS = ['plantumlJarPath', 'javaPath', 'dotPath', 'plantumlTheme', 'plantumlScale', 'previewTheme', 'allowLocalImages', 'allowHttpImages', 'mode', 'plantumlServerUrl', 'plantumlLocalServerPort', 'mermaidTheme', 'mermaidScale', 'enableMath', 'plantumlIncludePath', 'd2Theme', 'd2Layout', 'd2Scale'] as const;
 
 /**
  * Check which rendering-related properties changed between two configs.
@@ -947,6 +951,8 @@ export async function changeTheme(): Promise<void> {
     const currentPreviewTheme = lastConfig ? lastConfig.previewTheme : 'github-light';
     const currentPlantumlTheme = lastConfig ? lastConfig.plantumlTheme : 'default';
     const currentMermaidTheme = lastConfig ? lastConfig.mermaidTheme : 'default';
+    const currentD2Theme = lastConfig ? lastConfig.d2Theme : 'Neutral Default';
+    const currentD2Layout = lastConfig ? lastConfig.d2Layout : 'dagre';
 
     // PlantUML Theme section (async fetch; resolves instantly if cache is warm)
     const plantumlThemes = await vscode.window.withProgress(
@@ -963,7 +969,11 @@ export async function changeTheme(): Promise<void> {
         { label: vscode.l10n.t('PlantUML Theme'), kind: vscode.QuickPickItemKind.Separator },
         ...buildThemeItems(['default', ...plantumlThemes], 'plantuml' as const, currentPlantumlTheme),
         { label: vscode.l10n.t('Mermaid Theme'), kind: vscode.QuickPickItemKind.Separator },
-        ...buildThemeItems([...MERMAID_THEME_KEYS], 'mermaid' as const, currentMermaidTheme)
+        ...buildThemeItems([...MERMAID_THEME_KEYS], 'mermaid' as const, currentMermaidTheme),
+        { label: vscode.l10n.t('D2 Theme'), kind: vscode.QuickPickItemKind.Separator },
+        ...buildThemeItems([...D2_THEME_KEYS], 'd2' as const, currentD2Theme),
+        { label: vscode.l10n.t('D2 Layout'), kind: vscode.QuickPickItemKind.Separator },
+        ...buildThemeItems([...D2_LAYOUT_KEYS], 'd2layout' as const, currentD2Layout),
     ];
 
     const selected = await vscode.window.showQuickPick(items, {
@@ -985,6 +995,12 @@ export async function changeTheme(): Promise<void> {
         } else if (selected.category === 'mermaid') {
             if (selected.themeKey === currentMermaidTheme) return;
             await cfg.update('mermaidTheme', selected.themeKey, vscode.ConfigurationTarget.Global);
+        } else if (selected.category === 'd2') {
+            if (selected.themeKey === currentD2Theme) return;
+            await cfg.update('d2Theme', selected.themeKey, vscode.ConfigurationTarget.Global);
+        } else if (selected.category === 'd2layout') {
+            if (selected.themeKey === currentD2Layout) return;
+            await cfg.update('d2Layout', selected.themeKey, vscode.ConfigurationTarget.Global);
         }
     } catch (err) {
         vscode.window.showErrorMessage(`[PlantUML Markdown Preview] ${(err as Error).message}`);

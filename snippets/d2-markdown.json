@@ -1,0 +1,165 @@
+{
+  "D2 Basic": {
+    "prefix": "d2-basic",
+    "body": [
+      "```d2",
+      "${1:a} -> ${2:b} -> ${3:c}",
+      "```"
+    ],
+    "description": "D2 basic connection diagram"
+  },
+  "D2 Sequence": {
+    "prefix": "d2-sequence",
+    "body": [
+      "```d2",
+      "shape: sequence_diagram",
+      "",
+      "${1:alice} -> ${2:bob}: ${3:Hello}",
+      "${2:bob} -> ${1:alice}: ${4:Hi}",
+      "```"
+    ],
+    "description": "D2 sequence diagram"
+  },
+  "D2 Class": {
+    "prefix": "d2-class",
+    "body": [
+      "```d2",
+      "${1:MyClass}: {",
+      "  shape: class",
+      "",
+      "  +${2:field}: ${3:string}",
+      "  +${4:method}(): ${5:void}",
+      "}",
+      "```"
+    ],
+    "description": "D2 class diagram"
+  },
+  "D2 Container": {
+    "prefix": "d2-container",
+    "body": [
+      "```d2",
+      "${1:server}: {",
+      "  ${2:web}",
+      "  ${3:db}",
+      "",
+      "  ${2:web} -> ${3:db}",
+      "}",
+      "```"
+    ],
+    "description": "D2 container (nested group)"
+  },
+  "D2 Grid": {
+    "prefix": "d2-grid",
+    "body": [
+      "```d2",
+      "grid-rows: ${1:2}",
+      "",
+      "${2:a}",
+      "${3:b}",
+      "${4:c}",
+      "${5:d}",
+      "```"
+    ],
+    "description": "D2 grid layout"
+  },
+  "D2 ER": {
+    "prefix": "d2-er",
+    "body": [
+      "```d2",
+      "${1:users}: {",
+      "  shape: sql_table",
+      "  id: int {constraint: primary_key}",
+      "  ${2:name}: varchar",
+      "}",
+      "",
+      "${3:posts}: {",
+      "  shape: sql_table",
+      "  id: int {constraint: primary_key}",
+      "  user_id: int {constraint: foreign_key}",
+      "}",
+      "",
+      "${1:users}.id <-> ${3:posts}.user_id",
+      "```"
+    ],
+    "description": "D2 ER diagram (SQL tables)"
+  },
+  "D2 Flow": {
+    "prefix": "d2-flow",
+    "body": [
+      "```d2",
+      "${1:start} -> ${2:check}: ${3:begin}",
+      "${2:check} -> ${4:yes}: true",
+      "${2:check} -> ${5:no}: false",
+      "```"
+    ],
+    "description": "D2 flowchart with branching"
+  },
+  "D2 Icon": {
+    "prefix": "d2-icon",
+    "body": [
+      "```d2",
+      "${1:server}: {",
+      "  icon: https://icons.terrastruct.com/essentials%2F112-server.svg",
+      "}",
+      "```"
+    ],
+    "description": "D2 node with icon"
+  },
+  "D2 Markdown": {
+    "prefix": "d2-markdown",
+    "body": [
+      "```d2",
+      "${1:explanation}: |md",
+      "  # ${2:Title}",
+      "  ${3:Description text}",
+      "|",
+      "```"
+    ],
+    "description": "D2 Markdown text node"
+  },
+  "D2 Tooltip": {
+    "prefix": "d2-tooltip",
+    "body": [
+      "```d2",
+      "${1:node}: {",
+      "  tooltip: ${2:Hover text}",
+      "  link: ${3:https://example.com}",
+      "}",
+      "```"
+    ],
+    "description": "D2 node with tooltip and link"
+  },
+  "D2 Layers": {
+    "prefix": "d2-layers",
+    "body": [
+      "```d2",
+      "${1:a} -> ${2:b}",
+      "",
+      "layers: {",
+      "  ${3:step1}: {",
+      "    ${1:a}",
+      "  }",
+      "  ${4:step2}: {",
+      "    ${1:a} -> ${2:b}",
+      "  }",
+      "}",
+      "```"
+    ],
+    "description": "D2 layers/steps"
+  },
+  "D2 Style": {
+    "prefix": "d2-style",
+    "body": [
+      "```d2",
+      "${1:node}: {",
+      "  style: {",
+      "    fill: \"${2:#f0f0f0}\"",
+      "    stroke: \"${3:#333}\"",
+      "    border-radius: ${4:8}",
+      "  }",
+      "}",
+      "```"
+    ],
+    "description": "D2 custom style"
+  }
+}

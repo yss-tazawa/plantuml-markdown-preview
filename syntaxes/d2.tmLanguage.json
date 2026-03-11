@@ -1,0 +1,8 @@
+{
+  "scopeName": "source.d2",
+  "patterns": [
+    {
+      "match": ".+"
+    }
+  ]
+}
