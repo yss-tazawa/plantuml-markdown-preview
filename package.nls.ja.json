@@ -11,6 +11,7 @@
   "command.exportHtmlFitToWidthAndOpen.title": "HTML にエクスポートしてブラウザで開く（幅に合わせる）",
   "command.exportPdf.title": "PDF としてエクスポート",
   "command.exportPdfAndOpen.title": "PDF にエクスポートして開く",
+  "command.openDiagramViewer.title": "ダイアグラムビューアで開く",
   "command.saveDiagramAsPng.title": "ダイアグラムを PNG で保存",
   "command.saveDiagramAsSvg.title": "ダイアグラムを SVG で保存",
   "command.copyDiagramAsPng.title": "ダイアグラムを PNG でコピー",

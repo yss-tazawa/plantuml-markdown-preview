@@ -62,6 +62,7 @@
   "Diagram saved: {0}": "图表已保存: {0}",
   "Failed to save diagram: {0}": "图表保存失败: {0}",
   "No diagram selected. Right-click a diagram or open it in the Diagram Viewer first.": "未选择图表。请右键单击图表或在图表查看器中打开。",
+  "No diagram selected. Right-click a diagram first.": "未选择图表。请先右键单击图表。",
   "Diagram copied as PNG": "已将图表复制为 PNG",
   "Failed to copy diagram to clipboard": "复制图表到剪贴板失败",
   "Failed to open file: {0}": "文件打开失败: {0}",
