@@ -42,7 +42,7 @@ Switch between modes anytime with a single setting — no migration, no restart.
 - **PDF export** — one-click export via headless Chromium; diagrams auto-scaled to fit the page
 - **Bidirectional scroll sync** — editor and preview scroll together, both ways
 - **Navigation & TOC** — go-to-top / go-to-bottom buttons and a Table of Contents sidebar in the preview panel
-- **Diagram Viewer** — click any diagram to open a pan & zoom panel with live sync and theme-matched background
+- **Diagram Viewer** — right-click any diagram to open a pan & zoom panel with live sync and theme-matched background
 - **PlantUML `!include` support** — included files are resolved and rendered inline
 - **Standalone diagram preview** — open `.puml` and `.mmd` files directly with pan & zoom, live updates, and theme support — no Markdown wrapper needed
 - **Save or copy diagrams as PNG / SVG** — right-click any diagram in the preview or Diagram Viewer to save or copy to clipboard
@@ -140,7 +140,7 @@ Export your Markdown document to PDF using a headless Chromium-based browser.
 
 ### Diagram Viewer
 
-Click any PlantUML or Mermaid diagram in the preview to open it in a separate pan & zoom panel.
+Right-click any PlantUML or Mermaid diagram in the preview and select **Open in Diagram Viewer** to open it in a separate pan & zoom panel.
 
 - Mouse wheel zoom (cursor-centered) and drag to pan
 - Toolbar: Fit to Window, 1:1 reset, step zoom (+/-)
@@ -554,7 +554,7 @@ All settings use the `plantumlMarkdownPreview.` prefix.
 | `debounceDiagramChangeMs` | _(empty)_ | Debounce delay (ms) for diagram content changes. Leave empty to use the mode default (Fast: 100, Secure: 300, Easy: 300). |
 | `plantumlLocalServerPort` | `0` | Port for the local PlantUML server (Fast mode only). `0` = auto-assign a free port. |
 | `plantumlServerUrl` | `"https://www.plantuml.com/plantuml"` | PlantUML server URL for Easy mode. Set to a self-hosted server URL for privacy. |
-| `enableDiagramViewer` | `true` | Enable clicking a diagram in the preview to open it in a pan & zoom viewer. Requires reopening the preview to take effect. |
+| `enableDiagramViewer` | `true` | Enable the "Open in Diagram Viewer" context menu item when right-clicking a diagram. Requires reopening the preview to take effect. |
 | `retainPreviewContext` | `true` | Retain preview content when the tab is hidden. Prevents re-rendering on tab switch but uses more memory. Requires reopening the preview to take effect. |
 
 > **Note:** `allowLocalImages` and `allowHttpImages` apply only to the preview panel. HTML export always outputs original image paths without CSP restrictions.

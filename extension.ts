@@ -3,7 +3,7 @@
  * @description VS Code extension entry point.
  *
  * Responsibilities:
- * - Register commands: openPreview / exportHtml / exportHtmlAndOpen / exportHtmlFitToWidth / exportHtmlFitToWidthAndOpen / exportPdf / exportPdfAndOpen / changeTheme / saveDiagramAsPng / saveDiagramAsSvg / copyDiagramAsPng
+ * - Register commands: openPreview / exportHtml / exportHtmlAndOpen / exportHtmlFitToWidth / exportHtmlFitToWidthAndOpen / exportPdf / exportPdfAndOpen / changeTheme / openDiagramViewer / saveDiagramAsPng / saveDiagramAsSvg / copyDiagramAsPng
  * - Read VS Code settings (getConfig)
  * - Auto-follow active editor tab (editorTracker)
  * - Propagate settings changes to the preview (configWatcher)
@@ -21,7 +21,7 @@ import { prepareLocalServer, startLocalServer, stopLocalServer, restartLocalServ
 import { openPreview, getCurrentFilePath, getLastRenderFailed, updateConfig, changeTheme, disposePreview, setOutputChannel, getPreviewPanel } from './src/preview.js';
 import { execJava } from './src/utils.js';
 import { clearBrowserCache } from './src/browser-finder.js';
-import { disposeAllViewers, diagramAction } from './src/diagram-viewer.js';
+import { disposeAllViewers, diagramAction, openPendingDiagramViewer } from './src/diagram-viewer.js';
 import { openPumlPreview, updatePumlConfig, getCurrentPumlFilePath, disposePumlPreview, getPumlPreviewPanel, changePumlTheme } from './src/puml-preview.js';
 import { openMermaidPreview, updateMermaidConfig, getCurrentMermaidFilePath, disposeMermaidPreview, getMermaidPreviewPanel, changeMermaidTheme } from './src/mermaid-preview.js';
 import { openD2Preview, updateD2Config, getCurrentD2FilePath, disposeD2Preview, getD2PreviewPanel, changeD2Theme } from './src/d2-preview.js';
@@ -592,6 +592,8 @@ export function activate(context: vscode.ExtensionContext): { extendMarkdownIt: 
         }
     }
 
+    const openViewerCmd = vscode.commands.registerCommand(
+        'plantuml-markdown-preview.openDiagramViewer', () => openPendingDiagramViewer());
     const savePngCmd = vscode.commands.registerCommand(
         'plantuml-markdown-preview.saveDiagramAsPng', () => handleDiagramCommand('save', 'png'));
     const saveSvgCmd = vscode.commands.registerCommand(
@@ -688,7 +690,7 @@ export function activate(context: vscode.ExtensionContext): { extendMarkdownIt: 
         }
     });
 
-    context.subscriptions.push(exportCmd, exportAndOpenCmd, exportHtmlFitCmd, exportHtmlFitAndOpenCmd, exportPdfCmd, exportPdfAndOpenCmd, previewCmd, pumlPreviewCmd, mermaidPreviewCmd, d2PreviewCmd, changeThemeCmd, savePngCmd, saveSvgCmd, copyPngCmd, editorTracker, configWatcher);
+    context.subscriptions.push(exportCmd, exportAndOpenCmd, exportHtmlFitCmd, exportHtmlFitAndOpenCmd, exportPdfCmd, exportPdfAndOpenCmd, previewCmd, pumlPreviewCmd, mermaidPreviewCmd, d2PreviewCmd, changeThemeCmd, openViewerCmd, savePngCmd, saveSvgCmd, copyPngCmd, editorTracker, configWatcher);
 
     // Start local PlantUML picoweb server if local-server mode is selected.
     // prepareLocalServer() pre-creates the readyPromise so that any preview

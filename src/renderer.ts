@@ -139,7 +139,7 @@ export function plantumlPlugin(md: MarkdownIt, config: Config): MarkdownIt {
 
         if (lang === 'mermaid') {
             const escaped = md.utils.escapeHtml(token.content);
-            return `<div class="mermaid-diagram"${lineAttr} data-vscode-context='{"webviewSection":"diagram","preventDefaultContextMenuItems":true}'><pre class="mermaid">${escaped}</pre>${endLineMarker}</div>\n`;
+            return `<div class="mermaid-diagram"${lineAttr} data-vscode-context='{"webviewSection":"diagram","preventDefaultContextMenuItems":false}'><pre class="mermaid">${escaped}</pre>${endLineMarker}</div>\n`;
         }
 
         if (lang === 'd2') {
@@ -168,7 +168,7 @@ export function plantumlPlugin(md: MarkdownIt, config: Config): MarkdownIt {
         const preRendered = preRenderedSvgs?.get(token.content.trim());
         const rawSvg = preRendered ?? renderToSvg(token.content, config);
         const svg = scalePlantUmlSvg(rawSvg, (renderEnv?.plantumlScale as string | undefined) ?? config.plantumlScale);
-        return `<div class="plantuml-diagram"${lineAttr} data-vscode-context='{"webviewSection":"diagram","preventDefaultContextMenuItems":true}'>${svg}${endLineMarker}</div>\n`;
+        return `<div class="plantuml-diagram"${lineAttr} data-vscode-context='{"webviewSection":"diagram","preventDefaultContextMenuItems":false}'>${svg}${endLineMarker}</div>\n`;
     };
 
     return md;

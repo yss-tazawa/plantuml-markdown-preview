@@ -12,6 +12,7 @@
   "command.exportHtmlFitToWidthAndOpen.title": "Export as HTML & Open in Browser (Fit to Width)",
   "command.exportPdf.title": "Export as PDF",
   "command.exportPdfAndOpen.title": "Export as PDF & Open",
+  "command.openDiagramViewer.title": "Open in Diagram Viewer",
   "command.saveDiagramAsPng.title": "Save Diagram as PNG",
   "command.saveDiagramAsSvg.title": "Save Diagram as SVG",
   "command.copyDiagramAsPng.title": "Copy Diagram as PNG",
