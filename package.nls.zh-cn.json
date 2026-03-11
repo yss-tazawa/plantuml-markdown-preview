@@ -12,6 +12,7 @@
   "command.exportHtmlFitToWidthAndOpen.title": "导出为 HTML 并在浏览器中打开（适应宽度）",
   "command.exportPdf.title": "导出为 PDF",
   "command.exportPdfAndOpen.title": "导出为 PDF 并打开",
+  "command.openDiagramViewer.title": "在图表查看器中打开",
   "command.saveDiagramAsPng.title": "将图表保存为 PNG",
   "command.saveDiagramAsSvg.title": "将图表保存为 SVG",
   "command.copyDiagramAsPng.title": "将图表复制为 PNG",

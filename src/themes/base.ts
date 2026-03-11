@@ -147,9 +147,9 @@ export function buildThemeCss(p: ThemePalette): string {
     blockquote > :last-child { margin-bottom: 0; }
     hr { border: none; border-top: 2px solid ${p.border}; margin: 2em 0; }
     img { max-width: 100%; height: auto; }
-    .plantuml-diagram { margin: 1.5em 0; text-align: left; }
+    .plantuml-diagram { margin: 1.5em 0; text-align: left; width: fit-content; }
     .plantuml-diagram svg { height: auto; }
-    .mermaid-diagram { margin: 1.5em 0; text-align: left; }
+    .mermaid-diagram { margin: 1.5em 0; text-align: left; width: fit-content; }
     .mermaid-diagram pre.mermaid { visibility: hidden; overflow: visible; border: none; padding: 0; }
     .mermaid-diagram svg { visibility: visible; height: auto; }
     .mermaid-error { visibility: visible; color: #d32f2f; border-left: 3px solid #d32f2f; padding: 0.5em; white-space: pre-wrap; font-size: 0.85em; }

@@ -415,41 +415,12 @@ interface Anchor {
         });
     }
 
-    /** Delegated click handler for opening diagrams in the viewer (registered once on body). */
-    if (ENABLE_DIAGRAM_VIEWER) {
-        document.body.addEventListener('click', function (event) {
-            var target = event.target as Element | null;
-            if (!target) return;
-            var svg = target.closest('svg');
-            if (!svg) return;
-            var diagram = svg.closest('.plantuml-diagram, .mermaid-diagram');
-            if (!diagram) return;
-            if (window.getSelection()?.toString().length) return;
-            var diagrams = document.querySelectorAll('.plantuml-diagram, .mermaid-diagram');
-            var index = -1;
-            for (var i = 0; i < diagrams.length; i++) {
-                if (diagrams[i] === diagram) { index = i; break; }
-            }
-            if (index < 0) return;
-            vscode.postMessage({
-                type: 'openDiagramViewer',
-                svg: (diagram as HTMLElement).innerHTML,
-                diagramIndex: index + 1,
-                bgColor: getComputedStyle(document.body).backgroundColor
-            });
-        });
-    }
-
-    /** Set pointer cursor on SVGs inside diagram elements and add data-vscode-context for context menus. */
+    /** Set data-vscode-context on diagram container elements for context menus. */
     function updateDiagramCursors(): void {
         if (!ENABLE_DIAGRAM_VIEWER) return;
-        var svgs = document.querySelectorAll('.plantuml-diagram svg, .mermaid-diagram svg');
-        for (var i = 0; i < svgs.length; i++) {
-            (svgs[i] as HTMLElement).style.cursor = 'pointer';
-        }
         var diagrams = document.querySelectorAll('.plantuml-diagram, .mermaid-diagram');
         for (var i = 0; i < diagrams.length; i++) {
-            (diagrams[i] as HTMLElement).setAttribute('data-vscode-context', JSON.stringify({ webviewSection: 'diagram', preventDefaultContextMenuItems: true }));
+            (diagrams[i] as HTMLElement).setAttribute('data-vscode-context', JSON.stringify({ webviewSection: 'diagram', preventDefaultContextMenuItems: false }));
         }
     }
 

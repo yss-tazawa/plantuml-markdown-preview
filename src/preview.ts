@@ -23,7 +23,7 @@ import { restartLocalServer } from './local-server.js';
 import { getScrollSyncScriptTag } from './scroll-sync.js';
 import { getNonce, resolveLocalImagePaths, extractPlantUmlBlocks, PLANTUML_FENCE_TEST_RE, extractMermaidBlocks, MERMAID_FENCE_TEST_RE, extractD2Blocks, D2_FENCE_TEST_RE, escapeHtml, buildThemeItems } from './utils.js';
 import { CONFIG_SECTION, MERMAID_THEME_KEYS, D2_THEME_KEYS, D2_LAYOUT_KEYS, type Config } from './config.js';
-import { openDiagramViewer, updateDiagramViewer, closeStaleViewers, disposeAllViewers, setPendingSaveDiagram, handlePngFromPreview, handleCopyResult } from './diagram-viewer.js';
+import { updateDiagramViewer, closeStaleViewers, disposeAllViewers, setPendingSaveDiagram, handlePngFromPreview, handleCopyResult } from './diagram-viewer.js';
 
 /** Config keys that affect &lt;head&gt; content and require a full HTML reload. */
 const HEAD_KEYS = new Set(['allowLocalImages', 'allowHttpImages', 'mermaidScale', 'enableMath']);
@@ -292,14 +292,12 @@ function registerEventHandlers(): void {
             const range = new vscode.Range(line, 0, line, 0);
             editor.revealRange(range, vscode.TextEditorRevealType.AtTop);
             lastScrollLine = line;
-        } else if (enableDiagramViewer && message.type === 'openDiagramViewer') {
-            openDiagramViewer(message.svg, message.diagramIndex, message.bgColor);
         } else if (enableDiagramViewer && message.type === 'updateDiagramViewer') {
             updateDiagramViewer(message.diagramIndex, message.svg, message.bgColor);
         } else if (enableDiagramViewer && message.type === 'diagramCount') {
             closeStaleViewers(message.count);
         } else if (enableDiagramViewer && message.type === 'saveDiagramContext') {
-            setPendingSaveDiagram(message.svg, message.diagramIndex);
+            setPendingSaveDiagram(message.svg, message.diagramIndex, message.bgColor);
         } else if (enableDiagramViewer && message.type === 'exportDiagramFromPreview') {
             void handlePngFromPreview(message.data);
         } else if (enableDiagramViewer && message.type === 'copyDiagramFromPreview') {
