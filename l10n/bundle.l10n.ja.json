@@ -62,6 +62,7 @@
   "Diagram saved: {0}": "ダイアグラムを保存しました: {0}",
   "Failed to save diagram: {0}": "ダイアグラムの保存に失敗しました: {0}",
   "No diagram selected. Right-click a diagram or open it in the Diagram Viewer first.": "ダイアグラムが選択されていません。ダイアグラムを右クリックするか、ダイアグラムビューアーで開いてください。",
+  "No diagram selected. Right-click a diagram first.": "ダイアグラムが選択されていません。ダイアグラムを右クリックしてください。",
   "Diagram copied as PNG": "ダイアグラムを PNG としてコピーしました",
   "Failed to copy diagram to clipboard": "ダイアグラムのクリップボードへのコピーに失敗しました",
   "Failed to open file: {0}": "ファイルを開けませんでした: {0}",

@@ -20,8 +20,8 @@ const latestState = new Map<number, { svg: string; bgColor?: string }>();
 /** Index of the most recently focused viewer panel. */
 let activeViewerIndex = -1;
 
-/** Pending diagram data from a preview right-click (for Save/Copy as PNG/SVG). */
-let pendingSave: { svg: string; diagramIndex: number } | null = null;
+/** Pending diagram data from a preview right-click (for Save/Copy as PNG/SVG and Open in Viewer). */
+let pendingSave: { svg: string; diagramIndex: number; bgColor?: string } | null = null;
 
 /**
  * Open (or reveal) a diagram viewer panel for the given diagram index.
@@ -110,10 +110,31 @@ export function disposeAllViewers(): void {
 
 /**
  * Store diagram data from a preview right-click so that the next
- * saveDiagramFromViewer() call can save it without requiring an open viewer.
+ * diagramAction() or openPendingDiagramViewer() call can operate
+ * without requiring an open viewer panel.
+ *
+ * @param svg - innerHTML of the .plantuml-diagram / .mermaid-diagram element
+ * @param diagramIndex - 1-based position of the diagram in the document
+ * @param bgColor - CSS background color from the markdown preview theme
  */
-export function setPendingSaveDiagram(svg: string, diagramIndex: number): void {
-    pendingSave = { svg, diagramIndex };
+export function setPendingSaveDiagram(svg: string, diagramIndex: number, bgColor?: string): void {
+    pendingSave = { svg, diagramIndex, bgColor };
+}
+
+/**
+ * Open the diagram viewer using the pending diagram data stored by a
+ * previous right-click (via {@link setPendingSaveDiagram}).
+ *
+ * Called by the `plantuml-markdown-preview.openDiagramViewer` command
+ * registered in extension.ts.  Shows a warning if no diagram context
+ * has been stored yet.
+ */
+export function openPendingDiagramViewer(): void {
+    if (!pendingSave) {
+        vscode.window.showWarningMessage(vscode.l10n.t('No diagram selected. Right-click a diagram first.'));
+        return;
+    }
+    openDiagramViewer(pendingSave.svg, pendingSave.diagramIndex, pendingSave.bgColor);
 }
 
 /**
