@@ -24,7 +24,8 @@ import * as vscode from 'vscode';
 import { renderAllLocal } from './plantuml.js';
 import { renderAllServer, MAX_LOCAL_SERVER_CONCURRENCY } from './plantuml-server.js';
 import { getLocalServerUrl, waitForLocalServer } from './local-server.js';
-import { escapeHtml, extractPlantUmlBlocks, errorHtml } from './utils.js';
+import { escapeHtml, extractPlantUmlBlocks, extractD2Blocks, errorHtml } from './utils.js';
+import { renderAllD2 } from './d2-renderer.js';
 import { findBrowser } from './browser-finder.js';
 import { MERMAID_THEME_SET, type Config } from './config.js';
 import mk from '@traptitech/markdown-it-katex';
@@ -320,13 +321,20 @@ export async function renderBodyAsync(
         }
     }
 
+    // --- D2 pre-rendering ---
+    const d2Blocks = extractD2Blocks(source);
+    let preRenderedD2Svgs: Map<string, string> | undefined;
+    if (d2Blocks.length > 0 && !signal?.aborted) {
+        preRenderedD2Svgs = await renderAllD2(d2Blocks, config, signal);
+    }
+
     // If the signal fired during async rendering the preRenderedSvgs map may be
     // incomplete.  Proceeding to md.render() would cause the fence rule to fall
     // back to synchronous renderToSvg (spawnSync), freezing the extension host.
     if (signal?.aborted) return { bodyHtml: '', hasMermaid: false };
 
     const md = getOrCreateMd(config, options?.sourceMap);
-    const env: { preRenderedSvgs?: Map<string, string>; plantumlScale?: string } = { preRenderedSvgs, plantumlScale: config.plantumlScale };
+    const env: { preRenderedSvgs?: Map<string, string>; preRenderedD2Svgs?: Map<string, string>; plantumlScale?: string; d2Scale?: string } = { preRenderedSvgs, preRenderedD2Svgs, plantumlScale: config.plantumlScale, d2Scale: config.d2Scale };
     const bodyHtml = md.render(source, env);
     return { bodyHtml, hasMermaid: bodyHtml.includes('mermaid-diagram') };
 }
@@ -364,7 +372,7 @@ export async function renderHtmlAsync(source: string, title: string, config: Con
  */
 export async function exportToHtml(mdFilePath: string, config: Config, signal?: AbortSignal, fitToWidth?: boolean): Promise<string> {
     const source = await fs.promises.readFile(mdFilePath, 'utf8');
-    const effectiveConfig = fitToWidth ? { ...config, plantumlScale: 'auto' } : config;
+    const effectiveConfig = fitToWidth ? { ...config, plantumlScale: 'auto', d2Scale: 'auto' } : config;
     const exportOptions: RenderOptions = {
         mermaidTheme: config.mermaidTheme,
         mermaidScale: fitToWidth ? 'auto' : config.mermaidScale,
@@ -404,7 +412,7 @@ export async function exportToPdf(mdFilePath: string, config: Config, signal?: A
 
     // Generate fit-to-width HTML to a temporary file
     const source = await fs.promises.readFile(mdFilePath, 'utf8');
-    const effectiveConfig = { ...config, plantumlScale: 'auto' };
+    const effectiveConfig = { ...config, plantumlScale: 'auto', d2Scale: 'auto' };
     const exportOptions: RenderOptions = {
         mermaidTheme: config.mermaidTheme,
         mermaidScale: 'auto',

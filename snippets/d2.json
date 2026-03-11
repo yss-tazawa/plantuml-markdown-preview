@@ -1,0 +1,132 @@
+{
+  "Connection": {
+    "prefix": "conn",
+    "body": "${1:a} -> ${2:b}: ${3:label}",
+    "description": "D2 connection"
+  },
+  "Container": {
+    "prefix": "container",
+    "body": [
+      "${1:name}: {",
+      "  ${2:child1}",
+      "  ${3:child2}",
+      "",
+      "  ${2:child1} -> ${3:child2}",
+      "}"
+    ],
+    "description": "D2 container"
+  },
+  "Sequence Diagram": {
+    "prefix": "seq",
+    "body": [
+      "shape: sequence_diagram",
+      "",
+      "${1:alice} -> ${2:bob}: ${3:message}",
+      "${2:bob} -> ${1:alice}: ${4:reply}"
+    ],
+    "description": "D2 sequence diagram"
+  },
+  "Class": {
+    "prefix": "class",
+    "body": [
+      "${1:ClassName}: {",
+      "  shape: class",
+      "",
+      "  +${2:field}: ${3:type}",
+      "  +${4:method}(): ${5:returnType}",
+      "}"
+    ],
+    "description": "D2 class definition"
+  },
+  "Grid": {
+    "prefix": "grid",
+    "body": [
+      "grid-rows: ${1:2}",
+      "",
+      "${2:a}",
+      "${3:b}",
+      "${4:c}",
+      "${5:d}"
+    ],
+    "description": "D2 grid layout"
+  },
+  "SQL Table": {
+    "prefix": "sql",
+    "body": [
+      "${1:table_name}: {",
+      "  shape: sql_table",
+      "  id: int {constraint: primary_key}",
+      "  ${2:column}: ${3:varchar}",
+      "}"
+    ],
+    "description": "D2 SQL table (ER diagram)"
+  },
+  "Flow": {
+    "prefix": "flow",
+    "body": [
+      "${1:start} -> ${2:check}: ${3:begin}",
+      "${2:check} -> ${4:yes}: true",
+      "${2:check} -> ${5:no}: false"
+    ],
+    "description": "D2 flowchart"
+  },
+  "Icon Node": {
+    "prefix": "icon",
+    "body": [
+      "${1:name}: {",
+      "  icon: ${2:https://icons.terrastruct.com/essentials%2F112-server.svg}",
+      "}"
+    ],
+    "description": "D2 node with icon"
+  },
+  "Markdown Node": {
+    "prefix": "md",
+    "body": [
+      "${1:name}: |md",
+      "  # ${2:Title}",
+      "  ${3:Content}",
+      "|"
+    ],
+    "description": "D2 Markdown text node"
+  },
+  "Tooltip": {
+    "prefix": "tooltip",
+    "body": [
+      "${1:name}: {",
+      "  tooltip: ${2:Hover text}",
+      "  link: ${3:https://example.com}",
+      "}"
+    ],
+    "description": "D2 tooltip and link"
+  },
+  "Layers": {
+    "prefix": "layers",
+    "body": [
+      "layers: {",
+      "  ${1:step1}: {",
+      "    ${2:content}",
+      "  }",
+      "  ${3:step2}: {",
+      "    ${4:content}",
+      "  }",
+      "}"
+    ],
+    "description": "D2 layers/steps"
+  },
+  "Style": {
+    "prefix": "style",
+    "body": [
+      "style: {",
+      "  fill: \"${1:#f0f0f0}\"",
+      "  stroke: \"${2:#333}\"",
+      "  border-radius: ${3:8}",
+      "}"
+    ],
+    "description": "D2 custom style"
+  },
+  "Direction": {
+    "prefix": "direction",
+    "body": "direction: ${1|right,down,left,up|}",
+    "description": "D2 layout direction"
+  }
+}

@@ -97,6 +97,12 @@ export const MERMAID_FENCE_TEST_RE = /^ {0,3}```mermaid/im;
 /** Regex source for ```mermaid fenced code blocks (with capture). */
 export const MERMAID_FENCE_RE_SOURCE = '^ {0,3}```mermaid[ \\t]*\\n([\\s\\S]*?)\\n {0,3}```[ \\t]*$';
 
+/** Simple test regex to detect ```d2 fenced code blocks (no capture). */
+export const D2_FENCE_TEST_RE = /^ {0,3}```d2/im;
+
+/** Regex source for ```d2 fenced code blocks (with capture). */
+export const D2_FENCE_RE_SOURCE = '^ {0,3}```d2[ \\t]*\\n([\\s\\S]*?)\\n {0,3}```[ \\t]*$';
+
 /**
  * Extract PlantUML block contents from Markdown source in document order.
  *
@@ -118,6 +124,16 @@ export function extractMermaidBlocks(source: string): string[] {
 }
 
 /**
+ * Extract D2 block contents from Markdown source in document order.
+ *
+ * @param source - Raw Markdown text.
+ * @returns Array of D2 source text strings.
+ */
+export function extractD2Blocks(source: string): string[] {
+    return extractFencedBlocks(source, D2_FENCE_RE_SOURCE);
+}
+
+/**
  * Extract fenced code block contents matching a given regex source.
  *
  * @param source - Raw Markdown text.
@@ -136,25 +152,25 @@ function extractFencedBlocks(source: string, reSource: string): string[] {
 
 /** A diagram block with its type tag, extracted in document order. */
 export interface DiagramBlock {
-    type: 'plantuml' | 'mermaid';
+    type: 'plantuml' | 'mermaid' | 'd2';
     content: string;
 }
 
 /**
- * Extract all PlantUML and Mermaid blocks from Markdown source in document order.
+ * Extract all PlantUML, Mermaid, and D2 blocks from Markdown source in document order.
  *
  * Unlike the separate extract functions, this returns an interleaved list
  * matching the DOM order used by the webview's combined `diagramIndex`.
  */
 export function extractAllDiagramBlocks(source: string): DiagramBlock[] {
     const re = new RegExp(
-        '^ {0,3}```(plantuml|mermaid)[ \\t]*\\n([\\s\\S]*?)\\n {0,3}```[ \\t]*$',
+        '^ {0,3}```(plantuml|mermaid|d2)[ \\t]*\\n([\\s\\S]*?)\\n {0,3}```[ \\t]*$',
         'gim'
     );
     const blocks: DiagramBlock[] = [];
     let match;
     while ((match = re.exec(source)) !== null) {
-        blocks.push({ type: match[1].toLowerCase() as 'plantuml' | 'mermaid', content: match[2] });
+        blocks.push({ type: match[1].toLowerCase() as 'plantuml' | 'mermaid' | 'd2', content: match[2] });
     }
     return blocks;
 }

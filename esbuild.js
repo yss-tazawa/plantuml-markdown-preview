@@ -20,7 +20,7 @@ Promise.all([
         entryPoints: ['./extension.ts'],
         bundle: true,
         outfile: './dist/extension.js',
-        external: ['vscode'],
+        external: ['vscode', '@terrastruct/d2'],
         format: 'cjs',
         platform: 'node',
         target: 'node18',
@@ -77,6 +77,21 @@ Promise.all([
         console.log(`Copied: dist/fonts/ (${fontFiles.length} woff2 files)`);
     } catch (copyErr) {
         console.error('Failed to copy KaTeX fonts:', copyErr.message);
+        process.exit(1);
+    }
+
+    // Copy D2 Wasm + worker files to dist/d2/ for runtime import
+    const d2Dest = path.join(__dirname, 'dist/d2');
+    try {
+        fs.mkdirSync(d2Dest, { recursive: true });
+        const d2Src = path.join(__dirname, 'node_modules/@terrastruct/d2/dist/node-esm');
+        const d2Files = fs.readdirSync(d2Src);
+        for (const f of d2Files) {
+            fs.copyFileSync(path.join(d2Src, f), path.join(d2Dest, f));
+        }
+        console.log(`Copied: dist/d2/ (${d2Files.length} files)`);
+    } catch (copyErr) {
+        console.error('Failed to copy D2 files:', copyErr.message);
         process.exit(1);
     }
 
