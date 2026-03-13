@@ -255,15 +255,27 @@ function applyWebviewOptions(): boolean {
 }
 
 /**
- * Dispose all VS Code event listeners and cancel pending timers.
+ * Dispose VS Code event listeners and cancel pending timers.
  *
  * Handles save/change/scroll disposables, debounce timer, loading timer,
  * loading resolve callback, and syncMaster timer. Each resource is null-checked
  * and set to null after disposal to allow safe re-entry.
+ *
+ * @param includePanelHandlers - When true, also dispose the panel-level
+ *   onDidDispose and onDidChangeViewState listeners. Only pass true from
+ *   resetState() (panel tear-down). When reusing the panel for a file
+ *   switch, these must survive so that closing the panel still triggers
+ *   resetState.
  */
-function disposeEventHandlers(): void {
-    if (disposeDisposable) { disposeDisposable.dispose(); disposeDisposable = null; }
-    if (viewStateDisposable) { viewStateDisposable.dispose(); viewStateDisposable = null; }
+function disposeEventHandlers(includePanelHandlers = false): void {
+    // Panel-level handlers (onDidDispose, onDidChangeViewState) are only
+    // disposed when the panel itself is being torn down (resetState).
+    // When reusing the panel for a file switch, these must survive so that
+    // closing the panel still triggers resetState.
+    if (includePanelHandlers) {
+        if (disposeDisposable) { disposeDisposable.dispose(); disposeDisposable = null; }
+        if (viewStateDisposable) { viewStateDisposable.dispose(); viewStateDisposable = null; }
+    }
     if (messageDisposable) { messageDisposable.dispose(); messageDisposable = null; }
     if (saveDisposable) { saveDisposable.dispose(); saveDisposable = null; }
     if (changeDisposable) { changeDisposable.dispose(); changeDisposable = null; }
@@ -410,7 +422,7 @@ function resetState(): void {
     panelWasHidden = false;
     syncMaster = 'none';
     if (firstRenderResolve) { firstRenderResolve(); firstRenderResolve = null; }
-    disposeEventHandlers();
+    disposeEventHandlers(true);
 }
 
 /**
@@ -485,10 +497,14 @@ export function openPreview(filePath: string, config: Config, preserveFocus = fa
         if (optionsChanged) {
             initialHtmlSet = false;
         }
-        // When auto-following editor changes (preserveFocus=true), skip
-        // reveal() — it would bring the preview to the front and cover
-        // a file the user just opened in the same column.
-        if (!preserveFocus) {
+        // When called explicitly (suppressNotification=true), always reveal
+        // the panel so the user sees it — even with preserveFocus.
+        // When auto-following editor changes, skip reveal() to avoid
+        // bringing the preview to the front and covering a file the user
+        // just opened in the same column.
+        if (suppressNotification) {
+            panel.reveal(vscode.ViewColumn.Two, preserveFocus);
+        } else if (!preserveFocus) {
             panel.reveal(vscode.ViewColumn.Two, false);
         }
     } else {
@@ -506,7 +522,6 @@ export function openPreview(filePath: string, config: Config, preserveFocus = fa
                 localResourceRoots: config.allowLocalImages ? buildLocalResourceRoots(filePath) : [vscode.Uri.file(__dirname)],
             }
         );
-
         // Show loading placeholder until the first full render completes
         panel.webview.html = `<!DOCTYPE html>
 <html><head><meta charset="UTF-8"></head><body>
