@@ -40,6 +40,9 @@ let outputChannel: vscode.OutputChannel | null = null;
 /** Flag to distinguish intentional stop from unexpected crash. */
 let stoppingIntentionally = false;
 
+/** SIGKILL fallback timer (module-level so resetState can clear it). */
+let killTimer: ReturnType<typeof setTimeout> | null = null;
+
 // ---------------------------------------------------------------------------
 // Public API
 // ---------------------------------------------------------------------------
@@ -169,17 +172,19 @@ export function stopLocalServer(): void {
     stoppingIntentionally = true;
     const wasRunning = serverProcess !== null;
     if (serverProcess) {
-        serverProcess.removeAllListeners();
-        serverProcess.stdout?.removeAllListeners();
-        serverProcess.stderr?.removeAllListeners();
+        serverProcess.removeAllListeners('error');
+        serverProcess.removeAllListeners('close');
+        serverProcess.stdout?.removeAllListeners('data');
+        serverProcess.stderr?.removeAllListeners('data');
         const proc = serverProcess;
         serverProcess = null;
         proc.kill('SIGTERM');
         // SIGKILL fallback if SIGTERM doesn't terminate within 3 seconds
-        const killTimer = setTimeout(() => {
+        killTimer = setTimeout(() => {
             try { proc.kill('SIGKILL'); } catch { /* already exited */ }
+            killTimer = null;
         }, 3000);
-        proc.once('exit', () => clearTimeout(killTimer));
+        proc.once('exit', () => { if (killTimer) { clearTimeout(killTimer); killTimer = null; } });
     }
     resetState();
     log('[local-server] Stopped');
@@ -336,6 +341,7 @@ function resetState(): void {
     readyPromise = null;
     readyResolve = null;
     readyReject = null;
+    if (killTimer) { clearTimeout(killTimer); killTimer = null; }
 }
 
 /**

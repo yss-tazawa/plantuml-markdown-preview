@@ -61,6 +61,7 @@ function scalePlantUmlSvg(svg: string, scale: string | undefined): string {
  * @returns Scaled SVG markup.
  */
 function scaleD2Svg(svg: string, scale: string | undefined): string {
+    if (typeof svg !== 'string') return '';
     // Extract viewBox dimensions from the outer <svg> tag
     const vbMatch = svg.match(/<svg[^>]*\bviewBox="(\d+(?:\.\d+)?)\s+(\d+(?:\.\d+)?)\s+(\d+(?:\.\d+)?)\s+(\d+(?:\.\d+)?)"/);
     if (!vbMatch) return svg;
@@ -68,20 +69,25 @@ function scaleD2Svg(svg: string, scale: string | undefined): string {
     const vbHeight = parseFloat(vbMatch[4]);
     if (!vbWidth || !vbHeight) return svg;
 
+    // Strip any existing width/height attributes added by fixupD2Svg so we
+    // can apply the scaled values cleanly (duplicate attrs would be ignored).
+    let s = svg.replace(/(<svg\b[^>]*?)\s+width="[^"]*"/, '$1');
+    s = s.replace(/(<svg\b[^>]*?)\s+height="[^"]*"/, '$1');
+
     if (scale === 'auto') {
         // Set natural width but allow shrinking via max-width
-        return svg.replace(
+        return s.replace(
             /(<svg\b[^>]*)(>)/,
             `$1 width="${vbWidth}" height="${vbHeight}" style="max-width:100%;height:auto;"$2`
         );
     }
 
     const factor = (scale ? parseFloat(scale) : 100) / 100;
-    if (isNaN(factor) || factor <= 0) return svg;
+    if (isNaN(factor) || factor <= 0) return s;
     const scaledWidth = vbWidth * factor;
     // Preserve aspect ratio: compute height from the factor
     const scaledHeight = vbHeight * factor;
-    return svg.replace(
+    return s.replace(
         /(<svg\b[^>]*)(>)/,
         `$1 width="${scaledWidth}" height="${scaledHeight}"$2`
     );
@@ -137,18 +143,22 @@ export function plantumlPlugin(md: MarkdownIt, config: Config): MarkdownIt {
             ? `<span data-source-line="${sourceLineEnd}" style="display:block;height:0;overflow:hidden;"></span>`
             : '';
 
+        /** Pre-render environment passed by the async rendering pipeline. */
+        const renderEnv = env as Record<string, unknown>;
+
         if (lang === 'mermaid') {
             const escaped = md.utils.escapeHtml(token.content);
             return `<div class="mermaid-diagram"${lineAttr} data-vscode-context='{"webviewSection":"diagram","preventDefaultContextMenuItems":false}'><pre class="mermaid">${escaped}</pre>${endLineMarker}</div>\n`;
         }
 
         if (lang === 'd2') {
-            const renderEnvD2 = env as Record<string, unknown>;
-            const preRenderedD2Svgs = renderEnvD2?.preRenderedD2Svgs instanceof Map ? renderEnvD2.preRenderedD2Svgs as Map<string, string> : undefined;
+            const preRenderedD2Svgs = renderEnv?.preRenderedD2Svgs instanceof Map ? renderEnv.preRenderedD2Svgs as Map<string, string> : undefined;
             const rawD2 = preRenderedD2Svgs?.get(token.content.trim());
             if (rawD2) {
-                const svg = scaleD2Svg(rawD2, (renderEnvD2?.d2Scale as string | undefined) ?? config.d2Scale);
-                return `<div class="d2-diagram"${lineAttr} data-vscode-context='{"webviewSection":"diagram","preventDefaultContextMenuItems":true}'>${svg}${endLineMarker}</div>\n`;
+                // Error HTML from renderAllD2 should not be scaled
+                const isError = rawD2.startsWith('<div class="d2-error">');
+                const svg = isError ? rawD2 : scaleD2Svg(rawD2, (renderEnv?.d2Scale as string | undefined) ?? config.d2Scale);
+                return `<div class="d2-diagram"${lineAttr} data-vscode-context='{"webviewSection":"diagram","preventDefaultContextMenuItems":${isError ? 'false' : 'true'}}'>${svg}${endLineMarker}</div>\n`;
             }
             const escaped = md.utils.escapeHtml(token.content);
             return `<div class="d2-diagram"${lineAttr}><pre class="d2">${escaped}</pre>${endLineMarker}</div>\n`;
@@ -163,7 +173,6 @@ export function plantumlPlugin(md: MarkdownIt, config: Config): MarkdownIt {
         }
 
         // Use pre-rendered SVG from env if available (async pre-render path), otherwise fall back to synchronous local rendering
-        const renderEnv = env as Record<string, unknown>;
         const preRenderedSvgs = renderEnv?.preRenderedSvgs instanceof Map ? renderEnv.preRenderedSvgs as Map<string, string> : undefined;
         const preRendered = preRenderedSvgs?.get(token.content.trim());
         const rawSvg = preRendered ?? renderToSvg(token.content, config);

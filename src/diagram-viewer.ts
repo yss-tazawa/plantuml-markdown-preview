@@ -44,7 +44,7 @@ export function openDiagramViewer(svg: string, diagramIndex: number, bgColor?: s
         'plantumlDiagramViewer',
         vscode.l10n.t('Diagram {0} (Viewer)', diagramIndex),
         { viewColumn: vscode.ViewColumn.Two, preserveFocus: false },
-        { enableScripts: true, localResourceRoots: [] }
+        { enableScripts: true, retainContextWhenHidden: true, localResourceRoots: [] }
     );
 
     viewers.set(diagramIndex, panel);
@@ -178,6 +178,10 @@ export function diagramAction(action: 'save' | 'copy', format: 'png' | 'svg', pr
 
 /**
  * Show a save dialog and write diagram data to the chosen file.
+ *
+ * @param data - Binary buffer (PNG) or string (SVG) to save.
+ * @param diagramIndex - Zero-based index used for the default file name.
+ * @param format - Output format ('png' or 'svg').
  */
 async function saveDiagramToFile(data: Buffer | string, diagramIndex: number, format: 'png' | 'svg'): Promise<void> {
     const filters: Record<string, string[]> = format === 'png'
@@ -198,6 +202,9 @@ async function saveDiagramToFile(data: Buffer | string, diagramIndex: number, fo
 
 /**
  * Extract SVG from innerHTML and save to file.
+ *
+ * @param html - Raw innerHTML containing an SVG element.
+ * @param diagramIndex - Zero-based diagram index for the default file name.
  */
 async function saveSvgFromHtml(html: string, diagramIndex: number): Promise<void> {
     const match = html.match(/<svg[\s\S]*<\/svg>/i);
@@ -208,6 +215,8 @@ async function saveSvgFromHtml(html: string, diagramIndex: number): Promise<void
 
 /**
  * Handle PNG data returned from the preview webview after canvas conversion.
+ *
+ * @param data - Base64-encoded PNG data URL string.
  */
 export async function handlePngFromPreview(data: string): Promise<void> {
     if (!data || !pendingSave) return;
@@ -218,6 +227,8 @@ export async function handlePngFromPreview(data: string): Promise<void> {
 
 /**
  * Show a notification after a webview copy operation completes.
+ *
+ * @param success - Whether the clipboard copy succeeded.
  */
 export function handleCopyResult(success: boolean): void {
     if (success) {
@@ -326,6 +337,7 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: ${containe
     var vscodeApi = acquireVsCodeApi();
 ${getPanZoomScript()}
     // Live update from extension host
+    var hasInitialFit = false;
     window.addEventListener('message', function(e) {
         if (e.data.type === 'updateSvg') {
             container.innerHTML = e.data.svg;
@@ -334,7 +346,9 @@ ${getPanZoomScript()}
                 container.style.background = bg;
                 document.body.style.background = bg;
             }
-            fitToWindow();
+            // Only fit on first load; subsequent updates preserve zoom/pan
+            if (!hasInitialFit) { fitToWindow(); hasInitialFit = true; }
+            else { applyTransform(); }
         } else if (e.data.type === 'exportDiagram') {
             handleDiagramAction('save', e.data.format);
         } else if (e.data.type === 'copyDiagram') {

@@ -102,7 +102,7 @@ function getConfig(): Config {
         plantumlIncludePath: cfg.get<string>('plantumlIncludePath', ''),
         d2Theme: cfg.get<string>('d2Theme', 'Neutral Default'),
         d2Layout: cfg.get<string>('d2Layout', 'dagre'),
-        d2Scale: cfg.get<string>('d2Scale', '80%'),
+        d2Scale: cfg.get<string>('d2Scale', '75%'),
         // Intentionally not declared in package.json contributes.configuration (hidden debug setting)
         debugSimulateNoJava: cfg.get<boolean>('debugSimulateNoJava', false),
     };
@@ -131,11 +131,16 @@ function resolveMarkdownPath(uri?: vscode.Uri): string | null {
 /** PlantUML file extensions supported for standalone preview. */
 const PUML_EXTENSIONS = ['.puml', '.plantuml'];
 
+/** Check whether a file path matches any of the given extensions. */
+function isDiagramFile(fsPath: string, extensions: readonly string[]): boolean {
+    return extensions.some(ext => fsPath.endsWith(ext));
+}
+
 /**
  * Check whether a file path has a PlantUML extension.
  */
 function isPumlFile(fsPath: string): boolean {
-    return PUML_EXTENSIONS.some(ext => fsPath.endsWith(ext));
+    return isDiagramFile(fsPath, PUML_EXTENSIONS);
 }
 
 /**
@@ -158,7 +163,7 @@ const MERMAID_EXTENSIONS = ['.mmd', '.mermaid'];
  * Check whether a file path has a Mermaid extension.
  */
 function isMermaidFile(fsPath: string): boolean {
-    return MERMAID_EXTENSIONS.some(ext => fsPath.endsWith(ext));
+    return isDiagramFile(fsPath, MERMAID_EXTENSIONS);
 }
 
 /**
@@ -181,7 +186,7 @@ const D2_EXTENSIONS = ['.d2'];
  * Check whether a file path has a D2 extension.
  */
 function isD2File(fsPath: string): boolean {
-    return D2_EXTENSIONS.some(ext => fsPath.endsWith(ext));
+    return isDiagramFile(fsPath, D2_EXTENSIONS);
 }
 
 /**
@@ -496,6 +501,7 @@ export function activate(context: vscode.ExtensionContext): { extendMarkdownIt: 
                 return;
             }
             const config = getConfig();
+            // Fire-and-forget: progress notification dismissed when the async body completes
             void vscode.window.withProgress(
                 { location: vscode.ProgressLocation.Notification, title: vscode.l10n.t('Opening preview...') },
                 async () => {
@@ -825,7 +831,7 @@ const builtInPreviewConfig: Config = {
     plantumlIncludePath: '',
     d2Theme: 'Neutral Default',
     d2Layout: 'dagre',
-    d2Scale: '80%',
+    d2Scale: '75%',
     debounceNoDiagramChangeMs: 100,
     debounceDiagramChangeMs: 100,
     debugSimulateNoJava: false,

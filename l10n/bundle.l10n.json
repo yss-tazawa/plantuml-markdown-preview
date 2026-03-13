@@ -70,5 +70,7 @@
   "No Mermaid file is selected.": "No Mermaid file is selected.",
   "Java path changed to: {0}": "Java path changed to: {0}",
   "PlantUML jar path changed to: {0}": "PlantUML jar path changed to: {0}",
-  "PlantUML jar \"{0}\" does not exist. Using bundled jar instead.": "PlantUML jar \"{0}\" does not exist. Using bundled jar instead."
+  "PlantUML jar \"{0}\" does not exist. Using bundled jar instead.": "PlantUML jar \"{0}\" does not exist. Using bundled jar instead.",
+  "No D2 file is selected.": "No D2 file is selected.",
+  "D2 Theme": "D2 Theme"
 }

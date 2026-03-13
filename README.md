@@ -5,7 +5,7 @@
 <h1 align="center">PlantUML Markdown Preview</h1>
 
 <p align="center">
-  <strong>3 modes to fit your workflow. Render PlantUML &amp; Mermaid inline — fast, secure, or zero-setup.</strong>
+  <strong>3 modes to fit your workflow. Render PlantUML, Mermaid &amp; D2 inline — fast, secure, or zero-setup.</strong>
 </p>
 
 <p align="center">
@@ -35,19 +35,19 @@ Switch between modes anytime with a single setting — no migration, no restart.
 
 ## Highlights
 
-- **Inline PlantUML & Mermaid rendering** — diagrams appear directly in your Markdown preview, not in a separate panel
+- **Inline PlantUML, Mermaid & D2 rendering** — diagrams appear directly in your Markdown preview, not in a separate panel
 - **Secure by design** — CSP nonce-based policy blocks all code execution from Markdown content
-- **Diagram scale control** — adjust PlantUML and Mermaid diagram sizes independently
+- **Diagram scale control** — adjust PlantUML, Mermaid, and D2 diagram sizes independently
 - **Self-contained HTML export** — SVG diagrams embedded inline, configurable layout width and alignment
 - **PDF export** — one-click export via headless Chromium; diagrams auto-scaled to fit the page
 - **Bidirectional scroll sync** — editor and preview scroll together, both ways
 - **Navigation & TOC** — go-to-top / go-to-bottom buttons and a Table of Contents sidebar in the preview panel
 - **Diagram Viewer** — right-click any diagram to open a pan & zoom panel with live sync and theme-matched background
 - **PlantUML `!include` support** — included files are resolved and rendered inline
-- **Standalone diagram preview** — open `.puml` and `.mmd` files directly with pan & zoom, live updates, and theme support — no Markdown wrapper needed
+- **Standalone diagram preview** — open `.puml`, `.mmd`, and `.d2` files directly with pan & zoom, live updates, and theme support — no Markdown wrapper needed
 - **Save or copy diagrams as PNG / SVG** — right-click any diagram in the preview or Diagram Viewer to save or copy to clipboard
 - **14 preview themes** — 8 light + 6 dark themes including GitHub, Atom, Solarized, Dracula, Monokai, and more
-- **Code snippets** — type `plantuml-sequence` or `mermaid-sequence` in Markdown, or `seq` inside a fenced block, to expand diagram templates instantly
+- **Code snippets** — type `plantuml-sequence`, `mermaid-sequence`, or `d2-sequence` in Markdown, or `seq` inside a fenced block, to expand diagram templates instantly
 - **Internationalization** — English, Chinese (Simplified), and Japanese UI
 - **Math support** — `$...$` inline and `$$...$$` block math rendered with [KaTeX](https://katex.org/)
 
@@ -70,7 +70,7 @@ Switch between modes anytime with a single setting — no migration, no restart.
 
 ### Inline Diagram Preview
 
-```` ```plantuml ```` and ```` ```mermaid ```` code blocks are rendered as inline SVG diagrams alongside your regular Markdown content.
+```` ```plantuml ````, ```` ```mermaid ````, and ```` ```d2 ```` code blocks are rendered as inline SVG diagrams alongside your regular Markdown content.
 
 - Real-time preview updates as you type (two-stage debouncing)
 - Auto-refresh on file save
@@ -79,6 +79,7 @@ Switch between modes anytime with a single setting — no migration, no restart.
 - Syntax errors displayed inline with line numbers and source context
 - PlantUML: rendered via Java (Secure / Fast mode) or remote PlantUML server (Easy mode) — see [Rendering Modes](#rendering-modes)
 - Mermaid: rendered client-side using [mermaid.js](https://mermaid.js.org/) — no Java or external tools required
+- D2: rendered client-side using [@terrastruct/d2](https://d2lang.com/) (Wasm) — no external tools required
 
 ### Math Support
 
@@ -92,10 +93,11 @@ Render mathematical expressions using [KaTeX](https://katex.org/).
 
 ### Diagram Scale
 
-Control the display size of PlantUML and Mermaid diagrams independently.
+Control the display size of PlantUML, Mermaid, and D2 diagrams independently.
 
 - **PlantUML scale** — `auto` (shrink to fit) or fixed percentage (70%–120%, default 100%). SVG stays crisp at any scale.
 - **Mermaid scale** — `auto` (fit container) or fixed percentage (50%–100%, default 80%).
+- **D2 scale** — `auto` (fit container) or fixed percentage (50%–100%, default 75%).
 
 ### Rendering Modes
 
@@ -119,7 +121,7 @@ If Java is not found when opening a preview, a notification offers to switch to 
 
 Export your Markdown document to a self-contained HTML file.
 
-- PlantUML and Mermaid diagrams embedded as inline SVG
+- PlantUML, Mermaid, and D2 diagrams embedded as inline SVG
 - Syntax highlighting CSS included — no external dependencies
 - Export and open in browser in one command
 - Configurable layout width (640px–1440px or unlimited) and alignment (center or left)
@@ -140,7 +142,7 @@ Export your Markdown document to PDF using a headless Chromium-based browser.
 
 ### Diagram Viewer
 
-Right-click any PlantUML or Mermaid diagram in the preview and select **Open in Diagram Viewer** to open it in a separate pan & zoom panel.
+Right-click any PlantUML, Mermaid, or D2 diagram in the preview and select **Open in Diagram Viewer** to open it in a separate pan & zoom panel.
 
 - Mouse wheel zoom (cursor-centered) and drag to pan
 - Toolbar: Fit to Window, 1:1 reset, step zoom (+/-)
@@ -160,7 +162,7 @@ Use `!include` directives to share common styles, macros, and component definiti
 
 ### Standalone Diagram Preview
 
-Open `.puml`, `.plantuml`, `.mmd`, or `.mermaid` files directly — no Markdown wrapper needed.
+Open `.puml`, `.plantuml`, `.mmd`, `.mermaid`, or `.d2` files directly — no Markdown wrapper needed.
 
 - Same pan & zoom UI as the Diagram Viewer
 - Live preview updates as you type (debounced)
@@ -169,6 +171,7 @@ Open `.puml`, `.plantuml`, `.mmd`, or `.mermaid` files directly — no Markdown 
 - Save or copy as PNG / SVG via right-click
 - PlantUML: supports all three rendering modes (Fast / Secure / Easy)
 - Mermaid: rendered client-side using mermaid.js
+- D2: rendered using @terrastruct/d2 (Wasm) with configurable theme and layout engine
 
 ### Bidirectional Scroll Sync
 
@@ -213,6 +216,8 @@ QuickPick alongside preview themes.
 
 **Mermaid themes** control Mermaid diagram styling: `default`, `dark`, `forest`, `neutral`, `base`. Also available in the QuickPick theme picker.
 
+**D2 themes** — 19 built-in themes (e.g. `Neutral Default`, `Dark Mauve`, `Terminal`). Configurable via the settings or QuickPick theme picker.
+
 ### Syntax Highlighting
 
 190+ languages supported via highlight.js. Code blocks are styled to match your
@@ -228,7 +233,7 @@ selected preview theme.
 
 ### Built-in Markdown Preview Integration
 
-PlantUML and Mermaid diagrams also render in VS Code's built-in Markdown preview
+PlantUML, Mermaid, and D2 diagrams also render in VS Code's built-in Markdown preview
 (`Markdown: Open Preview to the Side`). No additional configuration needed.
 
 > **Note:** The built-in preview does not support this extension's preview themes,
@@ -244,6 +249,8 @@ PlantUML and Mermaid diagrams also render in VS Code's built-in Markdown preview
 ### Prerequisites
 
 **Mermaid** — no prerequisites. Works out of the box.
+
+**D2** — no prerequisites. Rendered using built-in [D2](https://d2lang.com/) Wasm — works out of the box.
 
 **PlantUML (Easy mode)** — no prerequisites. Diagram source is sent to a PlantUML server for rendering.
 
@@ -367,11 +374,11 @@ The preview uses its own theming independent of VS Code — default is a white b
 
 ### Open Diagram Preview
 
-Open `.puml` / `.plantuml` or `.mmd` / `.mermaid` files directly in a pan & zoom preview — no Markdown wrapper needed.
+Open `.puml` / `.plantuml`, `.mmd` / `.mermaid`, or `.d2` files directly in a pan & zoom preview — no Markdown wrapper needed.
 
 - **Keyboard shortcut:** `Cmd+Alt+V` (Mac) / `Ctrl+Alt+V` (Windows / Linux) — same shortcut, auto-selects based on file type
-- **Context menu:** Right-click a `.puml` / `.plantuml` or `.mmd` / `.mermaid` file in the Explorer or editor → **Preview PlantUML File** / **Preview Mermaid File**
-- **Command Palette:** `PlantUML Markdown Preview: Preview PlantUML File` or `Preview Mermaid File`
+- **Context menu:** Right-click a `.puml` / `.plantuml`, `.mmd` / `.mermaid`, or `.d2` file in the Explorer or editor → **Preview PlantUML File** / **Preview Mermaid File** / **Preview D2 File**
+- **Command Palette:** `PlantUML Markdown Preview: Preview PlantUML File`, `Preview Mermaid File`, or `Preview D2 File`
 
 ### Export to HTML
 
@@ -412,7 +419,7 @@ Click the theme icon in the preview panel title bar, or use the Command Palette:
 
 - **Command Palette:** `PlantUML Markdown Preview: Change Preview Theme`
 
-The theme picker shows all three theme categories in a single list — preview themes, PlantUML themes, and Mermaid themes — so you can switch any of them from one place.
+The theme picker shows all four theme categories in a single list — preview themes, PlantUML themes, Mermaid themes, and D2 themes — so you can switch any of them from one place.
 
 ### PlantUML Syntax
 
@@ -435,6 +442,17 @@ graph TD
     B -->|No| D[Cancel]
 ```
 ````
+
+### D2 Syntax
+
+````markdown
+```d2
+server -> db: query
+db -> server: result
+```
+````
+
+See [D2 documentation](https://d2lang.com/) for syntax details.
 
 ### Math Syntax
 
@@ -529,6 +547,46 @@ Expand diagram body only (short prefixes):
 | `timeline` | Timeline |
 | `git` | Git graph |
 
+### D2 Markdown Snippets (outside fenced blocks)
+
+Expand a complete `` ```d2 ... ``` `` block including fences:
+
+| Prefix | Diagram |
+| --- | --- |
+| `d2` | Empty D2 block |
+| `d2-basic` | Basic connection |
+| `d2-sequence` | Sequence diagram |
+| `d2-class` | Class diagram |
+| `d2-container` | Container (component diagram) |
+| `d2-grid` | Grid layout |
+| `d2-er` | ER diagram |
+| `d2-flow` | Flowchart |
+| `d2-icon` | Icon node |
+| `d2-markdown` | Markdown text node |
+| `d2-tooltip` | Tooltip and link |
+| `d2-layers` | Layers/steps |
+| `d2-style` | Custom style |
+
+### D2 Snippets (inside fenced blocks)
+
+Expand diagram body only (short prefixes):
+
+| Prefix | Content |
+| --- | --- |
+| `conn` | Connection |
+| `container` | Container (component diagram) |
+| `seq` | Sequence diagram |
+| `class` | Class diagram |
+| `grid` | Grid layout |
+| `sql` | SQL table (ER diagram) |
+| `flow` | Flowchart |
+| `icon` | Icon node |
+| `md` | Markdown node |
+| `tooltip` | Tooltip and link |
+| `layers` | Layers/steps |
+| `style` | Custom style |
+| `direction` | Layout direction |
+
 ## Configuration
 
 All settings use the `plantumlMarkdownPreview.` prefix.
@@ -547,6 +605,9 @@ All settings use the `plantumlMarkdownPreview.` prefix.
 | `mermaidTheme` | `"default"` | Mermaid diagram theme: `"default"`, `"dark"`, `"forest"`, `"neutral"`, or `"base"`. |
 | `plantumlScale` | `"100%"` | PlantUML diagram scale. `"auto"` shrinks diagrams that exceed container width. A percentage (70%–120%) renders at that fraction of natural size. |
 | `mermaidScale` | `"80%"` | Mermaid diagram scale. `"auto"` scales to fit container width. A percentage (50%–100%) renders at that fraction of natural size. |
+| `d2Theme` | `"Neutral Default"` | D2 diagram theme. 19 built-in themes available (e.g. `"Neutral Default"`, `"Dark Mauve"`, `"Terminal"`). |
+| `d2Layout` | `"dagre"` | D2 layout engine: `"dagre"` (default, fast) or `"elk"` (better for complex graphs with many nodes). |
+| `d2Scale` | `"75%"` | D2 diagram scale. `"auto"` scales to fit container width. A percentage (50%–100%) renders at that fraction of natural size. |
 | `htmlMaxWidth` | `"960px"` | Maximum width of the exported HTML body. Options: `"640px"` – `"1440px"`, or `"none"` for no limit. |
 | `htmlAlignment` | `"center"` | HTML body alignment. `"center"` (default) or `"left"`. |
 | `enableMath` | `true` | Enable KaTeX math rendering. Supports `$...$` (inline) and `$$...$$` (block). Set to `false` if `$` symbols cause unwanted math parsing. |
@@ -588,6 +649,7 @@ All settings use the `plantumlMarkdownPreview.` prefix.
 | Open Preview to Side (Markdown) | `Cmd+Alt+V` | `Ctrl+Alt+V` |
 | Preview PlantUML File | `Cmd+Alt+V` | `Ctrl+Alt+V` |
 | Preview Mermaid File | `Cmd+Alt+V` | `Ctrl+Alt+V` |
+| Preview D2 File | `Cmd+Alt+V` | `Ctrl+Alt+V` |
 
 ## FAQ
 
@@ -605,6 +667,17 @@ All settings use the `plantumlMarkdownPreview.` prefix.
 2. Check your network connection — the extension needs to reach the PlantUML server
 3. If using a self-hosted server, ensure it is running and accessible
 4. Requests to the server time out after 15 seconds (Fast and Secure modes also have a 15-second timeout per diagram)
+
+</details>
+
+<details>
+<summary><strong>D2 diagrams are not rendering</strong></summary>
+
+D2 is rendered using a built-in Wasm module — no external CLI is required.
+
+1. Reload the VS Code window (`Developer: Reload Window`)
+2. Check the VS Code Output panel for error messages
+3. Ensure your D2 source syntax is valid
 
 </details>
 
@@ -676,6 +749,7 @@ This extension bundles the following third-party software:
 - [PlantUML](https://plantuml.com/) (LGPL version) — [GNU Lesser General Public License v3 (LGPL-3.0)](https://www.gnu.org/licenses/lgpl-3.0.html). See the [PlantUML license page](https://plantuml.com/license) for details.
 - [mermaid.js](https://mermaid.js.org/) — [MIT License](https://github.com/mermaid-js/mermaid/blob/develop/LICENSE)
 - [KaTeX](https://katex.org/) — [MIT License](https://github.com/KaTeX/KaTeX/blob/main/LICENSE)
+- [@terrastruct/d2](https://d2lang.com/) (Wasm build) — [Mozilla Public License 2.0 (MPL-2.0)](https://github.com/terrastruct/d2/blob/master/LICENSE.txt)
 
 ## License
 

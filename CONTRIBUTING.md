@@ -61,7 +61,7 @@ extension.ts        Entry point — command registration, configuration, activat
 src/
   config.ts         Configuration types and mode presets
   preview.ts        Webview panel management and debouncing
-  renderer.ts       markdown-it plugin — PlantUML & Mermaid fence blocks → SVG
+  renderer.ts       markdown-it plugin — PlantUML, Mermaid & D2 fence blocks → SVG
   plantuml.ts       PlantUML local process invocation (sync + async), caching, theme discovery
   plantuml-server.ts PlantUML server rendering (HTTP fetch, encoding, LRU cache)
   local-server.ts   Local PlantUML picoweb server management
@@ -69,12 +69,16 @@ src/
   diagram-viewer.ts Pan & zoom viewer for embedded PlantUML diagrams
   puml-preview.ts   Standalone PlantUML file preview (.puml / .plantuml)
   mermaid-preview.ts Standalone Mermaid file preview (.mmd / .mermaid)
+  d2-renderer.ts    D2 Wasm renderer — compile & render via @terrastruct/d2
+  d2-preview.ts     Standalone D2 file preview (.d2)
   export-handler.ts Shared PNG/SVG export handler for viewer webviews
   scroll-sync.ts    Bidirectional editor ↔ preview scroll sync
   browser-finder.ts Detect Chrome/Edge/Chromium for headless PDF export
   utils.ts          Shared utilities (escapeHtml, getNonce, errorHtml, fence regex, Java process helpers, LRU cache)
   webview/          Webview-side TypeScript (bundled separately for the browser context)
   themes/           CSS theme definitions (14 themes: 8 light + 6 dark)
+snippets/           Markdown & diagram snippet definitions (PlantUML, Mermaid, D2)
+syntaxes/           TextMate grammars for Markdown fenced code blocks
 l10n/               Localization bundles (Chinese (Simplified) + English + Japanese)
 .github/            GitHub templates (PR template, security policy)
 dist/               Build output (gitignored)

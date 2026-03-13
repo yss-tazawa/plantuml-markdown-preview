@@ -1,6 +1,6 @@
 {
   "displayName": "PlantUML Markdown Preview",
-  "description": "3 modes to fit your workflow. Render PlantUML & Mermaid inline — fast, secure, or zero-setup.",
+  "description": "3 modes to fit your workflow. Render PlantUML, Mermaid & D2 inline — fast, secure, or zero-setup.",
   "submenu.label": "PlantUML Markdown Preview",
   "command.openPreview.title": "Open Preview to Side",
   "command.openPumlPreview.title": "Preview PlantUML File",
@@ -58,14 +58,14 @@
   "configuration.mermaidScale.60": "60% — render at 60% of natural size",
   "configuration.mermaidScale.55": "55% — render at 55% of natural size",
   "configuration.mermaidScale.50": "50% — render at 50% of natural size",
-  "configuration.d2Scale.description": "D2 diagram scale. 'auto' shrinks diagrams that exceed container width. A percentage renders at that fraction of natural size. SVG remains crisp at any scale. Default: 80%",
+  "configuration.d2Scale.description": "D2 diagram scale. 'auto' shrinks diagrams that exceed container width. A percentage renders at that fraction of natural size. SVG remains crisp at any scale. Default: 75%",
   "configuration.d2Scale.auto": "Auto — shrink to fit container width if larger",
   "configuration.d2Scale.100": "100% — natural size",
   "configuration.d2Scale.95": "95% — render at 95% of natural size",
   "configuration.d2Scale.90": "90% — render at 90% of natural size",
   "configuration.d2Scale.85": "85% — render at 85% of natural size",
-  "configuration.d2Scale.80": "80% — render at 80% of natural size (default)",
-  "configuration.d2Scale.75": "75% — render at 75% of natural size",
+  "configuration.d2Scale.80": "80% — render at 80% of natural size",
+  "configuration.d2Scale.75": "75% — render at 75% of natural size (default)",
   "configuration.d2Scale.70": "70% — render at 70% of natural size",
   "configuration.d2Scale.65": "65% — render at 65% of natural size",
   "configuration.d2Scale.60": "60% — render at 60% of natural size",
@@ -113,6 +113,6 @@
   "configuration.previewTheme.solarized-dark": "Solarized Dark — deep teal background, eye-friendly colors.",
   "configuration.plantumlLocalServerPort.description": "Port for the local PlantUML server in Fast mode. 0 = auto-assign a free port (recommended). Default: 0",
   "configuration.previewTheme.monokai": "Monokai — dark background, vivid syntax colors. Sublime Text inspired.",
-  "configuration.enableDiagramViewer.description": "Enable clicking a diagram in the preview to open it in a pan & zoom viewer. (Requires reopening the preview)",
+  "configuration.enableDiagramViewer.description": "Enable right-clicking a diagram in the preview to open it in a pan & zoom viewer. (Requires reopening the preview)",
   "configuration.retainPreviewContext.description": "Retain preview content when the tab is hidden. Prevents re-rendering on tab switch but uses more memory. (Requires reopening the preview)"
 }

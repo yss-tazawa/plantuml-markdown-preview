@@ -6,63 +6,20 @@
  * Mermaid rendering happens inside the webview via mermaid.js.
  */
 import * as vscode from 'vscode';
-import { readFile } from 'fs/promises';
-import { CONFIG_SECTION, MERMAID_THEME_KEYS, MERMAID_THEME_SET, type Config } from './config.js';
-import { LIGHT_THEME_KEYS, DARK_THEME_KEYS, getThemeBgColor } from './exporter.js';
-import { getNonce, escapeHtml, CSS_COLOR_RE, buildThemeItems } from './utils.js';
-import { handleExportMessage } from './export-handler.js';
-import { handleCopyResult } from './diagram-viewer.js';
+import { MERMAID_THEME_KEYS, MERMAID_THEME_SET, type Config } from './config.js';
+import { escapeHtml, CSS_COLOR_RE, buildThemeItems } from './utils.js';
 import { getPanZoomScript } from './webview/pan-zoom-script.js';
+import { createStandalonePreview, type StandalonePreview } from './standalone-preview.js';
 
-/** The singleton preview panel. */
-let panel: vscode.WebviewPanel | null = null;
-
-/** Absolute path of the currently previewed file. */
-let currentFilePath: string | null = null;
-
-/** Last known config snapshot (used only for debounceDiagramChangeMs). */
-let lastConfig: Config | null = null;
+// ---------------------------------------------------------------------------
+// Mermaid-specific state
+// ---------------------------------------------------------------------------
 
 /** Extension URI for resolving mermaid.min.js path. */
 let cachedExtensionUri: vscode.Uri | null = null;
 
-/** Local preview theme (completely independent from settings). */
-let localPreviewTheme = 'github-light';
-
 /** Local Mermaid theme (completely independent from settings). */
 let localMermaidTheme = 'default';
-
-/** Debounce timer for text document changes. */
-let debounceTimer: ReturnType<typeof setTimeout> | null = null;
-
-/** Disposables tied to the current panel lifecycle. */
-const panelDisposables: vscode.Disposable[] = [];
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
-/** Get the background color for the current preview theme. */
-function getCurrentBgColor(): string {
-    return getThemeBgColor(localPreviewTheme);
-}
-
-/** Generate a panel title from the file path. */
-function makePanelTitle(filePath: string): string {
-    const name = filePath.split(/[/\\]/).pop() ?? 'Mermaid';
-    return `${name} ${vscode.l10n.t('(Preview)')}`;
-}
-
-/** Read file content from open editor buffer or disk. */
-async function readSource(filePath: string): Promise<string | null> {
-    const openDoc = vscode.workspace.textDocuments.find(d => d.uri.fsPath === filePath);
-    if (openDoc) return openDoc.getText();
-    try {
-        return await readFile(filePath, 'utf-8');
-    } catch {
-        return null;
-    }
-}
 
 // ---------------------------------------------------------------------------
 // Webview HTML generation
@@ -242,51 +199,71 @@ ${getPanZoomScript()}
 }
 
 // ---------------------------------------------------------------------------
-// Panel lifecycle
+// Helpers
 // ---------------------------------------------------------------------------
 
-/** Resolve the webview URI for the bundled mermaid.min.js script. */
-function getMermaidScriptUri(): string {
-    if (!cachedExtensionUri || !panel) return '';
+/**
+ * Resolve the webview URI for the bundled mermaid.min.js script.
+ *
+ * @param panel - The WebviewPanel used to convert on-disk URIs.
+ * @returns Webview-safe URI string, or empty string if unavailable.
+ */
+function getMermaidScriptUri(panel: vscode.WebviewPanel): string {
+    if (!cachedExtensionUri) return '';
     const onDisk = vscode.Uri.joinPath(cachedExtensionUri, 'dist', 'mermaid.min.js');
     return panel.webview.asWebviewUri(onDisk).toString();
 }
 
-/**
- * Build the full webview HTML for the current Mermaid preview.
- *
- * @param source - Mermaid diagram source text to render on first load.
- */
-function buildHtml(source: string): string {
-    return generateMermaidViewerHtml(
-        getMermaidScriptUri(),
-        getNonce(),
-        getCurrentBgColor(),
-        localMermaidTheme,
-        source
-    );
-}
+// ---------------------------------------------------------------------------
+// Factory instance
+// ---------------------------------------------------------------------------
 
-/** Schedule a debounced re-render. */
-function scheduleRender(): void {
-    if (debounceTimer) clearTimeout(debounceTimer);
-    const delay = lastConfig?.debounceDiagramChangeMs ?? 300;
-    debounceTimer = setTimeout(() => {
-        debounceTimer = null;
-        void sendCurrentSource();
-    }, delay);
-}
+const preview: StandalonePreview = createStandalonePreview({
+    viewType: 'plantumlMermaidPreview',
+    defaultTitle: 'Mermaid',
+    localResourceRoots: () => cachedExtensionUri
+        ? [vscode.Uri.joinPath(cachedExtensionUri, 'dist')]
+        : [],
 
-/** Read current file and send source to webview. */
-async function sendCurrentSource(): Promise<void> {
-    if (!panel || !currentFilePath) return;
-    const source = await readSource(currentFilePath);
-    if (source === null || !panel) return;
-    void panel.webview.postMessage({ type: 'updateSource', source });
-}
+    buildHtml(content, nonce, bgColor, panel) {
+        return generateMermaidViewerHtml(
+            getMermaidScriptUri(panel), nonce, bgColor, localMermaidTheme, content
+        );
+    },
+
+    async updateWebview(panel, content) {
+        void panel.webview.postMessage({ type: 'updateSource', source: content });
+    },
+
+    showError() {
+        // Mermaid preview silently preserves previous state on missing files
+    },
+
+    onPreviewThemeChanged(panel, bgColor) {
+        void panel.webview.postMessage({ type: 'updateBgColor', bgColor });
+    },
+
+    buildDiagramThemeItems() {
+        return {
+            label: vscode.l10n.t('Mermaid Theme'),
+            items: buildThemeItems(MERMAID_THEME_KEYS, 'mermaid' as const, localMermaidTheme),
+        };
+    },
+
+    onDiagramThemeSelected(themeKey, panel) {
+        if (themeKey === localMermaidTheme) return 'done';
+        localMermaidTheme = themeKey;
+        void panel.webview.postMessage({ type: 'updateMermaidTheme', theme: localMermaidTheme });
+        return 'done';
+    },
+
+    resetDiagramState() {
+        localMermaidTheme = 'default';
+    },
+});
 
 // ---------------------------------------------------------------------------
-// Export API
+// Public API (thin wrappers preserving the existing call signatures)
 // ---------------------------------------------------------------------------
 
 /**
@@ -297,60 +274,8 @@ async function sendCurrentSource(): Promise<void> {
  * @param extensionUri - Extension root URI for resolving bundled assets.
  */
 export async function openMermaidPreview(filePath: string, config: Config, extensionUri: vscode.Uri): Promise<void> {
-    lastConfig = config;
-    currentFilePath = filePath;
     cachedExtensionUri = extensionUri;
-
-    if (panel) {
-        panel.reveal(vscode.ViewColumn.Two, true);
-        panel.title = makePanelTitle(filePath);
-        void sendCurrentSource();
-        return;
-    }
-
-    const source = await readSource(filePath);
-    if (source === null) return;
-
-    panel = vscode.window.createWebviewPanel(
-        'plantumlMermaidPreview',
-        makePanelTitle(filePath),
-        { viewColumn: vscode.ViewColumn.Two, preserveFocus: true },
-        {
-            enableScripts: true,
-            retainContextWhenHidden: vscode.workspace.getConfiguration(CONFIG_SECTION).get<boolean>('retainPreviewContext', true),
-            localResourceRoots: [vscode.Uri.joinPath(extensionUri, 'dist')]
-        }
-    );
-
-    panel.webview.html = buildHtml(source);
-
-    panelDisposables.push(panel.onDidDispose(() => {
-        panel = null;
-        currentFilePath = null;
-        for (const d of panelDisposables) d.dispose();
-        panelDisposables.length = 0;
-        if (debounceTimer) { clearTimeout(debounceTimer); debounceTimer = null; }
-    }));
-
-    panel.webview.onDidReceiveMessage((msg) => {
-        void handleViewerMessage(msg);
-    });
-
-    panelDisposables.push(
-        vscode.workspace.onDidChangeTextDocument((e) => {
-            if (!currentFilePath) return;
-            if (e.document.uri.fsPath !== currentFilePath) return;
-            scheduleRender();
-        })
-    );
-
-    panelDisposables.push(
-        vscode.workspace.onDidSaveTextDocument((doc) => {
-            if (!currentFilePath) return;
-            if (doc.uri.fsPath !== currentFilePath) return;
-            scheduleRender();
-        })
-    );
+    await preview.open(filePath, config);
 }
 
 /**
@@ -359,73 +284,36 @@ export async function openMermaidPreview(filePath: string, config: Config, exten
  * @param config - New extension configuration snapshot.
  */
 export function updateMermaidConfig(config: Config): void {
-    lastConfig = config;
+    preview.updateConfig(config);
 }
-
-/** Get the currently previewed .mmd / .mermaid file path. */
-export function getCurrentMermaidFilePath(): string | null {
-    return currentFilePath;
-}
-
-/** Get the preview panel (for save commands). */
-export function getMermaidPreviewPanel(): vscode.WebviewPanel | null {
-    return panel;
-}
-
-/** Dispose the preview panel and clean up. */
-export function disposeMermaidPreview(): void {
-    if (debounceTimer) { clearTimeout(debounceTimer); debounceTimer = null; }
-    if (panel) {
-        panel.dispose();
-        panel = null;
-    }
-    currentFilePath = null;
-}
-
-/** Show a theme QuickPick for the Mermaid preview. */
-export async function changeMermaidTheme(): Promise<void> {
-    if (!panel) return;
-
-    const items = [
-        { label: vscode.l10n.t('Preview Theme (Light)'), kind: vscode.QuickPickItemKind.Separator },
-        ...buildThemeItems(LIGHT_THEME_KEYS, 'preview' as const, localPreviewTheme),
-        { label: vscode.l10n.t('Preview Theme (Dark)'), kind: vscode.QuickPickItemKind.Separator },
-        ...buildThemeItems(DARK_THEME_KEYS, 'preview' as const, localPreviewTheme),
-        { label: vscode.l10n.t('Mermaid Theme'), kind: vscode.QuickPickItemKind.Separator },
-        ...buildThemeItems(MERMAID_THEME_KEYS, 'mermaid' as const, localMermaidTheme),
-    ];
-
-    const selected = await vscode.window.showQuickPick(items, {
-        placeHolder: vscode.l10n.t('Select theme')
-    });
-    if (!panel) return;
-
-    if (!selected || !('category' in selected)) return;
-
-    if (selected.category === 'preview') {
-        if (selected.themeKey === localPreviewTheme) return;
-        localPreviewTheme = selected.themeKey;
-        void panel.webview.postMessage({ type: 'updateBgColor', bgColor: getCurrentBgColor() });
-    } else if (selected.category === 'mermaid') {
-        if (selected.themeKey === localMermaidTheme) return;
-        localMermaidTheme = selected.themeKey;
-        void panel.webview.postMessage({ type: 'updateMermaidTheme', theme: localMermaidTheme });
-    }
-}
-
-// ---------------------------------------------------------------------------
-// Internal
-// ---------------------------------------------------------------------------
 
 /**
- * Handle messages sent from the Mermaid viewer webview.
+ * Get the currently previewed .mmd / .mermaid file path.
  *
- * @param msg - Message payload from the webview (export + copy requests).
+ * @returns Absolute file path, or null if no preview is open.
  */
-async function handleViewerMessage(msg: { type: string; format?: string; data?: string; success?: boolean }): Promise<void> {
-    if (msg.type === 'copyDiagramResult') {
-        handleCopyResult(!!msg.success);
-        return;
-    }
-    return handleExportMessage(msg, currentFilePath);
+export function getCurrentMermaidFilePath(): string | null {
+    return preview.getCurrentFilePath();
+}
+
+/**
+ * Get the preview panel (for save commands).
+ *
+ * @returns The active WebviewPanel, or null if no preview is open.
+ */
+export function getMermaidPreviewPanel(): vscode.WebviewPanel | null {
+    return preview.getPanel();
+}
+
+/** Dispose the preview panel and clean up all associated resources. */
+export function disposeMermaidPreview(): void {
+    preview.dispose();
+}
+
+/**
+ * Show a theme QuickPick for the Mermaid preview.
+ * Theme selection is local to this preview and does not affect settings.
+ */
+export async function changeMermaidTheme(): Promise<void> {
+    await preview.changeTheme();
 }

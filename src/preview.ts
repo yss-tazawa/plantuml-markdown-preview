@@ -22,7 +22,7 @@ import { clearServerCache } from './plantuml-server.js';
 import { restartLocalServer } from './local-server.js';
 import { getScrollSyncScriptTag } from './scroll-sync.js';
 import { getNonce, resolveLocalImagePaths, extractPlantUmlBlocks, PLANTUML_FENCE_TEST_RE, extractMermaidBlocks, MERMAID_FENCE_TEST_RE, extractD2Blocks, D2_FENCE_TEST_RE, escapeHtml, buildThemeItems } from './utils.js';
-import { CONFIG_SECTION, MERMAID_THEME_KEYS, D2_THEME_KEYS, D2_LAYOUT_KEYS, type Config } from './config.js';
+import { CONFIG_SECTION, MERMAID_THEME_KEYS, D2_THEME_KEYS, type Config } from './config.js';
 import { updateDiagramViewer, closeStaleViewers, disposeAllViewers, setPendingSaveDiagram, handlePngFromPreview, handleCopyResult } from './diagram-viewer.js';
 
 /** Config keys that affect &lt;head&gt; content and require a full HTML reload. */
@@ -87,6 +87,10 @@ let saveDisposable: vscode.Disposable | null = null;
 let changeDisposable: vscode.Disposable | null = null;
 /** Disposable for the onDidChangeTextEditorVisibleRanges listener. */
 let scrollDisposable: vscode.Disposable | null = null;
+/** Disposable for the panel.onDidDispose listener. Manually managed by disposeEventHandlers(); not in context.subscriptions to avoid double-dispose on panel reuse. */
+let disposeDisposable: vscode.Disposable | null = null;
+/** Disposable for the panel.onDidChangeViewState listener. Manually managed by disposeEventHandlers(); not in context.subscriptions to avoid double-dispose on panel reuse. */
+let viewStateDisposable: vscode.Disposable | null = null;
 
 /** Timer handle for the two-stage debounce on text changes. */
 let debounceTimer: ReturnType<typeof setTimeout> | null = null;
@@ -258,6 +262,8 @@ function applyWebviewOptions(): boolean {
  * and set to null after disposal to allow safe re-entry.
  */
 function disposeEventHandlers(): void {
+    if (disposeDisposable) { disposeDisposable.dispose(); disposeDisposable = null; }
+    if (viewStateDisposable) { viewStateDisposable.dispose(); viewStateDisposable = null; }
     if (messageDisposable) { messageDisposable.dispose(); messageDisposable = null; }
     if (saveDisposable) { saveDisposable.dispose(); saveDisposable = null; }
     if (changeDisposable) { changeDisposable.dispose(); changeDisposable = null; }
@@ -508,8 +514,8 @@ export function openPreview(filePath: string, config: Config, preserveFocus = fa
 <div style="color:var(--vscode-editor-foreground,#333);font-size:14px;">${escapeHtml(vscode.l10n.t('Rendering...'))}</div>
 </div></body></html>`;
 
-        panel.onDidDispose(resetState);
-        panel.onDidChangeViewState(() => {
+        disposeDisposable = panel.onDidDispose(resetState);
+        viewStateDisposable = panel.onDidChangeViewState(() => {
             if (!panel) return;
             if (!panel.visible) {
                 if (!retainCtx) panelWasHidden = true;
@@ -692,7 +698,7 @@ async function renderPanel(text: string): Promise<void> {
             // preventing further recursion.
             if (hasMermaid && !initialHtmlHadMermaid) {
                 initialHtmlSet = false;
-                return renderPanel(text);
+                return await renderPanel(text);
             }
 
             let finalBody = bodyHtml;
@@ -950,7 +956,6 @@ export async function changeTheme(): Promise<void> {
     const currentPlantumlTheme = lastConfig ? lastConfig.plantumlTheme : 'default';
     const currentMermaidTheme = lastConfig ? lastConfig.mermaidTheme : 'default';
     const currentD2Theme = lastConfig ? lastConfig.d2Theme : 'Neutral Default';
-    const currentD2Layout = lastConfig ? lastConfig.d2Layout : 'dagre';
 
     // PlantUML Theme section (async fetch; resolves instantly if cache is warm)
     const plantumlThemes = await vscode.window.withProgress(
@@ -970,8 +975,6 @@ export async function changeTheme(): Promise<void> {
         ...buildThemeItems([...MERMAID_THEME_KEYS], 'mermaid' as const, currentMermaidTheme),
         { label: vscode.l10n.t('D2 Theme'), kind: vscode.QuickPickItemKind.Separator },
         ...buildThemeItems([...D2_THEME_KEYS], 'd2' as const, currentD2Theme),
-        { label: vscode.l10n.t('D2 Layout'), kind: vscode.QuickPickItemKind.Separator },
-        ...buildThemeItems([...D2_LAYOUT_KEYS], 'd2layout' as const, currentD2Layout),
     ];
 
     const selected = await vscode.window.showQuickPick(items, {
@@ -996,9 +999,6 @@ export async function changeTheme(): Promise<void> {
         } else if (selected.category === 'd2') {
             if (selected.themeKey === currentD2Theme) return;
             await cfg.update('d2Theme', selected.themeKey, vscode.ConfigurationTarget.Global);
-        } else if (selected.category === 'd2layout') {
-            if (selected.themeKey === currentD2Layout) return;
-            await cfg.update('d2Layout', selected.themeKey, vscode.ConfigurationTarget.Global);
         }
     } catch (err) {
         vscode.window.showErrorMessage(`[PlantUML Markdown Preview] ${(err as Error).message}`);

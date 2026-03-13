@@ -36,5 +36,7 @@ const palette = {
     hljsDeletionBg: '#fbe3e3',
     hljsDeletionColor: '#dc322f',
 };
+/** Background color for this theme. */
 export const bg = palette.bg;
+/** Complete CSS stylesheet for this theme. */
 export const css = buildThemeCss(palette);
