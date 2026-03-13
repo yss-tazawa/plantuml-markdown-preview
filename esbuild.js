@@ -89,7 +89,10 @@ Promise.all([
         for (const f of d2Files) {
             fs.copyFileSync(path.join(d2Src, f), path.join(d2Dest, f));
         }
-        console.log(`Copied: dist/d2/ (${d2Files.length} files)`);
+        // Write a package.json with "type": "module" so Node.js treats
+        // the D2 .js files (and Worker script) as ESM.
+        fs.writeFileSync(path.join(d2Dest, 'package.json'), '{"type":"module"}\n');
+        console.log(`Copied: dist/d2/ (${d2Files.length} files + package.json)`);
     } catch (copyErr) {
         console.error('Failed to copy D2 files:', copyErr.message);
         process.exit(1);

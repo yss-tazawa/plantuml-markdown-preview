@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## 0.6.0 - 2026-03-13
+
+### Added
+
+- D2 diagram support — render `d2` fenced code blocks in Markdown preview, HTML export, and standalone `.d2` file preview
+- D2 theme selection (19 themes) and layout engine setting (`dagre` / `elk`)
+- D2 diagram scale setting — `auto` (fit container) or fixed percentage (50%–100%, default 75%)
+- Syntax highlighting for `d2` fenced code blocks in Markdown
+- D2 snippet templates — type `d2-sequence`, `d2-class`, `d2-er`, `d2-flow`, etc. in Markdown files to insert diagram scaffolds
+- D2 snippets inside fenced blocks — type `conn`, `seq`, `class`, `sql`, etc. for diagram templates
+
+### Fixed
+
+- Diagram Viewer now preserves zoom level and pan position when switching tabs or when the diagram content updates
+
 ## 0.5.9 - 2026-03-11
 
 ### Changed
@@ -122,7 +137,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
-- Diagram Viewer: localize the "1:1" button label
+- Diagram Viewer: translated the "1:1" button label for all languages
 - Diagram Viewer: add subtle button borders for better visibility in dark themes
 
 ### Fixed
@@ -249,7 +264,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
-- Mermaid diagrams not rendering — webview's `localResourceRoots` was missing the extension's dist directory, blocking mermaid.min.js from loading
+- Mermaid diagrams not rendering in the preview
 
 ## 0.3.0 - 2026-03-02
 

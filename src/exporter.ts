@@ -499,7 +499,7 @@ declare const __MERMAID_MAJOR__: string;
 /**
  * Build a KaTeX CSS `<style>` block for HTML export using CDN font URLs.
  * Reads katex.min.css from dist/ and replaces relative font paths with CDN URLs.
- * @returns KaTeX CSS の style ブロック文字列。読み込み失敗時は空文字列。
+ * @returns KaTeX CSS style block string. Empty string on read failure.
  */
 async function buildKatexCdnCssHtml(): Promise<string> {
     try {
@@ -649,7 +649,12 @@ export function getThemeCss(themeName: string): string {
     return theme.css;
 }
 
-/** Get the background color of a preview theme by name. */
+/**
+ * Get the background color of a preview theme by name.
+ *
+ * @param themeName - Theme key (e.g. 'github-light'). Falls back to the default theme if unknown.
+ * @returns CSS background color string (e.g. '#ffffff').
+ */
 export function getThemeBgColor(themeName: string): string {
     const theme = PREVIEW_THEMES[themeName] || PREVIEW_THEMES[DEFAULT_PREVIEW_THEME];
     return theme.bg;

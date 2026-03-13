@@ -4,6 +4,7 @@
  */
 import crypto from 'crypto';
 import path from 'path';
+import { readFile } from 'fs/promises';
 import * as vscode from 'vscode';
 import {
     spawn as nodeSpawn, spawnSync as nodeSpawnSync, execFile as nodeExecFile,
@@ -148,46 +149,6 @@ function extractFencedBlocks(source: string, reSource: string): string[] {
         blocks.push(match[1]);
     }
     return blocks;
-}
-
-/** A diagram block with its type tag, extracted in document order. */
-export interface DiagramBlock {
-    type: 'plantuml' | 'mermaid' | 'd2';
-    content: string;
-}
-
-/**
- * Extract all PlantUML, Mermaid, and D2 blocks from Markdown source in document order.
- *
- * Unlike the separate extract functions, this returns an interleaved list
- * matching the DOM order used by the webview's combined `diagramIndex`.
- */
-export function extractAllDiagramBlocks(source: string): DiagramBlock[] {
-    const re = new RegExp(
-        '^ {0,3}```(plantuml|mermaid|d2)[ \\t]*\\n([\\s\\S]*?)\\n {0,3}```[ \\t]*$',
-        'gim'
-    );
-    const blocks: DiagramBlock[] = [];
-    let match;
-    while ((match = re.exec(source)) !== null) {
-        blocks.push({ type: match[1].toLowerCase() as 'plantuml' | 'mermaid' | 'd2', content: match[2] });
-    }
-    return blocks;
-}
-
-/**
- * Extract file paths from `!include` / `!includesub` directives in PlantUML source.
- *
- * Handles `!includesub file.puml!section` by stripping the `!section` suffix.
- */
-export function extractIncludeFiles(pumlSource: string): string[] {
-    const re = /^!include(?:sub)?\s+(.+?)(?:![^\s]*)?$/gim;
-    const files: string[] = [];
-    let match;
-    while ((match = re.exec(pumlSource)) !== null) {
-        files.push(match[1].trim());
-    }
-    return files;
 }
 
 /**
@@ -423,4 +384,20 @@ export function resolveLocalImagePaths(html: string, baseDirPath: string, toUri:
         const uri = escapeHtml(toUri(absolutePath));
         return `<img ${pre}src=${quote}${uri}${quote}${post}>`;
     });
+}
+
+/**
+ * Read file content from an open editor buffer or disk.
+ *
+ * @param filePath - Absolute path to the source file.
+ * @returns File content string, or null if the file cannot be read.
+ */
+export async function readSource(filePath: string): Promise<string | null> {
+    const openDoc = vscode.workspace.textDocuments.find(d => d.uri.fsPath === filePath);
+    if (openDoc) return openDoc.getText();
+    try {
+        return await readFile(filePath, 'utf-8');
+    } catch {
+        return null;
+    }
 }

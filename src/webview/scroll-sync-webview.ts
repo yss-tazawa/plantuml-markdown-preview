@@ -70,6 +70,8 @@ interface Anchor {
      * Uses getBoundingClientRect() + scrollY for absolute positioning (single API call per element,
      * simpler and more robust than manual offsetParent chain traversal).
      * Appends a synthetic tail anchor at maxTopLine to guarantee editor-bottom = preview-bottom.
+     * @param maxTopLine - Maximum editor top line for the synthetic tail anchor.
+     * @returns Sorted, deduplicated anchor array with monotonic pixel values, or null if no anchors exist.
      */
     function buildAnchors(maxTopLine: number): Anchor[] | null {
         const elements = document.querySelectorAll('[data-source-line]');
@@ -398,9 +400,9 @@ interface Anchor {
         document.body.addEventListener('contextmenu', function (event) {
             var target = event.target as Element | null;
             if (!target) return;
-            var diagram = target.closest('.plantuml-diagram, .mermaid-diagram');
+            var diagram = target.closest('.plantuml-diagram, .mermaid-diagram, .d2-diagram');
             if (!diagram) return;
-            var diagrams = document.querySelectorAll('.plantuml-diagram, .mermaid-diagram');
+            var diagrams = document.querySelectorAll('.plantuml-diagram, .mermaid-diagram, .d2-diagram');
             var index = -1;
             for (var i = 0; i < diagrams.length; i++) {
                 if (diagrams[i] === diagram) { index = i; break; }
@@ -418,7 +420,7 @@ interface Anchor {
     /** Set data-vscode-context on diagram container elements for context menus. */
     function updateDiagramCursors(): void {
         if (!ENABLE_DIAGRAM_VIEWER) return;
-        var diagrams = document.querySelectorAll('.plantuml-diagram, .mermaid-diagram');
+        var diagrams = document.querySelectorAll('.plantuml-diagram, .mermaid-diagram, .d2-diagram');
         for (var i = 0; i < diagrams.length; i++) {
             (diagrams[i] as HTMLElement).setAttribute('data-vscode-context', JSON.stringify({ webviewSection: 'diagram', preventDefaultContextMenuItems: false }));
         }
@@ -426,7 +428,7 @@ interface Anchor {
 
     /** Notify extension host of current SVGs so open diagram viewers can update. */
     function notifyDiagramViewers(): void {
-        const diagrams = document.querySelectorAll('.plantuml-diagram, .mermaid-diagram');
+        const diagrams = document.querySelectorAll('.plantuml-diagram, .mermaid-diagram, .d2-diagram');
         const bgColor = getComputedStyle(document.body).backgroundColor;
         for (let i = 0; i < diagrams.length; i++) {
             vscode.postMessage({
@@ -540,7 +542,10 @@ interface Anchor {
     // --- TOC sidebar ---
     interface TocNode { id: string; text: string; level: number; children: TocNode[] }
 
-    /** Build a tree of heading nodes from #preview-content for the TOC sidebar. */
+    /**
+     * Build a tree of heading nodes from #preview-content for the TOC sidebar.
+     * @returns Nested tree of TocNode objects representing the heading hierarchy.
+     */
     function buildTocTree(): TocNode[] {
         const container = document.getElementById('preview-content');
         if (!container) return [];
@@ -568,7 +573,11 @@ interface Anchor {
      */
     function escAttr(s: string): string { return s.replace(/&/g, '&amp;').replace(/"/g, '&quot;'); }
 
-    /** Convert a TocNode tree into nested HTML list items. */
+    /**
+     * Convert a TocNode tree into nested HTML list items.
+     * @param nodes - Array of TocNode objects to render.
+     * @returns HTML string of nested `<li>` elements.
+     */
     function renderTocHtml(nodes: TocNode[]): string {
         let html = '';
         for (let i = 0; i < nodes.length; i++) {

@@ -70,5 +70,7 @@
   "No Mermaid file is selected.": "Mermaid ファイルが選択されていません。",
   "Java path changed to: {0}": "Java パスを変更しました: {0}",
   "PlantUML jar path changed to: {0}": "PlantUML jar パスを変更しました: {0}",
-  "PlantUML jar \"{0}\" does not exist. Using bundled jar instead.": "PlantUML jar「{0}」が存在しません。同梱版の jar を使用します。"
+  "PlantUML jar \"{0}\" does not exist. Using bundled jar instead.": "PlantUML jar「{0}」が存在しません。同梱版の jar を使用します。",
+  "No D2 file is selected.": "D2 ファイルが選択されていません。",
+  "D2 Theme": "D2 テーマ"
 }

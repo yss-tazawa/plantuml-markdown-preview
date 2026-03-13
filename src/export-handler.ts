@@ -4,6 +4,7 @@
  */
 import * as vscode from 'vscode';
 import { writeFile } from 'fs/promises';
+import { handleCopyResult } from './diagram-viewer.js';
 
 /**
  * Handle an export message from a viewer webview (PNG/SVG save-to-file).
@@ -46,4 +47,21 @@ export async function handleExportMessage(
     } catch (err) {
         vscode.window.showErrorMessage(vscode.l10n.t('Failed to save diagram: {0}', (err as Error).message));
     }
+}
+
+/**
+ * Handle messages from a viewer webview (PNG/SVG export + clipboard copy).
+ *
+ * @param msg - Message payload from the webview.
+ * @param currentFilePath - Current file path for default save name, or null.
+ */
+export async function handleViewerMessage(
+    msg: { type: string; format?: string; data?: string; success?: boolean },
+    currentFilePath: string | null
+): Promise<void> {
+    if (msg.type === 'copyDiagramResult') {
+        handleCopyResult(!!msg.success);
+        return;
+    }
+    return handleExportMessage(msg, currentFilePath);
 }
