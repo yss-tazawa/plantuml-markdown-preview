@@ -157,6 +157,8 @@ export interface RenderOptions {
     katexCssHtml?: string;
     /** When true, relax CSP font-src from 'none' to cspSource for KaTeX fonts. */
     enableMath?: boolean;
+    /** When true, add style="visibility:hidden" to <body> for scroll-restore without flash. */
+    hideBodyInitially?: boolean;
 }
 
 /**
@@ -529,7 +531,7 @@ function buildHtml(title: string, body: string, previewTheme?: string, options?:
         mermaidScriptUri, mermaidTheme, mermaidScale,
         htmlMaxWidth, htmlAlignment,
         navTopTitle, navBottomTitle, navReloadTitle, navTocTitle,
-        fitToWidth, katexCssHtml, enableMath,
+        fitToWidth, katexCssHtml, enableMath, hideBodyInitially,
     } = options || {};
     const fontSrc = enableMath && cspSource ? cspSource : "'none'";
     const cspMeta = cspNonce
@@ -608,7 +610,7 @@ ${theme.css}
 #toc-sidebar li ul li ul li ul li ul a{padding-left:68px}
   </style>` : ''}
 </head>
-<body${cspNonce ? ' class="preview"' : ''}>
+<body${cspNonce ? ' class="preview"' : ''}${hideBodyInitially ? ' style="visibility:hidden"' : ''}>
 ${cspNonce ? `<div id="nav-toolbar">
   <button id="nav-top" title="${escapeHtml(navTopTitle || 'Go to top')}"><svg width="20" height="20" viewBox="0 0 16 16"><path d="M3.5 10L8 5.5 12.5 10" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
   <button id="nav-bottom" title="${escapeHtml(navBottomTitle || 'Go to bottom')}"><svg width="20" height="20" viewBox="0 0 16 16"><path d="M3.5 6L8 10.5 12.5 6" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></button>

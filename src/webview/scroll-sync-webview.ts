@@ -672,13 +672,21 @@ interface Anchor {
         }, { passive: true });
     }
 
-    /** Restore scroll position after re-render using values embedded by renderPanel(). */
+    /** Restore scroll position after re-render using values embedded by renderPanel().
+     *  Body is already hidden via style="visibility:hidden" on the <body> tag
+     *  (set by hideBodyInitially in buildHtml) so the user never sees position 0. */
     if (INITIAL_AT_BOTTOM || INITIAL_LINE > 0) {
-        window.addEventListener('load', function () {
+        var restoreScroll = function () {
             requestAnimationFrame(function () {
                 scrollToSourceLine(INITIAL_LINE, INITIAL_MAX_TOP_LINE, INITIAL_AT_BOTTOM);
+                document.body.style.visibility = '';
             });
-        });
+        };
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', restoreScroll);
+        } else {
+            restoreScroll();
+        }
     }
 
     /** Set diagram cursor styles on initial HTML load. */

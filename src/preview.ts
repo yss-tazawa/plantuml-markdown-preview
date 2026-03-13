@@ -663,6 +663,7 @@ async function renderPanel(text: string): Promise<void> {
                 navTocTitle: vscode.l10n.t('Table of Contents'),
                 katexCssHtml,
                 enableMath: lastConfig.enableMath,
+                hideBodyInitially: lastScrollLine > 0 || lastAtBottom,
             };
 
             const html = await renderHtmlAsync(text, makeTitle(), lastConfig, renderOptions, signal);
