@@ -66,11 +66,12 @@ src/
   plantuml-server.ts PlantUML server rendering (HTTP fetch, encoding, LRU cache)
   local-server.ts   Local PlantUML picoweb server management
   exporter.ts       HTML export with inline SVG and syntax highlighting
-  diagram-viewer.ts Pan & zoom viewer for embedded PlantUML diagrams
+  diagram-viewer.ts Pan & zoom viewer for embedded diagrams
   puml-preview.ts   Standalone PlantUML file preview (.puml / .plantuml)
   mermaid-preview.ts Standalone Mermaid file preview (.mmd / .mermaid)
   d2-renderer.ts    D2 Wasm renderer — compile & render via @terrastruct/d2
   d2-preview.ts     Standalone D2 file preview (.d2)
+  standalone-preview.ts Shared factory logic for standalone diagram previews (.puml, .mmd, .d2)
   export-handler.ts Shared PNG/SVG export handler for viewer webviews
   scroll-sync.ts    Bidirectional editor ↔ preview scroll sync
   browser-finder.ts Detect Chrome/Edge/Chromium for headless PDF export
@@ -113,13 +114,13 @@ Adding the English strings is sufficient — the maintainer will handle Japanese
 
 ## Pull Request Process
 
-1. Fork the repository and create a branch from **`develop`**
+1. Fork the repository and create a branch from **`main`**
 2. Make your changes
 3. Ensure `npm run typecheck && npm run build` passes
 4. Test manually via F5 debug (there are no automated tests yet — manual testing via the Extension Development Host is the primary verification method)
-5. Push your branch and open a Pull Request against **`develop`**
+5. Push your branch and open a Pull Request against **`main`**
 
-> **Branch strategy:** `develop` is the working branch; `main` is the release branch. Always branch from and target `develop`.
+> **Branch strategy:** `main` is the default branch. Always branch from and target `main`.
 
 The PR template will guide you through the required checklist. The maintainer may request changes or suggest revisions before merging.
 

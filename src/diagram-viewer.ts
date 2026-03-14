@@ -7,9 +7,9 @@
  * editor content changes.
  */
 import * as vscode from 'vscode';
-import { writeFile } from 'fs/promises';
 import { getNonce, escapeHtml, CSS_COLOR_RE } from './utils.js';
 import { getPanZoomScript } from './webview/pan-zoom-script.js';
+import { saveDiagramFile } from './export-handler.js';
 
 /** Active viewer panels keyed by 1-based diagram index. */
 const viewers = new Map<number, vscode.WebviewPanel>();
@@ -176,29 +176,6 @@ export function diagramAction(action: 'save' | 'copy', format: 'png' | 'svg', pr
     // in this fallback path; handled directly via webview clipboard API.
 }
 
-/**
- * Show a save dialog and write diagram data to the chosen file.
- *
- * @param data - Binary buffer (PNG) or string (SVG) to save.
- * @param diagramIndex - Zero-based index used for the default file name.
- * @param format - Output format ('png' or 'svg').
- */
-async function saveDiagramToFile(data: Buffer | string, diagramIndex: number, format: 'png' | 'svg'): Promise<void> {
-    const filters: Record<string, string[]> = format === 'png'
-        ? { 'PNG Image': ['png'] }
-        : { 'SVG Image': ['svg'] };
-    const uri = await vscode.window.showSaveDialog({
-        filters,
-        defaultUri: vscode.Uri.file(`diagram-${diagramIndex}.${format}`),
-    });
-    if (!uri) return;
-    try {
-        await writeFile(uri.fsPath, data, typeof data === 'string' ? 'utf-8' : undefined);
-        vscode.window.showInformationMessage(vscode.l10n.t('Diagram saved: {0}', uri.fsPath));
-    } catch (err) {
-        vscode.window.showErrorMessage(vscode.l10n.t('Failed to save diagram: {0}', (err as Error).message));
-    }
-}
 
 /**
  * Extract SVG from innerHTML and save to file.
@@ -209,7 +186,7 @@ async function saveDiagramToFile(data: Buffer | string, diagramIndex: number, fo
 async function saveSvgFromHtml(html: string, diagramIndex: number): Promise<void> {
     const match = html.match(/<svg[\s\S]*<\/svg>/i);
     if (!match) return;
-    await saveDiagramToFile(match[0], diagramIndex, 'svg');
+    await saveDiagramFile(match[0], vscode.Uri.file(`diagram-${diagramIndex}.svg`), 'svg');
     pendingSave = null;
 }
 
@@ -221,7 +198,7 @@ async function saveSvgFromHtml(html: string, diagramIndex: number): Promise<void
 export async function handlePngFromPreview(data: string): Promise<void> {
     if (!data || !pendingSave) return;
     const { diagramIndex } = pendingSave;
-    await saveDiagramToFile(Buffer.from(data.replace(/^data:image\/png;base64,/, ''), 'base64'), diagramIndex, 'png');
+    await saveDiagramFile(Buffer.from(data.replace(/^data:image\/png;base64,/, ''), 'base64'), vscode.Uri.file(`diagram-${diagramIndex}.png`), 'png');
     pendingSave = null;
 }
 
@@ -254,7 +231,7 @@ async function handleViewerMessage(msg: { type: string; format?: string; data?: 
     const fileData = format === 'png'
         ? Buffer.from(msg.data.replace(/^data:image\/png;base64,/, ''), 'base64')
         : msg.data;
-    await saveDiagramToFile(fileData, viewerIndex, format);
+    await saveDiagramFile(fileData, vscode.Uri.file(`diagram-${viewerIndex}.${format}`), format);
 }
 
 /**

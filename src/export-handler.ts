@@ -7,6 +7,31 @@ import { writeFile } from 'fs/promises';
 import { handleCopyResult } from './diagram-viewer.js';
 
 /**
+ * Show a save dialog and write diagram data to the chosen file.
+ *
+ * @param data - Binary buffer (PNG) or string (SVG) to save.
+ * @param defaultUri - Default file URI for the save dialog.
+ * @param format - Output format ('png' or 'svg').
+ */
+export async function saveDiagramFile(
+    data: Buffer | string,
+    defaultUri: vscode.Uri,
+    format: 'png' | 'svg'
+): Promise<void> {
+    const filters: Record<string, string[]> = format === 'png'
+        ? { 'PNG Image': ['png'] }
+        : { 'SVG Image': ['svg'] };
+    const uri = await vscode.window.showSaveDialog({ filters, defaultUri });
+    if (!uri) return;
+    try {
+        await writeFile(uri.fsPath, data, typeof data === 'string' ? 'utf-8' : undefined);
+        vscode.window.showInformationMessage(vscode.l10n.t('Diagram saved: {0}', uri.fsPath));
+    } catch (err) {
+        vscode.window.showErrorMessage(vscode.l10n.t('Failed to save diagram: {0}', (err as Error).message));
+    }
+}
+
+/**
  * Handle an export message from a viewer webview (PNG/SVG save-to-file).
  *
  * Validates the message, shows a save dialog, and writes the file.
@@ -23,30 +48,15 @@ export async function handleExportMessage(
     if (msg.format !== 'png' && msg.format !== 'svg') return;
 
     const format = msg.format;
-    const filters: Record<string, string[]> = format === 'png'
-        ? { 'PNG Image': ['png'] }
-        : { 'SVG Image': ['svg'] };
+    const fileData = format === 'png'
+        ? Buffer.from(msg.data.replace(/^data:image\/png;base64,/, ''), 'base64')
+        : msg.data;
 
     const defaultName = defaultFilePath
         ? defaultFilePath.replace(/\.[^.]+$/, `.${format}`)
         : `diagram.${format}`;
 
-    const uri = await vscode.window.showSaveDialog({
-        filters,
-        defaultUri: vscode.Uri.file(defaultName),
-    });
-    if (!uri) return;
-
-    const fileData = format === 'png'
-        ? Buffer.from(msg.data.replace(/^data:image\/png;base64,/, ''), 'base64')
-        : msg.data;
-
-    try {
-        await writeFile(uri.fsPath, fileData, typeof fileData === 'string' ? 'utf-8' : undefined);
-        vscode.window.showInformationMessage(vscode.l10n.t('Diagram saved: {0}', uri.fsPath));
-    } catch (err) {
-        vscode.window.showErrorMessage(vscode.l10n.t('Failed to save diagram: {0}', (err as Error).message));
-    }
+    await saveDiagramFile(fileData, vscode.Uri.file(defaultName), format);
 }
 
 /**

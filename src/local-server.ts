@@ -23,7 +23,6 @@ import { CONFIG_SECTION } from './config.js';
 // ---------------------------------------------------------------------------
 
 let serverProcess: ChildProcess | null = null;
-let serverPort = 0;
 let serverUrl: string | null = null;
 
 type LocalServerState = 'stopped' | 'starting' | 'running' | 'error';
@@ -99,8 +98,6 @@ export async function startLocalServer(config: Config): Promise<void> {
         try {
             const port = await findFreePort(config.plantumlLocalServerPort, usedPorts);
             usedPorts.add(port);
-            serverPort = port;
-
             const args = buildArgs(config, port);
 
             log(`[local-server] Starting: java ${args.join(' ')}`);
@@ -336,7 +333,6 @@ function sleep(ms: number): Promise<void> {
 /** Reset all module-level state to initial values. */
 function resetState(): void {
     serverState = 'stopped';
-    serverPort = 0;
     serverUrl = null;
     readyPromise = null;
     readyResolve = null;
