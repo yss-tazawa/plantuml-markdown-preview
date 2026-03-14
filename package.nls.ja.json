@@ -16,6 +16,7 @@
   "command.saveDiagramAsPng.title": "ダイアグラムを PNG で保存",
   "command.saveDiagramAsSvg.title": "ダイアグラムを SVG で保存",
   "command.copyDiagramAsPng.title": "ダイアグラムを PNG でコピー",
+  "command.selectMode.title": "レンダリングモードを選択",
   "command.changeTheme.title": "プレビューテーマを変更",
   "command.category": "PlantUML Markdown Preview",
   "configuration.title": "PlantUML Markdown Preview",

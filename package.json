@@ -2,7 +2,7 @@
   "name": "plantuml-markdown-preview",
   "displayName": "%displayName%",
   "description": "%description%",
-  "version": "0.6.3",
+  "version": "0.6.4",
   "license": "MIT",
   "publisher": "yss-tazawa",
   "icon": "images/icon.png",
@@ -216,6 +216,11 @@
       {
         "command": "plantuml-markdown-preview.copyDiagramAsPng",
         "title": "%command.copyDiagramAsPng.title%",
+        "category": "%command.category%"
+      },
+      {
+        "command": "plantuml-markdown-preview.selectMode",
+        "title": "%command.selectMode.title%",
         "category": "%command.category%"
       }
     ],

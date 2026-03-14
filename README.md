@@ -46,6 +46,8 @@ Switch between modes anytime with a single setting — no migration, no restart.
 - **PlantUML `!include` support** — included files are resolved and rendered inline
 - **Standalone diagram preview** — open `.puml`, `.mmd`, and `.d2` files directly with pan & zoom, live updates, and theme support — no Markdown wrapper needed
 - **Save or copy diagrams as PNG / SVG** — right-click any diagram in the preview or Diagram Viewer to save or copy to clipboard
+- **Status bar indicator** — see the current rendering mode and local server state at a glance; click to switch modes
+- **Find in preview** — use `Cmd+F` / `Ctrl+F` to search text in Diagram Viewer and standalone diagram previews
 - **14 preview themes** — 8 light + 6 dark themes including GitHub, Atom, Solarized, Dracula, Monokai, and more
 - **Code snippets** — type `plantuml-sequence`, `mermaid-sequence`, or `d2-sequence` in Markdown, or `seq` inside a fenced block, to expand diagram templates instantly
 - **Internationalization** — English, Chinese (Simplified), and Japanese UI
@@ -117,6 +119,13 @@ Choose a preset mode that controls how PlantUML diagrams are rendered:
 
 If Java is not found when opening a preview, a notification offers to switch to Easy mode.
 
+### Status Bar
+
+The status bar shows the current rendering mode (Fast / Secure / Easy) and, in Fast mode, the local server state (running, starting, error, stopped).
+
+- Click the status bar item to switch modes via a quick pick — no need to open Settings
+- Same as the **Select Rendering Mode** command in the Command Palette
+
 ### HTML Export
 
 Export your Markdown document to a self-contained HTML file.
@@ -150,6 +159,7 @@ Right-click any PlantUML, Mermaid, or D2 diagram in the preview and select **Ope
 - Background color matches the current preview theme
 - Automatically closed when switching to a different source file
 - **Save or copy as PNG / SVG** — right-click a diagram in the preview or Diagram Viewer to save it as a file or copy PNG to clipboard
+- **Find in viewer** — press `Cmd+F` / `Ctrl+F` to open the find widget
 - Disable with `enableDiagramViewer: false`
 
 ### PlantUML `!include` Support
@@ -169,6 +179,7 @@ Open `.puml`, `.plantuml`, `.mmd`, `.mermaid`, or `.d2` files directly — no Ma
 - Auto-follow when switching between files of the same type
 - Independent theme selection (preview theme + diagram theme)
 - Save or copy as PNG / SVG via right-click
+- **Find in preview** — press `Cmd+F` / `Ctrl+F` to open the find widget
 - PlantUML: supports all three rendering modes (Fast / Secure / Easy)
 - Mermaid: rendered client-side using mermaid.js
 - D2: rendered using @terrastruct/d2 (Wasm) with configurable theme and layout engine
@@ -650,6 +661,7 @@ All settings use the `plantumlMarkdownPreview.` prefix.
 | Preview PlantUML File | `Cmd+Alt+V` | `Ctrl+Alt+V` |
 | Preview Mermaid File | `Cmd+Alt+V` | `Ctrl+Alt+V` |
 | Preview D2 File | `Cmd+Alt+V` | `Ctrl+Alt+V` |
+| Select Rendering Mode | — | — |
 
 ## FAQ
 

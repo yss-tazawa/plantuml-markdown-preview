@@ -17,7 +17,9 @@ import { exportToHtml, exportToPdf, clearMdCache } from './src/exporter.js';
 import { plantumlPlugin } from './src/renderer.js';
 import { clearCache } from './src/plantuml.js';
 import { clearServerCache } from './src/plantuml-server.js';
-import { prepareLocalServer, startLocalServer, stopLocalServer, restartLocalServer, setLocalServerOutputChannel } from './src/local-server.js';
+import { prepareLocalServer, startLocalServer, stopLocalServer, restartLocalServer, setLocalServerOutputChannel, setOnServerStateChange } from './src/local-server.js';
+import type { LocalServerState } from './src/local-server.js';
+import { createStatusBarItem, updateStatusBar, showModeQuickPick, SELECT_MODE_COMMAND } from './src/status-bar.js';
 import { PreviewManager } from './src/preview.js';
 import { execJava } from './src/utils.js';
 import { clearBrowserCache } from './src/browser-finder.js';
@@ -425,6 +427,17 @@ export function activate(context: vscode.ExtensionContext): { extendMarkdownIt: 
     context.subscriptions.push(previewManager);
     setLocalServerOutputChannel(channel);
 
+    // Status bar: show current rendering mode and server state
+    const statusBarItem = createStatusBarItem();
+    context.subscriptions.push(statusBarItem);
+    let currentServerState: LocalServerState = 'stopped';
+    setOnServerStateChange((state) => {
+        currentServerState = state;
+        updateStatusBar(statusBarItem, lastKnownConfig ?? getConfig(), state);
+    });
+    const selectModeCmd = vscode.commands.registerCommand(SELECT_MODE_COMMAND, () => showModeQuickPick());
+    context.subscriptions.push(selectModeCmd);
+
     // Ensure builtInPreviewConfig has correct values after workspace is fully loaded
     const initialConfig = getConfig();
 
@@ -438,6 +451,7 @@ export function activate(context: vscode.ExtensionContext): { extendMarkdownIt: 
 
     lastKnownConfig = initialConfig;
     syncBuiltInPreviewConfig(initialConfig);
+    updateStatusBar(statusBarItem, initialConfig, currentServerState);
 
     // Start D2 Wasm worker (non-blocking; first render awaits readiness)
     initD2().catch(err => channel.appendLine(`[d2] init error: ${err}`));
@@ -697,6 +711,7 @@ export function activate(context: vscode.ExtensionContext): { extendMarkdownIt: 
             updateMermaidConfig(config);
             updateD2Config(config);
             syncBuiltInPreviewConfig(config);
+            updateStatusBar(statusBarItem, config, currentServerState);
         }
     });
 

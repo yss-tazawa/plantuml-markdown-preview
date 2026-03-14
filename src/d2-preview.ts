@@ -26,10 +26,12 @@ let localD2Layout: string | null = null;
 /** Last known config for D2-specific getters. */
 let lastD2Config: Config | null = null;
 
+/** Return the effective D2 theme, falling back to config default. */
 function getD2Theme(): string {
     return localD2Theme ?? (lastD2Config ? lastD2Config.d2Theme : 'Neutral Default');
 }
 
+/** Return the effective D2 layout engine, falling back to config default. */
 function getD2Layout(): string {
     return localD2Layout ?? (lastD2Config ? lastD2Config.d2Layout : 'dagre');
 }

@@ -72,5 +72,14 @@
   "PlantUML jar path changed to: {0}": "PlantUML jar path changed to: {0}",
   "PlantUML jar \"{0}\" does not exist. Using bundled jar instead.": "PlantUML jar \"{0}\" does not exist. Using bundled jar instead.",
   "No D2 file is selected.": "No D2 file is selected.",
-  "D2 Theme": "D2 Theme"
+  "D2 Theme": "D2 Theme",
+  "PlantUML: {0} — Server running": "PlantUML: {0} — Server running",
+  "PlantUML: {0} — Server starting…": "PlantUML: {0} — Server starting…",
+  "PlantUML: {0} — Server error": "PlantUML: {0} — Server error",
+  "PlantUML: {0} — Server stopped": "PlantUML: {0} — Server stopped",
+  "PlantUML: {0} mode": "PlantUML: {0} mode",
+  "Local server (fastest, requires Java)": "Local server (fastest, requires Java)",
+  "Local rendering (no network, requires Java)": "Local rendering (no network, requires Java)",
+  "PlantUML server (no Java required)": "PlantUML server (no Java required)",
+  "Select PlantUML rendering mode": "Select PlantUML rendering mode"
 }
