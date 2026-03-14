@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## 0.6.3 - 2026-03-14
+
+### Added
+
+- Find widget (Cmd+F / Ctrl+F) support in Diagram Viewer and standalone file previews
+
 ## 0.6.2 - 2026-03-13
 
 ### Fixed

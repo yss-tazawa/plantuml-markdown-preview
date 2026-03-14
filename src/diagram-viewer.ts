@@ -44,7 +44,7 @@ export function openDiagramViewer(svg: string, diagramIndex: number, bgColor?: s
         'plantumlDiagramViewer',
         vscode.l10n.t('Diagram {0} (Viewer)', diagramIndex),
         { viewColumn: vscode.ViewColumn.Two, preserveFocus: false },
-        { enableScripts: true, retainContextWhenHidden: true, localResourceRoots: [] }
+        { enableScripts: true, enableFindWidget: true, retainContextWhenHidden: true, localResourceRoots: [] }
     );
 
     viewers.set(diagramIndex, panel);

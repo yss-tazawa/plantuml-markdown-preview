@@ -215,6 +215,7 @@ export function createStandalonePreview(def: StandalonePreviewDef): StandalonePr
             { viewColumn: vscode.ViewColumn.Two, preserveFocus: true },
             {
                 enableScripts: true,
+                enableFindWidget: true,
                 retainContextWhenHidden: vscode.workspace.getConfiguration(CONFIG_SECTION)
                     .get<boolean>('retainPreviewContext', true),
                 localResourceRoots: typeof def.localResourceRoots === 'function'
