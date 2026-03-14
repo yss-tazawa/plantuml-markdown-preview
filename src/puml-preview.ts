@@ -25,6 +25,7 @@ let localPlantumlTheme: string | null = null;
 /** Last known config for PlantUML-specific rendering. */
 let lastPumlConfig: Config | null = null;
 
+/** Return the effective PlantUML theme, falling back to config default. */
 function getPlantumlTheme(): string {
     return localPlantumlTheme ?? (lastPumlConfig ? lastPumlConfig.plantumlTheme : 'default');
 }

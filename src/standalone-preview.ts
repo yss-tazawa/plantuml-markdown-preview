@@ -161,6 +161,7 @@ export function createStandalonePreview(def: StandalonePreviewDef): StandalonePr
         }, delay);
     }
 
+    /** Re-render the current file in the webview panel. */
     async function renderCurrentFile(): Promise<void> {
         if (!panel || !currentFilePath || !lastConfig) return;
 
@@ -182,6 +183,7 @@ export function createStandalonePreview(def: StandalonePreviewDef): StandalonePr
         await def.updateWebview(panel, content, getCurrentBgColor(), signal);
     }
 
+    /** Clean up all panel state and disposables. */
     function disposeState(): void {
         panel = null;
         currentFilePath = null;
@@ -227,7 +229,7 @@ export function createStandalonePreview(def: StandalonePreviewDef): StandalonePr
 
         panel.webview.html = await def.buildHtml(content, getNonce(), getCurrentBgColor(), panel);
 
-        panel.onDidDispose(disposeState);
+        panelDisposables.push(panel.onDidDispose(disposeState));
 
         panel.webview.onDidReceiveMessage((msg) => {
             void handleViewerMessage(msg, currentFilePath);

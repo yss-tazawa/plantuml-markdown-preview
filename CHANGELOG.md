@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## 0.6.4 - 2026-03-15
+
+### Added
+
+- Status bar indicator showing the current rendering mode and local server state
+- "Select Rendering Mode" command to switch between Fast, Secure, and Easy modes from the status bar or Command Palette
+
 ## 0.6.3 - 2026-03-14
 
 ### Added

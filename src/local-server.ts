@@ -25,8 +25,11 @@ import { CONFIG_SECTION } from './config.js';
 let serverProcess: ChildProcess | null = null;
 let serverUrl: string | null = null;
 
-type LocalServerState = 'stopped' | 'starting' | 'running' | 'error';
+export type LocalServerState = 'stopped' | 'starting' | 'running' | 'error';
 let serverState: LocalServerState = 'stopped';
+
+/** Optional callback invoked whenever serverState changes. */
+let onStateChange: ((state: LocalServerState) => void) | null = null;
 
 /** Resolved when the server becomes ready (or rejected on failure). */
 let readyPromise: Promise<void> | null = null;
@@ -42,6 +45,13 @@ let stoppingIntentionally = false;
 /** SIGKILL fallback timer (module-level so resetState can clear it). */
 let killTimer: ReturnType<typeof setTimeout> | null = null;
 
+/** Update serverState and notify the listener if changed. */
+function setServerState(state: LocalServerState): void {
+    if (serverState === state) return;
+    serverState = state;
+    onStateChange?.(state);
+}
+
 // ---------------------------------------------------------------------------
 // Public API
 // ---------------------------------------------------------------------------
@@ -53,6 +63,15 @@ let killTimer: ReturnType<typeof setTimeout> | null = null;
  */
 export function setLocalServerOutputChannel(channel: vscode.OutputChannel): void {
     outputChannel = channel;
+}
+
+/**
+ * Register a callback invoked whenever the server state changes.
+ *
+ * @param cb - Callback receiving the new state value.
+ */
+export function setOnServerStateChange(cb: (state: LocalServerState) => void): void {
+    onStateChange = cb;
 }
 
 /**
@@ -82,7 +101,7 @@ export async function startLocalServer(config: Config): Promise<void> {
         return;
     }
 
-    serverState = 'starting';
+    setServerState('starting');
     if (!readyPromise) {
         readyPromise = new Promise<void>((resolve, reject) => {
             readyResolve = resolve;
@@ -132,7 +151,7 @@ export async function startLocalServer(config: Config): Promise<void> {
             if (stoppingIntentionally) return;
 
             serverUrl = `http://127.0.0.1:${port}`;
-            serverState = 'running';
+            setServerState('running');
             readyResolve?.();
             log(`[local-server] Ready on port ${port}`);
 
@@ -148,7 +167,7 @@ export async function startLocalServer(config: Config): Promise<void> {
                 serverProcess = null;
             }
             if (!useAutoPort || attempt === MAX_PORT_RETRIES - 1) {
-                serverState = 'error';
+                setServerState('error');
                 readyReject?.(err as Error);
                 log(`[local-server] Failed to start: ${(err as Error).message}`);
                 return;
@@ -332,7 +351,7 @@ function sleep(ms: number): Promise<void> {
 
 /** Reset all module-level state to initial values. */
 function resetState(): void {
-    serverState = 'stopped';
+    setServerState('stopped');
     serverUrl = null;
     readyPromise = null;
     readyResolve = null;
@@ -359,7 +378,7 @@ function log(message: string): void {
 function handleCrash(reason: string, config: Config, stderr?: string): void {
     if (serverState === 'error') return;
     serverProcess = null;
-    serverState = 'error';
+    setServerState('error');
     serverUrl = null;
     readyReject?.(new Error(reason));
     readyPromise = null;

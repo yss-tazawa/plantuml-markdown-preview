@@ -72,5 +72,14 @@
   "PlantUML jar path changed to: {0}": "PlantUML jar 路径已更改为: {0}",
   "PlantUML jar \"{0}\" does not exist. Using bundled jar instead.": "PlantUML jar\u201C{0}\u201D不存在。将使用内置 jar。",
   "No D2 file is selected.": "未选择 D2 文件。",
-  "D2 Theme": "D2 主题"
+  "D2 Theme": "D2 主题",
+  "PlantUML: {0} — Server running": "PlantUML: {0} — 服务器运行中",
+  "PlantUML: {0} — Server starting…": "PlantUML: {0} — 服务器启动中…",
+  "PlantUML: {0} — Server error": "PlantUML: {0} — 服务器错误",
+  "PlantUML: {0} — Server stopped": "PlantUML: {0} — 服务器已停止",
+  "PlantUML: {0} mode": "PlantUML: {0} 模式",
+  "Local server (fastest, requires Java)": "本地服务器（最快，需要 Java）",
+  "Local rendering (no network, requires Java)": "本地渲染（无需网络，需要 Java）",
+  "PlantUML server (no Java required)": "PlantUML 服务器（无需 Java）",
+  "Select PlantUML rendering mode": "选择 PlantUML 渲染模式"
 }

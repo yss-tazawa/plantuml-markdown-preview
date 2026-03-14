@@ -1,7 +1,7 @@
 ## Summary
 
 <!-- What changed and why. Link related issues: Closes #XX -->
-<!-- Target branch: develop (not main) -->
+<!-- Target branch: main -->
 
 ## Type of change
 
