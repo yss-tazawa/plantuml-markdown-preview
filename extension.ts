@@ -18,7 +18,7 @@ import { plantumlPlugin } from './src/renderer.js';
 import { clearCache } from './src/plantuml.js';
 import { clearServerCache } from './src/plantuml-server.js';
 import { prepareLocalServer, startLocalServer, stopLocalServer, restartLocalServer, setLocalServerOutputChannel } from './src/local-server.js';
-import { openPreview, getCurrentFilePath, getLastRenderFailed, updateConfig, changeTheme, disposePreview, setOutputChannel, getPreviewPanel } from './src/preview.js';
+import { PreviewManager } from './src/preview.js';
 import { execJava } from './src/utils.js';
 import { clearBrowserCache } from './src/browser-finder.js';
 import { disposeAllViewers, diagramAction, openPendingDiagramViewer } from './src/diagram-viewer.js';
@@ -28,6 +28,9 @@ import { openD2Preview, updateD2Config, getCurrentD2FilePath, disposeD2Preview, 
 import { initD2, disposeD2 } from './src/d2-renderer.js';
 import { CONFIG_SECTION, MODE_PRESETS, type Config, type Mode } from './src/config.js';
 import type MarkdownIt from 'markdown-it';
+
+/** Module-level reference set in activate(). Used by resolveMarkdownPath(). */
+let previewManager: PreviewManager;
 
 /**
  * Resolve the allowLocalImages tri-state setting to a boolean.
@@ -124,7 +127,7 @@ function getConfig(): Config {
 function resolveMarkdownPath(uri?: vscode.Uri): string | null {
     const fsPath = uri?.fsPath
         || vscode.window.activeTextEditor?.document.uri.fsPath
-        || getCurrentFilePath();
+        || previewManager.getCurrentFilePath();
     return fsPath?.endsWith('.md') ? fsPath : null;
 }
 
@@ -418,7 +421,8 @@ export function activate(context: vscode.ExtensionContext): { extendMarkdownIt: 
     // by context.subscriptions regardless of preview panel state.
     const channel = vscode.window.createOutputChannel('PlantUML Markdown Preview');
     context.subscriptions.push(channel);
-    setOutputChannel(channel);
+    previewManager = new PreviewManager(channel);
+    context.subscriptions.push(previewManager);
     setLocalServerOutputChannel(channel);
 
     // Ensure builtInPreviewConfig has correct values after workspace is fully loaded
@@ -505,7 +509,7 @@ export function activate(context: vscode.ExtensionContext): { extendMarkdownIt: 
             void vscode.window.withProgress(
                 { location: vscode.ProgressLocation.Notification, title: vscode.l10n.t('Opening preview...') },
                 async () => {
-                    await openPreview(filePath, config, true, true);
+                    await previewManager.open(filePath, config, true, true);
                     checkJavaAvailability(config).catch(() => {});
                 }
             );
@@ -572,7 +576,7 @@ export function activate(context: vscode.ExtensionContext): { extendMarkdownIt: 
             } else if (getPumlPreviewPanel()?.active) {
                 void changePumlTheme();
             } else {
-                void changeTheme();
+                void previewManager.changeTheme();
             }
         }
     );
@@ -594,7 +598,7 @@ export function activate(context: vscode.ExtensionContext): { extendMarkdownIt: 
         if (pumlPanel?.active) {
             void pumlPanel.webview.postMessage({ type: msgType, format });
         } else {
-            diagramAction(action, format, getPreviewPanel() ?? undefined);
+            diagramAction(action, format, previewManager.getPanel() ?? undefined);
         }
     }
 
@@ -636,10 +640,10 @@ export function activate(context: vscode.ExtensionContext): { extendMarkdownIt: 
         }
 
         // Track .md files
-        if (!getCurrentFilePath()) return;
+        if (!previewManager.getCurrentFilePath()) return;
         if (!filePath.endsWith('.md')) return;
-        if (filePath === getCurrentFilePath() && !getLastRenderFailed()) return;
-        void openPreview(filePath, getConfig(), true);
+        if (filePath === previewManager.getCurrentFilePath() && !previewManager.getLastRenderFailed()) return;
+        void previewManager.open(filePath, getConfig(), true);
     });
 
     const configWatcher = vscode.workspace.onDidChangeConfiguration((event) => {
@@ -688,7 +692,7 @@ export function activate(context: vscode.ExtensionContext): { extendMarkdownIt: 
             handleLocalServerConfigChange(lastKnownConfig, config);
             lastKnownConfig = config;
 
-            updateConfig(config);
+            previewManager.updateConfig(config);
             updatePumlConfig(config);
             updateMermaidConfig(config);
             updateD2Config(config);
@@ -793,7 +797,7 @@ export function deactivate(): void {
     disposePumlPreview();
     disposeMermaidPreview();
     disposeD2Preview();
-    disposePreview();
+    // previewManager.dispose() is called automatically via context.subscriptions
     disposeD2();
 }
 
