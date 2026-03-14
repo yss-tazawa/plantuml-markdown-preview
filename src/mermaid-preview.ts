@@ -18,7 +18,7 @@ import { createStandalonePreview, type StandalonePreview } from './standalone-pr
 /** Extension URI for resolving mermaid.min.js path. */
 let cachedExtensionUri: vscode.Uri | null = null;
 
-/** Local Mermaid theme (completely independent from settings). */
+/** Local Mermaid theme override, independent from VS Code settings. Reset on panel dispose. */
 let localMermaidTheme = 'default';
 
 // ---------------------------------------------------------------------------

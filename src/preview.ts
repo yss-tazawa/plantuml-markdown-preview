@@ -99,6 +99,7 @@ export class PreviewManager implements vscode.Disposable {
 
     // -- pure / stateless helpers --------------------------------------
 
+    /** Extract all diagram fence blocks (PlantUML, Mermaid, D2) for change detection. */
     private extractDiagramContent(text: string): string {
         const parts: string[] = [];
         const plantumlBlocks = extractPlantUmlBlocks(text);
@@ -116,16 +117,19 @@ export class PreviewManager implements vscode.Disposable {
         return parts.join('\n---\n');
     }
 
+    /** Calculate the maximum scroll top-line for proportional mapping. */
     private calcMaxTopLine(lineCount: number, visibleLineCount: number): number {
         const BOTTOM_OVERLAP_RATIO = 3 / 4;
         return Math.max(0, lineCount - Math.ceil(visibleLineCount * BOTTOM_OVERLAP_RATIO));
     }
 
+    /** Build the panel title from the current file name. */
     private makeTitle(): string {
         const name = this.currentFilePath ? path.basename(this.currentFilePath, '.md') : 'Untitled';
         return name + ' ' + vscode.l10n.t('(Preview)');
     }
 
+    /** Build the localResourceRoots array based on the file location. */
     private buildLocalResourceRoots(filePath: string): vscode.Uri[] {
         const roots: vscode.Uri[] = [
             vscode.Uri.file(__dirname),
@@ -138,6 +142,7 @@ export class PreviewManager implements vscode.Disposable {
         return roots;
     }
 
+    /** Return the set of rendering-related config keys that differ between two configs. */
     private changedRenderKeys(a: Config, b: Config): Set<string> {
         const changed = new Set<string>();
         for (const key of RENDER_KEYS) {
@@ -148,12 +153,14 @@ export class PreviewManager implements vscode.Disposable {
 
     // -- state management helpers ------------------------------------
 
+    /** Set the scroll-sync owner and start the auto-reset timer. */
     private setSyncMaster(who: 'editor' | 'preview'): void {
         this.syncMaster = who;
         if (this.syncMasterTimer) clearTimeout(this.syncMasterTimer);
         this.syncMasterTimer = setTimeout(() => { this.syncMaster = 'none'; this.syncMasterTimer = null; }, SYNC_MASTER_TIMEOUT_MS);
     }
 
+    /** Update webview localResourceRoots if changed. Returns true if updated. */
     private applyWebviewOptions(): boolean {
         if (!this.panel || !this.lastConfig || !this.currentFilePath) return false;
         const newRoots = this.lastConfig.allowLocalImages
@@ -168,6 +175,7 @@ export class PreviewManager implements vscode.Disposable {
         return true;
     }
 
+    /** Dispose event subscriptions and cancel pending timers/renders. */
     private disposeEventHandlers(includePanelHandlers = false): void {
         if (includePanelHandlers) {
             if (this.disposeDisposable) { this.disposeDisposable.dispose(); this.disposeDisposable = null; }
@@ -184,6 +192,7 @@ export class PreviewManager implements vscode.Disposable {
         if (this.renderAbortController) { this.renderAbortController.abort(); this.renderAbortController = null; }
     }
 
+    /** Reset all instance state to initial values (called on panel dispose). */
     private resetState(): void {
         this.panel = null;
         this.currentFilePath = null;
@@ -202,6 +211,7 @@ export class PreviewManager implements vscode.Disposable {
         this.disposeEventHandlers(true);
     }
 
+    /** Read file content from an open editor or disk. Returns null on failure. */
     private async readFileContent(filePath: string): Promise<string | null> {
         const doc = vscode.workspace.textDocuments.find(d => d.uri.fsPath === filePath);
         if (doc) {
@@ -217,6 +227,7 @@ export class PreviewManager implements vscode.Disposable {
         }
     }
 
+    /** Run deferred tasks after the first render (theme prefetch, resolve firstRenderPromise). */
     private fireDeferredWork(): void {
         if (this.lastConfig && this.lastConfig.renderMode !== 'server') {
             prefetchThemes(this.lastConfig);
@@ -229,6 +240,7 @@ export class PreviewManager implements vscode.Disposable {
 
     // -- event registration ------------------------------------------
 
+    /** Wire up webview message, save, change, and scroll event handlers. */
     private registerEventHandlers(): void {
         if (!this.panel) return;
 
@@ -321,6 +333,7 @@ export class PreviewManager implements vscode.Disposable {
 
     // -- rendering ----------------------------------------------------
 
+    /** Render Markdown content into the webview (full HTML or body-only update). */
     private async renderPanel(text: string): Promise<void> {
         if (!this.panel || !this.lastConfig) return;
         if (this.renderAbortController) this.renderAbortController.abort();
@@ -418,6 +431,8 @@ export class PreviewManager implements vscode.Disposable {
                 const { bodyHtml, hasMermaid } = await renderBodyAsync(text, this.lastConfig, renderOptions, signal);
                 if (!this.panel || !this.lastConfig || this.renderSeq !== mySeq || signal.aborted) return;
 
+                // When Mermaid is first detected after the initial HTML was built without
+                // Mermaid support, rebuild from scratch so the Mermaid <script> is included.
                 if (hasMermaid && !this.initialHtmlHadMermaid) {
                     this.initialHtmlSet = false;
                     return await this.renderPanel(text);
@@ -465,6 +480,7 @@ export class PreviewManager implements vscode.Disposable {
         }
     }
 
+    /** Render with a loading overlay and optional progress notification. */
     private renderPanelWithLoading(text: string): void {
         if (!this.panel || !this.lastConfig) return;
 
@@ -512,12 +528,23 @@ export class PreviewManager implements vscode.Disposable {
 
     // -- public API ---------------------------------------------------
 
+    /** Return the current preview WebviewPanel, or null if not open. */
     getPanel(): vscode.WebviewPanel | null { return this.panel; }
 
+    /** Return the Markdown file path being previewed, or null. */
     getCurrentFilePath(): string | null { return this.currentFilePath; }
 
+    /** Whether the most recent render attempt failed. */
     getLastRenderFailed(): boolean { return this.lastRenderFailed; }
 
+    /**
+     * Open (or reuse) the preview panel for the given Markdown file.
+     *
+     * @param filePath - Absolute path to the Markdown file.
+     * @param config - Current extension configuration snapshot.
+     * @param preserveFocus - If true, keep focus on the editor.
+     * @param suppressNotification - If true, skip the loading progress notification.
+     */
     open(filePath: string, config: Config, preserveFocus = false, suppressNotification = false): Promise<void> {
         this.lastConfig = config;
         this.suppressLoadingNotification = suppressNotification;
@@ -621,6 +648,7 @@ export class PreviewManager implements vscode.Disposable {
         });
     }
 
+    /** Apply new configuration and re-render if rendering-related keys changed. */
     updateConfig(config: Config): void {
         if (!this.panel || !this.currentFilePath) return;
 
@@ -688,6 +716,7 @@ export class PreviewManager implements vscode.Disposable {
         }).catch(err => this.outputChannel.appendLine(`[config update error] ${err}`));
     }
 
+    /** Show a theme QuickPick and apply the selected theme. */
     async changeTheme(): Promise<void> {
         if (!this.panel) return;
 

@@ -195,6 +195,7 @@ export function createStandalonePreview(def: StandalonePreviewDef): StandalonePr
 
     // -- public API ----------------------------------------------------------
 
+    /** Open (or reveal) the standalone preview panel for the given diagram file. */
     async function open(filePath: string, config: Config): Promise<void> {
         lastConfig = config;
         currentFilePath = filePath;
@@ -249,6 +250,7 @@ export function createStandalonePreview(def: StandalonePreviewDef): StandalonePr
         def.onPanelCreated?.(config);
     }
 
+    /** Apply updated configuration; triggers re-render if diagram keys changed. */
     function updateConfig(config: Config): void {
         const prevConfig = lastConfig;
         lastConfig = config;
@@ -259,6 +261,7 @@ export function createStandalonePreview(def: StandalonePreviewDef): StandalonePr
         }
     }
 
+    /** Dispose the panel and release all resources. */
     function dispose(): void {
         if (debounceTimer) { clearTimeout(debounceTimer); debounceTimer = null; }
         if (renderAbort) { renderAbort.abort(); renderAbort = null; }
@@ -269,6 +272,7 @@ export function createStandalonePreview(def: StandalonePreviewDef): StandalonePr
         currentFilePath = null;
     }
 
+    /** Show a theme QuickPick and apply the selected theme. */
     async function changeTheme(): Promise<void> {
         if (!panel) return;
 
