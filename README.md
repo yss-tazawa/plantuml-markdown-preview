@@ -168,6 +168,7 @@ Use `!include` directives to share common styles, macros, and component definiti
 
 - Included files are resolved relative to the workspace root (or the directory set in `plantumlIncludePath`)
 - Saving an included file automatically refreshes the preview (you can also click the **Reload** button ↻ to force a manual refresh)
+- **Go to Include File** — right-click on a `!include` line in `.puml` or Markdown files to open the referenced file (menu item appears only when the cursor is on an `!include` line)
 - Works in Fast and Secure modes. Not available in Easy mode (the remote server cannot access local files).
 
 ### Standalone Diagram Preview
