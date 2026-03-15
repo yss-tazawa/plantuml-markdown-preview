@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- Keyword completion for PlantUML, Mermaid, and D2 — context-aware suggestions for keywords, skinparam properties, color names, shape types, style properties, and more
 - "Go to Include File" context menu: right-click on a `!include` line in `.puml` or Markdown files to open the referenced file
 - Auto-refresh preview when an included file is saved
 

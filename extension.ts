@@ -29,6 +29,7 @@ import { openMermaidPreview, updateMermaidConfig, getCurrentMermaidFilePath, dis
 import { openD2Preview, updateD2Config, getCurrentD2FilePath, disposeD2Preview, getD2PreviewPanel, changeD2Theme } from './src/d2-preview.js';
 import { initD2, disposeD2 } from './src/d2-renderer.js';
 import { CONFIG_SECTION, MODE_PRESETS, type Config, type Mode } from './src/config.js';
+import { registerCompletionProviders } from './src/completion/register.js';
 import type MarkdownIt from 'markdown-it';
 
 /** Module-level reference set in activate(). Used by resolveMarkdownPath(). */
@@ -426,6 +427,7 @@ export function activate(context: vscode.ExtensionContext): { extendMarkdownIt: 
     previewManager = new PreviewManager(channel);
     context.subscriptions.push(previewManager);
     setLocalServerOutputChannel(channel);
+    registerCompletionProviders(context);
 
     // Status bar: show current rendering mode and server state
     const statusBarItem = createStatusBarItem();
