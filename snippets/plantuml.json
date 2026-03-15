@@ -1,6 +1,6 @@
 {
   "Sequence Diagram": {
-    "prefix": "seq",
+    "prefix": "tmpl-seq",
     "body": [
       "actor ${1:User} as user",
       "participant ${2:System} as system",
@@ -39,7 +39,7 @@
     "description": "Sequence diagram template"
   },
   "Class Diagram": {
-    "prefix": "cls",
+    "prefix": "tmpl-cls",
     "body": [
       "abstract class ${1:Shape} {",
       "  #${2:x}: int",
@@ -71,7 +71,7 @@
     "description": "Class diagram template"
   },
   "Activity Diagram": {
-    "prefix": "act",
+    "prefix": "tmpl-act",
     "body": [
       "start",
       ":${1:Receive Order};",
@@ -93,7 +93,7 @@
     "description": "Activity diagram template"
   },
   "Use Case": {
-    "prefix": "uc",
+    "prefix": "tmpl-uc",
     "body": [
       "actor ${1:Customer} as customer",
       "actor ${2:Admin} as admin",
@@ -113,7 +113,7 @@
     "description": "Use case diagram template"
   },
   "Component Diagram": {
-    "prefix": "comp",
+    "prefix": "tmpl-comp",
     "body": [
       "package \"${1:Frontend}\" {",
       "  [SPA] as spa",
@@ -143,7 +143,7 @@
     "description": "Component diagram template"
   },
   "State Diagram": {
-    "prefix": "state",
+    "prefix": "tmpl-state",
     "body": [
       "[*] --> ${1:Idle}",
       "",
@@ -163,7 +163,7 @@
     "description": "State diagram template"
   },
   "ER Diagram": {
-    "prefix": "er",
+    "prefix": "tmpl-er",
     "body": [
       "entity ${1:User} {",
       "  *user_id : number <<PK>>",
@@ -198,7 +198,7 @@
     "description": "Entity diagram template"
   },
   "Object Diagram": {
-    "prefix": "obj",
+    "prefix": "tmpl-obj",
     "body": [
       "object ${1:Order} {",
       "  id = 1234",
@@ -228,7 +228,7 @@
     "description": "Object diagram template"
   },
   "Deployment Diagram": {
-    "prefix": "deploy",
+    "prefix": "tmpl-deploy",
     "body": [
       "node \"Load Balancer\" as lb",
       "",
@@ -256,7 +256,7 @@
     "description": "Deployment diagram template"
   },
   "Mindmap": {
-    "prefix": "mind",
+    "prefix": "tmpl-mind",
     "body": [
       "@startmindmap",
       "* ${1:Web Application}",
@@ -280,7 +280,7 @@
     "description": "Mindmap template"
   },
   "Gantt Chart": {
-    "prefix": "gantt",
+    "prefix": "tmpl-gantt",
     "body": [
       "@startgantt",
       "Project starts ${1:2026-01-01}",

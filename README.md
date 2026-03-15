@@ -480,6 +480,9 @@ $$\int_0^\infty e^{-x}\,dx = 1$$
 
 Type a snippet prefix and press `Tab` to expand. Two sets of snippets are available:
 
+- **Markdown snippets** (outside fenced blocks) — prefixed with `plantuml-`, `mermaid-`, or `d2-`, expands a complete fenced block
+- **Template snippets** (inside fenced blocks) — prefixed with `tmpl-`, expands diagram body only. Type `tmpl` to see all available templates
+
 ### Markdown Snippets (outside fenced blocks)
 
 Expand a complete `` ```plantuml ... ``` `` block including fences:
@@ -501,21 +504,26 @@ Expand a complete `` ```plantuml ... ``` `` block including fences:
 
 ### PlantUML Snippets (inside fenced blocks)
 
-Expand diagram body only (short prefixes):
+Diagram templates (type `tmpl` to see all):
 
 | Prefix | Content |
 | --- | --- |
-| `seq` | Sequence diagram |
-| `cls` | Class definition |
-| `act` | Activity diagram |
-| `uc` | Use case diagram |
-| `comp` | Component diagram |
-| `state` | State diagram |
-| `er` | Entity definition |
-| `obj` | Object diagram |
-| `deploy` | Deployment diagram |
-| `mind` | Mindmap |
-| `gantt` | Gantt chart |
+| `tmpl-seq` | Sequence diagram |
+| `tmpl-cls` | Class definition |
+| `tmpl-act` | Activity diagram |
+| `tmpl-uc` | Use case diagram |
+| `tmpl-comp` | Component diagram |
+| `tmpl-state` | State diagram |
+| `tmpl-er` | Entity definition |
+| `tmpl-obj` | Object diagram |
+| `tmpl-deploy` | Deployment diagram |
+| `tmpl-mind` | Mindmap |
+| `tmpl-gantt` | Gantt chart |
+
+Short snippets:
+
+| Prefix | Content |
+| --- | --- |
 | `part` | participant declaration |
 | `actor` | actor declaration |
 | `note` | Note block |
@@ -529,7 +537,7 @@ Expand a complete `` ```mermaid ... ``` `` block including fences:
 | Prefix | Diagram |
 | --- | --- |
 | `mermaid` | Empty Mermaid block |
-| `mermaid-flowchart` | Flowchart |
+| `mermaid-flow` | Flowchart |
 | `mermaid-sequence` | Sequence diagram |
 | `mermaid-class` | Class diagram |
 | `mermaid-state` | State diagram |
@@ -542,20 +550,20 @@ Expand a complete `` ```mermaid ... ``` `` block including fences:
 
 ### Mermaid Snippets (inside fenced blocks)
 
-Expand diagram body only (short prefixes):
+Diagram templates (type `tmpl` to see all):
 
 | Prefix | Content |
 | --- | --- |
-| `flow` | Flowchart |
-| `seq` | Sequence diagram |
-| `cls` | Class diagram |
-| `state` | State diagram |
-| `er` | ER diagram |
-| `gantt` | Gantt chart |
-| `pie` | Pie chart |
-| `mind` | Mindmap |
-| `timeline` | Timeline |
-| `git` | Git graph |
+| `tmpl-flow` | Flowchart |
+| `tmpl-seq` | Sequence diagram |
+| `tmpl-cls` | Class diagram |
+| `tmpl-state` | State diagram |
+| `tmpl-er` | ER diagram |
+| `tmpl-gantt` | Gantt chart |
+| `tmpl-pie` | Pie chart |
+| `tmpl-mind` | Mindmap |
+| `tmpl-timeline` | Timeline |
+| `tmpl-git` | Git graph |
 
 ### D2 Markdown Snippets (outside fenced blocks)
 
@@ -567,7 +575,7 @@ Expand a complete `` ```d2 ... ``` `` block including fences:
 | `d2-basic` | Basic connection |
 | `d2-sequence` | Sequence diagram |
 | `d2-class` | Class diagram |
-| `d2-container` | Container (component diagram) |
+| `d2-comp` | Component diagram |
 | `d2-grid` | Grid layout |
 | `d2-er` | ER diagram |
 | `d2-flow` | Flowchart |
@@ -579,17 +587,22 @@ Expand a complete `` ```d2 ... ``` `` block including fences:
 
 ### D2 Snippets (inside fenced blocks)
 
-Expand diagram body only (short prefixes):
+Diagram templates (type `tmpl` to see all):
+
+| Prefix | Content |
+| --- | --- |
+| `tmpl-seq` | Sequence diagram |
+| `tmpl-cls` | Class diagram |
+| `tmpl-comp` | Component diagram |
+| `tmpl-er` | ER diagram |
+| `tmpl-flow` | Flowchart |
+| `tmpl-grid` | Grid layout |
+
+Short snippets:
 
 | Prefix | Content |
 | --- | --- |
 | `conn` | Connection |
-| `container` | Container (component diagram) |
-| `seq` | Sequence diagram |
-| `class` | Class diagram |
-| `grid` | Grid layout |
-| `sql` | SQL table (ER diagram) |
-| `flow` | Flowchart |
 | `icon` | Icon node |
 | `md` | Markdown node |
 | `tooltip` | Tooltip and link |

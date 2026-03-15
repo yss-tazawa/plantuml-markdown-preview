@@ -90,8 +90,8 @@
     ],
     "description": "D2 class diagram"
   },
-  "D2 Container": {
-    "prefix": "d2-container",
+  "D2 Component": {
+    "prefix": "d2-comp",
     "body": [
       "```d2",
       "${1:Frontend}: {",
@@ -121,7 +121,7 @@
       "${5:Backend}.${7:Auth Service} -> ${9:Data}.${11:Redis}: session",
       "```"
     ],
-    "description": "D2 container (component diagram)"
+    "description": "D2 component diagram"
   },
   "D2 Grid": {
     "prefix": "d2-grid",

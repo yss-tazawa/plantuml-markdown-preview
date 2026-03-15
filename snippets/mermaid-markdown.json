@@ -9,7 +9,7 @@
     "description": "Empty Mermaid code block"
   },
   "Mermaid Flowchart": {
-    "prefix": "mermaid-flowchart",
+    "prefix": "mermaid-flow",
     "body": [
       "```mermaid",
       "flowchart TD",
