@@ -49,6 +49,7 @@ Switch between modes anytime with a single setting — no migration, no restart.
 - **Status bar indicator** — see the current rendering mode and local server state at a glance; click to switch modes
 - **Find in preview** — use `Cmd+F` / `Ctrl+F` to search text in Diagram Viewer and standalone diagram previews
 - **14 preview themes** — 8 light + 6 dark themes including GitHub, Atom, Solarized, Dracula, Monokai, and more
+- **Keyword completion** — context-aware suggestions for PlantUML keywords, Mermaid diagram types, D2 shape and style properties, and more
 - **Code snippets** — type `plantuml-sequence`, `mermaid-sequence`, or `d2-sequence` in Markdown, or `seq` inside a fenced block, to expand diagram templates instantly
 - **Internationalization** — English, Chinese (Simplified), and Japanese UI
 - **Math support** — `$...$` inline and `$$...$$` block math rendered with [KaTeX](https://katex.org/)
@@ -62,6 +63,7 @@ Switch between modes anytime with a single setting — no migration, no restart.
 - [Usage](#usage)
 - [Configuration](#configuration)
 - [Snippets](#snippets)
+- [Keyword Completion](#keyword-completion)
 - [Keyboard Shortcuts](#keyboard-shortcuts)
 - [FAQ](#faq)
 - [Contributing](#contributing)
@@ -598,6 +600,31 @@ Expand diagram body only (short prefixes):
 | `layers` | Layers/steps |
 | `style` | Custom style |
 | `direction` | Layout direction |
+
+## Keyword Completion
+
+Context-aware keyword suggestions for PlantUML, Mermaid, and D2. Works in both standalone files and Markdown fenced blocks.
+
+### PlantUML
+
+- **Line-start keywords** — `@startuml`, `participant`, `class`, `skinparam`, `!include`, etc.
+- **`skinparam` parameters** — type `skinparam` followed by a space, then get suggestions for `backgroundColor`, `defaultFontName`, `arrowColor`, etc.
+- **Color names** — type `#` to get color suggestions (`Red`, `Blue`, `LightGreen`, etc.)
+- **Trigger characters**: `@`, `!`, `#`
+
+### Mermaid
+
+- **Diagram type declarations** — `flowchart`, `sequenceDiagram`, `classDiagram`, `gantt`, etc. on the first line
+- **Diagram-specific keywords** — suggestions change based on the declared diagram type (e.g., `subgraph` for flowchart, `participant` for sequence)
+- **Direction values** — type `direction` followed by a space to get `TB`, `LR`, etc.
+
+### D2
+
+- **Shape types** — type `shape:` to get suggestions (`rectangle`, `cylinder`, `person`, etc.)
+- **Style properties** — type `style.` to get `fill`, `stroke`, `font-size`, etc.
+- **Direction values** — type `direction:` to get `right`, `down`, `left`, `up`
+- **Constraint values** — type `constraint:` to get `primary_key`, `foreign_key`, `unique`
+- **Trigger characters**: `:`, `.`
 
 ## Configuration
 
