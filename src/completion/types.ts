@@ -1,3 +1,7 @@
+/**
+ * @module completion/types
+ * @description Shared type definitions and utilities for keyword completion providers.
+ */
 import * as vscode from 'vscode';
 
 /** Context in which a keyword is valid. */

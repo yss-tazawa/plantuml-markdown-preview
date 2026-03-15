@@ -27,7 +27,7 @@ export async function saveDiagramFile(
         await writeFile(uri.fsPath, data, typeof data === 'string' ? 'utf-8' : undefined);
         vscode.window.showInformationMessage(vscode.l10n.t('Diagram saved: {0}', uri.fsPath));
     } catch (err) {
-        vscode.window.showErrorMessage(vscode.l10n.t('Failed to save diagram: {0}', (err as Error).message));
+        vscode.window.showErrorMessage(vscode.l10n.t('Failed to save diagram: {0}', err instanceof Error ? err.message : String(err)));
     }
 }
 
