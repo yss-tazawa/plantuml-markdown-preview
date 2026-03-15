@@ -1,6 +1,6 @@
 {
   "Flowchart": {
-    "prefix": "flow",
+    "prefix": "tmpl-flow",
     "body": [
       "flowchart TD",
       "    Start([Start]) --> Receive[${1:Receive Order}]",
@@ -18,7 +18,7 @@
     "description": "Flowchart template"
   },
   "Sequence Diagram": {
-    "prefix": "seq",
+    "prefix": "tmpl-seq",
     "body": [
       "sequenceDiagram",
       "    actor user as ${1:User}",
@@ -55,7 +55,7 @@
     "description": "Sequence diagram template"
   },
   "Class Diagram": {
-    "prefix": "cls",
+    "prefix": "tmpl-cls",
     "body": [
       "classDiagram",
       "    class ${1:Shape} {",
@@ -90,7 +90,7 @@
     "description": "Class diagram template"
   },
   "State Diagram": {
-    "prefix": "state",
+    "prefix": "tmpl-state",
     "body": [
       "stateDiagram-v2",
       "    [*] --> ${1:Idle}",
@@ -111,7 +111,7 @@
     "description": "State diagram template"
   },
   "ER Diagram": {
-    "prefix": "er",
+    "prefix": "tmpl-er",
     "body": [
       "erDiagram",
       "    ${1:USER} ||--o{ ${2:POST} : writes",
@@ -142,7 +142,7 @@
     "description": "ER diagram template"
   },
   "Gantt Chart": {
-    "prefix": "gantt",
+    "prefix": "tmpl-gantt",
     "body": [
       "gantt",
       "    title ${1:Project Plan}",
@@ -160,7 +160,7 @@
     "description": "Gantt chart template"
   },
   "Pie Chart": {
-    "prefix": "pie",
+    "prefix": "tmpl-pie",
     "body": [
       "pie title ${1:Language Usage}",
       "    \"${2:TypeScript}\" : ${3:45}",
@@ -171,7 +171,7 @@
     "description": "Pie chart template"
   },
   "Mindmap": {
-    "prefix": "mind",
+    "prefix": "tmpl-mind",
     "body": [
       "mindmap",
       "    root((${1:Web Application}))",
@@ -194,7 +194,7 @@
     "description": "Mindmap template"
   },
   "Timeline": {
-    "prefix": "timeline",
+    "prefix": "tmpl-timeline",
     "body": [
       "timeline",
       "    title ${1:Product Roadmap}",
@@ -208,7 +208,7 @@
     "description": "Timeline template"
   },
   "Git Graph": {
-    "prefix": "git",
+    "prefix": "tmpl-git",
     "body": [
       "gitGraph",
       "    commit",

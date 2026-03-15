@@ -4,8 +4,8 @@
     "body": "${1:a} -> ${2:b}: ${3:label}",
     "description": "D2 connection"
   },
-  "Container": {
-    "prefix": "container",
+  "Component Diagram": {
+    "prefix": "tmpl-comp",
     "body": [
       "${1:Frontend}: {",
       "  ${2:SPA}",
@@ -33,10 +33,10 @@
       "${5:Backend}.${8:User Service} -> ${9:Data}.${10:PostgreSQL}",
       "${5:Backend}.${7:Auth Service} -> ${9:Data}.${11:Redis}: session"
     ],
-    "description": "D2 container (component diagram)"
+    "description": "D2 component diagram"
   },
   "Sequence Diagram": {
-    "prefix": "seq",
+    "prefix": "tmpl-seq",
     "body": [
       "shape: sequence_diagram",
       "",
@@ -63,7 +63,7 @@
     "description": "D2 sequence diagram"
   },
   "Class": {
-    "prefix": "class",
+    "prefix": "tmpl-cls",
     "body": [
       "${1:BaseShape}: {",
       "  shape: class",
@@ -105,7 +105,7 @@
     "description": "D2 class diagram"
   },
   "Grid": {
-    "prefix": "grid",
+    "prefix": "tmpl-grid",
     "body": [
       "grid-rows: ${1:3}",
       "grid-columns: ${2:3}",
@@ -140,8 +140,8 @@
     ],
     "description": "D2 grid layout"
   },
-  "SQL Table": {
-    "prefix": "sql",
+  "ER Diagram": {
+    "prefix": "tmpl-er",
     "body": [
       "${1:User}: {",
       "  shape: sql_table",
@@ -173,10 +173,10 @@
       "${4:Post}.post_id <-> ${5:Comment}.post_id: has",
       "${1:User}.user_id <-> ${5:Comment}.user_id: posts"
     ],
-    "description": "D2 ER diagram (SQL tables)"
+    "description": "D2 ER diagram"
   },
   "Flow": {
-    "prefix": "flow",
+    "prefix": "tmpl-flow",
     "body": [
       "${1:Start} -> ${2:Receive Order}",
       "${2:Receive Order} -> ${3:In Stock?}",

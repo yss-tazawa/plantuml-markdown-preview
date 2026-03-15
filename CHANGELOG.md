@@ -6,6 +6,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## 0.6.6 - 2026-03-15
+
+### Changed
+
+- Snippet prefixes for diagram templates now use `tmpl-` prefix (e.g., `tmpl-seq`, `tmpl-cls`) to clearly distinguish templates from keyword completions
+- Unified snippet prefixes across PlantUML, Mermaid, and D2 for the same diagram types (e.g., class diagram is now `tmpl-cls` in all three languages)
+- Renamed Markdown snippet prefixes for consistency: `mermaid-flowchart` → `mermaid-flow`, `d2-container` → `d2-comp`
+
 ## 0.6.5 - 2026-03-15
 
 ### Added
