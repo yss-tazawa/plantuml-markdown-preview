@@ -43,14 +43,10 @@ Switch between modes anytime with a single setting — no migration, no restart.
 - **Bidirectional scroll sync** — editor and preview scroll together, both ways
 - **Navigation & TOC** — go-to-top / go-to-bottom buttons and a Table of Contents sidebar in the preview panel
 - **Diagram Viewer** — right-click any diagram to open a pan & zoom panel with live sync and theme-matched background
-- **PlantUML `!include` support** — included files are resolved and rendered inline
 - **Standalone diagram preview** — open `.puml`, `.mmd`, and `.d2` files directly with pan & zoom, live updates, and theme support — no Markdown wrapper needed
 - **Save or copy diagrams as PNG / SVG** — right-click any diagram in the preview or Diagram Viewer to save or copy to clipboard
-- **Status bar indicator** — see the current rendering mode and local server state at a glance; click to switch modes
-- **Find in preview** — use `Cmd+F` / `Ctrl+F` to search text in Diagram Viewer and standalone diagram previews
 - **14 preview themes** — 8 light + 6 dark themes including GitHub, Atom, Solarized, Dracula, Monokai, and more
-- **Keyword completion** — context-aware suggestions for PlantUML keywords, Mermaid diagram types, D2 shape and style properties, and more
-- **Code snippets** — type `plantuml-sequence`, `mermaid-sequence`, or `d2-sequence` in Markdown, or `seq` inside a fenced block, to expand diagram templates instantly
+- **Editor assistance** — keyword completion, color picker, and code snippets for PlantUML, Mermaid, and D2
 - **Internationalization** — English, Chinese (Simplified), and Japanese UI
 - **Math support** — `$...$` inline and `$$...$$` block math rendered with [KaTeX](https://katex.org/)
 
@@ -600,6 +596,16 @@ Expand diagram body only (short prefixes):
 | `layers` | Layers/steps |
 | `style` | Custom style |
 | `direction` | Layout direction |
+
+## Color Picker
+
+Color swatches and an inline color picker for PlantUML, Mermaid, and D2. Works in standalone files (`.puml`, `.mmd`, `.d2`) and Markdown fenced blocks.
+
+- **6-digit hex** — `#FF0000`, `#1565C0` etc.
+- **3-digit hex** — `#F00`, `#ABC` etc.
+- **Named colors** (PlantUML only) — `#Red`, `#LightBlue`, `#Salmon` etc. (20 colors)
+- Picking a new color replaces the value with `#RRGGBB` format
+- Comment lines are excluded (`'` for PlantUML, `%%` for Mermaid, `#` for D2)
 
 ## Keyword Completion
 

@@ -30,6 +30,7 @@ import { openD2Preview, updateD2Config, getCurrentD2FilePath, disposeD2Preview, 
 import { initD2, disposeD2 } from './src/d2-renderer.js';
 import { CONFIG_SECTION, MODE_PRESETS, type Config, type Mode } from './src/config.js';
 import { registerCompletionProviders } from './src/completion/register.js';
+import { registerColorProviders } from './src/color/register.js';
 import type MarkdownIt from 'markdown-it';
 
 /** Module-level reference set in activate(). Used by resolveMarkdownPath(). */
@@ -428,6 +429,7 @@ export function activate(context: vscode.ExtensionContext): { extendMarkdownIt: 
     context.subscriptions.push(previewManager);
     setLocalServerOutputChannel(channel);
     registerCompletionProviders(context);
+    registerColorProviders(context);
 
     // Status bar: show current rendering mode and server state
     const statusBarItem = createStatusBarItem();
