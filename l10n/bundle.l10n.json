@@ -81,5 +81,6 @@
   "Local server (fastest, requires Java)": "Local server (fastest, requires Java)",
   "Local rendering (no network, requires Java)": "Local rendering (no network, requires Java)",
   "PlantUML server (no Java required)": "PlantUML server (no Java required)",
-  "Select PlantUML rendering mode": "Select PlantUML rendering mode"
+  "Select PlantUML rendering mode": "Select PlantUML rendering mode",
+  "Include file not found: {0}": "Include file not found: {0}"
 }

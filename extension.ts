@@ -3,7 +3,7 @@
  * @description VS Code extension entry point.
  *
  * Responsibilities:
- * - Register commands: openPreview / exportHtml / exportHtmlAndOpen / exportHtmlFitToWidth / exportHtmlFitToWidthAndOpen / exportPdf / exportPdfAndOpen / changeTheme / openDiagramViewer / saveDiagramAsPng / saveDiagramAsSvg / copyDiagramAsPng
+ * - Register commands: openPreview / exportHtml / exportHtmlAndOpen / exportHtmlFitToWidth / exportHtmlFitToWidthAndOpen / exportPdf / exportPdfAndOpen / changeTheme / openDiagramViewer / saveDiagramAsPng / saveDiagramAsSvg / copyDiagramAsPng / goToIncludeFile
  * - Read VS Code settings (getConfig)
  * - Auto-follow active editor tab (editorTracker)
  * - Propagate settings changes to the preview (configWatcher)
@@ -15,7 +15,7 @@ import { existsSync } from 'fs';
 import { execFile } from 'child_process';
 import { exportToHtml, exportToPdf, clearMdCache } from './src/exporter.js';
 import { plantumlPlugin } from './src/renderer.js';
-import { clearCache } from './src/plantuml.js';
+import { clearCache, resolveIncludePath, extractIncludeFromLine } from './src/plantuml.js';
 import { clearServerCache } from './src/plantuml-server.js';
 import { prepareLocalServer, startLocalServer, stopLocalServer, restartLocalServer, setLocalServerOutputChannel, setOnServerStateChange } from './src/local-server.js';
 import type { LocalServerState } from './src/local-server.js';
@@ -715,7 +715,41 @@ export function activate(context: vscode.ExtensionContext): { extendMarkdownIt: 
         }
     });
 
-    context.subscriptions.push(exportCmd, exportAndOpenCmd, exportHtmlFitCmd, exportHtmlFitAndOpenCmd, exportPdfCmd, exportPdfAndOpenCmd, previewCmd, pumlPreviewCmd, mermaidPreviewCmd, d2PreviewCmd, changeThemeCmd, openViewerCmd, savePngCmd, saveSvgCmd, copyPngCmd, editorTracker, configWatcher);
+    // Track whether the cursor is on a !include line for context menu visibility.
+    const INCLUDE_LINE_CONTEXT = 'plantuml-markdown-preview.cursorOnIncludeLine';
+    const includeLineRe = /^\s*!include(?:_once|_many|sub)?\s+/;
+    function updateIncludeContext(editor: vscode.TextEditor | undefined): void {
+        const onInclude = !!editor && includeLineRe.test(
+            editor.document.lineAt(editor.selection.active.line).text
+        );
+        void vscode.commands.executeCommand('setContext', INCLUDE_LINE_CONTEXT, onInclude);
+    }
+    updateIncludeContext(vscode.window.activeTextEditor);
+    const includeContextTracker = vscode.window.onDidChangeTextEditorSelection(e => {
+        updateIncludeContext(e.textEditor);
+    });
+
+    const goToIncludeCmd = vscode.commands.registerCommand(
+        'plantuml-markdown-preview.goToIncludeFile',
+        () => {
+            const editor = vscode.window.activeTextEditor;
+            if (!editor) return;
+            const line = editor.document.lineAt(editor.selection.active.line).text;
+            const config = getConfig();
+            const basePath = resolveIncludePath(config) ?? path.dirname(editor.document.uri.fsPath);
+            const absPath = extractIncludeFromLine(line, basePath);
+            if (!absPath) return;
+            if (!existsSync(absPath)) {
+                void vscode.window.showErrorMessage(
+                    vscode.l10n.t('Include file not found: {0}', absPath)
+                );
+                return;
+            }
+            void vscode.window.showTextDocument(vscode.Uri.file(absPath));
+        }
+    );
+
+    context.subscriptions.push(exportCmd, exportAndOpenCmd, exportHtmlFitCmd, exportHtmlFitAndOpenCmd, exportPdfCmd, exportPdfAndOpenCmd, previewCmd, pumlPreviewCmd, mermaidPreviewCmd, d2PreviewCmd, changeThemeCmd, openViewerCmd, savePngCmd, saveSvgCmd, copyPngCmd, goToIncludeCmd, includeContextTracker, editorTracker, configWatcher);
 
     // Start local PlantUML picoweb server if local-server mode is selected.
     // prepareLocalServer() pre-creates the readyPromise so that any preview

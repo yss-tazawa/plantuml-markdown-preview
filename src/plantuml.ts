@@ -84,6 +84,22 @@ export function extractIncludePaths(block: string, basePath: string): string[] {
 }
 
 /**
+ * Extract the resolved absolute include path from a single line of PlantUML source.
+ *
+ * @param line - A single line of text.
+ * @param basePath - Base directory for resolving relative include paths.
+ * @returns The resolved absolute file path, or `null` if the line has no include directive.
+ */
+export function extractIncludeFromLine(line: string, basePath: string): string | null {
+    const m = /^\s*!include(?:_once|_many|sub)?\s+(.+)/.exec(line);
+    if (!m) return null;
+    const raw = m[1].trim();
+    const file = raw.replace(/^["']|["']$/g, '').split('!')[0];
+    if (!file || file.startsWith('<')) return null;
+    return path.isAbsolute(file) ? file : path.resolve(basePath, file);
+}
+
+/**
  * Collect all absolute `!include` file paths from PlantUML blocks in Markdown text.
  *
  * Extracts PlantUML fenced code blocks, then resolves every `!include` directive

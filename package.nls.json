@@ -17,6 +17,7 @@
   "command.saveDiagramAsSvg.title": "Save Diagram as SVG",
   "command.copyDiagramAsPng.title": "Copy Diagram as PNG",
   "command.selectMode.title": "Select Rendering Mode",
+  "command.goToIncludeFile.title": "Go to Include File",
   "command.changeTheme.title": "Change Preview Theme",
   "command.category": "PlantUML Markdown Preview",
   "configuration.title": "PlantUML Markdown Preview",
