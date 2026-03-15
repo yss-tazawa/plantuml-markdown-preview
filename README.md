@@ -167,7 +167,7 @@ Right-click any PlantUML, Mermaid, or D2 diagram in the preview and select **Ope
 Use `!include` directives to share common styles, macros, and component definitions across diagrams.
 
 - Included files are resolved relative to the workspace root (or the directory set in `plantumlIncludePath`)
-- Click the **Reload** button (↻) in the preview toolbar to refresh after editing an included file
+- Saving an included file automatically refreshes the preview (you can also click the **Reload** button ↻ to force a manual refresh)
 - Works in Fast and Secure modes. Not available in Easy mode (the remote server cannot access local files).
 
 ### Standalone Diagram Preview
@@ -421,7 +421,7 @@ The PDF file is saved alongside the source `.md` file. Chrome, Edge, or Chromium
 ### Navigation
 
 - **Go to top / Go to bottom:** Buttons in the top-right corner of the preview panel
-- **Reload:** Click the ↻ button to refresh the preview (useful after editing `!include`d files)
+- **Reload:** Click the ↻ button to manually refresh the preview and clear caches (included files are also refreshed automatically on save)
 - **Table of Contents:** Click the TOC button in the top-right corner of the preview panel to open a sidebar listing all headings; click a heading to jump to it
 
 ### Change Theme
@@ -738,7 +738,7 @@ title bar icon and select a dark PlantUML theme (e.g. `cyborg`, `mars`) or set t
 the remote server cannot access your local files.
 
 - Paths are resolved relative to the workspace root by default. Set `plantumlIncludePath` to use a different base directory.
-- After editing an included file, click the **Reload** button (↻) in the preview toolbar to refresh.
+- Saving an included file automatically refreshes the preview. You can also click the **Reload** button (↻) to force a manual refresh.
 
 </details>
 

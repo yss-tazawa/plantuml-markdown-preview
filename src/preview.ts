@@ -14,7 +14,7 @@ import * as vscode from 'vscode';
 import path from 'path';
 import fs from 'fs';
 import { renderHtmlAsync, renderBodyAsync, getThemeCss, LIGHT_THEME_KEYS, DARK_THEME_KEYS } from './exporter.js';
-import { listThemesAsync, prefetchThemes, clearCache, resolveIncludePath } from './plantuml.js';
+import { listThemesAsync, prefetchThemes, clearCache, resolveIncludePath, collectIncludePaths } from './plantuml.js';
 import { clearServerCache } from './plantuml-server.js';
 import { restartLocalServer } from './local-server.js';
 import { getScrollSyncScriptTag } from './scroll-sync.js';
@@ -90,6 +90,9 @@ export class PreviewManager implements vscode.Disposable {
     private panelWasHidden = false;
     private enableDiagramViewer = true;
 
+    // -- include tracking ---------------------------------------------
+    private includePaths = new Set<string>();
+
     // -- scroll sync --------------------------------------------------
     private syncMaster: SyncMaster = 'none';
 
@@ -115,6 +118,12 @@ export class PreviewManager implements vscode.Disposable {
             parts.push(...d2Blocks.map(b => b.trim()));
         }
         return parts.join('\n---\n');
+    }
+
+    /** Collect all `!include` paths from PlantUML blocks and update the tracking set. */
+    private updateIncludePaths(text: string): void {
+        if (!this.lastConfig) { this.includePaths = new Set<string>(); return; }
+        this.includePaths = collectIncludePaths(text, this.lastConfig);
     }
 
     /** Calculate the maximum scroll top-line for proportional mapping. */
@@ -190,6 +199,7 @@ export class PreviewManager implements vscode.Disposable {
         if (this.loadingResolve) { this.loadingResolve(); this.loadingResolve = null; }
         if (this.syncMasterTimer) { clearTimeout(this.syncMasterTimer); this.syncMasterTimer = null; }
         if (this.renderAbortController) { this.renderAbortController.abort(); this.renderAbortController = null; }
+        this.includePaths = new Set<string>();
     }
 
     /** Reset all instance state to initial values (called on panel dispose). */
@@ -280,11 +290,26 @@ export class PreviewManager implements vscode.Disposable {
         });
 
         this.saveDisposable = vscode.workspace.onDidSaveTextDocument((doc) => {
-            if (!this.panel || !this.currentFilePath || doc.uri.fsPath !== this.currentFilePath) return;
-            if (this.debounceTimer) { clearTimeout(this.debounceTimer); this.debounceTimer = null; }
-            const text = doc.getText();
-            this.lastDiagramContent = this.extractDiagramContent(text);
-            void this.renderPanel(text).catch(err => this.outputChannel.appendLine(`[render error] ${err}`));
+            if (!this.panel || !this.currentFilePath) return;
+
+            if (doc.uri.fsPath === this.currentFilePath) {
+                // Main file saved — existing behaviour
+                if (this.debounceTimer) { clearTimeout(this.debounceTimer); this.debounceTimer = null; }
+                const text = doc.getText();
+                this.lastDiagramContent = this.extractDiagramContent(text);
+                void this.renderPanel(text).catch(err => this.outputChannel.appendLine(`[render error] ${err}`));
+                return;
+            }
+
+            if (this.includePaths.has(doc.uri.fsPath)) {
+                // Include file saved — clear caches and re-render main file
+                clearCache();
+                clearServerCache();
+                void this.readFileContent(this.currentFilePath).then((text) => {
+                    if (text === null) return;
+                    void this.renderPanel(text).catch(err => this.outputChannel.appendLine(`[render error] ${err}`));
+                });
+            }
         });
 
         this.changeDisposable = vscode.workspace.onDidChangeTextDocument((event) => {
@@ -476,6 +501,9 @@ export class PreviewManager implements vscode.Disposable {
             }
             if (!htmlReplaced && this.panel) {
                 void this.panel.webview.postMessage({ type: 'hideLoading' });
+            }
+            if (htmlReplaced) {
+                this.updateIncludePaths(text);
             }
         }
     }

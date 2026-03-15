@@ -15,9 +15,10 @@
  * - Process errors (Java not found, timeout) and syntax errors are NOT cached
  */
 import * as vscode from 'vscode';
+import path from 'path';
 import type { ChildProcess } from 'child_process';
 import { existsSync } from 'fs';
-import { escapeHtml, ensureStartEndTags, errorHtml, LruCache, computeHash, resolveJavaCommand, spawnJava, spawnJavaSync, execJava } from './utils.js';
+import { escapeHtml, ensureStartEndTags, errorHtml, LruCache, computeHash, resolveJavaCommand, spawnJava, spawnJavaSync, execJava, extractPlantUmlBlocks } from './utils.js';
 import type { Config } from './config.js';
 
 /** Resolved config paths with defaults applied. */
@@ -54,6 +55,54 @@ export function resolveIncludePath(config: Config): string | undefined {
         if (existsSync(config.plantumlIncludePath)) return config.plantumlIncludePath;
     }
     return vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+}
+
+/**
+ * Extract absolute file paths from `!include` directives in a PlantUML block.
+ *
+ * Recognises `!include`, `!include_once`, `!include_many`, and `!includesub`.
+ * For `!includesub` the `file!id` syntax is handled by taking only the file part.
+ * Standard-library includes (`<...>`) are ignored.
+ *
+ * @param block - A single PlantUML source block.
+ * @param basePath - Base directory for resolving relative include paths.
+ * @returns Array of resolved absolute file paths.
+ */
+export function extractIncludePaths(block: string, basePath: string): string[] {
+    const paths: string[] = [];
+    const re = /^\s*!include(?:_once|_many|sub)?\s+(.+)/gm;
+    let m;
+    while ((m = re.exec(block)) !== null) {
+        const raw = m[1].trim();
+        // Extract file part from !includesub "file!id" syntax
+        const file = raw.replace(/^["']|["']$/g, '').split('!')[0];
+        if (!file || file.startsWith('<')) continue; // Skip stdlib includes
+        const abs = path.isAbsolute(file) ? file : path.resolve(basePath, file);
+        paths.push(abs);
+    }
+    return paths;
+}
+
+/**
+ * Collect all absolute `!include` file paths from PlantUML blocks in Markdown text.
+ *
+ * Extracts PlantUML fenced code blocks, then resolves every `!include` directive
+ * in each block to an absolute path.
+ *
+ * @param text - Full Markdown document text.
+ * @param config - Extension configuration (used to resolve the include base path).
+ * @returns Set of absolute file paths referenced by `!include` directives.
+ */
+export function collectIncludePaths(text: string, config: Config): Set<string> {
+    const result = new Set<string>();
+    const basePath = resolveIncludePath(config);
+    if (!basePath) return result;
+    for (const block of extractPlantUmlBlocks(text)) {
+        for (const p of extractIncludePaths(block, basePath)) {
+            result.add(p);
+        }
+    }
+    return result;
 }
 
 /** Set of currently in-flight render child processes (for cleanup on deactivate). */
