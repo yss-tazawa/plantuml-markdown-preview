@@ -8,8 +8,8 @@
  */
 import * as vscode from 'vscode';
 import { generateViewerHtml } from './diagram-viewer.js';
-import { renderToSvgAsync, listThemesAsync, prefetchThemes } from './plantuml.js';
-import { renderToSvgServer } from './plantuml-server.js';
+import { renderToSvgAsync, listThemesAsync, prefetchThemes, extractIncludePaths, resolveIncludePath, clearCache } from './plantuml.js';
+import { renderToSvgServer, clearServerCache } from './plantuml-server.js';
 import { getLocalServerUrl, waitForLocalServer } from './local-server.js';
 import { type Config } from './config.js';
 import { errorHtml, buildThemeItems } from './utils.js';
@@ -112,6 +112,17 @@ const preview: StandalonePreview = createStandalonePreview({
         if (config.renderMode !== 'server') {
             prefetchThemes(config);
         }
+    },
+
+    collectIncludePaths(content, config) {
+        const basePath = resolveIncludePath(config);
+        if (!basePath) return new Set<string>();
+        return new Set(extractIncludePaths(content, basePath));
+    },
+
+    onIncludeFileSaved() {
+        clearCache();
+        clearServerCache();
     },
 
     resetDiagramState() {

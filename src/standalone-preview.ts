@@ -98,6 +98,12 @@ export interface StandalonePreviewDef {
     /** Hook called right after the panel is created (e.g. to prefetch themes). */
     onPanelCreated?(config: Config): void;
 
+    /** Return include file paths tracked for save-triggered re-renders. */
+    collectIncludePaths?(content: string, config: Config): Set<string>;
+
+    /** Called when a tracked include file is saved (e.g. to clear caches). */
+    onIncludeFileSaved?(): void;
+
     /** Reset diagram-specific local state on panel dispose. */
     resetDiagramState(): void;
 }
@@ -132,6 +138,16 @@ export function createStandalonePreview(def: StandalonePreviewDef): StandalonePr
     const panelDisposables: vscode.Disposable[] = [];
     let renderSeq = 0;
     let renderAbort: AbortController | null = null;
+
+    // -- include tracking ----------------------------------------------------
+    /** Absolute paths of `!include` files tracked for save-triggered re-renders. */
+    let includePaths = new Set<string>();
+
+    /** Collect include paths via the definition hook and update the tracking set. */
+    function updateIncludePaths(content: string): void {
+        if (!lastConfig || !def.collectIncludePaths) { includePaths = new Set<string>(); return; }
+        includePaths = def.collectIncludePaths(content, lastConfig);
+    }
 
     // -- helpers -------------------------------------------------------------
 
@@ -181,6 +197,7 @@ export function createStandalonePreview(def: StandalonePreviewDef): StandalonePr
         if (signal.aborted || seq !== renderSeq) return;
 
         await def.updateWebview(panel, content, getCurrentBgColor(), signal);
+        updateIncludePaths(content);
     }
 
     /** Clean up all panel state and disposables. */
@@ -188,6 +205,7 @@ export function createStandalonePreview(def: StandalonePreviewDef): StandalonePr
         panel = null;
         currentFilePath = null;
         localPreviewTheme = null;
+        includePaths = new Set<string>();
         def.resetDiagramState();
         for (const d of panelDisposables) d.dispose();
         panelDisposables.length = 0;
@@ -244,8 +262,15 @@ export function createStandalonePreview(def: StandalonePreviewDef): StandalonePr
 
         panelDisposables.push(
             vscode.workspace.onDidSaveTextDocument((doc) => {
-                if (!currentFilePath || doc.uri.fsPath !== currentFilePath) return;
-                scheduleRender();
+                if (!currentFilePath) return;
+                if (doc.uri.fsPath === currentFilePath) {
+                    scheduleRender();
+                    return;
+                }
+                if (includePaths.has(doc.uri.fsPath)) {
+                    def.onIncludeFileSaved?.();
+                    scheduleRender();
+                }
             })
         );
 
