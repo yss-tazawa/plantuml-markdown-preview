@@ -1,3 +1,11 @@
+/**
+ * @module completion/plantuml-keywords
+ * @description PlantUML keyword definitions for completion.
+ *
+ * Contains keyword entries for @start/@end tags, participant types, control
+ * flow, structure, formatting, activity, notes, preprocessor directives,
+ * skinparam properties, and color names.
+ */
 import * as vscode from 'vscode';
 import type { KeywordEntry } from './types.js';
 

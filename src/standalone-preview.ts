@@ -249,9 +249,9 @@ export function createStandalonePreview(def: StandalonePreviewDef): StandalonePr
 
         panelDisposables.push(panel.onDidDispose(disposeState));
 
-        panel.webview.onDidReceiveMessage((msg) => {
+        panelDisposables.push(panel.webview.onDidReceiveMessage((msg) => {
             void handleViewerMessage(msg, currentFilePath);
-        });
+        }));
 
         panelDisposables.push(
             vscode.workspace.onDidChangeTextDocument((e) => {

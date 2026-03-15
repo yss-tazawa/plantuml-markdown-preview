@@ -1,6 +1,20 @@
+/**
+ * @module color/register
+ * @description Registers color providers for diagram languages.
+ *
+ * Sets up DocumentColorProvider instances for standalone PlantUML, Mermaid, and
+ * D2 files, plus a Markdown router that delegates to the correct provider based
+ * on fenced code block language.
+ */
 import * as vscode from 'vscode';
 import { DiagramColorProvider, type DiagramLanguage } from './plantuml-color-provider.js';
+import { DIAGRAM_FENCE_OPEN_RE, DIAGRAM_FENCE_CLOSE_RE } from '../utils.js';
 
+/**
+ * Register color providers for all supported diagram languages.
+ *
+ * @param context - Extension context for disposable management.
+ */
 export function registerColorProviders(context: vscode.ExtensionContext): void {
     const plantuml = new DiagramColorProvider('plantuml');
     const mermaid = new DiagramColorProvider('mermaid');
@@ -38,12 +52,12 @@ class MarkdownColorRouter implements vscode.DocumentColorProvider {
         for (let i = 0; i < doc.lineCount; i++) {
             const text = doc.lineAt(i).text;
             if (!currentLang) {
-                const open = text.match(/^\s*```(plantuml|mermaid|d2)\s*$/);
+                const open = text.match(DIAGRAM_FENCE_OPEN_RE);
                 if (open) {
                     currentLang = open[1] as DiagramLanguage;
                     blockStart = i + 1;
                 }
-            } else if (/^\s*```\s*$/.test(text)) {
+            } else if (DIAGRAM_FENCE_CLOSE_RE.test(text)) {
                 results.push(...this.getProvider(currentLang).scanLines(doc, blockStart, i));
                 currentLang = null;
             }

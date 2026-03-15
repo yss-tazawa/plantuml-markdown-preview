@@ -156,7 +156,7 @@ function extractD2ErrorMessage(err: unknown): string {
     if (err == null) return 'Unknown D2 error';
     if (typeof err === 'string') return err;
 
-    const msg = (err as Error).message ?? String(err);
+    const msg = err instanceof Error ? err.message : String(err);
 
     // D2 Wasm compile errors encode details as a JSON array in err.message:
     //   [{"range":"index,1:0:0-1:4:12","errmsg":"index:2:1: connection missing destination"}]

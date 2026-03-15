@@ -1,3 +1,10 @@
+/**
+ * @module completion/d2-keywords
+ * @description D2 keyword definitions for completion.
+ *
+ * Contains keyword entries for line-start keywords, direction values,
+ * shape types, constraint values, and style properties.
+ */
 import * as vscode from 'vscode';
 import type { KeywordEntry } from './types.js';
 

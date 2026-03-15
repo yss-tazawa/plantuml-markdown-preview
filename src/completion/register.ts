@@ -1,8 +1,22 @@
+/**
+ * @module completion/register
+ * @description Registers completion providers for diagram languages.
+ *
+ * Sets up CompletionItemProvider instances for standalone PlantUML, Mermaid,
+ * and D2 files, plus a Markdown router that delegates to the correct provider
+ * based on the fenced code block language surrounding the cursor.
+ */
 import * as vscode from 'vscode';
 import { PlantUMLCompletionProvider } from './plantuml-provider.js';
 import { MermaidCompletionProvider } from './mermaid-provider.js';
 import { D2CompletionProvider } from './d2-provider.js';
+import { DIAGRAM_FENCE_OPEN_RE, DIAGRAM_FENCE_CLOSE_RE } from '../utils.js';
 
+/**
+ * Register completion providers for all supported diagram languages.
+ *
+ * @param context - Extension context for disposable management.
+ */
 export function registerCompletionProviders(context: vscode.ExtensionContext): void {
     const plantuml = new PlantUMLCompletionProvider();
     const mermaid = new MermaidCompletionProvider();
@@ -63,10 +77,10 @@ class MarkdownCompletionRouter implements vscode.CompletionItemProvider {
     private detectFencedLanguage(doc: vscode.TextDocument, line: number): string | undefined {
         for (let i = line; i >= 0; i--) {
             const text = doc.lineAt(i).text;
-            const open = text.match(/^\s*```(plantuml|mermaid|d2)\s*$/);
+            const open = text.match(DIAGRAM_FENCE_OPEN_RE);
             if (open) return open[1];
             // Hit a closing fence -- outside any block
-            if (i < line && text.match(/^\s*```\s*$/)) return undefined;
+            if (i < line && DIAGRAM_FENCE_CLOSE_RE.test(text)) return undefined;
         }
         return undefined;
     }

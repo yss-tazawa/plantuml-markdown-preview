@@ -1,3 +1,11 @@
+/**
+ * @module completion/mermaid-keywords
+ * @description Mermaid keyword definitions for completion.
+ *
+ * Contains keyword entries for diagram type declarations, flowchart/graph
+ * keywords, sequence diagram keywords, class/state/ER diagrams, direction
+ * values, and more.
+ */
 import * as vscode from 'vscode';
 import type { KeywordEntry } from './types.js';
 
@@ -34,15 +42,6 @@ export const mermaidKeywords: readonly KeywordEntry[] = [
     { label: 'linkStyle', kind: K, context: 'line-start', detail: 'Link style', diagramType: 'flowchart' },
     { label: 'click', kind: K, context: 'line-start', detail: 'Click handler', diagramType: 'flowchart' },
     { label: 'direction', kind: K, context: 'line-start', detail: 'Flow direction', diagramType: 'flowchart' },
-    // Same keywords for graph
-    { label: 'subgraph', kind: K, context: 'line-start', detail: 'Subgraph', diagramType: 'graph' },
-    { label: 'end', kind: K, context: 'line-start', detail: 'End block', diagramType: 'graph' },
-    { label: 'style', kind: K, context: 'line-start', detail: 'Node style', diagramType: 'graph' },
-    { label: 'classDef', kind: K, context: 'line-start', detail: 'Define class', diagramType: 'graph' },
-    { label: 'class', kind: K, context: 'line-start', detail: 'Apply class', diagramType: 'graph' },
-    { label: 'linkStyle', kind: K, context: 'line-start', detail: 'Link style', diagramType: 'graph' },
-    { label: 'click', kind: K, context: 'line-start', detail: 'Click handler', diagramType: 'graph' },
-    { label: 'direction', kind: K, context: 'line-start', detail: 'Flow direction', diagramType: 'graph' },
 
     // --- sequenceDiagram ---
     { label: 'actor', kind: K, context: 'line-start', detail: 'Actor', diagramType: 'sequenceDiagram' },

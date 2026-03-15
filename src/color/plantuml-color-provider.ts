@@ -1,21 +1,49 @@
+/**
+ * @module plantuml-color-provider
+ * @description Color provider for diagram languages (PlantUML, Mermaid, D2).
+ *
+ * Scans document lines for hex color codes (#RGB, #RRGGBB) and PlantUML named
+ * colors, providing inline color swatches and a color picker via the VS Code
+ * DocumentColorProvider API.
+ */
 import * as vscode from 'vscode';
 import { PLANTUML_NAMED_COLORS } from './plantuml-colors.js';
 
 /** #RRGGBB | #RGB | #NamedColor (word boundary) */
 const COLOR_RE = /#(?:[0-9a-fA-F]{6}|[0-9a-fA-F]{3}|[A-Za-z]+)\b/g;
 
+/** Supported diagram language identifiers. */
 export type DiagramLanguage = 'plantuml' | 'mermaid' | 'd2';
 
+/**
+ * Provides inline color swatches and a color picker for diagram files.
+ *
+ * Supports hex colors (#RGB, #RRGGBB) for all languages and additionally
+ * named colors (e.g. #Red, #Blue) for PlantUML.
+ */
 export class DiagramColorProvider implements vscode.DocumentColorProvider {
 
+    /** @param language - Diagram language this provider instance handles. */
     constructor(private readonly language: DiagramLanguage) {}
 
+    /**
+     * Scan the entire document for color values.
+     *
+     * @param doc - The document to scan.
+     * @returns Array of color information entries found in the document.
+     */
     provideDocumentColors(
         doc: vscode.TextDocument,
     ): vscode.ColorInformation[] {
         return this.scanLines(doc, 0, doc.lineCount);
     }
 
+    /**
+     * Provide a #RRGGBB hex presentation for the given color.
+     *
+     * @param color - The color selected by the user in the color picker.
+     * @returns Array containing a single hex color presentation.
+     */
     provideColorPresentations(
         color: vscode.Color,
     ): vscode.ColorPresentation[] {
@@ -57,15 +85,27 @@ export class DiagramColorProvider implements vscode.DocumentColorProvider {
         return results;
     }
 
+    /**
+     * Check whether a line is a comment in the current diagram language.
+     *
+     * @param line - Raw line text from the document.
+     * @returns `true` if the line is a comment.
+     */
     private isComment(line: string): boolean {
         const trimmed = line.trimStart();
         switch (this.language) {
             case 'plantuml': return trimmed.startsWith("'");
             case 'mermaid':  return trimmed.startsWith('%%');
-            case 'd2':       return trimmed.startsWith('#');
+            case 'd2':       return /^#(\s|$)/.test(trimmed);
         }
     }
 
+    /**
+     * Parse a raw color string (without the leading '#') into a VS Code Color.
+     *
+     * @param raw - Color string: 6-digit hex, 3-digit hex, or named color.
+     * @returns Parsed Color, or `undefined` if the string is not a valid color.
+     */
     private parseColor(raw: string): vscode.Color | undefined {
         // 6-digit hex
         if (/^[0-9a-fA-F]{6}$/.test(raw)) {

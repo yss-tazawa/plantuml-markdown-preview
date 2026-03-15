@@ -89,6 +89,16 @@ export function errorHtml(message: string): string {
  */
 export const PLANTUML_FENCE_RE_SOURCE = '^ {0,3}```plantuml[ \\t]*\\n([\\s\\S]*?)\\n {0,3}```[ \\t]*$';
 
+/**
+ * Regex matching a Markdown fenced code block opener for diagram languages.
+ * Captures the language identifier (plantuml, mermaid, d2).
+ * Allows optional trailing text after the language (CommonMark info string).
+ */
+export const DIAGRAM_FENCE_OPEN_RE = /^\s*```(plantuml|mermaid|d2)(\s.*)?$/;
+
+/** Regex matching a Markdown fenced code block closing fence. */
+export const DIAGRAM_FENCE_CLOSE_RE = /^\s*```\s*$/;
+
 /** Simple test regex to detect ```plantuml fenced code blocks (no capture). */
 export const PLANTUML_FENCE_TEST_RE = /^ {0,3}```plantuml/im;
 

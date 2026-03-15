@@ -1,3 +1,11 @@
+/**
+ * @module plantuml-colors
+ * @description PlantUML named color definitions.
+ *
+ * Maps common color names used in PlantUML diagrams to their RGB values
+ * for inline color swatch rendering.
+ */
+
 /** PlantUML named color → [R, G, B] (0-255) */
 export const PLANTUML_NAMED_COLORS: ReadonlyMap<string, readonly [number, number, number]> = new Map([
     ['red',         [255,   0,   0]],

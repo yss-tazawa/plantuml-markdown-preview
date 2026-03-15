@@ -1,11 +1,26 @@
+/**
+ * @module completion/plantuml-provider
+ * @description Completion provider for PlantUML.
+ *
+ * Provides context-aware keyword suggestions including @start/@end tags,
+ * preprocessor directives, skinparam properties, and color names.
+ */
 import * as vscode from 'vscode';
 import type { KeywordContext, KeywordEntry } from './types.js';
 import { toCompletionItem } from './types.js';
 import { plantumlKeywords } from './plantuml-keywords.js';
 
+/** Completion provider for PlantUML diagrams. */
 export class PlantUMLCompletionProvider implements vscode.CompletionItemProvider {
     private readonly keywords = plantumlKeywords;
 
+    /**
+     * Provide completion items based on the cursor context.
+     *
+     * @param doc - The active text document.
+     * @param pos - The cursor position.
+     * @returns Completion items, or `undefined` if no completions apply.
+     */
     provideCompletionItems(
         doc: vscode.TextDocument,
         pos: vscode.Position,
@@ -39,6 +54,14 @@ export class PlantUMLCompletionProvider implements vscode.CompletionItemProvider
         return undefined;
     }
 
+    /**
+     * Filter keywords by context and optional parent, returning completion items.
+     *
+     * @param context - Keyword context to filter by.
+     * @param range - Optional replacement range for the completion.
+     * @param parent - Optional parent keyword for after-parent context.
+     * @returns Filtered completion items.
+     */
     private getItems(
         context: KeywordContext,
         range?: vscode.Range,

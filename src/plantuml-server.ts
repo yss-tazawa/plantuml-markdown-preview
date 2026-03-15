@@ -170,13 +170,13 @@ export async function renderToSvgServer(pumlContent: string, config: Config, sig
         cache.set(hash, svg);
         return svg;
     } catch (err) {
-        if ((err as Error).name === 'AbortError') {
+        if (err instanceof Error && err.name === 'AbortError') {
             // Distinguish external cancellation (user triggered) from timeout
             if (signal?.aborted) return '';
             return errorHtml(vscode.l10n.t('PlantUML server request timed out'));
         }
         return errorHtml(
-            vscode.l10n.t('PlantUML server connection error: {0}', escapeHtml((err as Error).message))
+            vscode.l10n.t('PlantUML server connection error: {0}', escapeHtml(err instanceof Error ? err.message : String(err)))
         );
     } finally {
         clearTimeout(timeout);
