@@ -81,5 +81,6 @@
   "Local server (fastest, requires Java)": "本地服务器（最快，需要 Java）",
   "Local rendering (no network, requires Java)": "本地渲染（无需网络，需要 Java）",
   "PlantUML server (no Java required)": "PlantUML 服务器（无需 Java）",
-  "Select PlantUML rendering mode": "选择 PlantUML 渲染模式"
+  "Select PlantUML rendering mode": "选择 PlantUML 渲染模式",
+  "Include file not found: {0}": "未找到包含文件: {0}"
 }

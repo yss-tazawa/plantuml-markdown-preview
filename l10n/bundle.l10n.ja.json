@@ -81,5 +81,6 @@
   "Local server (fastest, requires Java)": "ローカルサーバー（最速、Java が必要）",
   "Local rendering (no network, requires Java)": "ローカルレンダリング（ネットワーク不要、Java が必要）",
   "PlantUML server (no Java required)": "PlantUML サーバー（Java 不要）",
-  "Select PlantUML rendering mode": "PlantUML レンダリングモードを選択"
+  "Select PlantUML rendering mode": "PlantUML レンダリングモードを選択",
+  "Include file not found: {0}": "インクルードファイルが見つかりません: {0}"
 }
