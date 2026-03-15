@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## 0.6.5 - 2026-03-15
+
+### Added
+
+- "Go to Include File" context menu: right-click on a `!include` line in `.puml` or Markdown files to open the referenced file
+- Auto-refresh preview when an included file is saved
+
 ## 0.6.4 - 2026-03-15
 
 ### Added
