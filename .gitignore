@@ -4,6 +4,7 @@ private/
 *.code-workspace
 *.vsix
 *.html
+!docs/**/*.html
 CLAUDE.md
 .DS_Store
 Thumbs.db

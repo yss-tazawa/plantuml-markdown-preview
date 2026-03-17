@@ -1,9 +1,9 @@
 <p align="center">
-  <a href="https://yss-tazawa.github.io/plantuml-markdown-preview/">English</a> | <strong>简体中文</strong> | <a href="https://yss-tazawa.github.io/plantuml-markdown-preview/#/zh-tw/">繁體中文</a> | <a href="https://yss-tazawa.github.io/plantuml-markdown-preview/#/ko/">한국어</a> | <a href="https://yss-tazawa.github.io/plantuml-markdown-preview/#/ja/">日本語</a> | <a href="https://yss-tazawa.github.io/plantuml-markdown-preview/#/es/">Español</a> | <a href="https://yss-tazawa.github.io/plantuml-markdown-preview/#/pt-br/">Português</a>
+  <a href="#/">English</a> | <strong>简体中文</strong> | <a href="#/zh-tw/">繁體中文</a> | <a href="#/ko/">한국어</a> | <a href="#/ja/">日本語</a> | <a href="#/es/">Español</a> | <a href="#/pt-br/">Português</a>
 </p>
 
 <p align="center">
-  <img src="images/icon_512.png" width="128" alt="PlantUML Markdown Preview">
+  <img src="https://raw.githubusercontent.com/yss-tazawa/plantuml-markdown-preview/main/images/icon_512.png" width="128" alt="PlantUML Markdown Preview">
 </p>
 
 <h1 align="center">PlantUML Markdown Preview</h1>
@@ -19,7 +19,7 @@
 </p>
 
 <p align="center">
-  <img src="images/hero-screenshot.png" width="800" alt="编辑器与预览并排显示，GitHub Light 主题下的序列图">
+  <img src="https://raw.githubusercontent.com/yss-tazawa/plantuml-markdown-preview/main/images/hero-screenshot.png" width="800" alt="编辑器与预览并排显示，GitHub Light 主题下的序列图">
 </p>
 
 ## 选择模式

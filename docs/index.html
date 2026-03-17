@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PlantUML Markdown Preview</title>
+  <link rel="icon" href="https://raw.githubusercontent.com/yss-tazawa/plantuml-markdown-preview/main/images/icon.png">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/docsify@4/lib/themes/vue.css">
+</head>
+<body>
+  <div id="app"></div>
+  <script>
+    // Auto-redirect to browser language on first visit
+    const hash = window.location.hash;
+    if (!hash || hash === '#/' || hash === '#') {
+      const lang = (navigator.language || '').toLowerCase();
+      if (lang.startsWith('ja')) window.location.hash = '#/ja/';
+      else if (lang === 'zh-tw' || lang === 'zh-hant') window.location.hash = '#/zh-tw/';
+      else if (lang.startsWith('zh')) window.location.hash = '#/zh-cn/';
+      else if (lang.startsWith('ko')) window.location.hash = '#/ko/';
+      else if (lang.startsWith('es')) window.location.hash = '#/es/';
+      else if (lang.startsWith('pt')) window.location.hash = '#/pt-br/';
+    }
+
+    window.$docsify = {
+      name: 'PlantUML Markdown Preview',
+      repo: 'yss-tazawa/plantuml-markdown-preview',
+      loadSidebar: false,
+      loadNavbar: false,
+      coverpage: false,
+      search: 'auto',
+      noEmoji: false,
+    };
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/docsify@4"></script>
+  <script src="https://cdn.jsdelivr.net/npm/docsify@4/lib/plugins/search.min.js"></script>
+</body>
+</html>

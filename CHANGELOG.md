@@ -6,6 +6,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## 0.6.8 - 2026-03-17
+
+### Added
+
+- GitHub Pages documentation site with multi-language support at `yss-tazawa.github.io/plantuml-markdown-preview`
+- Language switcher links updated to GitHub Pages URLs for a seamless reading experience
+
 ## 0.6.7 - 2026-03-17
 
 ### Added
