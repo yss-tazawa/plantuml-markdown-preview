@@ -6,6 +6,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## 0.6.7 - 2026-03-17
+
+### Added
+
+- README translations in 6 languages: Japanese, Simplified Chinese, Traditional Chinese, Korean, Spanish, and Brazilian Portuguese
+- UI localization for Traditional Chinese (`zh-TW`), Korean (`ko`), Spanish (`es`), and Brazilian Portuguese (`pt-BR`)
+- Language switcher navigation at the top of README.md linking to all 7 language versions
+
 ## 0.6.6 - 2026-03-15
 
 ### Changed

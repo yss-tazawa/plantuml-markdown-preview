@@ -1,4 +1,8 @@
 <p align="center">
+  <strong>English</strong> | <a href="README.zh-cn.md">简体中文</a> | <a href="README.zh-tw.md">繁體中文</a> | <a href="README.ko.md">한국어</a> | <a href="README.ja.md">日本語</a> | <a href="README.es.md">Español</a> | <a href="README.pt-br.md">Português</a>
+</p>
+
+<p align="center">
   <img src="images/icon_512.png" width="128" alt="PlantUML Markdown Preview">
 </p>
 
