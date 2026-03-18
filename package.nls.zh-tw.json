@@ -18,6 +18,7 @@
   "command.copyDiagramAsPng.title": "將圖表複製為 PNG",
   "command.selectMode.title": "選擇渲染模式",
   "command.goToIncludeFile.title": "前往 Include 檔案",
+  "command.openIncludeSource.title": "開啟 Include 來源檔案",
   "command.changeTheme.title": "變更預覽主題",
   "command.category": "PlantUML Markdown Preview",
   "configuration.title": "PlantUML Markdown Preview",

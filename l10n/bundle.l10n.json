@@ -82,5 +82,7 @@
   "Local rendering (no network, requires Java)": "Local rendering (no network, requires Java)",
   "PlantUML server (no Java required)": "PlantUML server (no Java required)",
   "Select PlantUML rendering mode": "Select PlantUML rendering mode",
-  "Include file not found: {0}": "Include file not found: {0}"
+  "Include file not found: {0}": "Include file not found: {0}",
+  "This diagram has no !include directives.": "This diagram has no !include directives.",
+  "Select include file to open": "Select include file to open"
 }

@@ -2,7 +2,7 @@
   "name": "plantuml-markdown-preview",
   "displayName": "%displayName%",
   "description": "%description%",
-  "version": "0.6.8",
+  "version": "0.6.9",
   "license": "MIT",
   "publisher": "yss-tazawa",
   "icon": "images/icon.png",
@@ -227,6 +227,11 @@
         "command": "plantuml-markdown-preview.goToIncludeFile",
         "title": "%command.goToIncludeFile.title%",
         "category": "%command.category%"
+      },
+      {
+        "command": "plantuml-markdown-preview.openIncludeSource",
+        "title": "%command.openIncludeSource.title%",
+        "category": "%command.category%"
       }
     ],
     "submenus": [
@@ -357,6 +362,11 @@
           "command": "plantuml-markdown-preview.openDiagramViewer",
           "when": "webviewId == 'plantumlMarkdownPreview' && webviewSection == 'diagram'",
           "group": "a_viewer@1"
+        },
+        {
+          "command": "plantuml-markdown-preview.openIncludeSource",
+          "when": "webviewId == 'plantumlMarkdownPreview' && webviewSection == 'diagram' && hasInclude",
+          "group": "a_viewer@2"
         },
         {
           "command": "plantuml-markdown-preview.copyDiagramAsPng",

@@ -82,5 +82,7 @@
   "Local rendering (no network, requires Java)": "本地渲染（無需網路，需要 Java）",
   "PlantUML server (no Java required)": "PlantUML 伺服器（無需 Java）",
   "Select PlantUML rendering mode": "選擇 PlantUML 渲染模式",
-  "Include file not found: {0}": "找不到 include 檔案: {0}"
+  "Include file not found: {0}": "找不到 include 檔案: {0}",
+  "This diagram has no !include directives.": "此圖表沒有 !include 指令。",
+  "Select include file to open": "選擇要開啟的 include 檔案"
 }

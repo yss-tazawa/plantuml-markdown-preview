@@ -54,7 +54,14 @@ export class DiagramColorProvider implements vscode.DocumentColorProvider {
         return [new vscode.ColorPresentation(hex)];
     }
 
-    /** Scan lines [startLine, endLine) for color values. */
+    /**
+     * Scan lines [startLine, endLine) for color values.
+     *
+     * @param doc - The document to scan.
+     * @param startLine - First line to scan (inclusive).
+     * @param endLine - Last line to scan (exclusive).
+     * @returns Array of color information entries found in the range.
+     */
     scanLines(
         doc: vscode.TextDocument,
         startLine: number,

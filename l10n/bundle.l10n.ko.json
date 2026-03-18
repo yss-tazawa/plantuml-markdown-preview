@@ -82,5 +82,7 @@
   "Local rendering (no network, requires Java)": "로컬 렌더링 (네트워크 불필요, Java 필요)",
   "PlantUML server (no Java required)": "PlantUML 서버 (Java 불필요)",
   "Select PlantUML rendering mode": "PlantUML 렌더링 모드 선택",
-  "Include file not found: {0}": "include 파일을 찾을 수 없습니다: {0}"
+  "Include file not found: {0}": "include 파일을 찾을 수 없습니다: {0}",
+  "This diagram has no !include directives.": "이 다이어그램에는 !include 지시어가 없습니다.",
+  "Select include file to open": "열 include 파일을 선택하세요"
 }

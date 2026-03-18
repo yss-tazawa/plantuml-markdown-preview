@@ -272,7 +272,7 @@ export class PreviewManager implements vscode.Disposable {
             } else if (this.enableDiagramViewer && message.type === 'diagramCount') {
                 closeStaleViewers(message.count);
             } else if (this.enableDiagramViewer && message.type === 'saveDiagramContext') {
-                setPendingSaveDiagram(message.svg, message.diagramIndex, message.bgColor);
+                setPendingSaveDiagram(message.svg, message.diagramIndex, message.bgColor, message.diagramType, message.plantumlIndex);
             } else if (this.enableDiagramViewer && message.type === 'exportDiagramFromPreview') {
                 void handlePngFromPreview(message.data);
             } else if (this.enableDiagramViewer && message.type === 'copyDiagramFromPreview') {
@@ -458,8 +458,11 @@ export class PreviewManager implements vscode.Disposable {
 
                 // When Mermaid is first detected after the initial HTML was built without
                 // Mermaid support, rebuild from scratch so the Mermaid <script> is included.
+                // Set htmlReplaced before returning so the finally block skips hideLoading
+                // (the recursive call handles its own cleanup with a fresh renderSeq).
                 if (hasMermaid && !this.initialHtmlHadMermaid) {
                     this.initialHtmlSet = false;
+                    htmlReplaced = true;
                     return await this.renderPanel(text);
                 }
 

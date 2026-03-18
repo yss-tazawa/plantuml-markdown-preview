@@ -82,5 +82,7 @@
   "Local rendering (no network, requires Java)": "Renderização local (sem rede, requer Java)",
   "PlantUML server (no Java required)": "Servidor PlantUML (sem Java necessário)",
   "Select PlantUML rendering mode": "Selecionar modo de renderização do PlantUML",
-  "Include file not found: {0}": "Arquivo include não encontrado: {0}"
+  "Include file not found: {0}": "Arquivo include não encontrado: {0}",
+  "This diagram has no !include directives.": "Este diagrama não possui diretivas !include.",
+  "Select include file to open": "Selecionar arquivo include para abrir"
 }
