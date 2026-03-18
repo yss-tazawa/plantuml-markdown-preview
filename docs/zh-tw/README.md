@@ -51,7 +51,7 @@
 - **儲存/複製圖表為 PNG/SVG** — 在預覽或圖表檢視器中右鍵圖表儲存或複製到剪貼簿
 - **14 種預覽主題** — 淺色 8 種 + 深色 6 種（GitHub、Atom、Solarized、Dracula、Monokai 等）
 - **編輯器輔助** — PlantUML、Mermaid、D2 的關鍵字補全、顏色選擇器和程式碼片段
-- **國際化** — 支援英語、簡體中文和日語介面
+- **國際化** — 支援英語、簡體中文 / 繁體中文、日語、韓語、西班牙語和巴西葡萄牙語介面
 - **數學公式支援** — 使用 [KaTeX](https://katex.org/) 渲染 `$...$` 行內公式和 `$$...$$` 區塊公式
 
 ## 功能
@@ -101,7 +101,18 @@
 - 背景色與目前預覽主題匹配
 - 切換到其他來源檔案時自動關閉
 - **儲存/複製為 PNG/SVG** — 右鍵圖表儲存或複製到剪貼簿
+- **檢視器內搜尋** — 按 `Cmd+F` / `Ctrl+F` 開啟搜尋功能
 - 可透過 `enableDiagramViewer: false` 停用
+
+### PlantUML `!include` 支援
+
+使用 `!include` 指令在圖表間共享通用樣式、巨集和元件定義。
+
+- 包含檔案相對於工作區根目錄（或 `plantumlIncludePath` 設定的目錄）解析
+- 儲存包含檔案時自動重新整理預覽（也可點擊**重新載入**按鈕 ↻ 手動重新整理）
+- **前往 Include 檔案** — 在 `.puml` 或 Markdown 檔案的 `!include` 行右鍵開啟參照檔案（僅在游標位於 `!include` 行時顯示選單項目）
+- **開啟 Include 來源檔案** — 在預覽中右鍵點擊 PlantUML 圖表，直接開啟其包含檔案
+- 適用於 Fast 和 Secure 模式。Easy 模式不可用（遠端伺服器無法存取本機檔案）
 
 ### 雙向捲動同步
 
@@ -232,6 +243,7 @@
 | `enableMath` | `true` | 啟用 KaTeX 數學渲染 |
 | `plantumlServerUrl` | `"https://www.plantuml.com/plantuml"` | Easy 模式的 PlantUML 伺服器 URL |
 | `enableDiagramViewer` | `true` | 啟用圖表檢視器右鍵選單項目 |
+| `retainPreviewContext` | `true` | 索引標籤隱藏時保留預覽內容。防止切換時重新渲染，但使用更多記憶體（需要重新開啟預覽才會生效） |
 
 ## 鍵盤快捷鍵
 

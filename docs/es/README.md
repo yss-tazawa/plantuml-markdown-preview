@@ -49,7 +49,7 @@ Cambia entre modos en cualquier momento con una sola configuración — sin migr
 - **Guardar/copiar diagrama como PNG/SVG** — clic derecho en diagrama para guardar o copiar al portapapeles
 - **14 temas de vista previa** — 8 claros + 6 oscuros (GitHub, Atom, Solarized, Dracula, Monokai etc.)
 - **Asistencia del editor** — autocompletado de palabras clave, selector de color y snippets para PlantUML, Mermaid y D2
-- **Internacionalización** — interfaz en inglés, chino simplificado y japonés
+- **Internacionalización** — interfaz en inglés, chino (simplificado / tradicional), japonés, coreano, español y portugués brasileño
 - **Soporte de fórmulas matemáticas** — renderiza `$...$` en línea y `$$...$$` en bloque con [KaTeX](https://katex.org/)
 
 ## Funcionalidades

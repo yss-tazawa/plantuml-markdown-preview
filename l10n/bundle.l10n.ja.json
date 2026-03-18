@@ -82,5 +82,7 @@
   "Local rendering (no network, requires Java)": "ローカルレンダリング（ネットワーク不要、Java が必要）",
   "PlantUML server (no Java required)": "PlantUML サーバー（Java 不要）",
   "Select PlantUML rendering mode": "PlantUML レンダリングモードを選択",
-  "Include file not found: {0}": "インクルードファイルが見つかりません: {0}"
+  "Include file not found: {0}": "インクルードファイルが見つかりません: {0}",
+  "This diagram has no !include directives.": "このダイアグラムには !include ディレクティブがありません。",
+  "Select include file to open": "開くインクルードファイルを選択"
 }

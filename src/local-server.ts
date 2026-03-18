@@ -351,12 +351,12 @@ function sleep(ms: number): Promise<void> {
 
 /** Reset all module-level state to initial values. */
 function resetState(): void {
+    if (killTimer) { clearTimeout(killTimer); killTimer = null; }
     setServerState('stopped');
     serverUrl = null;
     readyPromise = null;
     readyResolve = null;
     readyReject = null;
-    if (killTimer) { clearTimeout(killTimer); killTimer = null; }
 }
 
 /**

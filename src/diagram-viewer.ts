@@ -21,7 +21,7 @@ const latestState = new Map<number, { svg: string; bgColor?: string }>();
 let activeViewerIndex = -1;
 
 /** Pending diagram data from a preview right-click (for Save/Copy as PNG/SVG and Open in Viewer). */
-let pendingSave: { svg: string; diagramIndex: number; bgColor?: string } | null = null;
+let pendingSave: { svg: string; diagramIndex: number; bgColor?: string; diagramType?: string; plantumlIndex?: number } | null = null;
 
 /**
  * Open (or reveal) a diagram viewer panel for the given diagram index.
@@ -116,9 +116,20 @@ export function disposeAllViewers(): void {
  * @param svg - innerHTML of the .plantuml-diagram / .mermaid-diagram element
  * @param diagramIndex - 1-based position of the diagram in the document
  * @param bgColor - CSS background color from the markdown preview theme
+ * @param diagramType - 'plantuml', 'mermaid', or 'd2'
+ * @param plantumlIndex - 0-based index among PlantUML diagrams only (-1 if not PlantUML)
  */
-export function setPendingSaveDiagram(svg: string, diagramIndex: number, bgColor?: string): void {
-    pendingSave = { svg, diagramIndex, bgColor };
+export function setPendingSaveDiagram(svg: string, diagramIndex: number, bgColor?: string, diagramType?: string, plantumlIndex?: number): void {
+    pendingSave = { svg, diagramIndex, bgColor, diagramType, plantumlIndex };
+}
+
+/**
+ * Return the diagram type and PlantUML-specific index from the most recent
+ * right-click context, or null if no context has been stored.
+ */
+export function getPendingDiagramContext(): { diagramType?: string; plantumlIndex?: number } | null {
+    if (!pendingSave) return null;
+    return { diagramType: pendingSave.diagramType, plantumlIndex: pendingSave.plantumlIndex };
 }
 
 /**

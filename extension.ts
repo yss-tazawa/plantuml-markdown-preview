@@ -3,7 +3,7 @@
  * @description VS Code extension entry point.
  *
  * Responsibilities:
- * - Register commands: openPreview / exportHtml / exportHtmlAndOpen / exportHtmlFitToWidth / exportHtmlFitToWidthAndOpen / exportPdf / exportPdfAndOpen / changeTheme / openDiagramViewer / saveDiagramAsPng / saveDiagramAsSvg / copyDiagramAsPng / goToIncludeFile
+ * - Register commands: openPreview / exportHtml / exportHtmlAndOpen / exportHtmlFitToWidth / exportHtmlFitToWidthAndOpen / exportPdf / exportPdfAndOpen / changeTheme / openDiagramViewer / saveDiagramAsPng / saveDiagramAsSvg / copyDiagramAsPng / goToIncludeFile / openIncludeSource
  * - Read VS Code settings (getConfig)
  * - Auto-follow active editor tab (editorTracker)
  * - Propagate settings changes to the preview (configWatcher)
@@ -15,15 +15,15 @@ import { existsSync } from 'fs';
 import { execFile } from 'child_process';
 import { exportToHtml, exportToPdf, clearMdCache } from './src/exporter.js';
 import { plantumlPlugin } from './src/renderer.js';
-import { clearCache, resolveIncludePath, extractIncludeFromLine } from './src/plantuml.js';
+import { clearCache, resolveIncludePath, extractIncludeFromLine, extractIncludePaths } from './src/plantuml.js';
 import { clearServerCache } from './src/plantuml-server.js';
 import { prepareLocalServer, startLocalServer, stopLocalServer, restartLocalServer, setLocalServerOutputChannel, setOnServerStateChange } from './src/local-server.js';
 import type { LocalServerState } from './src/local-server.js';
 import { createStatusBarItem, updateStatusBar, showModeQuickPick, SELECT_MODE_COMMAND } from './src/status-bar.js';
 import { PreviewManager } from './src/preview.js';
-import { execJava } from './src/utils.js';
+import { execJava, extractPlantUmlBlocks } from './src/utils.js';
 import { clearBrowserCache } from './src/browser-finder.js';
-import { disposeAllViewers, diagramAction, openPendingDiagramViewer } from './src/diagram-viewer.js';
+import { disposeAllViewers, diagramAction, openPendingDiagramViewer, getPendingDiagramContext } from './src/diagram-viewer.js';
 import { openPumlPreview, updatePumlConfig, getCurrentPumlFilePath, disposePumlPreview, getPumlPreviewPanel, changePumlTheme } from './src/puml-preview.js';
 import { openMermaidPreview, updateMermaidConfig, getCurrentMermaidFilePath, disposeMermaidPreview, getMermaidPreviewPanel, changeMermaidTheme } from './src/mermaid-preview.js';
 import { openD2Preview, updateD2Config, getCurrentD2FilePath, disposeD2Preview, getD2PreviewPanel, changeD2Theme } from './src/d2-preview.js';
@@ -753,7 +753,48 @@ export function activate(context: vscode.ExtensionContext): { extendMarkdownIt: 
         }
     );
 
-    context.subscriptions.push(exportCmd, exportAndOpenCmd, exportHtmlFitCmd, exportHtmlFitAndOpenCmd, exportPdfCmd, exportPdfAndOpenCmd, previewCmd, pumlPreviewCmd, mermaidPreviewCmd, d2PreviewCmd, changeThemeCmd, openViewerCmd, savePngCmd, saveSvgCmd, copyPngCmd, goToIncludeCmd, includeContextTracker, editorTracker, configWatcher);
+    const openIncludeSourceCmd = vscode.commands.registerCommand(
+        'plantuml-markdown-preview.openIncludeSource',
+        async () => {
+            const ctx = getPendingDiagramContext();
+            if (!ctx || ctx.diagramType !== 'plantuml' || ctx.plantumlIndex == null || ctx.plantumlIndex < 0) {
+                return;
+            }
+            const filePath = previewManager.getCurrentFilePath();
+            if (!filePath) return;
+            const doc = vscode.workspace.textDocuments.find(d => d.uri.fsPath === filePath);
+            const text = doc?.getText();
+            if (!text) return;
+            const blocks = extractPlantUmlBlocks(text);
+            const block = blocks[ctx.plantumlIndex];
+            if (!block) return;
+            const config = getConfig();
+            const basePath = resolveIncludePath(config) ?? path.dirname(filePath);
+            const paths = extractIncludePaths(block, basePath);
+            if (paths.length === 0) {
+                vscode.window.showInformationMessage(vscode.l10n.t('This diagram has no !include directives.'));
+                return;
+            }
+            let selected: string;
+            if (paths.length === 1) {
+                selected = paths[0];
+            } else {
+                const pick = await vscode.window.showQuickPick(
+                    paths.map(p => ({ label: path.basename(p), description: p, path: p })),
+                    { placeHolder: vscode.l10n.t('Select include file to open') }
+                );
+                if (!pick) return;
+                selected = pick.path;
+            }
+            if (!existsSync(selected)) {
+                void vscode.window.showErrorMessage(vscode.l10n.t('Include file not found: {0}', selected));
+                return;
+            }
+            void vscode.window.showTextDocument(vscode.Uri.file(selected), { viewColumn: vscode.ViewColumn.One });
+        }
+    );
+
+    context.subscriptions.push(exportCmd, exportAndOpenCmd, exportHtmlFitCmd, exportHtmlFitAndOpenCmd, exportPdfCmd, exportPdfAndOpenCmd, previewCmd, pumlPreviewCmd, mermaidPreviewCmd, d2PreviewCmd, changeThemeCmd, openViewerCmd, savePngCmd, saveSvgCmd, copyPngCmd, goToIncludeCmd, openIncludeSourceCmd, includeContextTracker, editorTracker, configWatcher);
 
     // Start local PlantUML picoweb server if local-server mode is selected.
     // prepareLocalServer() pre-creates the readyPromise so that any preview

@@ -28,7 +28,13 @@ export interface KeywordEntry {
     diagramType?: string;
 }
 
-/** Convert a KeywordEntry to a vscode.CompletionItem. */
+/**
+ * Convert a KeywordEntry to a vscode.CompletionItem.
+ *
+ * @param entry - Keyword definition to convert.
+ * @param range - Optional replacement range for the completion item.
+ * @returns Configured CompletionItem with label, kind, detail, and sort text.
+ */
 export function toCompletionItem(entry: KeywordEntry, range?: vscode.Range): vscode.CompletionItem {
     const item = new vscode.CompletionItem(entry.label, entry.kind);
     if (entry.detail) item.detail = entry.detail;

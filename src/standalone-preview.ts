@@ -294,9 +294,7 @@ export function createStandalonePreview(def: StandalonePreviewDef): StandalonePr
         if (renderAbort) { renderAbort.abort(); renderAbort = null; }
         if (panel) {
             panel.dispose();
-            panel = null;
         }
-        currentFilePath = null;
     }
 
     /** Show a theme QuickPick and apply the selected theme. */

@@ -51,7 +51,7 @@ Switch between modes anytime with a single setting — no migration, no restart.
 - **Save or copy diagrams as PNG / SVG** — right-click any diagram in the preview or Diagram Viewer to save or copy to clipboard
 - **14 preview themes** — 8 light + 6 dark themes including GitHub, Atom, Solarized, Dracula, Monokai, and more
 - **Editor assistance** — keyword completion, color picker, and code snippets for PlantUML, Mermaid, and D2
-- **Internationalization** — English, Chinese (Simplified), and Japanese UI
+- **Internationalization** — English, Chinese (Simplified / Traditional), Japanese, Korean, Spanish, and Brazilian Portuguese UI
 - **Math support** — `$...$` inline and `$$...$$` block math rendered with [KaTeX](https://katex.org/)
 
 ## Table of Contents
@@ -171,6 +171,7 @@ Use `!include` directives to share common styles, macros, and component definiti
 - Included files are resolved relative to the workspace root (or the directory set in `plantumlIncludePath`)
 - Saving an included file automatically refreshes the preview (you can also click the **Reload** button ↻ to force a manual refresh)
 - **Go to Include File** — right-click on a `!include` line in `.puml` or Markdown files to open the referenced file (menu item appears only when the cursor is on an `!include` line)
+- **Open Include Source** — right-click a PlantUML diagram in the preview to open its included files directly
 - Works in Fast and Secure modes. Not available in Easy mode (the remote server cannot access local files).
 
 ### Standalone Diagram Preview

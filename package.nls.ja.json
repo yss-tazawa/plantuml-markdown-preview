@@ -18,6 +18,7 @@
   "command.copyDiagramAsPng.title": "ダイアグラムを PNG でコピー",
   "command.selectMode.title": "レンダリングモードを選択",
   "command.goToIncludeFile.title": "インクルードファイルを開く",
+  "command.openIncludeSource.title": "インクルードソースを開く",
   "command.changeTheme.title": "プレビューテーマを変更",
   "command.category": "PlantUML Markdown Preview",
   "configuration.title": "PlantUML Markdown Preview",

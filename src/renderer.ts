@@ -177,7 +177,8 @@ export function plantumlPlugin(md: MarkdownIt, config: Config): MarkdownIt {
         const preRendered = preRenderedSvgs?.get(token.content.trim());
         const rawSvg = preRendered ?? renderToSvg(token.content, config);
         const svg = scalePlantUmlSvg(rawSvg, (renderEnv?.plantumlScale as string | undefined) ?? config.plantumlScale);
-        return `<div class="plantuml-diagram"${lineAttr} data-vscode-context='{"webviewSection":"diagram","preventDefaultContextMenuItems":false}'>${svg}${endLineMarker}</div>\n`;
+        const hasInclude = /^\s*!include(?:_once|_many|sub)?\s+/m.test(token.content);
+        return `<div class="plantuml-diagram"${lineAttr}${hasInclude ? ' data-has-include' : ''} data-vscode-context='{"webviewSection":"diagram","preventDefaultContextMenuItems":false}'>${svg}${endLineMarker}</div>\n`;
     };
 
     return md;

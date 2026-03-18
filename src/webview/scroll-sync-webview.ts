@@ -408,10 +408,21 @@ interface Anchor {
                 if (diagrams[i] === diagram) { index = i; break; }
             }
             if (index < 0) return;
+            var diagramType = diagram.classList.contains('plantuml-diagram') ? 'plantuml'
+                : diagram.classList.contains('mermaid-diagram') ? 'mermaid' : 'd2';
+            var plantumlIndex = -1;
+            if (diagramType === 'plantuml') {
+                var pumlDiagrams = document.querySelectorAll('.plantuml-diagram');
+                for (var j = 0; j < pumlDiagrams.length; j++) {
+                    if (pumlDiagrams[j] === diagram) { plantumlIndex = j; break; }
+                }
+            }
             vscode.postMessage({
                 type: 'saveDiagramContext',
                 svg: (diagram as HTMLElement).innerHTML,
                 diagramIndex: index + 1,
+                diagramType: diagramType,
+                plantumlIndex: plantumlIndex,
                 bgColor: getComputedStyle(document.body).backgroundColor
             });
         });
@@ -422,7 +433,12 @@ interface Anchor {
         if (!ENABLE_DIAGRAM_VIEWER) return;
         var diagrams = document.querySelectorAll('.plantuml-diagram, .mermaid-diagram, .d2-diagram');
         for (var i = 0; i < diagrams.length; i++) {
-            (diagrams[i] as HTMLElement).setAttribute('data-vscode-context', JSON.stringify({ webviewSection: 'diagram', preventDefaultContextMenuItems: false }));
+            var type = diagrams[i].classList.contains('plantuml-diagram') ? 'plantuml'
+                : diagrams[i].classList.contains('mermaid-diagram') ? 'mermaid' : 'd2';
+            var hasInclude = (diagrams[i] as HTMLElement).hasAttribute('data-has-include');
+            var ctx: Record<string, unknown> = { webviewSection: 'diagram', diagramType: type, preventDefaultContextMenuItems: false };
+            if (hasInclude) ctx.hasInclude = true;
+            (diagrams[i] as HTMLElement).setAttribute('data-vscode-context', JSON.stringify(ctx));
         }
     }
 
@@ -690,7 +706,7 @@ interface Anchor {
     }
 
     /** Set diagram cursor styles on initial HTML load. */
-    window.addEventListener('load', function () {
+    document.addEventListener('DOMContentLoaded', function () {
         var done = win.__renderMermaidDone;
         if (done && typeof done.then === 'function') {
             done.then(function () {

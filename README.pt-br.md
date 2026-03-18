@@ -49,7 +49,7 @@ Alterne entre modos a qualquer momento com uma única configuração — sem mig
 - **Salvar/copiar diagrama como PNG/SVG** — clique direito em diagrama no preview ou visualizador para salvar ou copiar para área de transferência
 - **14 temas de preview** — 8 claros + 6 escuros (GitHub, Atom, Solarized, Dracula, Monokai etc.)
 - **Assistência do editor** — autocompletar palavras-chave, seletor de cores e snippets para PlantUML, Mermaid e D2
-- **Internacionalização** — interface em inglês, chinês simplificado e japonês
+- **Internacionalização** — interface em inglês, chinês (simplificado / tradicional), japonês, coreano, espanhol e português brasileiro
 - **Suporte a fórmulas matemáticas** — renderiza `$...$` inline e `$$...$$` em bloco com [KaTeX](https://katex.org/)
 
 ## Funcionalidades

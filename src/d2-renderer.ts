@@ -214,6 +214,7 @@ export function disposeD2(): void {
         if (typeof inst.close === 'function') (inst.close as () => void)();
         else if (typeof inst.terminate === 'function') (inst.terminate as () => void)();
         else if (typeof inst.dispose === 'function') (inst.dispose as () => void)();
+        else console.warn('[d2] No cleanup method found on D2 instance');
     }
     d2Instance = null;
     D2Ctor = null;

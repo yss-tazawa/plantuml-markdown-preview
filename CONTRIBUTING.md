@@ -81,7 +81,7 @@ src/
   themes/           CSS theme definitions (14 themes: 8 light + 6 dark)
 snippets/           Markdown & diagram snippet definitions (PlantUML, Mermaid, D2)
 syntaxes/           TextMate grammars for Markdown fenced code blocks
-l10n/               Localization bundles (Chinese (Simplified) + English + Japanese)
+l10n/               Localization bundles (7 languages: en, ja, zh-cn, zh-tw, ko, es, pt-br)
 .github/            GitHub templates (PR template, security policy)
 dist/               Build output (gitignored)
 ```
@@ -97,7 +97,7 @@ dist/               Build output (gitignored)
 
 ## Internationalization
 
-The extension supports Chinese (Simplified), English (default), and Japanese. There are two i18n mechanisms:
+The extension supports English (default), Chinese (Simplified / Traditional), Japanese, Korean, Spanish, and Brazilian Portuguese. There are two i18n mechanisms:
 
 1. **Runtime strings** (messages shown to users at runtime):
    Use `vscode.l10n.t('...')` in TypeScript. Add the English string to `l10n/bundle.l10n.json`.
@@ -105,7 +105,7 @@ The extension supports Chinese (Simplified), English (default), and Japanese. Th
 2. **Package manifest strings** (command titles, setting descriptions):
    Use `%key%` placeholders in `package.json`. Add the English string to `package.nls.json`.
 
-Adding the English strings is sufficient — the maintainer will handle Japanese translations.
+Adding the English strings is sufficient — the maintainer will handle translations for other languages.
 
 ## Commit Messages and Branches
 
