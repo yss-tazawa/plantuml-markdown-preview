@@ -31,7 +31,7 @@
 | **Java** | 需要 11+ | 需要 11+ | 不需要 |
 | **网络** | 无 | 无 | 需要 |
 | **隐私** | 仅本地 | 仅本地 | 图表源码发送至 PlantUML 服务器 |
-| **配置** | [安装 Java →](#prerequisites) | [安装 Java →](#prerequisites) | 无需配置 |
+| **配置** | [安装 Java →](#前提条件) | [安装 Java →](#前提条件) | 无需配置 |
 
 随时通过一个设置切换模式 — 无需迁移，无需重启。
 
@@ -125,6 +125,24 @@
 
 - **模式徽章** — 状态栏显示当前渲染模式（Fast/Secure/Easy）。点击可切换模式
 - **服务器状态** — Fast 模式下显示服务器状态（启动中/运行中/已停止）
+
+### HTML 导出
+
+将 Markdown 文档导出为独立 HTML 文件。
+
+- PlantUML、Mermaid 和 D2 图表嵌入为内联 SVG
+- 包含语法高亮 CSS — 无需外部依赖
+- 一条命令即可导出并在浏览器中打开
+- 可配置布局宽度（640px–1440px 或无限制）和对齐方式（居中或左对齐）
+- **适应宽度**选项将图表和图片缩放至页面宽度
+
+### PDF 导出
+
+使用无头 Chromium 浏览器将 Markdown 文档导出为 PDF。
+
+- 需要系统安装 Chrome、Edge 或 Chromium
+- 图表自动缩放以适应页面宽度
+- 应用打印边距确保整洁布局
 
 ### 导航与目录
 
@@ -479,6 +497,34 @@ $$\int_0^\infty e^{-x}\,dx = 1$$
 | `plantuml-mindmap` | 思维导图 |
 | `plantuml-gantt` | 甘特图 |
 
+### PlantUML 代码片段（围栏块内）
+
+图表模板（输入 `tmpl` 查看全部）：
+
+| 前缀 | 内容 |
+| --- | --- |
+| `tmpl-seq` | 序列图 |
+| `tmpl-cls` | 类定义 |
+| `tmpl-act` | 活动图 |
+| `tmpl-uc` | 用例图 |
+| `tmpl-comp` | 组件图 |
+| `tmpl-state` | 状态图 |
+| `tmpl-er` | 实体定义 |
+| `tmpl-obj` | 对象图 |
+| `tmpl-deploy` | 部署图 |
+| `tmpl-mind` | 思维导图 |
+| `tmpl-gantt` | 甘特图 |
+
+短代码片段：
+
+| 前缀 | 内容 |
+| --- | --- |
+| `part` | participant 声明 |
+| `actor` | actor 声明 |
+| `note` | 备注块 |
+| `intf` | interface 定义 |
+| `pkg` | package 定义 |
+
 ### Mermaid Markdown 代码片段
 
 | 前缀 | 图表 |
@@ -495,6 +541,23 @@ $$\int_0^\infty e^{-x}\,dx = 1$$
 | `mermaid-timeline` | 时间线 |
 | `mermaid-git` | Git 图 |
 
+### Mermaid 代码片段（围栏块内）
+
+图表模板（输入 `tmpl` 查看全部）：
+
+| 前缀 | 内容 |
+| --- | --- |
+| `tmpl-flow` | 流程图 |
+| `tmpl-seq` | 序列图 |
+| `tmpl-cls` | 类图 |
+| `tmpl-state` | 状态图 |
+| `tmpl-er` | ER 图 |
+| `tmpl-gantt` | 甘特图 |
+| `tmpl-pie` | 饼图 |
+| `tmpl-mind` | 思维导图 |
+| `tmpl-timeline` | 时间线 |
+| `tmpl-git` | Git 图 |
+
 ### D2 Markdown 代码片段
 
 | 前缀 | 图表 |
@@ -508,6 +571,31 @@ $$\int_0^\infty e^{-x}\,dx = 1$$
 | `d2-er` | ER 图 |
 | `d2-flow` | 流程图 |
 
+### D2 代码片段（围栏块内）
+
+图表模板（输入 `tmpl` 查看全部）：
+
+| 前缀 | 内容 |
+| --- | --- |
+| `tmpl-seq` | 序列图 |
+| `tmpl-cls` | 类图 |
+| `tmpl-comp` | 组件图 |
+| `tmpl-er` | ER 图 |
+| `tmpl-flow` | 流程图 |
+| `tmpl-grid` | 网格布局 |
+
+短代码片段：
+
+| 前缀 | 内容 |
+| --- | --- |
+| `conn` | 连接 |
+| `icon` | 图标节点 |
+| `md` | Markdown 节点 |
+| `tooltip` | 工具提示和链接 |
+| `layers` | 层/步骤 |
+| `style` | 自定义样式 |
+| `direction` | 布局方向 |
+
 ## 颜色选择器
 
 PlantUML、Mermaid 和 D2 的颜色色板和内联颜色选择器。适用于独立文件（`.puml`、`.mmd`、`.d2`）和 Markdown 围栏块。
@@ -515,10 +603,33 @@ PlantUML、Mermaid 和 D2 的颜色色板和内联颜色选择器。适用于独
 - **6 位十六进制** — `#FF0000`、`#1565C0` 等
 - **3 位十六进制** — `#F00`、`#ABC` 等
 - **颜色名称**（仅 PlantUML）— `#Red`、`#LightBlue`、`#Salmon` 等（20 种颜色）
+- 选择新颜色后自动替换为 `#RRGGBB` 格式
+- 注释行会被排除（PlantUML 用 `'`、Mermaid 用 `%%`、D2 用 `#`）
 
 ## 关键字补全
 
 PlantUML、Mermaid 和 D2 的上下文感知关键字建议。适用于独立文件和 Markdown 围栏块。
+
+### PlantUML
+
+- **行首关键字** — `@startuml`、`participant`、`class`、`skinparam`、`!include` 等
+- **`skinparam` 参数** — 输入 `skinparam` 后按空格，获取 `backgroundColor`、`defaultFontName`、`arrowColor` 等建议
+- **颜色名称** — 输入 `#` 获取颜色建议（`Red`、`Blue`、`LightGreen` 等）
+- **触发字符**：`@`、`!`、`#`
+
+### Mermaid
+
+- **图表类型声明** — 在第一行输入 `flowchart`、`sequenceDiagram`、`classDiagram`、`gantt` 等
+- **图表特定关键字** — 根据声明的图表类型提供不同建议（如流程图的 `subgraph`、序列图的 `participant`）
+- **方向值** — 输入 `direction` 后按空格获取 `TB`、`LR` 等建议
+
+### D2
+
+- **形状类型** — 输入 `shape:` 获取 `rectangle`、`cylinder`、`person` 等建议
+- **样式属性** — 输入 `style.` 获取 `fill`、`stroke`、`font-size` 等建议
+- **方向值** — 输入 `direction:` 获取 `right`、`down`、`left`、`up`
+- **约束值** — 输入 `constraint:` 获取 `primary_key`、`foreign_key`、`unique`
+- **触发字符**：`:`、`.`
 
 ## 配置
 
@@ -543,9 +654,37 @@ PlantUML、Mermaid 和 D2 的上下文感知关键字建议。适用于独立文
 | `d2Scale` | `"75%"` | D2 图表缩放。 |
 | `htmlMaxWidth` | `"960px"` | 导出 HTML 的最大宽度。 |
 | `htmlAlignment` | `"center"` | HTML 对齐方式。`"center"`（默认）或 `"left"`。 |
-| `enableMath` | `true` | 启用 KaTeX 数学渲染。 |
+| `enableMath` | `true` | 启用 KaTeX 数学渲染。支持 `$...$`（行内）和 `$$...$$`（块级）。如 `$` 符号导致意外的数学解析，可设为 `false`。 |
+| `debounceNoDiagramChangeMs` | _(空)_ | 非图表文本变更的防抖延迟（毫秒）。图表从缓存中提供。留空使用模式默认值（Fast: 100, Secure: 100, Easy: 100）。 |
+| `debounceDiagramChangeMs` | _(空)_ | 图表内容变更的防抖延迟（毫秒）。留空使用模式默认值（Fast: 100, Secure: 300, Easy: 300）。 |
+| `plantumlLocalServerPort` | `0` | 本地 PlantUML 服务器端口（仅 Fast 模式）。`0` = 自动分配空闲端口。 |
 | `plantumlServerUrl` | `"https://www.plantuml.com/plantuml"` | Easy 模式的 PlantUML 服务器 URL。 |
 | `enableDiagramViewer` | `true` | 启用右键菜单中的"在图表查看器中打开"项。 |
+| `retainPreviewContext` | `true` | 标签页隐藏时保留预览内容。防止切换时重新渲染，但使用更多内存（需要重新打开预览才会生效）。 |
+
+> **注意：** `allowLocalImages` 和 `allowHttpImages` 仅适用于预览面板。HTML 导出始终输出原始图片路径，不受 CSP 限制。
+
+<details>
+<summary><strong>预览主题选项</strong></summary>
+
+| 值 | 描述 |
+| --- | --- |
+| `github-light` | GitHub Light — 白色背景（默认） |
+| `atom-light` | Atom Light — 柔和灰色文字，Atom 风格 |
+| `one-light` | One Light — 淡白色，均衡色调 |
+| `solarized-light` | Solarized Light — 暖米色，护眼 |
+| `vue` | Vue — 绿色点缀，Vue.js 文档风格 |
+| `pen-paper-coffee` | Pen Paper Coffee — 暖纸色，手写风格 |
+| `coy` | Coy — 近白色，简洁设计 |
+| `vs` | VS — 经典 Visual Studio 配色 |
+| `github-dark` | GitHub Dark — 深色背景 |
+| `atom-dark` | Atom Dark — Tomorrow Night 色调 |
+| `one-dark` | One Dark — Atom 风格深色 |
+| `dracula` | Dracula — 鲜艳深色 |
+| `solarized-dark` | Solarized Dark — 深青色，护眼 |
+| `monokai` | Monokai — 鲜明语法，Sublime Text 风格 |
+
+</details>
 
 ## 键盘快捷键
 
@@ -565,20 +704,48 @@ PlantUML、Mermaid 和 D2 的上下文感知关键字建议。适用于独立文
 **Fast/Secure 模式：**
 
 1. 运行 `java -version` 确认已安装 Java 11 或更高版本
-2. 如使用类图、组件图等，运行 `dot -V` 确认已安装 Graphviz
-3. 检查 VS Code 输出面板中的错误信息
+2. 如使用类图、组件图等，运行 `dot -V` 确认已安装 Graphviz（参见[图表支持](#图表支持)）
+3. 如设置了自定义 `plantumlJarPath`，确认路径指向有效的 `plantuml.jar` 文件。路径不存在时会发出警告并回退到内置 jar。`plantumlJarPath` 为空（默认）时自动使用内置 LGPL jar
+4. 检查 VS Code 输出面板中的错误信息
 
 **Easy 模式：**
 
 1. 确认服务器 URL 正确（默认：`https://www.plantuml.com/plantuml`）
-2. 检查网络连接
+2. 检查网络连接 — 需要能访问 PlantUML 服务器
+3. 如使用自托管服务器，确认服务器正在运行且可访问
+4. 服务器请求超时时间为 15 秒（Fast 和 Secure 模式每个图表也有 15 秒超时）
+
+</details>
+
+<details>
+<summary><strong>D2 图表无法渲染</strong></summary>
+
+D2 使用内置 Wasm 模块渲染 — 无需外部 CLI。
+
+1. 重新加载 VS Code 窗口（`Developer: Reload Window`）
+2. 检查 VS Code 输出面板中的错误信息
+3. 确认 D2 源代码语法正确
 
 </details>
 
 <details>
 <summary><strong>可以不安装 Java 使用 PlantUML 吗？</strong></summary>
 
-可以。在扩展设置中将 `mode` 设为 `"easy"`。Easy 模式将 PlantUML 文本发送至 PlantUML 服务器渲染，无需 Java。
+可以。在扩展设置中将 `mode` 设为 `"easy"`。Easy 模式将 PlantUML 文本发送至 PlantUML 服务器渲染，无需 Java。默认使用公共服务器 `https://www.plantuml.com/plantuml`。为保护隐私，可运行自己的 PlantUML 服务器并设置 `plantumlServerUrl`。
+
+</details>
+
+<details>
+<summary><strong>Secure 模式在多图表时很慢。如何加速？</strong></summary>
+
+切换到 **Fast 模式**（`mode: "fast"`）。Fast 模式在 localhost 启动常驻 PlantUML 服务器，重新渲染即时完成 — 无需每次编辑都启动 JVM。并发数也更高（50 个并行请求 vs Secure 模式的 1 个）。
+
+</details>
+
+<details>
+<summary><strong>Easy 模式下图表数据安全吗？</strong></summary>
+
+Easy 模式下，PlantUML 源文本会发送至配置的服务器。默认的公共服务器（`https://www.plantuml.com/plantuml`）由 PlantUML 项目运营。如图表包含敏感信息，建议运行[自托管 PlantUML 服务器](https://plantuml.com/server)并设置 `plantumlServerUrl`，或使用图表不会离开本机的 Fast 或 Secure 模式。
 
 </details>
 
@@ -593,6 +760,16 @@ PlantUML、Mermaid 和 D2 的上下文感知关键字建议。适用于独立文
 <summary><strong><code>!include</code> 不起作用</strong></summary>
 
 `!include` 需要 Fast 或 Secure 模式 — Easy 模式不可用，因为远程服务器无法访问本地文件。
+
+- 路径默认相对于工作区根目录解析。设置 `plantumlIncludePath` 可使用不同的基础目录。
+- 保存包含文件会自动刷新预览。也可点击**重新加载**按钮（↻）手动刷新。
+
+</details>
+
+<details>
+<summary><strong>可以在 PlantUML 代码中使用 <code>!theme</code> 吗？</strong></summary>
+
+可以。内联的 `!theme` 指令优先于扩展设置。
 
 </details>
 
