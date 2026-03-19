@@ -29,7 +29,7 @@
 | | Redibujado instantáneo | Máxima privacidad | Sin configuración |
 | | Ejecuta un servidor PlantUML en localhost: sin coste de inicio de JVM, actualizaciones instantáneas | Sin red, sin procesos en segundo plano: todo permanece en tu máquina | No requiere Java: funciona de inmediato con un servidor PlantUML |
 | **Java** | 11+ requerido | 11+ requerido | No requerido |
-| **Network** | Ninguna | Ninguna | Requerida |
+| **Red** | Ninguna | Ninguna | Requerida |
 | **Privacidad** | Solo local | Solo local | El código del diagrama se envía al servidor PlantUML |
 | **Configuración** | [Instalar Java →](#requisitos-previos) | [Instalar Java →](#requisitos-previos) | No requiere configuración |
 
@@ -47,7 +47,7 @@ Cambia entre modos en cualquier momento con un solo ajuste: sin migración, sin 
 - **Sincronización de desplazamiento bidireccional**: el editor y la vista previa se desplazan juntos en ambas direcciones.
 - **Navegación y TOC**: botones para ir al principio/final y una barra lateral de Tabla de contenidos en el panel de vista previa.
 - **Visor de diagramas (Diagram Viewer)**: haz clic derecho en cualquier diagrama para abrir un panel de desplazamiento y zoom con sincronización en vivo y fondo adaptado al tema.
-- **Vista previa de diagramas independiente**: abre archivos `.puml`, `.mmd` y `.d2` directamente con zoom, actualizaciones en vivo y soporte de temas, sin necesidad de un envoltorio Markdown.
+- **Vista previa de diagramas independiente**: abre archivos `.puml`, `.plantuml`, `.mmd`, `.mermaid` y `.d2` directamente con zoom, actualizaciones en vivo y soporte de temas, sin necesidad de un envoltorio Markdown.
 - **Guardar o copiar diagramas como PNG / SVG**: haz clic derecho en cualquier diagrama en la vista previa o en el Visor de diagramas para guardarlo o copiarlo al portapapeles.
 - **14 temas de vista previa**: 8 temas claros + 6 oscuros, incluyendo GitHub, Atom, Solarized, Dracula, Monokai y más.
 - **Asistencia al editor**: autocompletado de palabras clave, selector de color y fragmentos de código para PlantUML, Mermaid y D2.

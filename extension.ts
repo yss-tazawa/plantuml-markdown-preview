@@ -17,7 +17,7 @@ import { exportToHtml, exportToPdf, clearMdCache } from './src/exporter.js';
 import { plantumlPlugin } from './src/renderer.js';
 import { clearCache, resolveIncludePath, extractIncludeFromLine, extractIncludePaths } from './src/plantuml.js';
 import { clearServerCache } from './src/plantuml-server.js';
-import { prepareLocalServer, startLocalServer, stopLocalServer, restartLocalServer, setLocalServerOutputChannel, setOnServerStateChange } from './src/local-server.js';
+import { prepareLocalServer, startLocalServer, stopLocalServer, restartLocalServer, setLocalServerOutputChannel, setOnServerStateChange, setConfigGetter } from './src/local-server.js';
 import type { LocalServerState } from './src/local-server.js';
 import { createStatusBarItem, updateStatusBar, showModeQuickPick, SELECT_MODE_COMMAND } from './src/status-bar.js';
 import { PreviewManager } from './src/preview.js';
@@ -296,6 +296,8 @@ let warmupChild: ReturnType<typeof execJava> | null = null;
 
 /** Last known config for detecting local-server relevant changes. */
 let lastKnownConfig: Config | null = null;
+/** Tracks an invalid javaPath that was rejected, so fixing it later triggers a change notification. */
+let lastRejectedJavaPath: string | null = null;
 
 /**
  * Check if Java is available. When not found (or debugSimulateNoJava is true),
@@ -428,6 +430,7 @@ export function activate(context: vscode.ExtensionContext): { extendMarkdownIt: 
     previewManager = new PreviewManager(channel);
     context.subscriptions.push(previewManager);
     setLocalServerOutputChannel(channel);
+    setConfigGetter(getConfig);
     registerCompletionProviders(context);
     registerColorProviders(context);
 
@@ -681,7 +684,7 @@ export function activate(context: vscode.ExtensionContext): { extendMarkdownIt: 
                     }
                 });
                 // Remember the rejected javaPath so that fixing it later triggers a change notification
-                if (lastKnownConfig) { lastKnownConfig.javaPath = config.javaPath; }
+                lastRejectedJavaPath = config.javaPath;
                 return;  // don't update lastKnownConfig — keep old valid config
             }
 
@@ -695,7 +698,9 @@ export function activate(context: vscode.ExtensionContext): { extendMarkdownIt: 
             }
 
             // Notify when javaPath or plantumlJarPath changed successfully
-            if (lastKnownConfig && lastKnownConfig.javaPath !== config.javaPath) {
+            const prevJavaPath = lastRejectedJavaPath ?? lastKnownConfig?.javaPath;
+            lastRejectedJavaPath = null;
+            if (prevJavaPath && prevJavaPath !== config.javaPath) {
                 void vscode.window.showInformationMessage(
                     vscode.l10n.t('Java path changed to: {0}', config.javaPath)
                 );
@@ -830,7 +835,7 @@ export function activate(context: vscode.ExtensionContext): { extendMarkdownIt: 
 }
 
 /** Keys that affect the local-server process and require a restart when changed. */
-const LOCAL_SERVER_KEYS = ['plantumlJarPath', 'javaPath', 'dotPath', 'plantumlLocalServerPort'] as const;
+const LOCAL_SERVER_KEYS = ['plantumlJarPath', 'javaPath', 'dotPath', 'plantumlLocalServerPort', 'plantumlIncludePath'] as const;
 
 /**
  * Handle local-server lifecycle when configuration changes.

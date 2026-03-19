@@ -18,7 +18,7 @@ import * as vscode from 'vscode';
 import path from 'path';
 import type { ChildProcess } from 'child_process';
 import { existsSync } from 'fs';
-import { escapeHtml, ensureStartEndTags, errorHtml, LruCache, computeHash, resolveJavaCommand, spawnJava, spawnJavaSync, execJava, extractPlantUmlBlocks } from './utils.js';
+import { escapeHtml, ensureStartEndTags, errorHtml, LruCache, computeHash, resolveJavaCommand, spawnJava, spawnJavaSync, extractPlantUmlBlocks } from './utils.js';
 import type { Config } from './config.js';
 
 /** Resolved config paths with defaults applied. */
@@ -360,6 +360,7 @@ function isErrorSvg(svg: string): boolean {
  * @param stdinPayload - Concatenated PlantUML content.
  * @param timeout - Process timeout in ms.
  * @param signal - Optional abort signal.
+ * @param [cwd] - Working directory for the child process (PlantUML include resolution).
  * @returns Stdout content on success.
  * @throws Error on spawn failure, timeout, abort, or non-zero exit with empty stdout.
  */
@@ -392,7 +393,8 @@ function spawnBatchJvm(javaPath: string, args: string[], stdinPayload: string, t
         }, timeout);
 
         child.stdout!.on('data', (chunk: Buffer) => { stdoutBufs.push(chunk); });
-        child.stderr!.on('data', () => {}); // Ignore stderr in batch mode
+        const stderrBufs: Buffer[] = [];
+        child.stderr!.on('data', (chunk: Buffer) => { stderrBufs.push(chunk); });
 
         child.on('error', (err: Error) => {
             clearTimeout(timer);
@@ -406,7 +408,8 @@ function spawnBatchJvm(javaPath: string, args: string[], stdinPayload: string, t
             if (settled) return;
             const stdout = Buffer.concat(stdoutBufs).toString('utf8');
             if (code !== 0 && !stdout.trim()) {
-                settle(new Error(`Process exited with code ${code ?? 'null'}`));
+                const stderr = Buffer.concat(stderrBufs).toString('utf8').trim();
+                settle(new Error(`Process exited with code ${code ?? 'null'}${stderr ? `: ${stderr}` : ''}`));
             } else {
                 // Non-zero exit with stdout: PlantUML may embed errors as SVG.
                 // The caller (renderBatchLocal) detects these via isErrorSvg
@@ -540,7 +543,7 @@ async function renderBatchLocal(blocks: string[], config: Config, signal?: Abort
         }
     } catch (e) {
         // Batch JVM failed: fall back to individual rendering
-        console.warn('PlantUML batch rendering failed, falling back to individual rendering:', e);
+        console.warn('[plantuml] Batch rendering failed, falling back to individual rendering:', e);
         return fallbackToIndividual(uncached, results, config, signal);
     }
 
@@ -654,8 +657,9 @@ function buildErrorMessage(stderr: string, displayContent: string, lineOffset: n
  *   label=Syntax Error?
  *
  * @param stderr - Raw stderr from the PlantUML process.
- * @returns Parsed result with
- *   0-indexed lineNumber, or null if the format is not recognized.
+ * @returns Parsed result with 0-indexed lineNumber (converted from PlantUML's
+ *   1-indexed output), or null if the format is not recognized. The caller must
+ *   further subtract lineOffset to account for any auto-prepended tags.
  */
 function parseStdrpt(stderr: string): { lineNumber: number; label: string } | null {
     if (!stderr) return null;
@@ -720,33 +724,54 @@ export function listThemesAsync(config: Pick<Config, 'plantumlJarPath' | 'javaPa
 
     themePendingKey = key;
     const promise = new Promise<string[]>((resolve) => {
-        const child = execJava(
+        const child = spawnJava(
             javaPath,
             ['-Djava.awt.headless=true', '-jar', jarPath, '-pipe', '-tutxt', '-charset', 'UTF-8'],
-            { encoding: 'utf8', timeout: 15000, maxBuffer: 1024 * 1024 },
-            (err: Error | null, stdout: string) => {
-                // Only clear the pending state if it is still ours (a newer call
-                // with a different config key may have replaced it already).
-                if (themePendingPromise === promise) {
-                    themePendingPromise = null;
-                    themePendingChild = null;
-                }
-                if (err || !stdout) { resolve(FALLBACK_PLANTUML_THEMES); return; }
-                const themes = parseHelpThemes(stdout);
-                if (themes.length === 0) { resolve(FALLBACK_PLANTUML_THEMES); return; }
-                themeCacheKey = key;
-                themeCacheResult = themes;
-                resolve(themes);
-            }
+            { stdio: ['pipe', 'pipe', 'pipe'] }
         );
         themePendingChild = child;
-        if (child.stdin) {
-            try {
-                child.stdin.write('@startuml\nhelp themes\n@enduml');
-                child.stdin.end();
-            } catch {
-                // stdin may already be closed; execFile callback will handle the error
-            }
+        const stdoutBufs: Buffer[] = [];
+        let settled = false;
+
+        const timer = setTimeout(() => {
+            if (settled) return;
+            settled = true;
+            child.kill('SIGTERM');
+            if (themePendingPromise === promise) { themePendingPromise = null; themePendingChild = null; }
+            resolve(FALLBACK_PLANTUML_THEMES);
+        }, 15000);
+
+        child.stdout!.on('data', (chunk: Buffer) => { stdoutBufs.push(chunk); });
+        child.stderr!.on('data', () => {}); // drain stderr
+
+        child.on('error', () => {
+            if (settled) return;
+            settled = true;
+            clearTimeout(timer);
+            if (themePendingPromise === promise) { themePendingPromise = null; themePendingChild = null; }
+            resolve(FALLBACK_PLANTUML_THEMES);
+        });
+
+        child.on('close', () => {
+            if (settled) return;
+            settled = true;
+            clearTimeout(timer);
+            if (themePendingPromise === promise) { themePendingPromise = null; themePendingChild = null; }
+            const stdout = Buffer.concat(stdoutBufs).toString('utf8');
+            if (!stdout) { resolve(FALLBACK_PLANTUML_THEMES); return; }
+            const themes = parseHelpThemes(stdout);
+            if (themes.length === 0) { resolve(FALLBACK_PLANTUML_THEMES); return; }
+            themeCacheKey = key;
+            themeCacheResult = themes;
+            resolve(themes);
+        });
+
+        child.stdin!.on('error', () => {}); // suppress EPIPE
+        try {
+            child.stdin!.write('@startuml\nhelp themes\n@enduml');
+            child.stdin!.end();
+        } catch {
+            // stdin closed; event handlers will settle
         }
     });
     themePendingPromise = promise;
@@ -762,7 +787,9 @@ export function listThemesAsync(config: Pick<Config, 'plantumlJarPath' | 'javaPa
  * @param config - Jar and Java paths.
  */
 export function prefetchThemes(config: Pick<Config, 'plantumlJarPath' | 'javaPath'>): void {
-    listThemesAsync(config).catch(() => {});
+    listThemesAsync(config).catch((err) => {
+        console.warn('[plantuml] Theme prefetch failed:', err);
+    });
 }
 
 /**

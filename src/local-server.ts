@@ -22,7 +22,9 @@ import { CONFIG_SECTION } from './config.js';
 // State
 // ---------------------------------------------------------------------------
 
+/** Active PlantUML picoweb child process, or null when not running. */
 let serverProcess: ChildProcess | null = null;
+/** Base URL of the running server (e.g. `http://127.0.0.1:8080`), or null. */
 let serverUrl: string | null = null;
 
 export type LocalServerState = 'stopped' | 'starting' | 'running' | 'error';
@@ -38,6 +40,9 @@ let readyReject: ((err: Error) => void) | null = null;
 
 /** Output channel for logging (shared with the extension). */
 let outputChannel: vscode.OutputChannel | null = null;
+
+/** Optional callback to obtain the latest Config (for crash-restart with fresh settings). */
+let getLatestConfig: (() => Config) | null = null;
 
 /** Flag to distinguish intentional stop from unexpected crash. */
 let stoppingIntentionally = false;
@@ -75,6 +80,15 @@ export function setOnServerStateChange(cb: (state: LocalServerState) => void): v
 }
 
 /**
+ * Register a callback to obtain the latest Config for crash-restart.
+ *
+ * @param getter - Function returning the current extension configuration.
+ */
+export function setConfigGetter(getter: () => Config): void {
+    getLatestConfig = getter;
+}
+
+/**
  * Pre-create the readyPromise so that waitForLocalServer() can block
  * even before startLocalServer() is called (e.g. while Java is being checked).
  * No-op if already prepared or started.
@@ -101,6 +115,7 @@ export async function startLocalServer(config: Config): Promise<void> {
         return;
     }
 
+    stoppingIntentionally = false;
     setServerState('starting');
     if (!readyPromise) {
         readyPromise = new Promise<void>((resolve, reject) => {
@@ -114,6 +129,8 @@ export async function startLocalServer(config: Config): Promise<void> {
     const usedPorts = new Set<number>();
 
     for (let attempt = 0; attempt < MAX_PORT_RETRIES; attempt++) {
+        // This guard also prevents re-setting readyReject after stopLocalServer() cleared it.
+        if (stoppingIntentionally) return;
         try {
             const port = await findFreePort(config.plantumlLocalServerPort, usedPorts);
             usedPorts.add(port);
@@ -125,7 +142,6 @@ export async function startLocalServer(config: Config): Promise<void> {
                 cwd: resolveIncludePath(config),
             });
             serverProcess = child;
-            stoppingIntentionally = false;
 
             let stderrBuf = '';
             child.stdout?.on('data', (chunk: Buffer) => log(`[local-server stdout] ${chunk.toString().trimEnd()}`));
@@ -136,6 +152,7 @@ export async function startLocalServer(config: Config): Promise<void> {
             });
 
             child.on('error', (err) => {
+                child.removeAllListeners('close'); // prevent double crash handling
                 log(`[local-server] Process error: ${err.message}`);
                 handleCrash(err.message, config, stderrBuf);
             });
@@ -148,7 +165,10 @@ export async function startLocalServer(config: Config): Promise<void> {
             });
 
             await waitForReady(port);
-            if (stoppingIntentionally) return;
+            // Guard against concurrent crash/stop that fired during waitForReady.
+            // Re-read serverState as a string — TypeScript narrows the module-level
+            // variable but cannot track mutations across await boundaries.
+            if (stoppingIntentionally || (serverState as string) !== 'starting') return;
 
             serverUrl = `http://127.0.0.1:${port}`;
             setServerState('running');
@@ -162,9 +182,12 @@ export async function startLocalServer(config: Config): Promise<void> {
         } catch (err) {
             // Kill the failed child process before retrying
             if (serverProcess && !serverProcess.killed) {
+                serverProcess.removeAllListeners('error');
+                serverProcess.removeAllListeners('close');
                 stoppingIntentionally = true;
                 serverProcess.kill();
                 serverProcess = null;
+                stoppingIntentionally = false; // reset before retry
             }
             if (!useAutoPort || attempt === MAX_PORT_RETRIES - 1) {
                 setServerState('error');
@@ -173,6 +196,8 @@ export async function startLocalServer(config: Config): Promise<void> {
                 return;
             }
             log(`[local-server] Port may be in use, retrying (${attempt + 1}/${MAX_PORT_RETRIES})...`);
+            // Release any waiters on the previous promise before replacing it.
+            readyReject?.(new Error('Retrying on different port'));
             readyPromise = new Promise<void>((resolve, reject) => {
                 readyResolve = resolve;
                 readyReject = reject;
@@ -182,10 +207,19 @@ export async function startLocalServer(config: Config): Promise<void> {
 }
 
 /**
+ * Promise that resolves when the most recently stopped server process exits.
+ * Used by `restartLocalServer` to wait for port release before starting a new server.
+ */
+let stopExitPromise: Promise<void> = Promise.resolve();
+
+/**
  * Stop the local server. Safe to call even if not running.
  */
 export function stopLocalServer(): void {
     stoppingIntentionally = true;
+    // Reject pending waiters before resetting state so they don't hang until timeout.
+    readyReject?.(new Error('Server stopped'));
+    readyReject = null; // prevent double-reject in resetState()
     const wasRunning = serverProcess !== null;
     if (serverProcess) {
         serverProcess.removeAllListeners('error');
@@ -196,11 +230,22 @@ export function stopLocalServer(): void {
         serverProcess = null;
         proc.kill('SIGTERM');
         // SIGKILL fallback if SIGTERM doesn't terminate within 3 seconds
-        killTimer = setTimeout(() => {
+        const timerHandle = setTimeout(() => {
+            if (killTimer !== timerHandle) return; // superseded by a newer stop call
             try { proc.kill('SIGKILL'); } catch { /* already exited */ }
             killTimer = null;
         }, 3000);
-        proc.once('exit', () => { if (killTimer) { clearTimeout(killTimer); killTimer = null; } });
+        killTimer = timerHandle;
+        stopExitPromise = new Promise<void>(resolve => {
+            const done = () => {
+                if (killTimer === timerHandle) { clearTimeout(timerHandle); killTimer = null; }
+                resolve();
+            };
+            proc.once('exit', done);
+            proc.once('error', done);
+        });
+    } else {
+        stopExitPromise = Promise.resolve();
     }
     resetState();
     log('[local-server] Stopped');
@@ -225,21 +270,34 @@ export function getLocalServerUrl(): string | null {
  * Resolves immediately if already running. Returns without error if stopped/error
  * and no pending readyPromise (caller should check getLocalServerUrl).
  * When prepareLocalServer() was called, waits even in 'stopped' state.
+ *
+ * Note: This function has its own 15s timeout independent of startLocalServer's
+ * internal waitForReady timeout. If this timeout fires while startLocalServer is
+ * still retrying, serverState remains 'starting'. The caller should check
+ * getLocalServerUrl() which returns null in this case.
  */
 export async function waitForLocalServer(): Promise<void> {
     if (serverState === 'running') return;
     if (serverState === 'error') return;
     if (!readyPromise) return;
 
+    let timer: ReturnType<typeof setTimeout> | undefined;
     try {
         await Promise.race([
             readyPromise,
-            new Promise<void>((_, reject) =>
-                setTimeout(() => reject(new Error('Local server start timeout')), 15_000)
-            ),
+            new Promise<void>((_, reject) => {
+                timer = setTimeout(() => reject(new Error('Local server start timeout')), 15_000);
+            }),
         ]);
     } catch {
-        // Timeout or start failure — caller will see getLocalServerUrl() === null
+        // Rejected by: port-retry ('Retrying on different port'), crash (handleCrash),
+        // stop (stopLocalServer), or timeout. If the retry ultimately succeeded,
+        // serverState is 'running' — treat as success. Otherwise the state is
+        // 'error' or 'stopped' and the caller checks getLocalServerUrl().
+        // Cast: TypeScript narrows serverState but cannot track mutations across await.
+        if ((serverState as string) === 'running') return;
+    } finally {
+        if (timer) clearTimeout(timer);
     }
 }
 
@@ -250,6 +308,8 @@ export async function waitForLocalServer(): Promise<void> {
  */
 export async function restartLocalServer(config: Config): Promise<void> {
     stopLocalServer();
+    // Wait for the old process to exit so its port is released before starting a new one.
+    await stopExitPromise;
     prepareLocalServer();
     await startLocalServer(config);
 }
@@ -324,14 +384,17 @@ async function waitForReady(port: number, timeoutMs = 15_000, intervalMs = 500):
     const deadline = Date.now() + timeoutMs;
 
     while (Date.now() < deadline && serverState === 'starting') {
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), 2000);
         try {
-            const controller = new AbortController();
-            const timer = setTimeout(() => controller.abort(), 2000);
             const res = await fetch(testUrl, { signal: controller.signal });
-            clearTimeout(timer);
+            // Consume the response body to release the HTTP connection back to the pool.
+            await res.text();
             if (res.ok) return;
         } catch {
             // Server not ready yet
+        } finally {
+            clearTimeout(timer);
         }
         await sleep(intervalMs);
     }
@@ -349,14 +412,22 @@ function sleep(ms: number): Promise<void> {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-/** Reset all module-level state to initial values. */
+/** Reset all module-level state to initial values.
+ *  Note: killTimer is intentionally NOT cleared here — it is managed
+ *  exclusively by the SIGKILL fallback and the process exit handler
+ *  in stopLocalServer() so that SIGKILL can still fire after resetState(). */
 function resetState(): void {
-    if (killTimer) { clearTimeout(killTimer); killTimer = null; }
     setServerState('stopped');
     serverUrl = null;
+    // Reject any pending waiters. When called from stopLocalServer(), readyReject
+    // is already null (cleared at line 210) so rejectFn is a no-op. However, if
+    // startLocalServer's retry loop replaced readyReject with a new Promise before
+    // stop was called, this catches that replacement.
+    const rejectFn = readyReject;
     readyPromise = null;
     readyResolve = null;
     readyReject = null;
+    rejectFn?.(new Error('Server stopped'));
 }
 
 /**
@@ -380,10 +451,11 @@ function handleCrash(reason: string, config: Config, stderr?: string): void {
     serverProcess = null;
     setServerState('error');
     serverUrl = null;
-    readyReject?.(new Error(reason));
+    const rejectFn = readyReject;
     readyPromise = null;
     readyResolve = null;
     readyReject = null;
+    rejectFn?.(new Error(reason));
 
     const isVersionError = stderr?.includes('UnsupportedClassVersionError')
         || stderr?.includes('class file version');
@@ -416,7 +488,8 @@ function handleCrash(reason: string, config: Config, stderr?: string): void {
                 await cfg.update('mode', 'secure', vscode.ConfigurationTarget.Global);
             } else if (action === restartLabel) {
                 prepareLocalServer();
-                await startLocalServer(config);
+                // Use the latest config (user may have changed settings since the crash).
+                await startLocalServer(getLatestConfig ? getLatestConfig() : config);
             }
         } catch { /* already logged */ }
     });

@@ -70,10 +70,16 @@ export class DiagramColorProvider implements vscode.DocumentColorProvider {
         const results: vscode.ColorInformation[] = [];
 
         for (let i = startLine; i < endLine; i++) {
-            const text = doc.lineAt(i).text;
+            let text = doc.lineAt(i).text;
 
             // Skip comment lines per language
             if (this.isComment(text)) continue;
+
+            // D2: strip inline comments (# ...) to avoid matching comment text as colors.
+            if (this.language === 'd2') {
+                const commentIdx = text.search(/(?<!\S)#(\s|$)/);
+                if (commentIdx >= 0) text = text.substring(0, commentIdx);
+            }
 
             COLOR_RE.lastIndex = 0;
             let match: RegExpExecArray | null;

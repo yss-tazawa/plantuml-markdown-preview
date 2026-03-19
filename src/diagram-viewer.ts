@@ -36,6 +36,7 @@ let pendingSave: { svg: string; diagramIndex: number; bgColor?: string; diagramT
 export function openDiagramViewer(svg: string, diagramIndex: number, bgColor?: string): void {
     const existing = viewers.get(diagramIndex);
     if (existing) {
+        latestState.set(diagramIndex, { svg, bgColor: bgColor ?? '' });
         void existing.webview.postMessage({ type: 'updateSvg', svg, bgColor });
         return;
     }
@@ -49,14 +50,7 @@ export function openDiagramViewer(svg: string, diagramIndex: number, bgColor?: s
 
     viewers.set(diagramIndex, panel);
     activeViewerIndex = diagramIndex;
-    // These Disposables are not stored — they are automatically disposed
-    // when the owning panel is disposed.
-    panel.onDidDispose(() => {
-        viewers.delete(diagramIndex);
-        latestState.delete(diagramIndex);
-        if (activeViewerIndex === diagramIndex) activeViewerIndex = -1;
-    });
-    panel.onDidChangeViewState((e) => {
+    const viewStateDisposable = panel.onDidChangeViewState((e) => {
         if (e.webviewPanel.active) activeViewerIndex = diagramIndex;
         // Re-send latest SVG after potential webview reload (e.g. panel move)
         if (e.webviewPanel.visible) {
@@ -66,7 +60,14 @@ export function openDiagramViewer(svg: string, diagramIndex: number, bgColor?: s
             }
         }
     });
-    panel.webview.onDidReceiveMessage((msg) => { void handleViewerMessage(msg); });
+    const messageDisposable = panel.webview.onDidReceiveMessage((msg) => { void handleViewerMessage(msg); });
+    panel.onDidDispose(() => {
+        viewStateDisposable.dispose();
+        messageDisposable.dispose();
+        viewers.delete(diagramIndex);
+        latestState.delete(diagramIndex);
+        if (activeViewerIndex === diagramIndex) activeViewerIndex = -1;
+    });
 
     const nonce = getNonce();
     panel.webview.html = generateViewerHtml(svg, nonce, bgColor);
@@ -106,6 +107,7 @@ export function disposeAllViewers(): void {
     }
     viewers.clear();
     latestState.clear();
+    activeViewerIndex = -1;
 }
 
 /**
@@ -192,7 +194,7 @@ export function diagramAction(action: 'save' | 'copy', format: 'png' | 'svg', pr
  * Extract SVG from innerHTML and save to file.
  *
  * @param html - Raw innerHTML containing an SVG element.
- * @param diagramIndex - Zero-based diagram index for the default file name.
+ * @param diagramIndex - 1-based diagram index for the default file name.
  */
 async function saveSvgFromHtml(html: string, diagramIndex: number): Promise<void> {
     const match = html.match(/<svg[\s\S]*<\/svg>/i);
@@ -209,8 +211,8 @@ async function saveSvgFromHtml(html: string, diagramIndex: number): Promise<void
 export async function handlePngFromPreview(data: string): Promise<void> {
     if (!data || !pendingSave) return;
     const { diagramIndex } = pendingSave;
-    await saveDiagramFile(Buffer.from(data.replace(/^data:image\/png;base64,/, ''), 'base64'), vscode.Uri.file(`diagram-${diagramIndex}.png`), 'png');
     pendingSave = null;
+    await saveDiagramFile(Buffer.from(data.replace(/^data:image\/png;base64,/, ''), 'base64'), vscode.Uri.file(`diagram-${diagramIndex}.png`), 'png');
 }
 
 /**

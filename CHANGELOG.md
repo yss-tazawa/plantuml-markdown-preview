@@ -6,6 +6,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## 0.6.11 - 2026-03-19
+
+### Fixed
+
+- Scroll sync no longer moves the active view on tab switch; only the non-active side follows
+- Reduced visible scroll animation when switching between editor and preview tabs
+- Local server restart or port retry could fail silently after a previous stop
+- "Go to top" nav button in preview did not sync the editor scroll position on tab switch
+
 ## 0.6.10 - 2026-03-18
 
 ### Changed
