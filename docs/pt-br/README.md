@@ -47,7 +47,7 @@ Alterne entre modos a qualquer momento com uma única configuração — sem mig
 - **Sincronização de rolagem bidirecional** — editor e prévia rolam juntos, em ambos os sentidos
 - **Navegação & TOC** — botões ir para o topo / ir para o fim e uma barra lateral de Sumário (TOC) no painel de prévia
 - **Visualizador de Diagramas** — clique com o botão direito em qualquer diagrama para abrir um painel de pan & zoom com sincronização ao vivo e fundo correspondente ao tema
-- **Prévia de diagrama independente** — abra arquivos `.puml`, `.mmd` e `.d2` diretamente com pan & zoom, atualizações em tempo real e suporte a temas — sem necessidade de Markdown
+- **Prévia de diagrama independente** — abra arquivos `.puml`, `.plantuml`, `.mmd`, `.mermaid` e `.d2` diretamente com pan & zoom, atualizações em tempo real e suporte a temas — sem necessidade de Markdown
 - **Salvar ou copiar diagramas como PNG / SVG** — clique com o botão direito em qualquer diagrama na prévia ou no Visualizador de Diagramas para salvar ou copiar para a área de transferência
 - **14 temas de prévia** — 8 temas claros + 6 escuros, incluindo GitHub, Atom, Solarized, Dracula, Monokai e mais
 - **Assistência ao editor** — completamento de palavras-chave, seletor de cores e trechos de código (snippets) para PlantUML, Mermaid e D2

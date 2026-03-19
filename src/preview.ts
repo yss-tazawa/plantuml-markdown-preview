@@ -16,7 +16,6 @@ import fs from 'fs';
 import { renderHtmlAsync, renderBodyAsync, getThemeCss, LIGHT_THEME_KEYS, DARK_THEME_KEYS } from './exporter.js';
 import { listThemesAsync, prefetchThemes, clearCache, resolveIncludePath, collectIncludePaths } from './plantuml.js';
 import { clearServerCache } from './plantuml-server.js';
-import { restartLocalServer } from './local-server.js';
 import { getScrollSyncScriptTag } from './scroll-sync.js';
 import { getNonce, resolveLocalImagePaths, extractPlantUmlBlocks, PLANTUML_FENCE_TEST_RE, extractMermaidBlocks, MERMAID_FENCE_TEST_RE, extractD2Blocks, D2_FENCE_TEST_RE, escapeHtml, buildThemeItems } from './utils.js';
 import { CONFIG_SECTION, MERMAID_THEME_KEYS, D2_THEME_KEYS, type Config } from './config.js';
@@ -30,6 +29,7 @@ type SyncMaster = 'none' | 'editor' | 'preview';
 
 /** Timeout (ms) for auto-resetting syncMaster to 'none'. Shared with scroll-sync.ts. */
 const SYNC_MASTER_TIMEOUT_MS = 300;
+
 
 /**
  * When the visible line count shrinks by at least this many lines while at the
@@ -89,12 +89,17 @@ export class PreviewManager implements vscode.Disposable {
     private lastRenderFailed = false;
     private panelWasHidden = false;
     private enableDiagramViewer = true;
+    /** Cached retainContextWhenHidden value, set at panel creation time. */
+    private retainCtx = true;
 
     // -- include tracking ---------------------------------------------
     private includePaths = new Set<string>();
 
     // -- scroll sync --------------------------------------------------
     private syncMaster: SyncMaster = 'none';
+    /** Last line reported by the preview via revealLine (tracked even when blocked). */
+    private lastPreviewReportedLine = -1;
+    private activeEditorDisposable: vscode.Disposable | null = null;
 
     constructor(outputChannel: vscode.OutputChannel) {
         this.outputChannel = outputChannel;
@@ -198,6 +203,7 @@ export class PreviewManager implements vscode.Disposable {
         if (this.loadingRenderTimer) { clearTimeout(this.loadingRenderTimer); this.loadingRenderTimer = null; }
         if (this.loadingResolve) { this.loadingResolve(); this.loadingResolve = null; }
         if (this.syncMasterTimer) { clearTimeout(this.syncMasterTimer); this.syncMasterTimer = null; }
+        if (this.activeEditorDisposable) { this.activeEditorDisposable.dispose(); this.activeEditorDisposable = null; }
         if (this.renderAbortController) { this.renderAbortController.abort(); this.renderAbortController = null; }
         this.includePaths = new Set<string>();
     }
@@ -217,6 +223,8 @@ export class PreviewManager implements vscode.Disposable {
         this.lastRenderFailed = false;
         this.panelWasHidden = false;
         this.syncMaster = 'none';
+
+        this.lastPreviewReportedLine = -1;
         if (this.firstRenderResolve) { this.firstRenderResolve(); this.firstRenderResolve = null; }
         this.disposeEventHandlers(true);
     }
@@ -232,7 +240,7 @@ export class PreviewManager implements vscode.Disposable {
             if (this.currentFilePath !== filePath) return null;
             return text;
         } catch (err) {
-            vscode.window.showErrorMessage(`[PlantUML Markdown Preview] ${(err as Error).message}`);
+            vscode.window.showErrorMessage(vscode.l10n.t('[PlantUML Markdown Preview] {0}', (err as Error).message));
             return null;
         }
     }
@@ -256,6 +264,10 @@ export class PreviewManager implements vscode.Disposable {
 
         this.messageDisposable = this.panel.webview.onDidReceiveMessage((message) => {
             if (message.type === 'revealLine' && typeof message.line === 'number') {
+                // Always track the preview's position (used for initial sync on editor activation).
+                const line = Math.max(0, Math.round(message.line));
+                this.lastPreviewReportedLine = line;
+
                 if (this.syncMaster === 'editor') return;
                 const editor = vscode.window.visibleTextEditors.find(
                     e => e.document.uri.fsPath === this.currentFilePath
@@ -263,7 +275,6 @@ export class PreviewManager implements vscode.Disposable {
                 if (!editor) return;
 
                 this.setSyncMaster('preview');
-                const line = Math.max(0, Math.round(message.line));
                 const range = new vscode.Range(line, 0, line, 0);
                 editor.revealRange(range, vscode.TextEditorRevealType.AtTop);
                 this.lastScrollLine = line;
@@ -353,6 +364,26 @@ export class PreviewManager implements vscode.Disposable {
                     : visibleLineCount < lineCount);
             this.lastAtBottom = atBottom;
             void this.panel.webview.postMessage({ type: 'scrollToLine', line: topLine, maxTopLine, atBottom });
+        });
+
+        this.activeEditorDisposable = vscode.window.onDidChangeActiveTextEditor((editor) => {
+            if (!editor || editor.document.uri.fsPath !== this.currentFilePath) return;
+
+            // Suppress stale onDidChangeTextEditorVisibleRanges events from moving
+            // the preview during the activation transition.
+            this.setSyncMaster('preview');
+
+            // Initial sync: scroll the editor to the preview's last known position.
+            // The pre-scroll in onDidChangeViewState may have already positioned it;
+            // only call revealRange as a fallback if the editor is not yet there.
+            if (this.lastPreviewReportedLine >= 0) {
+                // Always apply revealRange — during tab switch, editor.visibleRanges
+                // reports the default position (line 0) before VS Code restores the
+                // previous scroll state, so comparing currentTop is unreliable.
+                const range = new vscode.Range(this.lastPreviewReportedLine, 0, this.lastPreviewReportedLine, 0);
+                editor.revealRange(range, vscode.TextEditorRevealType.AtTop);
+                this.lastScrollLine = this.lastPreviewReportedLine;
+            }
         });
     }
 
@@ -458,11 +489,9 @@ export class PreviewManager implements vscode.Disposable {
 
                 // When Mermaid is first detected after the initial HTML was built without
                 // Mermaid support, rebuild from scratch so the Mermaid <script> is included.
-                // Set htmlReplaced before returning so the finally block skips hideLoading
-                // (the recursive call handles its own cleanup with a fresh renderSeq).
+                // The recursive call manages its own htmlReplaced / renderSeq state.
                 if (hasMermaid && !this.initialHtmlHadMermaid) {
                     this.initialHtmlSet = false;
-                    htmlReplaced = true;
                     return await this.renderPanel(text);
                 }
 
@@ -608,7 +637,7 @@ export class PreviewManager implements vscode.Disposable {
             }
         } else {
             const pmCfg = vscode.workspace.getConfiguration('plantumlMarkdownPreview');
-            const retainCtx = pmCfg.get<boolean>('retainPreviewContext', true);
+            this.retainCtx = pmCfg.get<boolean>('retainPreviewContext', true);
             this.enableDiagramViewer = pmCfg.get<boolean>('enableDiagramViewer', true);
             this.panel = vscode.window.createWebviewPanel(
                 'plantumlMarkdownPreview',
@@ -617,7 +646,7 @@ export class PreviewManager implements vscode.Disposable {
                 {
                     enableFindWidget: true,
                     enableScripts: true,
-                    retainContextWhenHidden: retainCtx,
+                    retainContextWhenHidden: this.retainCtx,
                     localResourceRoots: config.allowLocalImages ? this.buildLocalResourceRoots(filePath) : [vscode.Uri.file(__dirname)],
                 }
             );
@@ -631,9 +660,11 @@ export class PreviewManager implements vscode.Disposable {
             this.viewStateDisposable = this.panel.onDidChangeViewState(() => {
                 if (!this.panel) return;
                 if (!this.panel.visible) {
-                    if (!retainCtx) this.panelWasHidden = true;
+                    if (!this.retainCtx) this.panelWasHidden = true;
                     return;
                 }
+                // Re-render after being hidden (retainContextWhenHidden: false).
+                // This must run regardless of active state.
                 if (this.panelWasHidden && this.currentFilePath && this.lastConfig) {
                     this.panelWasHidden = false;
                     void this.readFileContent(this.currentFilePath).then((text) => {
@@ -642,7 +673,29 @@ export class PreviewManager implements vscode.Disposable {
                             this.outputChannel.appendLine(`[re-render on show] ${err}`)
                         );
                     });
-                } else if (retainCtx && this.lastScrollLine >= 0) {
+                }
+                if (!this.panel.active) {
+                    // Preview lost focus — pre-scroll the editor to the preview's
+                    // position while it is still in the background tab so no scroll
+                    // animation is visible when the editor tab appears.
+                    if (this.lastPreviewReportedLine >= 0 && this.currentFilePath) {
+                        const editor = vscode.window.visibleTextEditors.find(
+                            e => e.document.uri.fsPath === this.currentFilePath
+                        );
+                        if (editor) {
+                            this.setSyncMaster('preview');
+                            const range = new vscode.Range(this.lastPreviewReportedLine, 0, this.lastPreviewReportedLine, 0);
+                            editor.revealRange(range, vscode.TextEditorRevealType.AtTop);
+                            this.lastScrollLine = this.lastPreviewReportedLine;
+                        }
+                    }
+                    return;
+                }
+
+                // Suppress editor→preview feedback during initial sync so the editor
+                // doesn't jump when the preview scrolls to the editor's position.
+                this.setSyncMaster('editor');
+                if (this.retainCtx && this.lastScrollLine >= 0) {
                     void this.panel.webview.postMessage({ type: 'scrollToLine', line: this.lastScrollLine, maxTopLine: this.lastMaxTopLine, atBottom: this.lastAtBottom });
                 }
             });
@@ -656,10 +709,9 @@ export class PreviewManager implements vscode.Disposable {
             this.lastMaxTopLine = this.calcMaxTopLine(activeEditor.document.lineCount, visibleLineCount);
         }
         return new Promise<void>((resolve) => {
-            if (this.firstRenderResolve) {
-                this.firstRenderResolve();
-            }
+            const prev = this.firstRenderResolve;
             this.firstRenderResolve = resolve;
+            prev?.();
 
             void this.readFileContent(filePath).then((text) => {
                 if (text === null) {
@@ -668,6 +720,7 @@ export class PreviewManager implements vscode.Disposable {
                     return;
                 }
                 if (this.currentFilePath !== filePath) {
+                    this.fireDeferredWork();
                     return;
                 }
                 this.lastDiagramContent = this.extractDiagramContent(text);
@@ -731,9 +784,8 @@ export class PreviewManager implements vscode.Disposable {
                 void vscode.window.showInformationMessage(
                     vscode.l10n.t('PlantUML include path changed to: {0}', resolved)
                 );
-                if (config.renderMode === 'local-server') {
-                    void restartLocalServer(config);
-                }
+                // Server restart is handled by handleLocalServerConfigChange() in extension.ts
+                // via LOCAL_SERVER_KEYS — no need to restart here.
             }
 
             if ([...changed].some(k => HEAD_KEYS.has(k))) {
@@ -799,7 +851,7 @@ export class PreviewManager implements vscode.Disposable {
                 await cfg.update('d2Theme', selected.themeKey, vscode.ConfigurationTarget.Global);
             }
         } catch (err) {
-            vscode.window.showErrorMessage(`[PlantUML Markdown Preview] ${(err as Error).message}`);
+            vscode.window.showErrorMessage(vscode.l10n.t('[PlantUML Markdown Preview] {0}', (err as Error).message));
         }
     }
 

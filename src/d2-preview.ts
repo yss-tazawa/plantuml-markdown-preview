@@ -90,6 +90,7 @@ const preview: StandalonePreview = createStandalonePreview({
     },
 
     shouldReRenderOnConfigChange(prev, next) {
+        lastD2Config = next;
         return (!localD2Theme && prev.d2Theme !== next.d2Theme)
             || (!localD2Layout && prev.d2Layout !== next.d2Layout);
     },

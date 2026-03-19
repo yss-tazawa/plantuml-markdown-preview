@@ -6,7 +6,7 @@
  * preprocessor directives, skinparam properties, and color names.
  */
 import * as vscode from 'vscode';
-import type { KeywordContext, KeywordEntry } from './types.js';
+import type { KeywordContext } from './types.js';
 import { toCompletionItem } from './types.js';
 import { plantumlKeywords } from './plantuml-keywords.js';
 
@@ -68,9 +68,9 @@ export class PlantUMLCompletionProvider implements vscode.CompletionItemProvider
         parent?: string,
     ): vscode.CompletionItem[] {
         return this.keywords
-            .filter((e: KeywordEntry) =>
+            .filter(e =>
                 e.context === context && (!parent || e.parent === parent),
             )
-            .map((e: KeywordEntry) => toCompletionItem(e, range));
+            .map(e => toCompletionItem(e, range));
     }
 }

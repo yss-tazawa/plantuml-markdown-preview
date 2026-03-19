@@ -47,7 +47,7 @@
 - **双向滚动同步** — 编辑器与预览双向联动滚动
 - **导航与目录** — 跳转至顶部/底部按钮及预览面板目录侧边栏
 - **图表查看器** — 右键任意图表打开平移和缩放面板，实时同步并匹配主题背景
-- **独立图表预览** — 直接预览 `.puml`、`.mmd`、`.d2` 文件，支持平移缩放、实时更新和主题 — 无需 Markdown 包装
+- **独立图表预览** — 直接预览 `.puml`、`.plantuml`、`.mmd`、`.mermaid`、`.d2` 文件，支持平移缩放、实时更新和主题 — 无需 Markdown 包装
 - **保存/复制图表为 PNG/SVG** — 在预览或图表查看器中右键图表保存或复制到剪贴板
 - **14 种预览主题** — 亮色 8 种 + 暗色 6 种（GitHub、Atom、Solarized、Dracula、Monokai 等）
 - **编辑器辅助** — PlantUML、Mermaid、D2 的关键字补全、颜色选择器和代码片段
@@ -397,14 +397,18 @@ PlantUML、Mermaid 和 D2 图表也可在 VS Code 内置 Markdown 预览（`Mark
 - **右键菜单：** 右键 `.md` 文件 → **PlantUML Markdown Preview** → **导出为 HTML**
 - **预览面板：** 在预览内右键 → **导出为 HTML** 或 **导出为 HTML 并在浏览器中打开**
 - **命令面板：** `PlantUML Markdown Preview: Export as HTML`
+- **命令面板：** `PlantUML Markdown Preview: Export as HTML & Open in Browser`
+- **命令面板：** `PlantUML Markdown Preview: Export as HTML (Fit to Width)`
+- **命令面板：** `PlantUML Markdown Preview: Export as HTML & Open in Browser (Fit to Width)`
 
-HTML 文件保存在源 `.md` 文件旁边。
+HTML 文件保存在源 `.md` 文件旁边。选择 **导出为 HTML 并在浏览器中打开** 可一步完成导出并打开。
 
 ### 导出为 PDF
 
 - **右键菜单：** 右键 `.md` 文件 → **PlantUML Markdown Preview** → **导出为 PDF**
 - **预览面板：** 在预览内右键 → **导出为 PDF** 或 **导出为 PDF 并打开**
 - **命令面板：** `PlantUML Markdown Preview: Export as PDF`
+- **命令面板：** `PlantUML Markdown Preview: Export as PDF & Open`
 
 PDF 文件保存在源 `.md` 文件旁边。需要 Chrome、Edge 或 Chromium。
 
@@ -570,6 +574,11 @@ $$\int_0^\infty e^{-x}\,dx = 1$$
 | `d2-grid` | 网格布局 |
 | `d2-er` | ER 图 |
 | `d2-flow` | 流程图 |
+| `d2-icon` | 图标节点 |
+| `d2-markdown` | Markdown 文本节点 |
+| `d2-tooltip` | 工具提示和链接 |
+| `d2-layers` | 层/步骤 |
+| `d2-style` | 自定义样式 |
 
 ### D2 代码片段（围栏块内）
 

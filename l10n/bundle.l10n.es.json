@@ -84,5 +84,6 @@
   "Select PlantUML rendering mode": "Seleccionar modo de renderizado PlantUML",
   "Include file not found: {0}": "Archivo include no encontrado: {0}",
   "This diagram has no !include directives.": "Este diagrama no tiene directivas !include.",
-  "Select include file to open": "Seleccionar archivo include para abrir"
+  "Select include file to open": "Seleccionar archivo include para abrir",
+  "[PlantUML Markdown Preview] {0}": "[PlantUML Markdown Preview] {0}"
 }

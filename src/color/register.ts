@@ -44,6 +44,12 @@ class MarkdownColorRouter implements vscode.DocumentColorProvider {
         private readonly d2: DiagramColorProvider,
     ) {}
 
+    /**
+     * Scan all fenced diagram blocks in the document and delegate color
+     * detection to the appropriate language provider.
+     * @param doc - The Markdown document to scan.
+     * @returns Color information entries found inside diagram fences.
+     */
     provideDocumentColors(doc: vscode.TextDocument): vscode.ColorInformation[] {
         const results: vscode.ColorInformation[] = [];
         let currentLang: DiagramLanguage | null = null;
@@ -62,14 +68,27 @@ class MarkdownColorRouter implements vscode.DocumentColorProvider {
                 currentLang = null;
             }
         }
+        // Handle unclosed fences (e.g. user is still typing the closing fence).
+        if (currentLang) {
+            results.push(...this.getProvider(currentLang).scanLines(doc, blockStart, doc.lineCount));
+        }
         return results;
     }
 
+    /**
+     * Provide color presentation options for a picked color.
+     * @param color - The color to present.
+     * @returns Array of color presentations (always #RRGGBB format).
+     */
     provideColorPresentations(color: vscode.Color): vscode.ColorPresentation[] {
-        // All languages use the same #RRGGBB format
         return this.plantuml.provideColorPresentations(color);
     }
 
+    /**
+     * Return the DiagramColorProvider for the given language.
+     * @param lang - Diagram language identifier.
+     * @returns Matching provider instance.
+     */
     private getProvider(lang: DiagramLanguage): DiagramColorProvider {
         switch (lang) {
             case 'plantuml': return this.plantuml;

@@ -43,7 +43,7 @@ export function getPanZoomScript(): string {
         if (!svg) return { w: 100, h: 100 };
         var vb = svg.getAttribute('viewBox');
         if (vb) {
-            var parts = vb.split(/[\\\\s,]+/); // regex: /[\s,]+/ (double-escaped for string template)
+            var parts = vb.split(/[\\s,]+/);
             if (parts.length === 4) return { w: parseFloat(parts[2]), h: parseFloat(parts[3]) };
         }
         var w = parseFloat(svg.getAttribute('width')) || svg.getBoundingClientRect().width;
@@ -133,7 +133,8 @@ export function getPanZoomScript(): string {
     document.getElementById('btn-zoom-in').addEventListener('click', function() { zoomAtCenter(ZOOM_STEP); });
     document.getElementById('btn-zoom-out').addEventListener('click', function() { zoomAtCenter(-ZOOM_STEP); });
 
-    var cssColorRe = /^(#[\\\\da-fA-F]{3,8}|rgba?\\\\(\\\\s*[\\\\d.%,\\\\s\\\\/]+\\\\)|transparent|inherit|currentColor|[\\\\w-]+)$/;
+    // Keep in sync with CSS_COLOR_RE in src/utils.ts.
+    var cssColorRe = /^(#[\\da-fA-F]{3,8}|rgba?\\(\\s*[\\d.%,\\s\\/]+\\)|transparent|inherit|currentColor|[\\w-]+)$/;
 
     // NOTE: This SVG-to-PNG canvas conversion logic is duplicated in
     // scroll-sync-webview.ts (handleSvgAsPng). The two run in separate

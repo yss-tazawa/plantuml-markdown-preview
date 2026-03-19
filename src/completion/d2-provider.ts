@@ -7,7 +7,7 @@
  * `style.` prefixes.
  */
 import * as vscode from 'vscode';
-import type { KeywordContext, KeywordEntry } from './types.js';
+import type { KeywordContext } from './types.js';
 import { toCompletionItem } from './types.js';
 import { d2Keywords } from './d2-keywords.js';
 
@@ -64,9 +64,9 @@ export class D2CompletionProvider implements vscode.CompletionItemProvider {
         parent?: string,
     ): vscode.CompletionItem[] {
         return this.keywords
-            .filter((e: KeywordEntry) =>
+            .filter(e =>
                 e.context === context && (!parent || e.parent === parent),
             )
-            .map((e: KeywordEntry) => toCompletionItem(e, range));
+            .map(e => toCompletionItem(e, range));
     }
 }

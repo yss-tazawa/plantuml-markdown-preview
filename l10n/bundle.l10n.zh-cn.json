@@ -84,5 +84,6 @@
   "Select PlantUML rendering mode": "选择 PlantUML 渲染模式",
   "Include file not found: {0}": "未找到包含文件: {0}",
   "This diagram has no !include directives.": "此图表没有 !include 指令。",
-  "Select include file to open": "选择要打开的包含文件"
+  "Select include file to open": "选择要打开的包含文件",
+  "[PlantUML Markdown Preview] {0}": "[PlantUML Markdown Preview] {0}"
 }

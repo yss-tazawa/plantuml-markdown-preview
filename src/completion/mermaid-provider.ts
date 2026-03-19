@@ -7,7 +7,8 @@
  * and direction values.
  */
 import * as vscode from 'vscode';
-import type { KeywordContext, KeywordEntry } from './types.js';
+import type { KeywordContext } from './types.js';
+import { DIAGRAM_FENCE_OPEN_RE, DIAGRAM_FENCE_CLOSE_RE } from '../utils.js';
 import { toCompletionItem } from './types.js';
 import { mermaidKeywords } from './mermaid-keywords.js';
 
@@ -59,9 +60,9 @@ export class MermaidCompletionProvider implements vscode.CompletionItemProvider 
      */
     private findBlockStart(doc: vscode.TextDocument, line: number): number {
         for (let i = line; i >= 0; i--) {
-            if (doc.lineAt(i).text.match(/^\s*```mermaid\s*$/)) {
-                return i + 1;
-            }
+            const text = doc.lineAt(i).text;
+            if (text.match(DIAGRAM_FENCE_OPEN_RE)?.[1] === 'mermaid') return i + 1;
+            if (i < line && DIAGRAM_FENCE_CLOSE_RE.test(text)) return 0;
         }
         return 0;
     }
@@ -119,7 +120,7 @@ export class MermaidCompletionProvider implements vscode.CompletionItemProvider 
         diagramType?: string,
     ): vscode.CompletionItem[] {
         return this.keywords
-            .filter((e: KeywordEntry) => {
+            .filter(e => {
                 if (e.context !== context) return false;
                 if (parent && e.parent !== parent) return false;
                 if (context === 'line-start' && e.diagramType && e.diagramType !== diagramType) {
@@ -127,6 +128,6 @@ export class MermaidCompletionProvider implements vscode.CompletionItemProvider 
                 }
                 return true;
             })
-            .map((e: KeywordEntry) => toCompletionItem(e, range));
+            .map(e => toCompletionItem(e, range));
     }
 }

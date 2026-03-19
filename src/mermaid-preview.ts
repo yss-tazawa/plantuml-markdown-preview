@@ -19,7 +19,15 @@ import { createStandalonePreview, type StandalonePreview } from './standalone-pr
 let cachedExtensionUri: vscode.Uri | null = null;
 
 /** Local Mermaid theme override, independent from VS Code settings. Reset on panel dispose. */
-let localMermaidTheme = 'default';
+let localMermaidTheme: string | null = null;
+
+/** Last known config for Mermaid-specific getters. */
+let lastMermaidConfig: Config | null = null;
+
+/** Return the effective Mermaid theme, falling back to config default. */
+function getMermaidTheme(): string {
+    return localMermaidTheme ?? (lastMermaidConfig ? lastMermaidConfig.mermaidTheme : 'default');
+}
 
 // ---------------------------------------------------------------------------
 // Webview HTML generation
@@ -190,7 +198,9 @@ ${getPanZoomScript()}
     // Render initial source
     var initialEl = document.getElementById('initial-source');
     if (initialEl && initialEl.textContent) {
-        renderMermaid(initialEl.textContent);
+        renderMermaid(initialEl.textContent).catch(function(err) {
+            console.error('Mermaid initial render failed:', err);
+        });
     }
 })();
 </script>
@@ -227,11 +237,11 @@ const preview: StandalonePreview = createStandalonePreview({
 
     buildHtml(content, nonce, bgColor, panel) {
         return generateMermaidViewerHtml(
-            getMermaidScriptUri(panel), nonce, bgColor, localMermaidTheme, content
+            getMermaidScriptUri(panel), nonce, bgColor, getMermaidTheme(), content
         );
     },
 
-    async updateWebview(panel, content) {
+    async updateWebview(panel, content, _bgColor, _signal) {
         void panel.webview.postMessage({ type: 'updateSource', source: content });
     },
 
@@ -246,19 +256,29 @@ const preview: StandalonePreview = createStandalonePreview({
     buildDiagramThemeItems() {
         return {
             label: vscode.l10n.t('Mermaid Theme'),
-            items: buildThemeItems(MERMAID_THEME_KEYS, 'mermaid' as const, localMermaidTheme),
+            items: buildThemeItems(MERMAID_THEME_KEYS, 'mermaid' as const, getMermaidTheme()),
         };
     },
 
     onDiagramThemeSelected(themeKey, panel) {
-        if (themeKey === localMermaidTheme) return 'done';
+        if (themeKey === getMermaidTheme()) return 'done';
         localMermaidTheme = themeKey;
-        void panel.webview.postMessage({ type: 'updateMermaidTheme', theme: localMermaidTheme });
+        void panel.webview.postMessage({ type: 'updateMermaidTheme', theme: getMermaidTheme() });
         return 'done';
     },
 
+    onPanelCreated(config) {
+        lastMermaidConfig = config;
+    },
+
+    shouldReRenderOnConfigChange(prev, next) {
+        lastMermaidConfig = next;
+        return !localMermaidTheme && prev.mermaidTheme !== next.mermaidTheme;
+    },
+
     resetDiagramState() {
-        localMermaidTheme = 'default';
+        localMermaidTheme = null;
+        lastMermaidConfig = null;
     },
 });
 
@@ -284,6 +304,7 @@ export async function openMermaidPreview(filePath: string, config: Config, exten
  * @param config - New extension configuration snapshot.
  */
 export function updateMermaidConfig(config: Config): void {
+    lastMermaidConfig = config;
     preview.updateConfig(config);
 }
 

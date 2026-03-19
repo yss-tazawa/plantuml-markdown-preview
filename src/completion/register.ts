@@ -57,6 +57,12 @@ class MarkdownCompletionRouter implements vscode.CompletionItemProvider {
         private readonly d2: D2CompletionProvider,
     ) {}
 
+    /**
+     * Provide completion items for the cursor position inside a diagram fence.
+     * @param doc - The Markdown document.
+     * @param pos - The cursor position.
+     * @returns Completion items, or undefined if outside a diagram block.
+     */
     provideCompletionItems(
         doc: vscode.TextDocument,
         pos: vscode.Position,
@@ -73,14 +79,19 @@ class MarkdownCompletionRouter implements vscode.CompletionItemProvider {
         }
     }
 
-    /** Search upward from the cursor line for a fenced block opener and return its language ID. */
+    /**
+     * Search upward from the cursor line for a fenced diagram block opener.
+     * @param doc - The Markdown document to search.
+     * @param line - The current cursor line index.
+     * @returns Language identifier string, or undefined if outside a diagram block.
+     */
     private detectFencedLanguage(doc: vscode.TextDocument, line: number): string | undefined {
         for (let i = line; i >= 0; i--) {
             const text = doc.lineAt(i).text;
             const open = text.match(DIAGRAM_FENCE_OPEN_RE);
             if (open) return open[1];
-            // Hit a closing fence -- outside any block
-            if (i < line && DIAGRAM_FENCE_CLOSE_RE.test(text)) return undefined;
+            // Hit a closing fence -- outside any block (including cursor line itself)
+            if (DIAGRAM_FENCE_CLOSE_RE.test(text)) return undefined;
         }
         return undefined;
     }

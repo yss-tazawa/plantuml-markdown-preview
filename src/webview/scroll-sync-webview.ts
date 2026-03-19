@@ -394,6 +394,7 @@ interface Anchor {
     /** Invalidate the anchor cache when DOM content changes (e.g. re-render, theme swap). */
     const observer = new MutationObserver(function () { anchors = null; });
     observer.observe(document.body, { childList: true, subtree: true });
+    window.addEventListener('unload', function () { observer.disconnect(); });
 
     /** Delegated contextmenu handler: store diagram context for Save as PNG/SVG commands. */
     if (ENABLE_DIAGRAM_VIEWER) {
@@ -428,17 +429,25 @@ interface Anchor {
         });
     }
 
-    /** Set data-vscode-context on diagram container elements for context menus. */
+    /** Set data-vscode-context on diagram container elements for context menus.
+     *  Preserves the preventDefaultContextMenuItems value set at render time. */
     function updateDiagramCursors(): void {
         if (!ENABLE_DIAGRAM_VIEWER) return;
         var diagrams = document.querySelectorAll('.plantuml-diagram, .mermaid-diagram, .d2-diagram');
         for (var i = 0; i < diagrams.length; i++) {
-            var type = diagrams[i].classList.contains('plantuml-diagram') ? 'plantuml'
-                : diagrams[i].classList.contains('mermaid-diagram') ? 'mermaid' : 'd2';
-            var hasInclude = (diagrams[i] as HTMLElement).hasAttribute('data-has-include');
-            var ctx: Record<string, unknown> = { webviewSection: 'diagram', diagramType: type, preventDefaultContextMenuItems: false };
+            var el = diagrams[i] as HTMLElement;
+            var type = el.classList.contains('plantuml-diagram') ? 'plantuml'
+                : el.classList.contains('mermaid-diagram') ? 'mermaid' : 'd2';
+            var hasInclude = el.hasAttribute('data-has-include');
+            // Preserve the preventDefaultContextMenuItems value from renderer if already set
+            var preventDefault = false;
+            var existing = el.getAttribute('data-vscode-context');
+            if (existing) {
+                try { var parsed = JSON.parse(existing); preventDefault = !!parsed.preventDefaultContextMenuItems; } catch { /* ignore */ }
+            }
+            var ctx: Record<string, unknown> = { webviewSection: 'diagram', diagramType: type, preventDefaultContextMenuItems: preventDefault };
             if (hasInclude) ctx.hasInclude = true;
-            (diagrams[i] as HTMLElement).setAttribute('data-vscode-context', JSON.stringify(ctx));
+            el.setAttribute('data-vscode-context', JSON.stringify(ctx));
         }
     }
 
@@ -481,6 +490,9 @@ interface Anchor {
 
         if (update.hasMermaid && typeof win.__renderMermaid === 'function') {
             win.__renderMermaid().then(function () {
+                updateDiagramCursors();
+                notifyDiagramViewers();
+            }).catch(function () {
                 updateDiagramCursors();
                 notifyDiagramViewers();
             });
@@ -544,9 +556,11 @@ interface Anchor {
     const tocList = document.getElementById('toc-list');
 
     if (navTop) navTop.addEventListener('click', function () {
+        setSyncMaster('preview');
         window.scrollTo({ top: 0, behavior: 'smooth' });
     });
     if (navBottom) navBottom.addEventListener('click', function () {
+        setSyncMaster('preview');
         window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
     });
 

@@ -15,6 +15,9 @@ let D2Ctor: (new () => D2Instance) | null = null;
 /** Shared D2 instance (singleton). */
 let d2Instance: D2Instance | null = null;
 
+/** In-flight initD2() promise for deduplication of parallel calls. */
+let initPromise: Promise<void> | null = null;
+
 /** D2 instance interface matching @terrastruct/d2 API. */
 interface D2Instance {
     ready: Promise<void>;
@@ -35,7 +38,8 @@ async function getD2Ctor(): Promise<new () => D2Instance> {
     const d2IndexPath = path.join(__dirname, 'd2', 'index.js');
     const d2Module = await import(/* webpackIgnore: true */ d2IndexPath);
     D2Ctor = d2Module.D2;
-    return D2Ctor!;
+    if (!D2Ctor) throw new Error('D2 module does not export a D2 class');
+    return D2Ctor;
 }
 
 /**
@@ -46,12 +50,17 @@ async function getD2Ctor(): Promise<new () => D2Instance> {
  * The first compile()/render() call will await `this.ready`.
  */
 export async function initD2(): Promise<void> {
-    const Ctor = await getD2Ctor();
-    try {
+    if (initPromise) return initPromise;
+    initPromise = (async () => {
+        const Ctor = await getD2Ctor();
+        // D2Ctor (the class constructor) remains valid even if instantiation fails,
+        // so we do not clear it here — avoids an unnecessary module re-import.
         d2Instance = new Ctor();
-    } catch (err) {
-        D2Ctor = null;   // clear cache so next call re-imports the module
-        throw err;
+    })();
+    try {
+        await initPromise;
+    } finally {
+        initPromise = null;
     }
 }
 
@@ -61,6 +70,8 @@ export async function initD2(): Promise<void> {
  * 1. Strips the XML declaration (`<?xml ...?>`) which is invalid in HTML5.
  * 2. Adds explicit `width`/`height` attributes derived from the `viewBox`
  *    when missing, so the SVG has intrinsic dimensions in inline contexts.
+ * @param svg - Raw SVG markup from the D2 renderer.
+ * @returns Post-processed SVG markup ready for HTML embedding.
  */
 function fixupD2Svg(svg: string): string {
     // Strip XML declaration
@@ -68,12 +79,26 @@ function fixupD2Svg(svg: string): string {
     // Add width/height from viewBox if the root <svg> lacks them
     const openTag = s.match(/^<svg\b[^>]*>/i);
     if (openTag && !openTag[0].includes('width=')) {
-        const vb = openTag[0].match(/viewBox="[^"]*?([\d.]+)\s+([\d.]+)"/);
+        const vb = openTag[0].match(/viewBox="[\d.+-]+\s+[\d.+-]+\s+([\d.]+)\s+([\d.]+)"/);
         if (vb) {
             s = s.replace(/^<svg\b/i, `<svg width="${vb[1]}" height="${vb[2]}"`);
         }
     }
     return s;
+}
+
+/**
+ * Extract render options from a D2 CompileResult, handling both `renderOptions`
+ * and `options` property names (the D2 Wasm API uses `renderOptions` but some
+ * versions expose `options` instead).
+ *
+ * @param result - D2 compile result object.
+ * @returns Render options to pass to `d2Instance.render()`.
+ */
+function getRenderOptions(result: Record<string, unknown>): Record<string, unknown> {
+    return ((result as { renderOptions?: Record<string, unknown> }).renderOptions
+        ?? (result as Record<string, unknown>).options
+        ?? {}) as Record<string, unknown>;
 }
 
 /**
@@ -92,6 +117,9 @@ export async function renderD2ToSvg(source: string, themeID: number, layout: str
         throw new Error('D2 instance failed to initialize');
     }
 
+    // Ensure Wasm initialization is complete before compiling.
+    await d2Instance.ready;
+
     // compile() throws on syntax errors — this does NOT corrupt the instance,
     // so we let the error propagate without discarding d2Instance.
     const result = await d2Instance.compile(source, { layout, themeID });
@@ -100,54 +128,47 @@ export async function renderD2ToSvg(source: string, themeID: number, layout: str
         throw new Error('D2 compile returned no diagram');
     }
 
-    // CompileResult exposes merged render options as either `renderOptions`
-    // (README example) or `options` (API reference). Try both.
-    const opts = result.renderOptions
-        ?? (result as unknown as Record<string, unknown>).options
-        ?? {};
+    const renderResult = await d2Instance.render(
+        result.diagram, getRenderOptions(result),
+    );
 
-    try {
-        const renderResult = await d2Instance.render(
-            result.diagram, opts as Record<string, unknown>,
-        );
-
-        if (typeof renderResult === 'string') {
-            return fixupD2Svg(renderResult);
-        }
-
-        // render() returned non-string (Wasm transport race) — retry with fresh instance.
-        d2Instance = null;
-        await initD2();
-        // d2Instance is reassigned inside initD2(); TypeScript cannot track this
-        // side-effect across await, so use a type assertion to break narrowing.
-        const fresh = d2Instance as D2Instance | null;
-        if (!fresh) {
-            throw new Error('D2 render failed: could not reinitialise D2 instance');
-        }
-        const result2 = await fresh.compile(source, { layout, themeID });
-        const opts2 = result2.renderOptions
-            ?? (result2 as unknown as Record<string, unknown>).options
-            ?? {};
-        const svg2 = await fresh.render(
-            result2.diagram, opts2 as Record<string, unknown>,
-        );
-        if (typeof svg2 === 'string') {
-            return fixupD2Svg(svg2);
-        }
-        throw new Error('D2 render failed to produce SVG');
-    } catch (err) {
-        // render failed — instance may be unusable, discard it.
-        d2Instance = null;
-        throw err;
+    if (typeof renderResult === 'string') {
+        return fixupD2Svg(renderResult);
     }
+
+    // render() returned non-string (Wasm transport race) — retry with fresh instance.
+    d2Instance = null;
+    try {
+        await initD2();
+    } catch (initErr) {
+        throw new Error(`D2 render failed: could not reinitialise D2 instance: ${initErr instanceof Error ? initErr.message : initErr}`);
+    }
+    // d2Instance is reassigned inside initD2(); TypeScript cannot track this
+    // side-effect across await, so use a type assertion to break narrowing.
+    const fresh = d2Instance as D2Instance | null;
+    if (!fresh) {
+        throw new Error('D2 render failed: could not reinitialise D2 instance');
+    }
+    const result2 = await fresh.compile(source, { layout, themeID });
+    if (!result2 || !result2.diagram) {
+        throw new Error('D2 compile returned no diagram on retry');
+    }
+    const svg2 = await fresh.render(
+        result2.diagram, getRenderOptions(result2),
+    );
+    if (typeof svg2 === 'string') {
+        return fixupD2Svg(svg2);
+    }
+    throw new Error('D2 render failed to produce SVG');
 }
 
 /**
  * Extract a detailed error message from a D2 error.
  *
- * D2 Wasm errors may carry useful details in properties beyond `.message`
- * (e.g. `errs`, `stderr`, `cause`, or be a plain object / string).
- * This function attempts to extract all available information.
+ * D2 Wasm compile errors encode details as a JSON array in `err.message`:
+ *   `[{"range":"...","errmsg":"index:2:1: connection missing destination"}]`
+ * This function parses that format to produce human-readable lines.
+ * Falls back to `String(err)` for non-JSON or non-Error values.
  *
  * @param err - The error value thrown by D2 compile/render.
  * @returns Human-readable error message string.
@@ -190,14 +211,15 @@ export async function renderAllD2(
 ): Promise<Map<string, string>> {
     const result = new Map<string, string>();
     const themeID = D2_THEME_MAP.get(config.d2Theme) ?? 0;
-    for (const block of blocks) {
+    const unique = [...new Set(blocks.map(b => b.trim()))];
+    for (const trimmed of unique) {
         if (signal?.aborted) break;
         try {
-            const svg = await renderD2ToSvg(block, themeID, config.d2Layout);
-            result.set(block.trim(), svg);
+            const svg = await renderD2ToSvg(trimmed, themeID, config.d2Layout);
+            result.set(trimmed, svg);
         } catch (err) {
             const msg = extractD2ErrorMessage(err);
-            result.set(block.trim(),
+            result.set(trimmed,
                 `<div class="d2-error"><strong>D2 Error:</strong><pre>${escapeHtml(msg)}</pre></div>`);
         }
     }
@@ -211,10 +233,14 @@ export function disposeD2(): void {
     if (d2Instance) {
         // Attempt to terminate the internal Worker thread if the API exposes a cleanup method
         const inst = d2Instance as unknown as Record<string, unknown>;
-        if (typeof inst.close === 'function') (inst.close as () => void)();
-        else if (typeof inst.terminate === 'function') (inst.terminate as () => void)();
-        else if (typeof inst.dispose === 'function') (inst.dispose as () => void)();
-        else console.warn('[d2] No cleanup method found on D2 instance');
+        try {
+            if (typeof inst.close === 'function') (inst.close as () => void)();
+            else if (typeof inst.terminate === 'function') (inst.terminate as () => void)();
+            else if (typeof inst.dispose === 'function') (inst.dispose as () => void)();
+            else console.warn('[d2] No cleanup method found on D2 instance');
+        } catch (err) {
+            console.warn('[d2] cleanup failed:', err);
+        }
     }
     d2Instance = null;
     D2Ctor = null;

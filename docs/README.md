@@ -47,7 +47,7 @@ Switch between modes anytime with a single setting — no migration, no restart.
 - **Bidirectional scroll sync** — editor and preview scroll together, both ways
 - **Navigation & TOC** — go-to-top / go-to-bottom buttons and a Table of Contents sidebar in the preview panel
 - **Diagram Viewer** — right-click any diagram to open a pan & zoom panel with live sync and theme-matched background
-- **Standalone diagram preview** — open `.puml`, `.mmd`, and `.d2` files directly with pan & zoom, live updates, and theme support — no Markdown wrapper needed
+- **Standalone diagram preview** — open `.puml`, `.plantuml`, `.mmd`, `.mermaid`, and `.d2` files directly with pan & zoom, live updates, and theme support — no Markdown wrapper needed
 - **Save or copy diagrams as PNG / SVG** — right-click any diagram in the preview or Diagram Viewer to save or copy to clipboard
 - **14 preview themes** — 8 light + 6 dark themes including GitHub, Atom, Solarized, Dracula, Monokai, and more
 - **Editor assistance** — keyword completion, color picker, and code snippets for PlantUML, Mermaid, and D2

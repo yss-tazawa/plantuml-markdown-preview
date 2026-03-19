@@ -19,7 +19,7 @@ import url from 'url';
 import { execFile } from 'child_process';
 import MarkdownIt from 'markdown-it';
 import hljs from 'highlight.js';
-import { plantumlPlugin } from './renderer.js';
+import { plantumlPlugin, type RenderEnv } from './renderer.js';
 import * as vscode from 'vscode';
 import { renderAllLocal } from './plantuml.js';
 import { renderAllServer, MAX_LOCAL_SERVER_CONCURRENCY } from './plantuml-server.js';
@@ -336,7 +336,7 @@ export async function renderBodyAsync(
     if (signal?.aborted) return { bodyHtml: '', hasMermaid: false };
 
     const md = getOrCreateMd(config, options?.sourceMap);
-    const env: { preRenderedSvgs?: Map<string, string>; preRenderedD2Svgs?: Map<string, string>; plantumlScale?: string; d2Scale?: string } = { preRenderedSvgs, preRenderedD2Svgs, plantumlScale: config.plantumlScale, d2Scale: config.d2Scale };
+    const env: RenderEnv = { preRenderedSvgs, preRenderedD2Svgs, plantumlScale: config.plantumlScale, d2Scale: config.d2Scale };
     const bodyHtml = md.render(source, env);
     return { bodyHtml, hasMermaid: bodyHtml.includes('mermaid-diagram') };
 }
@@ -425,7 +425,7 @@ export async function exportToPdf(mdFilePath: string, config: Config, signal?: A
         enableMath: config.enableMath,
     };
     const fullHtml = await renderHtmlAsync(source, path.basename(mdFilePath, '.md'), effectiveConfig, exportOptions, signal);
-    if (signal?.aborted) throw new Error('Aborted');
+    if (signal?.aborted || !fullHtml) throw new Error('Aborted');
 
     // Add @page CSS for print margins (insert before </head> to avoid matching </style> in theme CSS)
     const printHtml = fullHtml.replace('</head>', '<style>@page{margin:15mm}</style>\n</head>');
@@ -466,13 +466,14 @@ export async function exportToPdf(mdFilePath: string, config: Config, signal?: A
                 }
             });
             if (signal) {
-                signal.addEventListener('abort', onAbort, { once: true });
+                if (signal.aborted) { onAbort(); }
+                else { signal.addEventListener('abort', onAbort, { once: true }); }
             }
         });
 
         return outputPath;
     } finally {
-        fs.promises.unlink(tmpHtml).catch(() => {});
+        await fs.promises.unlink(tmpHtml).catch(() => {});
     }
 }
 
@@ -508,7 +509,7 @@ async function buildKatexCdnCssHtml(): Promise<string> {
         let css = await fs.promises.readFile(path.join(__dirname, 'katex.min.css'), 'utf-8');
         css = css.replace(/url\(fonts\//g, `url(https://cdn.jsdelivr.net/npm/katex@${__KATEX_VERSION__}/dist/fonts/`);
         return `\n  <style id="katex-css">${css}</style>`;
-    } catch { return ''; }
+    } catch { console.warn('[exporter] katex.min.css not found, math CSS disabled for export'); return ''; }
 }
 
 /**

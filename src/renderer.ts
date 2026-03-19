@@ -11,6 +11,14 @@ import type Token from 'markdown-it/lib/token.mjs' with { "resolution-mode": "im
 import { renderToSvg } from './plantuml.js';
 import type { Config } from './config.js';
 
+/** Environment object passed to md.render() for pre-rendered diagram lookup. */
+export interface RenderEnv {
+    preRenderedSvgs?: Map<string, string>;
+    preRenderedD2Svgs?: Map<string, string>;
+    plantumlScale?: string;
+    d2Scale?: string;
+}
+
 /**
  * Scale a PlantUML SVG string according to the configured plantumlScale setting.
  *
@@ -144,7 +152,7 @@ export function plantumlPlugin(md: MarkdownIt, config: Config): MarkdownIt {
             : '';
 
         /** Pre-render environment passed by the async rendering pipeline. */
-        const renderEnv = env as Record<string, unknown>;
+        const renderEnv = env as RenderEnv | undefined;
 
         if (lang === 'mermaid') {
             const escaped = md.utils.escapeHtml(token.content);
@@ -152,12 +160,11 @@ export function plantumlPlugin(md: MarkdownIt, config: Config): MarkdownIt {
         }
 
         if (lang === 'd2') {
-            const preRenderedD2Svgs = renderEnv?.preRenderedD2Svgs instanceof Map ? renderEnv.preRenderedD2Svgs as Map<string, string> : undefined;
-            const rawD2 = preRenderedD2Svgs?.get(token.content.trim());
+            const rawD2 = renderEnv?.preRenderedD2Svgs?.get(token.content.trim());
             if (rawD2) {
                 // Error HTML from renderAllD2 should not be scaled
                 const isError = rawD2.startsWith('<div class="d2-error">');
-                const svg = isError ? rawD2 : scaleD2Svg(rawD2, (renderEnv?.d2Scale as string | undefined) ?? config.d2Scale);
+                const svg = isError ? rawD2 : scaleD2Svg(rawD2, renderEnv?.d2Scale ?? config.d2Scale);
                 return `<div class="d2-diagram"${lineAttr} data-vscode-context='{"webviewSection":"diagram","preventDefaultContextMenuItems":${isError ? 'false' : 'true'}}'>${svg}${endLineMarker}</div>\n`;
             }
             const escaped = md.utils.escapeHtml(token.content);
@@ -173,10 +180,9 @@ export function plantumlPlugin(md: MarkdownIt, config: Config): MarkdownIt {
         }
 
         // Use pre-rendered SVG from env if available (async pre-render path), otherwise fall back to synchronous local rendering
-        const preRenderedSvgs = renderEnv?.preRenderedSvgs instanceof Map ? renderEnv.preRenderedSvgs as Map<string, string> : undefined;
-        const preRendered = preRenderedSvgs?.get(token.content.trim());
+        const preRendered = renderEnv?.preRenderedSvgs?.get(token.content.trim());
         const rawSvg = preRendered ?? renderToSvg(token.content, config);
-        const svg = scalePlantUmlSvg(rawSvg, (renderEnv?.plantumlScale as string | undefined) ?? config.plantumlScale);
+        const svg = scalePlantUmlSvg(rawSvg, renderEnv?.plantumlScale ?? config.plantumlScale);
         const hasInclude = /^\s*!include(?:_once|_many|sub)?\s+/m.test(token.content);
         return `<div class="plantuml-diagram"${lineAttr}${hasInclude ? ' data-has-include' : ''} data-vscode-context='{"webviewSection":"diagram","preventDefaultContextMenuItems":false}'>${svg}${endLineMarker}</div>\n`;
     };

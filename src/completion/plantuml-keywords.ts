@@ -8,6 +8,7 @@
  */
 import * as vscode from 'vscode';
 import type { KeywordEntry } from './types.js';
+import { PLANTUML_NAMED_COLORS } from '../color/plantuml-colors.js';
 
 const K = vscode.CompletionItemKind.Keyword;
 const P = vscode.CompletionItemKind.Property;
@@ -130,25 +131,10 @@ export const plantumlKeywords: readonly KeywordEntry[] = [
     { label: 'monochrome', kind: P, context: 'after-parent', parent: 'skinparam' },
     { label: 'style', kind: P, context: 'after-parent', parent: 'skinparam' },
 
-    // --- Color names (after-hash) ---
-    { label: 'Red', kind: C, context: 'after-hash' },
-    { label: 'Blue', kind: C, context: 'after-hash' },
-    { label: 'Green', kind: C, context: 'after-hash' },
-    { label: 'Yellow', kind: C, context: 'after-hash' },
-    { label: 'Orange', kind: C, context: 'after-hash' },
-    { label: 'Purple', kind: C, context: 'after-hash' },
-    { label: 'Pink', kind: C, context: 'after-hash' },
-    { label: 'White', kind: C, context: 'after-hash' },
-    { label: 'Black', kind: C, context: 'after-hash' },
-    { label: 'Gray', kind: C, context: 'after-hash' },
-    { label: 'LightBlue', kind: C, context: 'after-hash' },
-    { label: 'LightGreen', kind: C, context: 'after-hash' },
-    { label: 'LightYellow', kind: C, context: 'after-hash' },
-    { label: 'DarkRed', kind: C, context: 'after-hash' },
-    { label: 'DarkBlue', kind: C, context: 'after-hash' },
-    { label: 'Salmon', kind: C, context: 'after-hash' },
-    { label: 'Coral', kind: C, context: 'after-hash' },
-    { label: 'Aqua', kind: C, context: 'after-hash' },
-    { label: 'Gold', kind: C, context: 'after-hash' },
-    { label: 'Lime', kind: C, context: 'after-hash' },
+    // --- Color names (after-hash) — generated from PLANTUML_NAMED_COLORS ---
+    ...([...PLANTUML_NAMED_COLORS.keys()].map(name => ({
+        label: name[0].toUpperCase() + name.slice(1),
+        kind: C,
+        context: 'after-hash' as const,
+    }))),
 ];

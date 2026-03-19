@@ -104,6 +104,7 @@ const preview: StandalonePreview = createStandalonePreview({
     },
 
     shouldReRenderOnConfigChange(prev, next) {
+        lastPumlConfig = next;
         return !localPlantumlTheme && prev.plantumlTheme !== next.plantumlTheme;
     },
 
