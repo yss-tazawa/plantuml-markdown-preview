@@ -148,7 +148,7 @@ export async function startLocalServer(config: Config): Promise<void> {
             child.stderr?.on('data', (chunk: Buffer) => {
                 const text = chunk.toString().trimEnd();
                 log(`[local-server stderr] ${text}`);
-                stderrBuf += text + '\n';
+                stderrBuf = (stderrBuf + text + '\n').slice(-4096);
             });
 
             child.on('error', (err) => {

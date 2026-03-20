@@ -59,8 +59,8 @@ class MarkdownColorRouter implements vscode.DocumentColorProvider {
             const text = doc.lineAt(i).text;
             if (!currentLang) {
                 const open = text.match(DIAGRAM_FENCE_OPEN_RE);
-                if (open) {
-                    currentLang = open[1] as DiagramLanguage;
+                if (open && (open[1] === 'plantuml' || open[1] === 'mermaid' || open[1] === 'd2')) {
+                    currentLang = open[1];
                     blockStart = i + 1;
                 }
             } else if (DIAGRAM_FENCE_CLOSE_RE.test(text)) {

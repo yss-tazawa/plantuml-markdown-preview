@@ -30,7 +30,7 @@ export interface RenderEnv {
  * @param scale - Scale setting value (e.g. '80%', 'auto', '100%').
  * @returns Scaled SVG markup.
  */
-function scalePlantUmlSvg(svg: string, scale: string | undefined): string {
+export function scalePlantUmlSvg(svg: string, scale: string | undefined): string {
     if (!scale || scale === '100%') return svg;
     // The regex patterns below assume PlantUML's SVG output writes inline
     // styles as "width:Xpx;height:Ypx;" in that specific order with separate
@@ -68,7 +68,7 @@ function scalePlantUmlSvg(svg: string, scale: string | undefined): string {
  * @param scale - Scale setting value (e.g. '80%', 'auto', '100%').
  * @returns Scaled SVG markup.
  */
-function scaleD2Svg(svg: string, scale: string | undefined): string {
+export function scaleD2Svg(svg: string, scale: string | undefined): string {
     if (typeof svg !== 'string') return '';
     // Extract viewBox dimensions from the outer <svg> tag
     const vbMatch = svg.match(/<svg[^>]*\bviewBox="(\d+(?:\.\d+)?)\s+(\d+(?:\.\d+)?)\s+(\d+(?:\.\d+)?)\s+(\d+(?:\.\d+)?)"/);

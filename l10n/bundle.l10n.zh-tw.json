@@ -85,5 +85,6 @@
   "Include file not found: {0}": "找不到 include 檔案: {0}",
   "This diagram has no !include directives.": "此圖表沒有 !include 指令。",
   "Select include file to open": "選擇要開啟的 include 檔案",
-  "[PlantUML Markdown Preview] {0}": "[PlantUML Markdown Preview] {0}"
+  "[PlantUML Markdown Preview] {0}": "[PlantUML Markdown Preview] {0}",
+  "SVG copy is not available from this context.": "此上下文中無法複製 SVG。"
 }

@@ -159,9 +159,14 @@ export function getPanZoomScript(): string {
         canvas.width = sz.w * dpr;
         canvas.height = sz.h * dpr;
         var ctx = canvas.getContext('2d');
+        if (!ctx) {
+            vscodeApi.postMessage({ type: action === 'copy' ? 'copyDiagramResult' : 'exportDiagramResult', success: false, format: 'png' });
+            return;
+        }
+        var context = ctx;
         var img = new Image();
         img.onload = function() {
-            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+            context.drawImage(img, 0, 0, canvas.width, canvas.height);
             if (action === 'copy') {
                 canvas.toBlob(function(blob) {
                     if (!blob) {

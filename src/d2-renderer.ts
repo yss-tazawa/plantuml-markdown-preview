@@ -50,6 +50,7 @@ async function getD2Ctor(): Promise<new () => D2Instance> {
  * The first compile()/render() call will await `this.ready`.
  */
 export async function initD2(): Promise<void> {
+    if (d2Instance) return;
     if (initPromise) return initPromise;
     initPromise = (async () => {
         const Ctor = await getD2Ctor();
@@ -138,6 +139,7 @@ export async function renderD2ToSvg(source: string, themeID: number, layout: str
 
     // render() returned non-string (Wasm transport race) — retry with fresh instance.
     d2Instance = null;
+    initPromise = null;
     try {
         await initD2();
     } catch (initErr) {
@@ -244,4 +246,5 @@ export function disposeD2(): void {
     }
     d2Instance = null;
     D2Ctor = null;
+    initPromise = null;
 }

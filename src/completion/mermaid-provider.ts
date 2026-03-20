@@ -81,7 +81,9 @@ export class MermaidCompletionProvider implements vscode.CompletionItemProvider 
                 const match = text.match(
                     /^(flowchart|graph|sequenceDiagram|classDiagram|stateDiagram(?:-v2)?|erDiagram|gantt|pie|mindmap|timeline|gitGraph)/,
                 );
-                return match?.[1];
+                // Normalize v1 to v2 so keyword lookup works for both
+                const type = match?.[1];
+                return type === 'stateDiagram' ? 'stateDiagram-v2' : type;
             }
         }
         return undefined;

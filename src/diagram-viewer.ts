@@ -50,6 +50,7 @@ export function openDiagramViewer(svg: string, diagramIndex: number, bgColor?: s
 
     viewers.set(diagramIndex, panel);
     activeViewerIndex = diagramIndex;
+    // Disposed explicitly in onDidDispose below (not added to a shared disposable array).
     const viewStateDisposable = panel.onDidChangeViewState((e) => {
         if (e.webviewPanel.active) activeViewerIndex = diagramIndex;
         // Re-send latest SVG after potential webview reload (e.g. panel move)
@@ -185,8 +186,11 @@ export function diagramAction(action: 'save' | 'copy', format: 'png' | 'svg', pr
             void previewPanel.webview.postMessage({ type: msgType, svg });
         }
     }
-    // NOTE: SVG copy (format==='svg' && action==='copy') is not implemented
-    // in this fallback path; handled directly via webview clipboard API.
+    // SVG copy (format==='svg' && action==='copy') is handled directly via
+    // the webview clipboard API. If we reach this fallback, notify the user.
+    if (format === 'svg' && action === 'copy') {
+        void vscode.window.showWarningMessage(vscode.l10n.t('SVG copy is not available from this context.'));
+    }
 }
 
 

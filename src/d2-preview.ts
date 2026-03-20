@@ -67,6 +67,7 @@ const preview: StandalonePreview = createStandalonePreview({
     },
 
     async updateWebview(panel, content, bgColor, signal) {
+        if (signal?.aborted) return;
         const svg = await renderSvg(content);
         if (signal?.aborted) return;
         void panel.webview.postMessage({ type: 'updateSvg', svg, bgColor });
@@ -89,6 +90,7 @@ const preview: StandalonePreview = createStandalonePreview({
         return 'render';
     },
 
+    // Side-effect: updates lastD2Config so theme/layout reads stay current.
     shouldReRenderOnConfigChange(prev, next) {
         lastD2Config = next;
         return (!localD2Theme && prev.d2Theme !== next.d2Theme)
