@@ -385,6 +385,7 @@ export async function exportToHtml(mdFilePath: string, config: Config, signal?: 
         enableMath: config.enableMath,
     };
     const fullHtml = await renderHtmlAsync(source, path.basename(mdFilePath, '.md'), effectiveConfig, exportOptions, signal);
+    if (signal?.aborted || !fullHtml) throw new Error('Aborted');
     const outputPath = mdFilePath.replace(/\.md$/, '.html');
     await fs.promises.writeFile(outputPath, fullHtml, 'utf8');
     return outputPath;
@@ -502,7 +503,9 @@ declare const __MERMAID_MAJOR__: string;
 /**
  * Build a KaTeX CSS `<style>` block for HTML export using CDN font URLs.
  * Reads katex.min.css from dist/ and replaces relative font paths with CDN URLs.
- * @returns KaTeX CSS style block string. Empty string on read failure.
+ *
+ * @returns `<style>` block containing the patched KaTeX CSS, or an empty string
+ *          if the CSS file could not be read.
  */
 async function buildKatexCdnCssHtml(): Promise<string> {
     try {

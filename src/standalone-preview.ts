@@ -140,6 +140,8 @@ export function createStandalonePreview(def: StandalonePreviewDef): StandalonePr
     let renderAbort: AbortController | null = null;
     /** Guard against double panel creation during async readSource. */
     let isOpening = false;
+    /** File path queued while isOpening is true; processed after current open() finishes. */
+    let pendingOpen: { filePath: string; config: Config } | null = null;
 
     // -- include tracking ----------------------------------------------------
     /** Absolute paths of `!include` files tracked for save-triggered re-renders. */
@@ -233,7 +235,7 @@ export function createStandalonePreview(def: StandalonePreviewDef): StandalonePr
         // Guard against double panel creation if open() is called again during await.
         // Check before updating state to avoid overwriting currentFilePath/lastConfig
         // while a previous open() is still in progress.
-        if (isOpening) return;
+        if (isOpening) { pendingOpen = { filePath, config }; return; }
 
         lastConfig = config;
         currentFilePath = filePath;
@@ -290,6 +292,12 @@ export function createStandalonePreview(def: StandalonePreviewDef): StandalonePr
             currentFilePath = null;
             lastConfig = null;
             isOpening = false;
+            // Process any file queued while we were opening.
+            if (pendingOpen) {
+                const queued = pendingOpen;
+                pendingOpen = null;
+                await open(queued.filePath, queued.config);
+            }
             return;
         }
 
@@ -322,6 +330,13 @@ export function createStandalonePreview(def: StandalonePreviewDef): StandalonePr
 
         def.onPanelCreated?.(config);
         isOpening = false;
+
+        // If another file was requested while we were opening, process it now.
+        if (pendingOpen) {
+            const queued = pendingOpen;
+            pendingOpen = null;
+            await open(queued.filePath, queued.config);
+        }
     }
 
     /** Apply updated configuration; triggers re-render if diagram keys changed. */

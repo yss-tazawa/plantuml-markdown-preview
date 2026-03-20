@@ -367,6 +367,98 @@ interface Anchor {
             if (!bodyUpdateTimerId) {
                 bodyUpdateTimerId = setTimeout(applyPendingBodyUpdate, 0);
             }
+        } else if (message && message.type === 'patchDiagrams') {
+            // Fast path: update only changed diagrams without full innerHTML replacement.
+            // Track scroll offset changes caused by SVG height changes above the viewport.
+            var savedScrollY = window.scrollY;
+
+            /**
+             * Replace a diagram element's innerHTML and compensate scroll position
+             * if the element is above the current viewport.
+             */
+            function patchElement(el: Element, newHtml: string): void {
+                var rect = el.getBoundingClientRect();
+                var oldH = el.scrollHeight;
+                el.innerHTML = newHtml;
+                // If the element is above the viewport, adjust scroll to compensate
+                if (rect.bottom < 0) {
+                    var delta = el.scrollHeight - oldH;
+                    if (delta !== 0) savedScrollY += delta;
+                }
+            }
+
+            // PlantUML: replace SVG directly
+            if (Array.isArray(message.plantuml)) {
+                var pumlDiagrams = document.querySelectorAll('.plantuml-diagram');
+                for (var pi = 0; pi < message.plantuml.length; pi++) {
+                    var pp = message.plantuml[pi];
+                    if (pp.index >= 0 && pp.index < pumlDiagrams.length) {
+                        patchElement(pumlDiagrams[pp.index], pp.svg);
+                    }
+                }
+            }
+            // D2: replace SVG directly
+            if (Array.isArray(message.d2)) {
+                var d2Diagrams = document.querySelectorAll('.d2-diagram');
+                for (var di = 0; di < message.d2.length; di++) {
+                    var dp = message.d2[di];
+                    if (dp.index >= 0 && dp.index < d2Diagrams.length) {
+                        patchElement(d2Diagrams[dp.index], dp.svg);
+                    }
+                }
+            }
+            // Mermaid: re-render changed blocks client-side
+            if (Array.isArray(message.mermaid) && message.mermaid.length > 0 && typeof win.__renderMermaid === 'function') {
+                var mermaidDiagrams = document.querySelectorAll('.mermaid-diagram');
+                var mermaidLib = (window as any).mermaid;
+                var mPrefix = 'mp' + Date.now() + '_';
+                var mScale = typeof message.mermaidScale === 'number' ? message.mermaidScale : 0;
+                (async function () {
+                    for (var mi = 0; mi < message.mermaid.length; mi++) {
+                        var mp = message.mermaid[mi];
+                        if (mp.index < 0 || mp.index >= mermaidDiagrams.length) continue;
+                        var pre = mermaidDiagrams[mp.index].querySelector('pre.mermaid');
+                        if (!pre) continue;
+                        var mRect = mermaidDiagrams[mp.index].getBoundingClientRect();
+                        var mOldH = mermaidDiagrams[mp.index].scrollHeight;
+                        try {
+                            var r = await mermaidLib.render(mPrefix + mi, mp.source);
+                            pre.innerHTML = r.svg;
+                        } catch (e: any) {
+                            var emsg = (e.message || String(e)).replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                            pre.innerHTML = '<div class="mermaid-error">' + emsg + '</div>';
+                        }
+                        // Clean up temp divs mermaid leaves on body
+                        document.querySelectorAll('body>[id^="d' + mPrefix + '"]').forEach(function (x) { x.remove(); });
+                        // Apply scale (same logic as __renderMermaid init script)
+                        if (mScale > 0) {
+                            var svg = pre.querySelector('svg');
+                            if (svg) {
+                                var mw = svg.style.maxWidth;
+                                var natW = mw ? parseFloat(mw) : parseFloat(svg.getAttribute('width') || '');
+                                if (!isNaN(natW)) {
+                                    svg.setAttribute('width', (natW * mScale) + 'px');
+                                    svg.style.maxWidth = 'none';
+                                    svg.removeAttribute('height');
+                                    svg.style.height = 'auto';
+                                }
+                            }
+                        }
+                        // Compensate scroll for height change above viewport
+                        if (mRect.bottom < 0) {
+                            var mDelta = mermaidDiagrams[mp.index].scrollHeight - mOldH;
+                            if (mDelta !== 0) window.scrollBy(0, mDelta);
+                        }
+                    }
+                })().catch(function () { /* suppress unhandled rejection */ });
+            }
+            // Restore scroll position after synchronous patches (PlantUML/D2)
+            if (savedScrollY !== window.scrollY) {
+                window.scrollTo({ top: savedScrollY, behavior: 'instant' });
+            }
+            anchors = null;
+            updateDiagramCursors();
+            notifyDiagramViewers();
         } else if (message && message.type === 'exportDiagramAsPng' && typeof message.svg === 'string') {
             handleSvgAsPng('save', message.svg);
         } else if (message && message.type === 'copyDiagramAsPng' && typeof message.svg === 'string') {
@@ -509,11 +601,17 @@ interface Anchor {
             highlightToc();
         }
 
-        // Scroll to the requested position after file switch
+        // Restore scroll position after body replacement.
+        // scrollTo (explicit) takes priority; otherwise re-sync to the last
+        // known position so layout shifts from changed SVGs don't move the viewport.
         if (update.scrollTo) {
             const st = update.scrollTo;
             requestAnimationFrame(function () {
                 scrollToSourceLine(st.line, st.maxTopLine, st.atBottom);
+            });
+        } else if (lastSentLine >= 0 && lastMaxTopLine >= 0) {
+            requestAnimationFrame(function () {
+                scrollToSourceLine(lastSentLine, lastMaxTopLine);
             });
         }
     }

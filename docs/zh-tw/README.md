@@ -724,6 +724,7 @@ PlantUML、Mermaid 和 D2 的上下文感知關鍵字建議。適用於獨立檔
 1. 確認伺服器 URL 正確（預設：`https://www.plantuml.com/plantuml`）
 2. 確認網路連線正常
 3. 如使用自行架設的伺服器，確認伺服器正在執行且可存取
+4. 伺服器請求在 15 秒後逾時（Fast 及 Secure 模式也有每張圖表 15 秒的逾時限制）
 
 </details>
 
@@ -749,6 +750,14 @@ D2 使用內建 Wasm 模組渲染 — 無需外部 CLI。
 <summary><strong>Secure 模式在多圖表時很慢。如何加速？</strong></summary>
 
 切換到 **Fast 模式**（`mode: "fast"`）。Fast 模式在 localhost 啟動常駐 PlantUML 伺服器，重新渲染即時完成 — 無需每次編輯都啟動 JVM。並行數也更高（50 個並行請求 vs Secure 模式的 1 個）。
+
+</details>
+
+<details>
+<summary><strong>Easy 模式下我的圖表資料安全嗎？</strong></summary>
+
+在 Easy 模式下，PlantUML 原始碼會發送到已設定的伺服器。
+預設的公共伺服器（`https://www.plantuml.com/plantuml`）由 PlantUML 專案營運。如果您的圖表包含敏感資訊，請考慮執行[自架 PlantUML 伺服器](https://plantuml.com/server)並將 `plantumlServerUrl` 設定為其 URL，或使用 Fast 或 Secure 模式，讓圖表資料不會離開您的電腦。
 
 </details>
 

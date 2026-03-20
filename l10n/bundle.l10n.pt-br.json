@@ -85,5 +85,6 @@
   "Include file not found: {0}": "Arquivo include não encontrado: {0}",
   "This diagram has no !include directives.": "Este diagrama não possui diretivas !include.",
   "Select include file to open": "Selecionar arquivo include para abrir",
-  "[PlantUML Markdown Preview] {0}": "[PlantUML Markdown Preview] {0}"
+  "[PlantUML Markdown Preview] {0}": "[PlantUML Markdown Preview] {0}",
+  "SVG copy is not available from this context.": "A cópia de SVG não está disponível neste contexto."
 }

@@ -675,14 +675,14 @@ export function activate(context: vscode.ExtensionContext): { extendMarkdownIt: 
             if (config.javaPath !== 'java'
                 && !existsSync(config.javaPath)) {
                 const openSettings = vscode.l10n.t('Open Settings');
-                void vscode.window.showErrorMessage(
+                void Promise.resolve(vscode.window.showErrorMessage(
                     vscode.l10n.t('Java path "{0}" does not exist. Check the plantumlMarkdownPreview.javaPath setting.', config.javaPath),
                     openSettings
-                ).then((action) => {
+                )).then((action) => {
                     if (action === openSettings) {
                         void vscode.commands.executeCommand('workbench.action.openSettings', 'plantumlMarkdownPreview.javaPath');
                     }
-                });
+                }).catch(() => {});
                 // Remember the rejected javaPath so that fixing it later triggers a change notification
                 lastRejectedJavaPath = config.javaPath;
                 return;  // don't update lastKnownConfig — keep old valid config

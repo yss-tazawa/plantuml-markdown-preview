@@ -15,10 +15,13 @@ import path from 'path';
 import fs from 'fs';
 import { renderHtmlAsync, renderBodyAsync, getThemeCss, LIGHT_THEME_KEYS, DARK_THEME_KEYS } from './exporter.js';
 import { listThemesAsync, prefetchThemes, clearCache, resolveIncludePath, collectIncludePaths } from './plantuml.js';
-import { clearServerCache } from './plantuml-server.js';
+import { clearServerCache, renderToSvgServer } from './plantuml-server.js';
+import { getLocalServerUrl, waitForLocalServer } from './local-server.js';
+import { scalePlantUmlSvg, scaleD2Svg } from './renderer.js';
+import { renderD2ToSvg } from './d2-renderer.js';
 import { getScrollSyncScriptTag } from './scroll-sync.js';
-import { getNonce, resolveLocalImagePaths, extractPlantUmlBlocks, PLANTUML_FENCE_TEST_RE, extractMermaidBlocks, MERMAID_FENCE_TEST_RE, extractD2Blocks, D2_FENCE_TEST_RE, escapeHtml, buildThemeItems } from './utils.js';
-import { CONFIG_SECTION, MERMAID_THEME_KEYS, D2_THEME_KEYS, type Config } from './config.js';
+import { getNonce, resolveLocalImagePaths, extractPlantUmlBlocks, PLANTUML_FENCE_TEST_RE, extractMermaidBlocks, MERMAID_FENCE_TEST_RE, extractD2Blocks, D2_FENCE_TEST_RE, escapeHtml, errorHtml, buildThemeItems } from './utils.js';
+import { CONFIG_SECTION, MERMAID_THEME_KEYS, D2_THEME_KEYS, D2_THEME_MAP, type Config } from './config.js';
 import { updateDiagramViewer, closeStaleViewers, disposeAllViewers, setPendingSaveDiagram, handlePngFromPreview, handleCopyResult } from './diagram-viewer.js';
 
 /** Config keys that affect &lt;head&gt; content and require a full HTML reload. */
@@ -94,6 +97,14 @@ export class PreviewManager implements vscode.Disposable {
 
     // -- include tracking ---------------------------------------------
     private includePaths = new Set<string>();
+
+    // -- diagram patch mode ---------------------------------------------
+    /** Previous block lists for patch-mode diffing, keyed by diagram type. */
+    private lastPlantUmlBlocks: string[] = [];
+    private lastMermaidBlocks: string[] = [];
+    private lastD2Blocks: string[] = [];
+    /** Previous full text for patch-mode non-diagram text comparison. */
+    private lastRenderedText: string | null = null;
 
     // -- scroll sync --------------------------------------------------
     private syncMaster: SyncMaster = 'none';
@@ -223,6 +234,10 @@ export class PreviewManager implements vscode.Disposable {
         this.lastRenderFailed = false;
         this.panelWasHidden = false;
         this.syncMaster = 'none';
+        this.lastPlantUmlBlocks = [];
+        this.lastMermaidBlocks = [];
+        this.lastD2Blocks = [];
+        this.lastRenderedText = null;
 
         this.lastPreviewReportedLine = -1;
         if (this.firstRenderResolve) { this.firstRenderResolve(); this.firstRenderResolve = null; }
@@ -333,6 +348,16 @@ export class PreviewManager implements vscode.Disposable {
             this.debounceTimer = setTimeout(() => {
                 this.debounceTimer = null;
                 this.lastDiagramContent = currentDiagramContent;
+                // Patch mode: if only diagram block contents changed (same counts, same surrounding text),
+                // skip md.render() and innerHTML replacement — just update changed SVGs in the DOM.
+                if (this.initialHtmlSet) {
+                    void this.tryPatchDiagrams(text).then(patched => {
+                        if (!patched) {
+                            void this.renderPanel(text).catch(e => this.outputChannel.appendLine(`[render error] ${e}`));
+                        }
+                    }).catch(err => this.outputChannel.appendLine(`[patch error] ${err}`));
+                    return;
+                }
                 void this.renderPanel(text).catch(err => this.outputChannel.appendLine(`[render error] ${err}`));
             }, delay);
         });
@@ -388,6 +413,133 @@ export class PreviewManager implements vscode.Disposable {
     }
 
     // -- rendering ----------------------------------------------------
+
+    /**
+     * Try patch mode: if only diagram block contents changed (same counts, same
+     * surrounding text), render only changed blocks and patch the DOM directly.
+     * Returns true if patch mode was used, false if full render is needed.
+     */
+    private async tryPatchDiagrams(text: string): Promise<boolean> {
+        if (!this.panel || !this.lastConfig || !this.lastRenderedText) return false;
+
+        const newPuml = extractPlantUmlBlocks(text);
+        const newMmd = extractMermaidBlocks(text);
+        const newD2 = extractD2Blocks(text);
+
+        // Block counts must match
+        if (newPuml.length !== this.lastPlantUmlBlocks.length) return false;
+        if (newMmd.length !== this.lastMermaidBlocks.length) return false;
+        if (newD2.length !== this.lastD2Blocks.length) return false;
+
+        // At least one block must have actually changed
+        let hasChange = false;
+        for (let i = 0; i < newPuml.length && !hasChange; i++) {
+            if (newPuml[i].trim() !== this.lastPlantUmlBlocks[i].trim()) hasChange = true;
+        }
+        for (let i = 0; i < newMmd.length && !hasChange; i++) {
+            if (newMmd[i].trim() !== this.lastMermaidBlocks[i].trim()) hasChange = true;
+        }
+        for (let i = 0; i < newD2.length && !hasChange; i++) {
+            if (newD2[i].trim() !== this.lastD2Blocks[i].trim()) hasChange = true;
+        }
+        if (!hasChange) return false;
+
+        // Non-diagram text must be identical
+        const strip = (s: string, ...blockLists: string[][]) => {
+            let r = s;
+            for (const blocks of blockLists) for (const b of blocks) r = r.split(b).join('');
+            return r;
+        };
+        if (strip(text, newPuml, newMmd, newD2) !== strip(this.lastRenderedText, this.lastPlantUmlBlocks, this.lastMermaidBlocks, this.lastD2Blocks)) {
+            return false;
+        }
+
+        // --- Patch mode confirmed: render changed blocks only ---
+        if (this.renderAbortController) this.renderAbortController.abort();
+        const myController = new AbortController();
+        this.renderAbortController = myController;
+        const signal = myController.signal;
+
+        try {
+            const pumlPatches: { index: number; svg: string }[] = [];
+            const mermaidPatches: { index: number; source: string }[] = [];
+            const d2Patches: { index: number; svg: string }[] = [];
+
+            // --- PlantUML patches ---
+            if (newPuml.some((b, i) => b.trim() !== this.lastPlantUmlBlocks[i]?.trim())) {
+                let serverConfig: Config;
+                if (this.lastConfig.renderMode === 'local-server') {
+                    await waitForLocalServer();
+                    const localUrl = getLocalServerUrl();
+                    if (!localUrl || signal.aborted) return true;
+                    serverConfig = { ...this.lastConfig, plantumlServerUrl: localUrl };
+                } else {
+                    serverConfig = this.lastConfig;
+                }
+                for (let i = 0; i < newPuml.length; i++) {
+                    if (signal.aborted) return true;
+                    if (newPuml[i].trim() === this.lastPlantUmlBlocks[i].trim()) continue;
+                    const rawSvg = await renderToSvgServer(newPuml[i], serverConfig, signal);
+                    if (signal.aborted) return true;
+                    pumlPatches.push({ index: i, svg: scalePlantUmlSvg(rawSvg, this.lastConfig!.plantumlScale) });
+                }
+            }
+
+            // --- Mermaid patches (send source to webview for client-side rendering) ---
+            for (let i = 0; i < newMmd.length; i++) {
+                if (newMmd[i].trim() !== this.lastMermaidBlocks[i].trim()) {
+                    mermaidPatches.push({ index: i, source: newMmd[i].trim() });
+                }
+            }
+
+            // --- D2 patches (Wasm rendering) ---
+            for (let i = 0; i < newD2.length; i++) {
+                if (signal.aborted) return true;
+                if (newD2[i].trim() === this.lastD2Blocks[i].trim()) continue;
+                try {
+                    const themeID = D2_THEME_MAP.get(this.lastConfig!.d2Theme) ?? 0;
+                    const rawSvg = await renderD2ToSvg(newD2[i].trim(), themeID, this.lastConfig!.d2Layout);
+                    if (signal.aborted) return true;
+                    d2Patches.push({ index: i, svg: scaleD2Svg(rawSvg, this.lastConfig!.d2Scale) });
+                } catch (err) {
+                    const msg = String(err);
+                    if (msg.includes('returned no diagram')) {
+                        // Incomplete input during editing — keep previous SVG
+                    } else {
+                        d2Patches.push({ index: i, svg: errorHtml(escapeHtml(msg)) });
+                    }
+                }
+            }
+
+            if (this.panel && !signal.aborted && (pumlPatches.length > 0 || mermaidPatches.length > 0 || d2Patches.length > 0)) {
+                const mermaidScaleNum = this.lastConfig!.mermaidScale && this.lastConfig!.mermaidScale !== 'auto'
+                    ? parseFloat(this.lastConfig!.mermaidScale) / 100 : 0;
+                void this.panel.webview.postMessage({
+                    type: 'patchDiagrams',
+                    plantuml: pumlPatches,
+                    mermaid: mermaidPatches,
+                    mermaidScale: mermaidScaleNum,
+                    d2: d2Patches,
+                });
+            }
+            if (signal.aborted) return true;
+            this.lastPlantUmlBlocks = newPuml;
+            this.lastMermaidBlocks = newMmd;
+            this.lastD2Blocks = newD2;
+            this.lastRenderedText = text;
+            this.updateIncludePaths(text);
+        } catch (err) {
+            if (!myController.signal.aborted) {
+                this.outputChannel.appendLine(`[patchDiagrams error] ${err}`);
+                return false; // Fall back to full render
+            }
+        } finally {
+            if (this.renderAbortController === myController) {
+                this.renderAbortController = null;
+            }
+        }
+        return true;
+    }
 
     /** Render Markdown content into the webview (full HTML or body-only update). */
     private async renderPanel(text: string): Promise<void> {
@@ -536,6 +688,10 @@ export class PreviewManager implements vscode.Disposable {
             }
             if (htmlReplaced) {
                 this.updateIncludePaths(text);
+                this.lastPlantUmlBlocks = extractPlantUmlBlocks(text);
+                this.lastMermaidBlocks = extractMermaidBlocks(text);
+                this.lastD2Blocks = extractD2Blocks(text);
+                this.lastRenderedText = text;
             }
         }
     }
@@ -781,9 +937,11 @@ export class PreviewManager implements vscode.Disposable {
                         vscode.l10n.t('PlantUML include path "{0}" does not exist. Using workspace root instead.', config.plantumlIncludePath)
                     );
                 }
-                void vscode.window.showInformationMessage(
-                    vscode.l10n.t('PlantUML include path changed to: {0}', resolved)
-                );
+                if (resolved) {
+                    void vscode.window.showInformationMessage(
+                        vscode.l10n.t('PlantUML include path changed to: {0}', resolved)
+                    );
+                }
                 // Server restart is handled by handleLocalServerConfigChange() in extension.ts
                 // via LOCAL_SERVER_KEYS — no need to restart here.
             }

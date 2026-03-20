@@ -103,6 +103,7 @@ const preview: StandalonePreview = createStandalonePreview({
         return 'render';
     },
 
+    // Side-effect: updates lastPumlConfig so theme/config reads stay current.
     shouldReRenderOnConfigChange(prev, next) {
         lastPumlConfig = next;
         return !localPlantumlTheme && prev.plantumlTheme !== next.plantumlTheme;

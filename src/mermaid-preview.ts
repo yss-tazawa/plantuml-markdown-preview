@@ -271,6 +271,7 @@ const preview: StandalonePreview = createStandalonePreview({
         lastMermaidConfig = config;
     },
 
+    // Side-effect: updates lastMermaidConfig so theme/config reads stay current.
     shouldReRenderOnConfigChange(prev, next) {
         lastMermaidConfig = next;
         return !localMermaidTheme && prev.mermaidTheme !== next.mermaidTheme;

@@ -6,6 +6,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## 0.6.12 - 2026-03-20
+
+### Changed
+
+- Significantly faster preview updates when editing diagrams in large files with many diagram blocks (PlantUML, Mermaid, D2)
+
+### Fixed
+
+- Preview no longer scrolls unexpectedly when a diagram changes size during editing
+- D2 diagrams no longer disappear with an error while typing incomplete syntax
+- `stateDiagram` (v1) keyword completion now works in Mermaid blocks
+- HTML export no longer writes an empty file when rendering is cancelled
+
 ## 0.6.11 - 2026-03-19
 
 ### Fixed
