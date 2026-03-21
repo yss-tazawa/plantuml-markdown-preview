@@ -46,6 +46,8 @@ interface Anchor {
     let lastMaxTopLine = -1;
     let lastSentLine = -1;
     let expectingScrollEvent = false;
+    /** Block scrollToLine messages until the initial scroll restore completes. */
+    let initialRestorePending = INITIAL_AT_BOTTOM || INITIAL_LINE > 0;
 
     // syncMaster state machine: 'none' | 'editor' | 'preview'
     type SyncMasterState = 'none' | 'editor' | 'preview';
@@ -322,6 +324,7 @@ interface Anchor {
     window.addEventListener('message', function (event: MessageEvent) {
         const message = event.data;
         if (message && message.type === 'scrollToLine') {
+            if (initialRestorePending) return;
             if (syncMaster === 'preview') return;
             setSyncMaster('editor');
             scrollToSourceLine(message.line, message.maxTopLine, message.atBottom);
@@ -632,7 +635,7 @@ interface Anchor {
             requestAnimationFrame(function () {
                 scrollToSourceLine(lastSentLine, lastMaxTopLine);
             });
-        } else if (INITIAL_LINE > 0) {
+        } else if (INITIAL_LINE > 0 && !initialRestorePending) {
             requestAnimationFrame(function () {
                 scrollToSourceLine(INITIAL_LINE, INITIAL_MAX_TOP_LINE);
             });
@@ -812,6 +815,7 @@ interface Anchor {
             requestAnimationFrame(function () {
                 scrollToSourceLine(INITIAL_LINE, INITIAL_MAX_TOP_LINE, INITIAL_AT_BOTTOM);
                 document.body.style.visibility = '';
+                initialRestorePending = false;
             });
         };
         if (document.readyState === 'loading') {

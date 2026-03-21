@@ -6,6 +6,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## 0.6.15 - 2026-03-22
+
+### Fixed
+
+- Fix preview scroll jumping on startup when the editor is not at the top
+
 ## 0.6.14 - 2026-03-21
 
 ### Changed

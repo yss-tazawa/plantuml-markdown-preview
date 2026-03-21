@@ -2,7 +2,7 @@
   "name": "plantuml-markdown-preview",
   "displayName": "%displayName%",
   "description": "%description%",
-  "version": "0.6.14",
+  "version": "0.6.15",
   "license": "MIT",
   "publisher": "yss-tazawa",
   "icon": "images/icon.png",
