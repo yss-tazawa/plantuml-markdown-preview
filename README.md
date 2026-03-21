@@ -63,6 +63,7 @@ Switch between modes anytime with a single setting — no migration, no restart.
 - [Usage](#usage)
 - [Configuration](#configuration)
 - [Snippets](#snippets)
+- [Color Picker](#color-picker)
 - [Keyword Completion](#keyword-completion)
 - [Keyboard Shortcuts](#keyboard-shortcuts)
 - [FAQ](#faq)

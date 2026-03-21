@@ -16,8 +16,12 @@
 declare function acquireVsCodeApi(): { postMessage(msg: unknown): void };
 
 // Use a typed reference to window for the loading timeout property.
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const win = window as any as Window & { __loadingTimeout: ReturnType<typeof setTimeout> | null; __renderMermaid?: () => Promise<void>; __renderMermaidDone?: Promise<void> };
+interface ExtendedWindow extends Window {
+    __loadingTimeout: ReturnType<typeof setTimeout> | null;
+    __renderMermaid?: () => Promise<void>;
+    __renderMermaidDone?: Promise<void>;
+}
+const win = window as unknown as ExtendedWindow;
 
 interface Anchor {
     line: number;

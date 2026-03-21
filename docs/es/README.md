@@ -63,6 +63,7 @@ Cambia entre modos en cualquier momento con un solo ajuste: sin migración, sin 
 - [Uso](#uso)
 - [Configuración](#configuración)
 - [Fragmentos de código](#fragmentos-de-código)
+- [Selector de color](#selector-de-color)
 - [Autocompletado de palabras clave](#autocompletado-de-palabras-clave)
 - [Atajos de teclado](#atajos-de-teclado)
 - [Preguntas frecuentes](#preguntas-frecuentes)

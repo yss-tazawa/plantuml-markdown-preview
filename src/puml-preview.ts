@@ -72,7 +72,7 @@ const preview: StandalonePreview = createStandalonePreview({
 
     async buildHtml(content, nonce, bgColor) {
         const config = getEffectiveConfig();
-        if (!config) return '';
+        if (!config) return generateViewerHtml(errorHtml('Configuration not available'), nonce, bgColor);
         const svg = await renderSvg(content, config);
         return generateViewerHtml(svg, nonce, bgColor);
     },

@@ -31,5 +31,11 @@ export function getScrollSyncScriptTag(
     initialAtBottom = false,
     enableDiagramViewer = true
 ): string {
-    return `<script nonce="${nonce}" src="${escapeHtml(scrollSyncUri)}" data-initial-line="${initialLine}" data-initial-max-top-line="${initialMaxTopLine}" data-initial-at-bottom="${initialAtBottom}" data-rendering-text="${escapeHtml(renderingText)}" data-sync-master-timeout-ms="${syncMasterTimeoutMs}" data-enable-diagram-viewer="${enableDiagramViewer}"></script>`;
+    return `<script nonce="${nonce}" src="${escapeHtml(scrollSyncUri)}"` +
+        ` data-initial-line="${initialLine}"` +
+        ` data-initial-max-top-line="${initialMaxTopLine}"` +
+        ` data-initial-at-bottom="${initialAtBottom}"` +
+        ` data-rendering-text="${escapeHtml(renderingText)}"` +
+        ` data-sync-master-timeout-ms="${syncMasterTimeoutMs}"` +
+        ` data-enable-diagram-viewer="${enableDiagramViewer}"></script>`;
 }

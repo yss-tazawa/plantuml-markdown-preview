@@ -42,7 +42,7 @@
   "Restart Server": "重启服务器",
   "Local PlantUML server stopped.": "本地 PlantUML 服务器已停止。",
   "Go to top": "跳到顶部",
-  "Go to bottom": "跳到底部",
+  "Go to bottom": "跳到末尾",
   "Reload": "重新加载",
   "PlantUML include path \"{0}\" does not exist. Using workspace root instead.": "PlantUML include 路径\u201C{0}\u201D不存在。将使用工作区根目录。",
   "PlantUML include path changed to: {0}": "PlantUML include 路径已更改为: {0}",

@@ -14,7 +14,7 @@ import * as vscode from 'vscode';
 import path from 'path';
 import fs from 'fs';
 import { renderHtmlAsync, renderBodyAsync, getThemeCss, LIGHT_THEME_KEYS, DARK_THEME_KEYS } from './exporter.js';
-import { listThemesAsync, prefetchThemes, clearCache, resolveIncludePath, collectIncludePaths, renderToSvgAsync } from './plantuml.js';
+import { listThemesAsync, prefetchThemes, clearCache, resolveIncludePath, collectIncludePaths, renderToSvgAsync, renderAllLocal } from './plantuml.js';
 import { clearServerCache, renderToSvgServer } from './plantuml-server.js';
 import { getLocalServerUrl, waitForLocalServer } from './local-server.js';
 import { scalePlantUmlSvg, scaleD2Svg } from './renderer.js';
@@ -477,14 +477,32 @@ export class PreviewManager implements vscode.Disposable {
                 } else if (this.lastConfig.renderMode === 'server') {
                     serverConfig = this.lastConfig;
                 }
+                // Collect changed block indices
+                const changedIndices: number[] = [];
                 for (let i = 0; i < newPuml.length; i++) {
-                    if (signal.aborted) return true;
-                    if (newPuml[i].trim() === this.lastPlantUmlBlocks[i].trim()) continue;
-                    const rawSvg = serverConfig
-                        ? await renderToSvgServer(newPuml[i], serverConfig, signal)
-                        : await renderToSvgAsync(newPuml[i], this.lastConfig, signal);
-                    if (signal.aborted) return true;
-                    pumlPatches.push({ index: i, svg: scalePlantUmlSvg(rawSvg, this.lastConfig!.plantumlScale) });
+                    if (newPuml[i].trim() !== this.lastPlantUmlBlocks[i].trim()) changedIndices.push(i);
+                }
+                if (changedIndices.length > 0 && !signal.aborted) {
+                    if (serverConfig) {
+                        // Fast / Easy: parallel HTTP requests
+                        const results = await Promise.all(
+                            changedIndices.map(async i => {
+                                const rawSvg = await renderToSvgServer(newPuml[i], serverConfig!, signal);
+                                return { index: i, svg: scalePlantUmlSvg(rawSvg, this.lastConfig!.plantumlScale) };
+                            })
+                        );
+                        if (signal.aborted) return true;
+                        pumlPatches.push(...results);
+                    } else {
+                        // Secure (local): batch all changed blocks in a single JVM
+                        const changedBlocks = changedIndices.map(i => newPuml[i]);
+                        const svgMap = await renderAllLocal(changedBlocks, this.lastConfig, signal);
+                        if (signal.aborted) return true;
+                        for (const i of changedIndices) {
+                            const rawSvg = svgMap.get(newPuml[i].trim()) ?? '';
+                            pumlPatches.push({ index: i, svg: scalePlantUmlSvg(rawSvg, this.lastConfig!.plantumlScale) });
+                        }
+                    }
                 }
             }
 
@@ -647,6 +665,11 @@ export class PreviewManager implements vscode.Disposable {
                 // The recursive call manages its own htmlReplaced / renderSeq state.
                 if (hasMermaid && !this.initialHtmlHadMermaid) {
                     this.initialHtmlSet = false;
+                    // Clear outer controller reference before recursing so the
+                    // outer finally block does not interfere with the new one.
+                    if (this.renderAbortController === myController) {
+                        this.renderAbortController = null;
+                    }
                     return await this.renderPanel(text);
                 }
 
