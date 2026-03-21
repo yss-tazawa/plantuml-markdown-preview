@@ -6,6 +6,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## 0.6.13 - 2026-03-21
+
+### Fixed
+
+- Secure mode patch rendering no longer sends diagram content to an external server — it now correctly uses the local Java process
+
 ## 0.6.12 - 2026-03-20
 
 ### Changed
