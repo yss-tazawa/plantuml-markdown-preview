@@ -42,7 +42,7 @@
   "Restart Server": "Reiniciar servidor",
   "Local PlantUML server stopped.": "O servidor PlantUML local foi parado.",
   "Go to top": "Ir para o topo",
-  "Go to bottom": "Ir para o rodapé",
+  "Go to bottom": "Ir para o final",
   "Reload": "Recarregar",
   "PlantUML include path \"{0}\" does not exist. Using workspace root instead.": "O caminho include do PlantUML \"{0}\" não existe. Usando a raiz do workspace.",
   "PlantUML include path changed to: {0}": "O caminho include do PlantUML foi alterado para: {0}",

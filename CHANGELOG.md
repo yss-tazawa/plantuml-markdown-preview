@@ -6,6 +6,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## 0.6.14 - 2026-03-21
+
+### Changed
+
+- Faster diagram patch updates in Secure mode
+- Faster diagram patch updates in Easy mode
+
 ## 0.6.13 - 2026-03-21
 
 ### Fixed
@@ -38,7 +45,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
-- Improved multilingual README translations (Spanish, Korean, Brazilian Portuguese, Simplified Chinese, Traditional Chinese) with missing sections, corrected anchor links, and full feature coverage
+- Improved multilingual README translations
 
 ## 0.6.9 - 2026-03-18
 

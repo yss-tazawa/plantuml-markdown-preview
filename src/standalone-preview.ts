@@ -285,9 +285,18 @@ export function createStandalonePreview(def: StandalonePreviewDef): StandalonePr
         );
 
         try {
-            panel.webview.html = await def.buildHtml(content, getNonce(), getCurrentBgColor(), panel);
+            const html = await def.buildHtml(content, getNonce(), getCurrentBgColor(), panel);
+            if (!html) {
+                panel.dispose();
+                panel = null;
+                currentFilePath = null;
+                lastConfig = null;
+                isOpening = false;
+                return;
+            }
+            panel.webview.html = html;
         } catch (err) {
-            panel.dispose();
+            panel?.dispose();
             panel = null;
             currentFilePath = null;
             lastConfig = null;

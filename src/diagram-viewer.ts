@@ -62,9 +62,10 @@ export function openDiagramViewer(svg: string, diagramIndex: number, bgColor?: s
         }
     });
     const messageDisposable = panel.webview.onDidReceiveMessage((msg) => { void handleViewerMessage(msg); });
-    panel.onDidDispose(() => {
+    const disposeDisposable = panel.onDidDispose(() => {
         viewStateDisposable.dispose();
         messageDisposable.dispose();
+        disposeDisposable.dispose();
         viewers.delete(diagramIndex);
         latestState.delete(diagramIndex);
         if (activeViewerIndex === diagramIndex) activeViewerIndex = -1;
@@ -179,17 +180,16 @@ export function diagramAction(action: 'save' | 'copy', format: 'png' | 'svg', pr
 
     if (format === 'svg' && action === 'save') {
         void saveSvgFromHtml(svg, diagramIndex);
+    } else if (format === 'svg' && action === 'copy') {
+        // SVG copy is normally handled via the webview clipboard API.
+        // If we reach this fallback path, notify the user.
+        void vscode.window.showWarningMessage(vscode.l10n.t('SVG copy is not available from this context.'));
     } else if (format === 'png') {
         // PNG: need canvas conversion — send to preview webview
         const msgType = action === 'copy' ? 'copyDiagramAsPng' : 'exportDiagramAsPng';
         if (previewPanel) {
             void previewPanel.webview.postMessage({ type: msgType, svg });
         }
-    }
-    // SVG copy (format==='svg' && action==='copy') is handled directly via
-    // the webview clipboard API. If we reach this fallback, notify the user.
-    if (format === 'svg' && action === 'copy') {
-        void vscode.window.showWarningMessage(vscode.l10n.t('SVG copy is not available from this context.'));
     }
 }
 

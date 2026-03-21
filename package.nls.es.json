@@ -18,7 +18,7 @@
   "command.copyDiagramAsPng.title": "Copiar diagrama como PNG",
   "command.selectMode.title": "Seleccionar modo de renderizado",
   "command.goToIncludeFile.title": "Ir al archivo include",
-  "command.openIncludeSource.title": "Abrir fuente include",
+  "command.openIncludeSource.title": "Abrir archivo de origen include",
   "command.changeTheme.title": "Cambiar tema de vista previa",
   "command.category": "PlantUML Markdown Preview",
   "configuration.title": "PlantUML Markdown Preview",

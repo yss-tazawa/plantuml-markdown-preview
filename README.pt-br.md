@@ -63,6 +63,7 @@ Alterne entre modos a qualquer momento com uma única configuração — sem mig
 - [Uso](#uso)
 - [Configuração](#configuração)
 - [Snippets](#snippets)
+- [Seletor de Cores](#seletor-de-cores)
 - [Completamento de Palavras-chave](#completamento-de-palavras-chave)
 - [Atalhos de Teclado](#atalhos-de-teclado)
 - [FAQ](#faq)

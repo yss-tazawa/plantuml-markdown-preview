@@ -63,6 +63,7 @@
 - [使用方法](#使用方法)
 - [配置](#配置)
 - [代码片段](#代码片段)
+- [颜色选择器](#颜色选择器)
 - [关键字补全](#关键字补全)
 - [键盘快捷键](#键盘快捷键)
 - [常见问题](#常见问题)
@@ -263,7 +264,7 @@ PlantUML、Mermaid 和 D2 图表也可在 VS Code 内置 Markdown 预览（`Mark
 
 | 工具 | 用途 | 验证 |
 | --- | --- | --- |
-| Java 11+（JRE 或 JDK） | 运行 PlantUML（内置 PlantUML 1.2026.2 需要 Java 11+） | `java -version` |
+| [Java 11+（JRE 或 JDK）](#设置) | 运行 PlantUML（内置 PlantUML 1.2026.2 需要 Java 11+） | `java -version` |
 | [Graphviz](https://graphviz.org/) | 可选 — 类图、组件图等布局相关图表需要 | `dot -V` |
 
 > **注意：** PlantUML jar（LGPL，v1.2026.2）已内置于扩展中，无需单独下载。**需要 Java 11 或更高版本。**
