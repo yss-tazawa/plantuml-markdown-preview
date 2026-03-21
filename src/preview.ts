@@ -14,7 +14,7 @@ import * as vscode from 'vscode';
 import path from 'path';
 import fs from 'fs';
 import { renderHtmlAsync, renderBodyAsync, getThemeCss, LIGHT_THEME_KEYS, DARK_THEME_KEYS } from './exporter.js';
-import { listThemesAsync, prefetchThemes, clearCache, resolveIncludePath, collectIncludePaths } from './plantuml.js';
+import { listThemesAsync, prefetchThemes, clearCache, resolveIncludePath, collectIncludePaths, renderToSvgAsync } from './plantuml.js';
 import { clearServerCache, renderToSvgServer } from './plantuml-server.js';
 import { getLocalServerUrl, waitForLocalServer } from './local-server.js';
 import { scalePlantUmlSvg, scaleD2Svg } from './renderer.js';
@@ -467,19 +467,22 @@ export class PreviewManager implements vscode.Disposable {
 
             // --- PlantUML patches ---
             if (newPuml.some((b, i) => b.trim() !== this.lastPlantUmlBlocks[i]?.trim())) {
-                let serverConfig: Config;
+                let serverConfig: Config | undefined;
                 if (this.lastConfig.renderMode === 'local-server') {
                     await waitForLocalServer();
                     const localUrl = getLocalServerUrl();
-                    if (!localUrl || signal.aborted) return true;
+                    if (signal.aborted) return true;
+                    if (!localUrl) return false; // fall back to full render (shows error)
                     serverConfig = { ...this.lastConfig, plantumlServerUrl: localUrl };
-                } else {
+                } else if (this.lastConfig.renderMode === 'server') {
                     serverConfig = this.lastConfig;
                 }
                 for (let i = 0; i < newPuml.length; i++) {
                     if (signal.aborted) return true;
                     if (newPuml[i].trim() === this.lastPlantUmlBlocks[i].trim()) continue;
-                    const rawSvg = await renderToSvgServer(newPuml[i], serverConfig, signal);
+                    const rawSvg = serverConfig
+                        ? await renderToSvgServer(newPuml[i], serverConfig, signal)
+                        : await renderToSvgAsync(newPuml[i], this.lastConfig, signal);
                     if (signal.aborted) return true;
                     pumlPatches.push({ index: i, svg: scalePlantUmlSvg(rawSvg, this.lastConfig!.plantumlScale) });
                 }
