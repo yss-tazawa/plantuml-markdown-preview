@@ -201,6 +201,12 @@ interface Anchor {
      * @param [atBottom] - When true, snap to the bottom of the preview.
      */
     function scrollToSourceLine(topLine: number, maxTopLine: number, atBottom?: boolean): void {
+        // Track the current logical position so DOM-change recovery restores
+        // the correct scroll position (applyPendingBodyUpdate needs lastSentLine >= 0
+        // to re-sync; onImageSettled needs it to avoid falling back to INITIAL_LINE).
+        lastSentLine = Math.round(topLine);
+        lastMaxTopLine = maxTopLine;
+
         if (atBottom) {
             const ms = Math.max(0, document.body.scrollHeight - window.innerHeight);
             expectingScrollEvent = true;

@@ -6,6 +6,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## 0.6.16 - 2026-03-23
+
+### Fixed
+
+- Fix preview jumping to wrong position when editing or selecting text in the editor
+
 ## 0.6.15 - 2026-03-22
 
 ### Fixed
