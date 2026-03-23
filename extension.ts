@@ -769,7 +769,7 @@ export function activate(context: vscode.ExtensionContext): { extendMarkdownIt: 
             if (!filePath) return;
             const doc = vscode.workspace.textDocuments.find(d => d.uri.fsPath === filePath);
             const text = doc?.getText();
-            if (!text) return;
+            if (text == null) return;
             const blocks = extractPlantUmlBlocks(text);
             const block = blocks[ctx.plantumlIndex];
             if (!block) return;

@@ -184,10 +184,13 @@ export async function startLocalServer(config: Config): Promise<void> {
             if (serverProcess && !serverProcess.killed) {
                 serverProcess.removeAllListeners('error');
                 serverProcess.removeAllListeners('close');
+                // Flag prevents the close handler from treating this kill as unexpected.
+                // Safe to reset synchronously: removeAllListeners('close') above ensures
+                // no close callback fires between kill() and the reset.
                 stoppingIntentionally = true;
                 serverProcess.kill();
                 serverProcess = null;
-                stoppingIntentionally = false; // reset before retry
+                stoppingIntentionally = false;
             }
             if (!useAutoPort || attempt === MAX_PORT_RETRIES - 1) {
                 setServerState('error');
@@ -420,7 +423,7 @@ function resetState(): void {
     setServerState('stopped');
     serverUrl = null;
     // Reject any pending waiters. When called from stopLocalServer(), readyReject
-    // is already null (cleared at line 210) so rejectFn is a no-op. However, if
+    // is already null (cleared in stopLocalServer) so rejectFn is a no-op. However, if
     // startLocalServer's retry loop replaced readyReject with a new Promise before
     // stop was called, this catches that replacement.
     const rejectFn = readyReject;

@@ -96,12 +96,12 @@
   "configuration.allowLocalImages.off": "Off — 一律封鎖本機圖片",
   "configuration.allowHttpImages.description": "允許在預覽中透過 HTTP（非加密）載入圖片。適用於內部網路或本機開發伺服器。基於安全考量，預設停用。預設: false",
   "configuration.mode.description": "預設模式。以一個設定統一控制渲染方式、防抖時間和安全預設值。",
-  "configuration.mode.fast": "Fast（預設）— 本地伺服器，即時渲染。需要 Java 11+。資料不會離開本機。",
+  "configuration.mode.fast": "Fast（預設） — 本地伺服器，即時渲染。需要 Java 11+。資料不會離開本機。",
   "configuration.mode.secure": "Secure — 無網路存取，最高安全性。需要 Java 11+。本機圖片預設被封鎖。",
   "configuration.mode.easy": "Easy — 無需設定（圖表原始碼將傳送至 PlantUML 伺服器）。",
   "configuration.plantumlServerUrl.description": "Easy 模式使用的 PlantUML 伺服器 URL。預設: https://www.plantuml.com/plantuml。可設定為自架伺服器 URL 以保護隱私。",
   "configuration.previewTheme.description": "預覽主題。同時控制文件整體樣式和程式碼區塊語法高亮。預設: github-light",
-  "configuration.previewTheme.github-light": "GitHub Light（預設）— 白色背景、深色文字。程式碼區塊: github-dark-dimmed",
+  "configuration.previewTheme.github-light": "GitHub Light（預設） — 白色背景、深色文字。程式碼區塊: github-dark-dimmed",
   "configuration.previewTheme.atom-light": "Atom Light — 白色背景、柔和灰色文字。Atom 編輯器風格。",
   "configuration.previewTheme.one-light": "One Light — 米白色背景、均衡配色。Atom One Light 風格。",
   "configuration.previewTheme.solarized-light": "Solarized Light — 暖米色背景、護眼配色。",
@@ -116,6 +116,6 @@
   "configuration.previewTheme.solarized-dark": "Solarized Dark — 深青色背景、護眼配色。",
   "configuration.plantumlLocalServerPort.description": "Fast 模式下本地 PlantUML 伺服器使用的連接埠。0 = 自動分配空閒連接埠（建議）。預設: 0",
   "configuration.previewTheme.monokai": "Monokai — 深色背景、鮮明語法高亮色。Sublime Text 風格。",
-  "configuration.enableDiagramViewer.description": "在預覽中右鍵點擊圖表以在平移和縮放檢視器中開啟的功能。（需要重新開啟預覽）",
+  "configuration.enableDiagramViewer.description": "在預覽中右鍵點擊圖表即可在平移和縮放檢視器中開啟。（需要重新開啟預覽）",
   "configuration.retainPreviewContext.description": "索引標籤隱藏時保留預覽內容。防止切換索引標籤時重新渲染，但會使用更多記憶體。（需要重新開啟預覽）"
 }

@@ -6,6 +6,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## 0.6.17 - 2026-03-23
+
+### Changed
+
+- Improved scroll sync smoothness and accuracy
+
 ## 0.6.16 - 2026-03-23
 
 ### Fixed

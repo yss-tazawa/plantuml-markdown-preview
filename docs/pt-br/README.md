@@ -1,5 +1,5 @@
 <p align="center">
-  <a href="#/">English</a> | <a href="#/zh-cn/">简体中文</a> | <a href="#/zh-tw/">繁體中文</a> | <a href="#/ko/">한국어</a> | <a href="#/ja/">日本語</a> | <a href="#/es/">Español</a> | <strong>Português</strong>
+  <a href="#/">English</a> | <a href="#/zh-cn/">简体中文</a> | <a href="#/zh-tw/">繁體中文</a> | <a href="#/es/">Español</a> | <strong>Português</strong> | <a href="#/ja/">日本語</a> | <a href="#/ko/">한국어</a>
 </p>
 
 <p align="center">
@@ -51,7 +51,7 @@ Alterne entre modos a qualquer momento com uma única configuração — sem mig
 - **Salvar ou copiar diagramas como PNG / SVG** — clique com o botão direito em qualquer diagrama na prévia ou no Visualizador de Diagramas para salvar ou copiar para a área de transferência
 - **14 temas de prévia** — 8 temas claros + 6 escuros, incluindo GitHub, Atom, Solarized, Dracula, Monokai e mais
 - **Assistência ao editor** — completamento de palavras-chave, seletor de cores e trechos de código (snippets) para PlantUML, Mermaid e D2
-- **Internacionalização** — interface em Inglês, Chinês (Simplificado / Tradicional), Japonês, Coreano, Espanhol e Português Brasileiro
+- **Internacionalização** — interface em Inglês, Chinês (Simplificado / Tradicional), Espanhol, Português Brasileiro, Japonês e Coreano
 - **Suporte a matemática** — fórmulas inline `$...$` e em bloco `$$...$$` renderizadas com [KaTeX](https://katex.org/)
 
 ## Sumário

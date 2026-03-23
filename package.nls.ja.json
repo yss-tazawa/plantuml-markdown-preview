@@ -96,7 +96,7 @@
   "configuration.allowLocalImages.off": "Off — 常にローカル画像をブロック",
   "configuration.allowHttpImages.description": "プレビューで HTTP（非暗号化）経由の画像読み込みを許可します。イントラネットやローカル開発サーバなどで利用。セキュリティのためデフォルトは無効です。デフォルト: false",
   "configuration.mode.description": "プリセットモード。レンダリング方式・デバウンス・セキュリティのデフォルトを一括で制御します。",
-  "configuration.mode.fast": "Fast（デフォルト） — ローカルサーバー、即時レンダリング。Java 11 以上が必要です。ドキュメントは一切外部に送信されません。",
+  "configuration.mode.fast": "Fast（デフォルト） — ローカルサーバー、即時レンダリング。Java 11 以上が必要です。データは一切外部に送信されません。",
   "configuration.mode.secure": "Secure — 外部通信なし、最高のセキュリティ。Java 11 以上が必要です。ローカル画像はデフォルトでブロックされます。",
   "configuration.mode.easy": "Easy — セットアップ不要（ダイアグラムソースが PlantUML サーバーに送信されます）。",
   "configuration.plantumlServerUrl.description": "Easy モード用の PlantUML サーバー URL。デフォルト: https://www.plantuml.com/plantuml。プライバシーのためにセルフホストサーバーの URL を設定できます。",
