@@ -34,12 +34,6 @@ type SyncMaster = 'none' | 'editor' | 'preview';
 const SYNC_MASTER_TIMEOUT_MS = 300;
 
 
-/**
- * When the visible line count shrinks by at least this many lines while at the
- * bottom, the editor is considered "scrolled past the end".
- */
-const AT_BOTTOM_LINE_THRESHOLD = 10;
-
 /** Property keys that affect rendering output. */
 const RENDER_KEYS = ['plantumlJarPath', 'javaPath', 'dotPath', 'plantumlTheme', 'plantumlScale', 'previewTheme', 'allowLocalImages', 'allowHttpImages', 'mode', 'plantumlServerUrl', 'plantumlLocalServerPort', 'mermaidTheme', 'mermaidScale', 'enableMath', 'plantumlIncludePath', 'd2Theme', 'd2Layout', 'd2Scale'] as const;
 
@@ -83,7 +77,6 @@ export class PreviewManager implements vscode.Disposable {
     private lastDiagramContent = '';
     private lastScrollLine = -1;
     private lastMaxTopLine = -1;
-    private normalVisibleLineCount = 0;
     private lastAtBottom = false;
     private renderSeq = 0;
     private initialHtmlSet = false;
@@ -227,7 +220,6 @@ export class PreviewManager implements vscode.Disposable {
         this.lastDiagramContent = '';
         this.lastScrollLine = -1;
         this.lastMaxTopLine = -1;
-        this.normalVisibleLineCount = 0;
         this.initialHtmlSet = false;
         this.initialHtmlHadMermaid = false;
         this.pendingScrollRestore = false;
@@ -291,7 +283,7 @@ export class PreviewManager implements vscode.Disposable {
 
                 this.setSyncMaster('preview');
                 const range = new vscode.Range(line, 0, line, 0);
-                editor.revealRange(range, vscode.TextEditorRevealType.AtTop);
+                editor.revealRange(range, vscode.TextEditorRevealType.InCenter);
                 this.lastScrollLine = line;
             } else if (this.enableDiagramViewer && message.type === 'updateDiagramViewer') {
                 updateDiagramViewer(message.diagramIndex, message.svg, message.bgColor);
@@ -375,20 +367,18 @@ export class PreviewManager implements vscode.Disposable {
             const visibleLineCount = bottomLine - topLine + 1;
             const maxTopLine = this.calcMaxTopLine(lineCount, visibleLineCount);
 
-            if (topLine === this.lastScrollLine && maxTopLine === this.lastMaxTopLine) return;
+            let midLine: number;
+            if (topLine === 0) midLine = 0;
+            else if (bottomLine >= lineCount - 1) midLine = bottomLine;
+            else midLine = Math.floor((topLine + bottomLine) / 2);
+
+            if (midLine === this.lastScrollLine && maxTopLine === this.lastMaxTopLine) return;
             this.setSyncMaster('editor');
-            this.lastScrollLine = topLine;
+            this.lastScrollLine = midLine;
             this.lastMaxTopLine = maxTopLine;
-            if (bottomLine < lineCount - 1) {
-                this.normalVisibleLineCount = visibleLineCount;
-            }
-            const atBottom = bottomLine >= lineCount - 1
-                && topLine > 0
-                && (this.normalVisibleLineCount > 0
-                    ? this.normalVisibleLineCount - visibleLineCount >= AT_BOTTOM_LINE_THRESHOLD
-                    : visibleLineCount < lineCount);
+            const atBottom = topLine >= maxTopLine && topLine > 0;
             this.lastAtBottom = atBottom;
-            void this.panel.webview.postMessage({ type: 'scrollToLine', line: topLine, maxTopLine, atBottom });
+            void this.panel.webview.postMessage({ type: 'scrollToLine', line: midLine, maxTopLine, atBottom });
         });
 
         this.activeEditorDisposable = vscode.window.onDidChangeActiveTextEditor((editor) => {
@@ -406,7 +396,7 @@ export class PreviewManager implements vscode.Disposable {
                 // reports the default position (line 0) before VS Code restores the
                 // previous scroll state, so comparing currentTop is unreliable.
                 const range = new vscode.Range(this.lastPreviewReportedLine, 0, this.lastPreviewReportedLine, 0);
-                editor.revealRange(range, vscode.TextEditorRevealType.AtTop);
+                editor.revealRange(range, vscode.TextEditorRevealType.InCenter);
                 this.lastScrollLine = this.lastPreviewReportedLine;
             }
         });
@@ -544,6 +534,10 @@ export class PreviewManager implements vscode.Disposable {
                 });
             }
             if (signal.aborted) return true;
+            // No patches sent (e.g. all changes were incomplete input) — fall back to full render
+            if (pumlPatches.length === 0 && mermaidPatches.length === 0 && d2Patches.length === 0) {
+                return false;
+            }
             this.lastPlantUmlBlocks = newPuml;
             this.lastMermaidBlocks = newMmd;
             this.lastD2Blocks = newD2;
@@ -581,19 +575,7 @@ export class PreviewManager implements vscode.Disposable {
                 const lineCount = editor.document.lineCount;
                 const visibleLineCount = bottomLine - this.lastScrollLine + 1;
                 this.lastMaxTopLine = this.calcMaxTopLine(lineCount, visibleLineCount);
-                this.lastAtBottom = false;
-                if (bottomLine >= lineCount - 1 && this.lastScrollLine > 0) {
-                    if (this.normalVisibleLineCount > 0) {
-                        if (this.normalVisibleLineCount - visibleLineCount >= AT_BOTTOM_LINE_THRESHOLD) {
-                            this.lastAtBottom = true;
-                        }
-                    } else if (visibleLineCount < lineCount) {
-                        this.lastAtBottom = true;
-                    }
-                }
-                if (!this.lastAtBottom && bottomLine < lineCount - 1) {
-                    this.normalVisibleLineCount = visibleLineCount;
-                }
+                this.lastAtBottom = this.lastScrollLine >= this.lastMaxTopLine && this.lastScrollLine > 0;
             }
         }
 
@@ -665,6 +647,8 @@ export class PreviewManager implements vscode.Disposable {
                 // The recursive call manages its own htmlReplaced / renderSeq state.
                 if (hasMermaid && !this.initialHtmlHadMermaid) {
                     this.initialHtmlSet = false;
+                    // Mark as replaced so the outer finally does not send a redundant hideLoading.
+                    htmlReplaced = true;
                     // Clear outer controller reference before recursing so the
                     // outer finally block does not interfere with the new one.
                     if (this.renderAbortController === myController) {
@@ -796,8 +780,7 @@ export class PreviewManager implements vscode.Disposable {
         if (this.currentFilePath !== filePath) {
             this.lastScrollLine = -1;
             this.lastMaxTopLine = -1;
-            this.normalVisibleLineCount = 0;
-            this.lastAtBottom = false;
+                this.lastAtBottom = false;
             this.pendingScrollRestore = true;
             this.lastDiagramContent = '';
             disposeAllViewers();
@@ -867,7 +850,7 @@ export class PreviewManager implements vscode.Disposable {
                         if (editor) {
                             this.setSyncMaster('preview');
                             const range = new vscode.Range(this.lastPreviewReportedLine, 0, this.lastPreviewReportedLine, 0);
-                            editor.revealRange(range, vscode.TextEditorRevealType.AtTop);
+                            editor.revealRange(range, vscode.TextEditorRevealType.InCenter);
                             this.lastScrollLine = this.lastPreviewReportedLine;
                         }
                     }

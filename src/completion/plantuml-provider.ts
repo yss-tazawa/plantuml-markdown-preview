@@ -36,8 +36,7 @@ export class PlantUMLCompletionProvider implements vscode.CompletionItemProvider
         }
 
         // After 'skinparam ' -- skinparam parameters
-        const parentMatch = before.match(/^\s*(skinparam)\s+(\w*)$/i);
-        if (parentMatch) {
+        if (/^\s*skinparam\s+\w*$/i.test(before)) {
             return this.getItems('after-parent', undefined, 'skinparam');
         }
 

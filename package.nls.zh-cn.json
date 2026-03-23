@@ -101,7 +101,7 @@
   "configuration.mode.easy": "Easy — 无需配置（图表源码将发送到 PlantUML 服务器）。",
   "configuration.plantumlServerUrl.description": "Easy 模式使用的 PlantUML 服务器 URL。默认: https://www.plantuml.com/plantuml。可设置为自建服务器 URL 以保护隐私。",
   "configuration.previewTheme.description": "预览主题。同时控制文档整体样式和代码块语法高亮。默认: github-light",
-  "configuration.previewTheme.github-light": "GitHub Light（默认）— 白色背景、深色文字。代码块: github-dark-dimmed",
+  "configuration.previewTheme.github-light": "GitHub Light（默认） — 白色背景、深色文字。代码块: github-dark-dimmed",
   "configuration.previewTheme.atom-light": "Atom Light — 白色背景、柔和灰色文字。Atom 编辑器风格。",
   "configuration.previewTheme.one-light": "One Light — 米白色背景、均衡配色。Atom One Light 风格。",
   "configuration.previewTheme.solarized-light": "Solarized Light — 暖米色背景、护眼配色。",

@@ -193,9 +193,55 @@ interface Anchor {
 
     // --- Editor -> Preview sync ---
 
+    /** Duration (ms) for smooth scroll animation. */
+    const SMOOTH_SCROLL_DURATION = 100;
+    /** Interval (ms) between animation frames. */
+    const SMOOTH_SCROLL_INTERVAL = 10;
+    /** Active smooth-scroll timer ID, or null if no animation is running. */
+    let smoothScrollTimer: ReturnType<typeof setTimeout> | null = null;
+
+    /**
+     * Animate scroll from current position to targetY over SMOOTH_SCROLL_DURATION ms.
+     * Sets expectingScrollEvent before each step to suppress feedback loops.
+     * Falls back to instant jump when distance is tiny (< 2px).
+     */
+    function smoothScrollTo(targetY: number): void {
+        // Cancel any in-flight animation
+        if (smoothScrollTimer) { clearTimeout(smoothScrollTimer); smoothScrollTimer = null; }
+
+        const startY = window.scrollY;
+        const distance = targetY - startY;
+
+        // Tiny distance — jump instantly to avoid unnecessary animation
+        if (Math.abs(distance) < 2) {
+            expectingScrollEvent = true;
+            window.scrollTo({ top: targetY, behavior: 'instant' });
+            requestAnimationFrame(function () { expectingScrollEvent = false; });
+            return;
+        }
+
+        let remaining = SMOOTH_SCROLL_DURATION;
+        function step(): void {
+            if (remaining <= 0) {
+                // Final frame: snap to exact target
+                expectingScrollEvent = true;
+                window.scrollTo({ top: targetY, behavior: 'instant' });
+                smoothScrollTimer = null;
+                requestAnimationFrame(function () { expectingScrollEvent = false; });
+                return;
+            }
+            const perTick = (distance * SMOOTH_SCROLL_INTERVAL) / SMOOTH_SCROLL_DURATION;
+            expectingScrollEvent = true;
+            window.scrollBy(0, perTick);
+            remaining -= SMOOTH_SCROLL_INTERVAL;
+            smoothScrollTimer = setTimeout(step, SMOOTH_SCROLL_INTERVAL);
+        }
+        step();
+    }
+
     /**
      * Scroll the preview to the position corresponding to the given source line.
-     * Uses the expectingScrollEvent flag to distinguish programmatic scrolls.
+     * Uses smooth JS animation with expectingScrollEvent flag on each frame.
      * @param topLine - Editor top line to scroll to.
      * @param maxTopLine - Maximum editor top line for anchor computation.
      * @param [atBottom] - When true, snap to the bottom of the preview.
@@ -217,11 +263,9 @@ interface Anchor {
         const anc = ensureAnchors(maxTopLine);
         if (!anc) return;
 
-        const targetY = Math.max(0, Math.round(lineToPixel(anc, topLine)));
-        expectingScrollEvent = true;
-        window.scrollTo({ top: targetY, behavior: 'instant' });
-        // If scrollTo didn't change position, scroll event won't fire; clear via rAF fallback
-        requestAnimationFrame(function () { expectingScrollEvent = false; });
+        const centerPixel = lineToPixel(anc, topLine);
+        const targetY = Math.max(0, Math.round(centerPixel - window.innerHeight / 2));
+        smoothScrollTo(targetY);
     }
 
     // --- Preview -> Editor sync ---
@@ -234,7 +278,7 @@ interface Anchor {
         const anc = ensureAnchors(lastMaxTopLine);
         if (!anc) return;
 
-        const line = Math.round(pixelToLine(anc, window.scrollY));
+        const line = Math.round(pixelToLine(anc, window.scrollY + window.innerHeight / 2));
         if (line === lastSentLine) return;
         lastSentLine = line;
         vscode.postMessage({ type: 'revealLine', line: line });

@@ -1,5 +1,5 @@
 <p align="center">
-  <a href="https://yss-tazawa.github.io/plantuml-markdown-preview/">English</a> | <a href="https://yss-tazawa.github.io/plantuml-markdown-preview/#/zh-cn/">简体中文</a> | <a href="https://yss-tazawa.github.io/plantuml-markdown-preview/#/zh-tw/">繁體中文</a> | <strong>한국어</strong> | <a href="https://yss-tazawa.github.io/plantuml-markdown-preview/#/ja/">日本語</a> | <a href="https://yss-tazawa.github.io/plantuml-markdown-preview/#/es/">Español</a> | <a href="https://yss-tazawa.github.io/plantuml-markdown-preview/#/pt-br/">Português</a>
+  <a href="https://yss-tazawa.github.io/plantuml-markdown-preview/">English</a> | <a href="https://yss-tazawa.github.io/plantuml-markdown-preview/#/zh-cn/">简体中文</a> | <a href="https://yss-tazawa.github.io/plantuml-markdown-preview/#/zh-tw/">繁體中文</a> | <a href="https://yss-tazawa.github.io/plantuml-markdown-preview/#/es/">Español</a> | <a href="https://yss-tazawa.github.io/plantuml-markdown-preview/#/pt-br/">Português</a> | <a href="https://yss-tazawa.github.io/plantuml-markdown-preview/#/ja/">日本語</a> | <strong>한국어</strong>
 </p>
 
 <p align="center">
@@ -51,7 +51,7 @@
 - **다이어그램을 PNG / SVG로 저장 또는 복사** — 미리보기 또는 다이어그램 뷰어에서 다이어그램을 우클릭하여 파일로 저장하거나 클립보드에 복사합니다.
 - **14가지 미리보기 테마** — GitHub, Atom, Solarized, Dracula, Monokai 등을 포함한 8가지 밝은 테마 + 6가지 어두운 테마를 제공합니다.
 - **에디터 지원** — PlantUML, Mermaid 및 D2를 위한 키워드 완성, 컬러 피커 및 코드 스니펫을 제공합니다.
-- **국제화** — 영어, 중국어(간체/번체), 일본어, 한국어, 스페인어 및 브라질 포르투갈어 UI를 지원합니다.
+- **국제화** — 영어, 중국어(간체/번체), 스페인어, 브라질 포르투갈어, 일본어 및 한국어 UI를 지원합니다.
 - **수학 공식 지원** — [KaTeX](https://katex.org/)를 사용하여 `$ ... $` 인라인 및 `$$ ... $$` 블록 수학 공식을 렌더링합니다.
 
 ## 목차
