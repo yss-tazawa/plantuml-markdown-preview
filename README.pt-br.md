@@ -146,6 +146,14 @@ Exporte seu documento Markdown para PDF usando um navegador baseado em Chromium 
 - Os diagramas são redimensionados automaticamente para caber na largura da página
 - Margens de impressão são aplicadas para um layout limpo
 
+### Exportação em massa de diagramas
+
+Exporte todos os diagramas de um arquivo Markdown como arquivos PNG ou SVG individuais.
+
+- Exporta todos os diagramas PlantUML / Mermaid / D2 na ordem do documento
+- O nome do diretório de saída é personalizável (padrão: `{nome_arquivo}_diagrams`)
+- Requer que a prévia esteja aberta (renderização via Webview da prévia)
+
 ### Navegação
 
 - **Ir para o topo / Ir para o fim** — botões no canto superior direito do painel de prévia
@@ -406,6 +414,14 @@ O arquivo PDF é salvo ao lado do arquivo `.md` de origem. Chrome, Edge ou Chrom
 - **Painel de prévia:** Clique com o botão direito em um diagrama → **Copy Diagram as PNG**, **Save Diagram as PNG** ou **Save Diagram as SVG**
 - **Visualizador de Diagramas:** Clique com o botão direito dentro do visualizador → **Copy Diagram as PNG**, **Save Diagram as PNG** ou **Save Diagram as SVG**
 - **Prévia de diagrama independente:** Clique com o botão direito dentro da prévia → **Copy Diagram as PNG**, **Save Diagram as PNG** ou **Save Diagram as SVG**
+
+### Exportar todos os diagramas
+
+- **Menu de contexto:** Clique com o botão direito em um arquivo `.md` → **PlantUML Markdown Preview** → **Export All Diagrams as PNG** ou **Export All Diagrams as SVG**
+- **Painel de prévia:** Clique com o botão direito dentro do painel de prévia → **Export All Diagrams as PNG** ou **Export All Diagrams as SVG**
+- **Paleta de Comandos:** `PlantUML Markdown Preview: Export All Diagrams as PNG` / `Export All Diagrams as SVG`
+
+Um diálogo de salvamento permite escolher o nome do diretório de saída (padrão: `{nome_arquivo}_diagrams`). Cada diagrama é salvo como `diagram-1.png`, `diagram-2.png`, etc. na ordem do documento. A prévia deve estar aberta.
 
 ### Navegação
 
