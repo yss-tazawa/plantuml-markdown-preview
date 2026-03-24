@@ -113,10 +113,9 @@
 | **需要 Java** | 是 | 是 | 否 |
 | **網路** | 無（僅 localhost） | 無 | 需要 |
 | **隱私** | 圖表保留在本機 | 圖表保留在本機 | 圖表原始碼傳送至 PlantUML 伺服器 |
-| **速度** | 常駐 PlantUML 伺服器 — 即時重新渲染 | 每次渲染啟動 JVM | 依賴網路 |
-| **並行數** | 50（並行 HTTP） | 1（批次） | 5（並行 HTTP） |
+| **速度** | 即時（常駐本機伺服器） | 較慢（每次啟動 JVM） | 依賴網路 |
 
-- **Fast 模式**（預設）— 在 `localhost` 啟動常駐 PlantUML 伺服器。消除每次編輯的 JVM 啟動開銷，以高並行實現即時重新渲染。圖表不會傳送到機器外部。
+- **Fast 模式**（預設）— 在 `localhost` 啟動常駐 PlantUML 伺服器。消除每次編輯的 JVM 啟動開銷，實現即時重新渲染。圖表不會傳送到機器外部。
 - **Secure 模式** — 在本機使用 Java + PlantUML jar。圖表不會傳送到機器外部。無網路存取。為最高安全性，預設封鎖本機圖片。
 - **Easy 模式** — 將 PlantUML 原始碼傳送至伺服器渲染。無需設定。預設使用公共伺服器（`https://www.plantuml.com/plantuml`）。可設定自己的伺服器 URL 保護隱私。
 
@@ -668,7 +667,7 @@ PlantUML、Mermaid 和 D2 的上下文感知關鍵字建議。適用於獨立檔
 | `htmlAlignment` | `"center"` | HTML 對齊方式。`"center"`（預設）或 `"left"`。 |
 | `enableMath` | `true` | 啟用 KaTeX 數學渲染。支援 `$...$`（行內）和 `$$...$$`（區塊）。如 `$` 符號導致意外的數學解析，可設為 `false`。 |
 | `debounceNoDiagramChangeMs` | _(空)_ | 非圖表文字變更的防抖延遲（毫秒）。圖表從快取中提供。留空使用模式預設值（Fast: 100, Secure: 100, Easy: 100）。 |
-| `debounceDiagramChangeMs` | _(空)_ | 圖表內容變更的防抖延遲（毫秒）。留空使用模式預設值（Fast: 100, Secure: 300, Easy: 300）。 |
+| `debounceDiagramChangeMs` | _(空)_ | 圖表內容變更的防抖延遲（毫秒）。��空使用模式預設值（Fast: 100, Secure: 300, Easy: 300）。 |
 | `plantumlLocalServerPort` | `0` | 本機 PlantUML 伺服器連接埠（僅 Fast 模式）。`0` = 自動指派空閒連接埠。 |
 | `plantumlServerUrl` | `"https://www.plantuml.com/plantuml"` | Easy 模式的 PlantUML 伺服器 URL。 |
 | `enableDiagramViewer` | `true` | 啟用右鍵選單中的「在圖表檢視器中開啟」項目。 |
@@ -750,7 +749,7 @@ D2 使用內建 Wasm 模組渲染 — 無需外部 CLI。
 <details>
 <summary><strong>Secure 模式在多圖表時很慢。如何加速？</strong></summary>
 
-切換到 **Fast 模式**（`mode: "fast"`）。Fast 模式在 localhost 啟動常駐 PlantUML 伺服器，重新渲染即時完成 — 無需每次編輯都啟動 JVM。並行數也更高（50 個並行請求 vs Secure 模式的 1 個）。
+切換到 **Fast 模式**（`mode: "fast"`）。Fast 模式在 localhost 啟動常駐 PlantUML 伺服器，重新渲染即時完成 — 無需每次編輯都啟動 JVM。
 
 </details>
 

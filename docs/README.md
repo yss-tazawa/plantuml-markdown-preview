@@ -113,10 +113,9 @@ Choose a preset mode that controls how PlantUML diagrams are rendered:
 | **Java required** | Yes | Yes | No |
 | **Network** | None (localhost only) | None | Required |
 | **Privacy** | Diagrams stay on your machine | Diagrams stay on your machine | Diagram source sent to PlantUML server |
-| **Speed** | Persistent PlantUML server — instant re-renders | JVM starts per render | Depends on network |
-| **Concurrency** | 50 (parallel HTTP) | 1 (batch) | 5 (parallel HTTP) |
+| **Speed** | Instant (persistent local server) | Slower (JVM starts each time) | Depends on network |
 
-- **Fast mode** (default) — starts a persistent PlantUML server on `localhost`. Eliminates JVM startup cost on every edit, enabling instant re-renders with high concurrency. Diagrams never leave your machine.
+- **Fast mode** (default) — starts a persistent PlantUML server on `localhost`. Eliminates JVM startup cost on every edit, enabling instant re-renders. Diagrams never leave your machine.
 - **Secure mode** — uses Java + PlantUML jar on your machine. Diagrams never leave your machine. No network access. Local images are blocked by default for maximum security.
 - **Easy mode** — sends PlantUML source to a PlantUML server for rendering. No setup required. Uses the public server (`https://www.plantuml.com/plantuml`) by default, or set your own self-hosted server URL for privacy.
 
@@ -761,7 +760,6 @@ For privacy, you can run your own PlantUML server and set `plantumlServerUrl` to
 
 Switch to **Fast mode** (`mode: "fast"`). It starts a persistent
 PlantUML server on localhost, so re-renders are instant — no JVM startup cost per edit.
-Concurrency is also much higher (50 parallel requests vs 1 in Secure mode).
 
 </details>
 
