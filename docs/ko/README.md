@@ -146,6 +146,14 @@ Markdown 문서를 독립 실행형 HTML 파일로 내보냅니다.
 - 다이어그램은 페이지 너비에 맞게 자동으로 조정됩니다.
 - 깔끔한 레이아웃을 위해 인쇄 여백이 적용됩니다.
 
+### 다이어그램 일괄 내보내기
+
+Markdown 파일의 모든 다이어그램을 개별 PNG 또는 SVG 파일로 내보냅니다.
+
+- 문서 순서대로 모든 PlantUML / Mermaid / D2 다이어그램을 내보냅니다
+- 출력 디렉토리 이름을 사용자 지정할 수 있습니다 (기본값: `{파일명}_diagrams`)
+- 미리보기가 열려 있어야 합니다 (미리보기 Webview를 통해 렌더링)
+
 ### 탐색
 
 - **맨 위로 / 맨 아래로 가기** — 미리보기 패널의 오른쪽 상단에 있는 버튼입니다.
@@ -249,7 +257,7 @@ PlantUML, Mermaid 및 D2 다이어그램은 VS Code의 내장 Markdown 미리보
 
 > **참고:** 내장 미리보기는 이 확장 프로그램의 미리보기 테마, 양방향 스크롤 동기화 또는 HTML 내보내기를 지원하지 않습니다. 모든 기능을 사용하려면 확장 프로그램 자체의 미리보기 패널(`Cmd+Alt+V` / `Ctrl+Alt+V`)을 사용하십시오.
 >
-> **참고:** 내장 미리보기는 다이어그램을 동기적으로 렌더링합니다. 크거나 복잡한 PlantUML 다이어그램은 에디터를 일시적으로 멈추게 할 수 있습니다. 무거운 다이어그램의 경우 확장 프로그램 자체의 미리보기 패널을 사용하십시오.
+> **참고:** 내장 미리보기는 다이어그램을 동기적으로 렌더링합니��. 크거나 복잡한 PlantUML 다이어그램은 에디터를 일시적으로 멈추게 할 수 있습니다. 무거운 다이어��램의 경우 확장 프로그램 자체의 미리보기 패널을 사용하십시오.
 
 ## 빠른 시작
 
@@ -409,6 +417,14 @@ PDF 파일은 소스 `.md` 파일과 같은 위치에 저장됩니다. Chrome, E
 - **미리보기 패널:** 다이어그램 우클릭 → **Copy Diagram as PNG**, **Save Diagram as PNG**, 또는 **Save Diagram as SVG**
 - **다이어그램 뷰어:** 뷰어 내부 우클릭 → **Copy Diagram as PNG**, **Save Diagram as PNG**, 또는 **Save Diagram as SVG**
 - **단독 다이어그램 미리보기:** 미리보기 내부 우클릭 → **Copy Diagram as PNG**, **Save Diagram as PNG**, 또는 **Save Diagram as SVG**
+
+### 모든 다이어그램 내보내기
+
+- **컨텍스트 메뉴:** `.md` 파일 우클릭 → **PlantUML Markdown Preview** → **Export All Diagrams as PNG** 또는 **Export All Diagrams as SVG**
+- **미리보기 패널:** 미리보기 내부 우클릭 → **Export All Diagrams as PNG** 또는 **Export All Diagrams as SVG**
+- **명령 팔레트:** `PlantUML Markdown Preview: Export All Diagrams as PNG` / `Export All Diagrams as SVG`
+
+저장 대화 상자에서 출력 디렉토리 이름을 선택합니다 (기본값: `{파일명}_diagrams`). 각 다이어그램은 문서 순서대로 `diagram-1.png`, `diagram-2.png` 등으로 저장됩니다. 미리보기가 열려 있어야 합니다.
 
 ### 탐색
 

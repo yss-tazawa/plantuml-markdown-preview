@@ -86,5 +86,11 @@
   "This diagram has no !include directives.": "Este diagrama não possui diretivas !include.",
   "Select include file to open": "Selecionar arquivo include para abrir",
   "[PlantUML Markdown Preview] {0}": "[PlantUML Markdown Preview] {0}",
-  "SVG copy is not available from this context.": "A cópia de SVG não está disponível neste contexto."
+  "SVG copy is not available from this context.": "A cópia de SVG não está disponível neste contexto.",
+  "Exporting diagrams...": "Exportando diagramas...",
+  "No diagrams found in this file.": "Nenhum diagrama encontrado neste arquivo.",
+  "Exported {0} diagrams ({1} failed): {2}": "{0} diagramas exportados ({1} com falha): {2}",
+  "Exported {0} diagrams: {1}": "{0} diagramas exportados: {1}",
+  "Open Folder": "Abrir pasta",
+  "No preview is open. Open a preview first.": "Nenhuma visualização aberta. Abra uma primeiro."
 }
