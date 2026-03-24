@@ -61,7 +61,7 @@ export function openDiagramViewer(svg: string, diagramIndex: number, bgColor?: s
             }
         }
     });
-    const messageDisposable = panel.webview.onDidReceiveMessage((msg) => { void handleViewerMessage(msg); });
+    const messageDisposable = panel.webview.onDidReceiveMessage((msg) => { void handleViewerMessage(msg).catch(err => console.error('[diagram-viewer] message handler error:', err)); });
     const disposeDisposable = panel.onDidDispose(() => {
         viewStateDisposable.dispose();
         messageDisposable.dispose();

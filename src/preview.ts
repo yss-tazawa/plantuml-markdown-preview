@@ -780,7 +780,7 @@ export class PreviewManager implements vscode.Disposable {
         if (this.currentFilePath !== filePath) {
             this.lastScrollLine = -1;
             this.lastMaxTopLine = -1;
-                this.lastAtBottom = false;
+            this.lastAtBottom = false;
             this.pendingScrollRestore = true;
             this.lastDiagramContent = '';
             disposeAllViewers();
@@ -873,6 +873,8 @@ export class PreviewManager implements vscode.Disposable {
             const visibleLineCount = activeEditor.visibleRanges[0].end.line - activeEditor.visibleRanges[0].start.line + 1;
             this.lastMaxTopLine = this.calcMaxTopLine(activeEditor.document.lineCount, visibleLineCount);
         }
+        // If open() is called again before the first render completes,
+        // resolve the previous promise immediately so it doesn't hang.
         return new Promise<void>((resolve) => {
             const prev = this.firstRenderResolve;
             this.firstRenderResolve = resolve;

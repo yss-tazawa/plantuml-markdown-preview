@@ -26,7 +26,7 @@ export interface BulkExportResult {
 export interface DiagramData {
     /** SVG markup (for svg format) or base64 PNG data URL (for png format). */
     data: string;
-    /** 0-based index in document order. */
+    /** 0-based index in document order; file names use 1-based numbering. */
     index: number;
 }
 
@@ -54,8 +54,10 @@ export async function exportAllDiagrams(
     // the name as default. Find a name that doesn't conflict.
     let defaultName = `${mdBaseName}_diagrams`;
     let counter = 2;
-    while (fs.existsSync(path.join(parentDir, defaultName)) && fs.statSync(path.join(parentDir, defaultName)).isDirectory()) {
+    let candidate = path.join(parentDir, defaultName);
+    while (fs.existsSync(candidate) && fs.statSync(candidate).isDirectory()) {
         defaultName = `${mdBaseName}_diagrams_${counter++}`;
+        candidate = path.join(parentDir, defaultName);
     }
 
     const chosen = await vscode.window.showSaveDialog({
