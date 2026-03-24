@@ -146,6 +146,14 @@ Exporta tu documento Markdown a PDF usando un navegador basado en Chromium sin c
 - Los diagramas se escalan automáticamente para ajustarse al ancho de la página.
 - Se aplican márgenes de impresión para un diseño limpio.
 
+### Exportación masiva de diagramas
+
+Exporta todos los diagramas de un archivo Markdown como archivos PNG o SVG individuales.
+
+- Exporta todos los diagramas PlantUML / Mermaid / D2 en orden del documento
+- El nombre del directorio de salida es personalizable (predeterminado: `{nombre_archivo}_diagrams`)
+- Requiere que la vista previa esté abierta (renderizado a través del Webview de la vista previa)
+
 ### Navegación
 
 - **Ir arriba / Ir abajo** — botones en la esquina superior derecha del panel de vista previa.
@@ -406,6 +414,14 @@ El archivo PDF se guarda junto al archivo `.md` fuente. Se requiere Chrome, Edge
 - **Panel de vista previa:** Haz clic derecho en un diagrama → **Copy Diagram as PNG**, **Save Diagram as PNG** o **Save Diagram as SVG**.
 - **Visor de diagramas:** Haz clic derecho dentro del visor → **Copy Diagram as PNG**, **Save Diagram as PNG** o **Save Diagram as SVG**.
 - **Vista previa de diagrama independiente:** Haz clic derecho dentro de la vista previa → **Copy Diagram as PNG**, **Save Diagram as PNG** o **Save Diagram as SVG**.
+
+### Exportar todos los diagramas
+
+- **Menú contextual:** Haz clic derecho en un archivo `.md` → **PlantUML Markdown Preview** → **Export All Diagrams as PNG** o **Export All Diagrams as SVG**.
+- **Panel de vista previa:** Haz clic derecho dentro del panel de vista previa → **Export All Diagrams as PNG** o **Export All Diagrams as SVG**.
+- **Paleta de comandos:** `PlantUML Markdown Preview: Export All Diagrams as PNG` / `Export All Diagrams as SVG`
+
+Un diálogo de guardado permite elegir el nombre del directorio de salida (predeterminado: `{nombre_archivo}_diagrams`). Cada diagrama se guarda como `diagram-1.png`, `diagram-2.png`, etc. en orden del documento. La vista previa debe estar abierta.
 
 ### Navegación
 

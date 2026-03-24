@@ -144,6 +144,14 @@
 - 圖表自動縮放以適應頁面寬度
 - 套用列印邊界確保整潔版面
 
+### 批次圖表匯出
+
+將 Markdown 檔案中的所有圖表匯出為個別的 PNG 或 SVG 檔案。
+
+- 按文件順序匯出所有 PlantUML / Mermaid / D2 圖表
+- 輸出目錄名稱可自訂（預設：`{檔名}_diagrams`）
+- 需要開啟預覽（透過預覽 Webview 渲染）
+
 ### 導覽與目錄
 
 - **跳至頂部/底部** — 預覽面板右上角的按鈕
@@ -417,6 +425,14 @@ PDF 檔案儲存在來源 `.md` 檔案旁邊。需要 Chrome、Edge 或 Chromium
 - **預覽面板：** 右鍵圖表 → **複製圖表為 PNG**、**儲存圖表為 PNG** 或 **儲存圖表為 SVG**
 - **圖表檢視器：** 在檢視器內右鍵 → 同上
 - **獨立圖表預覽：** 在預覽內右鍵 → 同上
+
+### 匯出所有圖表
+
+- **右鍵選單：** 右鍵點擊 `.md` 檔案 → **PlantUML Markdown Preview** → **Export All Diagrams as PNG** 或 **Export All Diagrams as SVG**
+- **預覽面板：** 在預覽面板內右鍵 → **Export All Diagrams as PNG** 或 **Export All Diagrams as SVG**
+- **命令面板：** `PlantUML Markdown Preview: Export All Diagrams as PNG` / `Export All Diagrams as SVG`
+
+儲存對話框可選擇輸出目錄名稱（預設：`{檔名}_diagrams`）。每個圖表按文件順序儲存為 `diagram-1.png`、`diagram-2.png` 等。需要開啟預覽。
 
 ### 導覽
 

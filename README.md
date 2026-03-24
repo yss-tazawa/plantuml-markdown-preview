@@ -146,6 +146,14 @@ Export your Markdown document to PDF using a headless Chromium-based browser.
 - Diagrams are automatically scaled to fit the page width
 - Print margins are applied for a clean layout
 
+### Bulk Diagram Export
+
+Export all diagrams from a Markdown file as individual PNG or SVG files.
+
+- All PlantUML, Mermaid, and D2 diagrams exported in document order
+- Output directory name is customizable (default: `{filename}_diagrams`)
+- Requires the preview to be open (diagrams are rendered via the preview webview)
+
 ### Navigation
 
 - **Go to top / Go to bottom** — buttons in the top-right corner of the preview panel
@@ -421,6 +429,14 @@ The PDF file is saved alongside the source `.md` file. Chrome, Edge, or Chromium
 - **Preview panel:** Right-click a diagram → **Copy Diagram as PNG**, **Save Diagram as PNG**, or **Save Diagram as SVG**
 - **Diagram Viewer:** Right-click inside the viewer → **Copy Diagram as PNG**, **Save Diagram as PNG**, or **Save Diagram as SVG**
 - **Standalone diagram preview:** Right-click inside the preview → **Copy Diagram as PNG**, **Save Diagram as PNG**, or **Save Diagram as SVG**
+
+### Export All Diagrams
+
+- **Context menu:** Right-click a `.md` file → **PlantUML Markdown Preview** → **Export All Diagrams as PNG** or **Export All Diagrams as SVG**
+- **Preview panel:** Right-click inside the preview panel → **Export All Diagrams as PNG** or **Export All Diagrams as SVG**
+- **Command Palette:** `PlantUML Markdown Preview: Export All Diagrams as PNG` / `Export All Diagrams as SVG`
+
+A save dialog lets you choose the output directory name (default: `{filename}_diagrams`). Each diagram is saved as `diagram-1.png`, `diagram-2.png`, etc. in document order. The preview must be open.
 
 ### Navigation
 

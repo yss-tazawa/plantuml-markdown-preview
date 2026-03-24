@@ -6,6 +6,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## 0.6.18 - 2026-03-25
+
+### Added
+
+- Bulk diagram export: export all diagrams from a Markdown file as individual PNG or SVG files
+- Output directory name is customizable via save dialog (default: `{filename}_diagrams`)
+
+### Fixed
+
+- Fix exported SVG files containing invalid XML entities (`&nbsp;`) and comments with double hyphens
+- Fix single diagram PNG export failing silently for diagrams with `&nbsp;` in SVG output
+
 ## 0.6.17 - 2026-03-23
 
 ### Changed
