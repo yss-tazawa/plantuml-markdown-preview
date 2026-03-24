@@ -86,5 +86,11 @@
   "This diagram has no !include directives.": "此圖表沒有 !include 指令。",
   "Select include file to open": "選擇要開啟的 include 檔案",
   "[PlantUML Markdown Preview] {0}": "[PlantUML Markdown Preview] {0}",
-  "SVG copy is not available from this context.": "此上下文中無法複製 SVG。"
+  "SVG copy is not available from this context.": "此上下文中無法複製 SVG。",
+  "Exporting diagrams...": "正在匯出圖表...",
+  "No diagrams found in this file.": "此檔案中未找到圖表。",
+  "Exported {0} diagrams ({1} failed): {2}": "已匯出 {0} 個圖表（{1} 個失敗）: {2}",
+  "Exported {0} diagrams: {1}": "已匯出 {0} 個圖表: {1}",
+  "Open Folder": "開啟資料夾",
+  "No preview is open. Open a preview first.": "沒有開啟的預覽。請先開啟預覽。"
 }
