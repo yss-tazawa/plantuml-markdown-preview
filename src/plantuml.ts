@@ -376,6 +376,7 @@ export function renderToPngAsync(pumlContent: string, config: Config, signal?: A
         }, 15000);
 
         child.stdout!.on('data', (chunk: Buffer) => { stdoutBufs.push(chunk); });
+        child.stderr!.on('data', () => {});  // drain stderr to prevent pipe buffer blocking
 
         child.on('error', () => {
             clearTimeout(timer);
