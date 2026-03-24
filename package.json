@@ -214,6 +214,16 @@
         "category": "%command.category%"
       },
       {
+        "command": "plantuml-markdown-preview.exportAllDiagramsAsSvg",
+        "title": "%command.exportAllDiagramsAsSvg.title%",
+        "category": "%command.category%"
+      },
+      {
+        "command": "plantuml-markdown-preview.exportAllDiagramsAsPng",
+        "title": "%command.exportAllDiagramsAsPng.title%",
+        "category": "%command.category%"
+      },
+      {
         "command": "plantuml-markdown-preview.copyDiagramAsPng",
         "title": "%command.copyDiagramAsPng.title%",
         "category": "%command.category%"
@@ -344,21 +354,6 @@
           "group": "e_pdf@2"
         },
         {
-          "command": "plantuml-markdown-preview.copyDiagramAsPng",
-          "when": "webviewId == 'plantumlDiagramViewer'",
-          "group": "b_diagram@1"
-        },
-        {
-          "command": "plantuml-markdown-preview.saveDiagramAsPng",
-          "when": "webviewId == 'plantumlDiagramViewer'",
-          "group": "b_diagram@2"
-        },
-        {
-          "command": "plantuml-markdown-preview.saveDiagramAsSvg",
-          "when": "webviewId == 'plantumlDiagramViewer'",
-          "group": "b_diagram@3"
-        },
-        {
           "command": "plantuml-markdown-preview.openDiagramViewer",
           "when": "webviewId == 'plantumlMarkdownPreview' && webviewSection == 'diagram'",
           "group": "a_viewer@1"
@@ -376,11 +371,36 @@
         {
           "command": "plantuml-markdown-preview.saveDiagramAsPng",
           "when": "webviewId == 'plantumlMarkdownPreview' && webviewSection == 'diagram'",
-          "group": "b_diagram@2"
+          "group": "f_save@1"
         },
         {
           "command": "plantuml-markdown-preview.saveDiagramAsSvg",
           "when": "webviewId == 'plantumlMarkdownPreview' && webviewSection == 'diagram'",
+          "group": "f_save@1"
+        },
+        {
+          "command": "plantuml-markdown-preview.exportAllDiagramsAsPng",
+          "when": "webviewId == 'plantumlMarkdownPreview'",
+          "group": "g_bulk@1"
+        },
+        {
+          "command": "plantuml-markdown-preview.exportAllDiagramsAsSvg",
+          "when": "webviewId == 'plantumlMarkdownPreview'",
+          "group": "g_bulk@2"
+        },
+        {
+          "command": "plantuml-markdown-preview.copyDiagramAsPng",
+          "when": "webviewId == 'plantumlDiagramViewer'",
+          "group": "b_diagram@1"
+        },
+        {
+          "command": "plantuml-markdown-preview.saveDiagramAsPng",
+          "when": "webviewId == 'plantumlDiagramViewer'",
+          "group": "b_diagram@2"
+        },
+        {
+          "command": "plantuml-markdown-preview.saveDiagramAsSvg",
+          "when": "webviewId == 'plantumlDiagramViewer'",
           "group": "b_diagram@3"
         },
         {
@@ -462,6 +482,14 @@
         {
           "command": "plantuml-markdown-preview.exportPdfAndOpen",
           "group": "e_pdf@2"
+        },
+        {
+          "command": "plantuml-markdown-preview.exportAllDiagramsAsPng",
+          "group": "f_bulk@1"
+        },
+        {
+          "command": "plantuml-markdown-preview.exportAllDiagramsAsSvg",
+          "group": "f_bulk@2"
         }
       ]
     },

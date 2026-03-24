@@ -15,6 +15,8 @@
   "command.openDiagramViewer.title": "Abrir en visor de diagramas",
   "command.saveDiagramAsPng.title": "Guardar diagrama como PNG",
   "command.saveDiagramAsSvg.title": "Guardar diagrama como SVG",
+  "command.exportAllDiagramsAsSvg.title": "Exportar todos los diagramas como SVG",
+  "command.exportAllDiagramsAsPng.title": "Exportar todos los diagramas como PNG",
   "command.copyDiagramAsPng.title": "Copiar diagrama como PNG",
   "command.selectMode.title": "Seleccionar modo de renderizado",
   "command.goToIncludeFile.title": "Ir al archivo include",

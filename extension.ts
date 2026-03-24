@@ -3,7 +3,7 @@
  * @description VS Code extension entry point.
  *
  * Responsibilities:
- * - Register commands: openPreview / exportHtml / exportHtmlAndOpen / exportHtmlFitToWidth / exportHtmlFitToWidthAndOpen / exportPdf / exportPdfAndOpen / changeTheme / openDiagramViewer / saveDiagramAsPng / saveDiagramAsSvg / copyDiagramAsPng / goToIncludeFile / openIncludeSource
+ * - Register commands: openPreview / exportHtml / exportHtmlAndOpen / exportHtmlFitToWidth / exportHtmlFitToWidthAndOpen / exportPdf / exportPdfAndOpen / changeTheme / openDiagramViewer / saveDiagramAsPng / saveDiagramAsSvg / copyDiagramAsPng / exportAllDiagramsAsSvg / exportAllDiagramsAsPng / goToIncludeFile / openIncludeSource
  * - Read VS Code settings (getConfig)
  * - Auto-follow active editor tab (editorTracker)
  * - Propagate settings changes to the preview (configWatcher)
@@ -23,6 +23,7 @@ import { createStatusBarItem, updateStatusBar, showModeQuickPick, SELECT_MODE_CO
 import { PreviewManager } from './src/preview.js';
 import { execJava, extractPlantUmlBlocks } from './src/utils.js';
 import { clearBrowserCache } from './src/browser-finder.js';
+import { exportAllDiagrams } from './src/bulk-export.js';
 import { disposeAllViewers, diagramAction, openPendingDiagramViewer, getPendingDiagramContext } from './src/diagram-viewer.js';
 import { openPumlPreview, updatePumlConfig, getCurrentPumlFilePath, disposePumlPreview, getPumlPreviewPanel, changePumlTheme } from './src/puml-preview.js';
 import { openMermaidPreview, updateMermaidConfig, getCurrentMermaidFilePath, disposeMermaidPreview, getMermaidPreviewPanel, changeMermaidTheme } from './src/mermaid-preview.js';
@@ -632,6 +633,41 @@ export function activate(context: vscode.ExtensionContext): { extendMarkdownIt: 
     const copyPngCmd = vscode.commands.registerCommand(
         'plantuml-markdown-preview.copyDiagramAsPng', () => handleDiagramCommand('copy', 'png'));
 
+    /** Run bulk export for a given format. */
+    async function runBulkExport(uri: vscode.Uri | undefined, format: 'svg' | 'png'): Promise<void> {
+        const filePath = resolveMarkdownPath(uri);
+        if (!filePath) {
+            vscode.window.showErrorMessage(vscode.l10n.t('No Markdown file (.md) is selected.'));
+            return;
+        }
+        const panel = previewManager.getPanel();
+        if (!panel) {
+            vscode.window.showErrorMessage(vscode.l10n.t('No preview is open. Open a preview first.'));
+            return;
+        }
+        try {
+            const result = await vscode.window.withProgress(
+                { location: vscode.ProgressLocation.Notification, title: vscode.l10n.t('Exporting diagrams...'), cancellable: false },
+                () => exportAllDiagrams(panel, filePath, format)
+            );
+            const msg = result.failed > 0
+                ? vscode.l10n.t('Exported {0} diagrams ({1} failed): {2}', result.exported, result.failed, result.outputDir)
+                : vscode.l10n.t('Exported {0} diagrams: {1}', result.exported, result.outputDir);
+            const openLabel = vscode.l10n.t('Open Folder');
+            const action = await vscode.window.showInformationMessage(msg, openLabel);
+            if (action === openLabel) openInDefaultApp(result.outputDir);
+        } catch (err) {
+            if ((err as Error).message !== 'Aborted') {
+                vscode.window.showErrorMessage(vscode.l10n.t('Export failed: {0}', (err as Error).message));
+            }
+        }
+    }
+
+    const exportAllSvgCmd = vscode.commands.registerCommand(
+        'plantuml-markdown-preview.exportAllDiagramsAsSvg', (uri?: vscode.Uri) => runBulkExport(uri, 'svg'));
+    const exportAllPngCmd = vscode.commands.registerCommand(
+        'plantuml-markdown-preview.exportAllDiagramsAsPng', (uri?: vscode.Uri) => runBulkExport(uri, 'png'));
+
     const editorTracker = vscode.window.onDidChangeActiveTextEditor((editor) => {
         if (!editor) return;
         const filePath = editor.document.uri.fsPath;
@@ -799,7 +835,7 @@ export function activate(context: vscode.ExtensionContext): { extendMarkdownIt: 
         }
     );
 
-    context.subscriptions.push(exportCmd, exportAndOpenCmd, exportHtmlFitCmd, exportHtmlFitAndOpenCmd, exportPdfCmd, exportPdfAndOpenCmd, previewCmd, pumlPreviewCmd, mermaidPreviewCmd, d2PreviewCmd, changeThemeCmd, openViewerCmd, savePngCmd, saveSvgCmd, copyPngCmd, goToIncludeCmd, openIncludeSourceCmd, includeContextTracker, editorTracker, configWatcher);
+    context.subscriptions.push(exportCmd, exportAndOpenCmd, exportHtmlFitCmd, exportHtmlFitAndOpenCmd, exportPdfCmd, exportPdfAndOpenCmd, previewCmd, pumlPreviewCmd, mermaidPreviewCmd, d2PreviewCmd, changeThemeCmd, openViewerCmd, savePngCmd, saveSvgCmd, copyPngCmd, exportAllSvgCmd, exportAllPngCmd, goToIncludeCmd, openIncludeSourceCmd, includeContextTracker, editorTracker, configWatcher);
 
     // Start local PlantUML picoweb server if local-server mode is selected.
     // prepareLocalServer() pre-creates the readyPromise so that any preview

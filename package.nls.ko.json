@@ -15,6 +15,8 @@
   "command.openDiagramViewer.title": "다이어그램 뷰어에서 열기",
   "command.saveDiagramAsPng.title": "다이어그램을 PNG로 저장",
   "command.saveDiagramAsSvg.title": "다이어그램을 SVG로 저장",
+  "command.exportAllDiagramsAsSvg.title": "모든 다이어그램을 SVG로 내보내기",
+  "command.exportAllDiagramsAsPng.title": "모든 다이어그램을 PNG로 내보내기",
   "command.copyDiagramAsPng.title": "다이어그램을 PNG로 복사",
   "command.selectMode.title": "렌더링 모드 선택",
   "command.goToIncludeFile.title": "Include 파일로 이동",

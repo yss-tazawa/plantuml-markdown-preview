@@ -285,6 +285,88 @@ interface Anchor {
     }
 
     /**
+     * Export all diagrams from the preview as SVG or PNG.
+     *
+     * Iterates over all .plantuml-diagram, .mermaid-diagram, and .d2-diagram
+     * elements, extracts SVG (for svg format) or converts to PNG via canvas
+     * (same logic as single diagram export). Sends the collected data back
+     * to the extension host.
+     */
+    function exportAllDiagramsFromWebview(format: 'svg' | 'png'): void {
+        var containers = document.querySelectorAll('.plantuml-diagram, .mermaid-diagram, .d2-diagram');
+        var total = containers.length;
+        if (total === 0) {
+            vscode.postMessage({ type: 'exportAllDiagramsResult', diagrams: [] });
+            return;
+        }
+
+        var results: { data: string; index: number }[] = [];
+        var completed = 0;
+
+        function checkDone(): void {
+            if (completed === total) {
+                results.sort(function (a, b) { return a.index - b.index; });
+                vscode.postMessage({ type: 'exportAllDiagramsResult', diagrams: results });
+            }
+        }
+
+        containers.forEach(function (container, idx) {
+            var svgEl = container.querySelector('svg');
+            if (!svgEl) {
+                results.push({ data: '', index: idx });
+                completed++;
+                checkDone();
+                return;
+            }
+
+            if (format === 'svg') {
+                // Sanitization (entities, comments) is done in export-handler.ts
+                results.push({ data: new XMLSerializer().serializeToString(svgEl), index: idx });
+                completed++;
+                checkDone();
+                return;
+            }
+
+            // PNG: same canvas conversion as handleSvgAsPng, but use rendered size for scale
+            var svgData = new XMLSerializer().serializeToString(svgEl)
+                .replace(/&nbsp;/g, '&#160;')
+                .replace(/<!--[\s\S]*?-->/g, '');
+            var rect = svgEl.getBoundingClientRect();
+            var w = rect.width || 100;
+            var h = rect.height || 100;
+            var scale = 1.5;
+            var canvas = document.createElement('canvas');
+            canvas.width = w * scale;
+            canvas.height = h * scale;
+            var ctx = canvas.getContext('2d');
+            if (!ctx) {
+                results.push({ data: '', index: idx });
+                completed++;
+                checkDone();
+                return;
+            }
+            var img = new Image();
+            var capturedIdx = idx;
+            img.onload = function () {
+                ctx!.drawImage(img, 0, 0, canvas.width, canvas.height);
+                try {
+                    results.push({ data: canvas.toDataURL('image/png'), index: capturedIdx });
+                } catch (_e) {
+                    results.push({ data: '', index: capturedIdx });
+                }
+                completed++;
+                checkDone();
+            };
+            img.onerror = function () {
+                results.push({ data: '', index: capturedIdx });
+                completed++;
+                checkDone();
+            };
+            img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svgData);
+        });
+    }
+
+    /**
      * Convert SVG HTML to PNG and either save (send data URL to extension host)
      * or copy (write PNG blob to clipboard).
      *
@@ -307,7 +389,9 @@ interface Anchor {
             }
             return;
         }
-        var svgData = new XMLSerializer().serializeToString(svgEl);
+        var svgData = new XMLSerializer().serializeToString(svgEl)
+            .replace(/&nbsp;/g, '&#160;')
+            .replace(/<!--[\s\S]*?-->/g, '');
         var vb = svgEl.getAttribute('viewBox');
         var w = 100, h = 100;
         if (vb) {
@@ -520,6 +604,8 @@ interface Anchor {
             handleSvgAsPng('save', message.svg);
         } else if (message && message.type === 'copyDiagramAsPng' && typeof message.svg === 'string') {
             handleSvgAsPng('copy', message.svg);
+        } else if (message && message.type === 'exportAllDiagrams' && (message.format === 'svg' || message.format === 'png')) {
+            exportAllDiagramsFromWebview(message.format);
         }
     });
 
