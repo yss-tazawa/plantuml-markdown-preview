@@ -113,10 +113,9 @@
 | **需要 Java** | 是 | 是 | 否 |
 | **網路** | 無（僅 localhost） | 無 | 需要 |
 | **隱私** | 圖表保留在本機 | 圖表保留在本機 | 圖表原始碼傳送至 PlantUML 伺服器 |
-| **速度** | 常駐 PlantUML 伺服器 — 即時重新渲染 | 每次渲染啟動 JVM | 依賴網路 |
-| **並行數** | 50（並行 HTTP） | 1（批次） | 5（並行 HTTP） |
+| **速度** | 即時（常駐本機伺服器） | 較慢（每次啟動 JVM） | 依賴網路 |
 
-- **Fast 模式**（預設）— 在 `localhost` 啟動常駐 PlantUML 伺服器。消除每次編輯的 JVM 啟動開銷，以高並行實現即時重新渲染。圖表不會傳送到機器外部。
+- **Fast 模式**（預設）— 在 `localhost` 啟動常駐 PlantUML 伺服器。消除每次編輯的 JVM 啟動開銷，實現即時重新渲染。圖表不會傳送到機器外部。
 - **Secure 模式** — 在本機使用 Java + PlantUML jar。圖表不會傳送到機器外部。無網路存取。為最高安全性，預設封鎖本機圖片。
 - **Easy 模式** — 將 PlantUML 原始碼傳送至伺服器渲染。無需設定。預設使用公共伺服器（`https://www.plantuml.com/plantuml`）。可設定自己的伺服器 URL 保護隱私。
 
@@ -750,7 +749,7 @@ D2 使用內建 Wasm 模組渲染 — 無需外部 CLI。
 <details>
 <summary><strong>Secure 模式在多圖表時很慢。如何加速？</strong></summary>
 
-切換到 **Fast 模式**（`mode: "fast"`）。Fast 模式在 localhost 啟動常駐 PlantUML 伺服器，重新渲染即時完成 — 無需每次編輯都啟動 JVM。並行數也更高（50 個並行請求 vs Secure 模式的 1 個）。
+切換到 **Fast 模式**（`mode: "fast"`）。Fast 模式在 localhost 啟動常駐 PlantUML 伺服器，重新渲染即時完成 — 無需每次編輯都啟動 JVM。
 
 </details>
 

@@ -113,10 +113,9 @@ Elige un modo preestablecido que controla cómo se renderizan los diagramas Plan
 | **Java requerido** | Sí | Sí | No |
 | **Red** | Ninguna (solo localhost) | Ninguna | Requerida |
 | **Privacidad** | Los diagramas permanecen en tu máquina | Los diagramas permanecen en tu máquina | El código se envía al servidor PlantUML |
-| **Velocidad** | Servidor PlantUML persistente: redibujado instantáneo | Inicio de JVM por renderizado | Depende de la red |
-| **Concurrencia** | 50 (HTTP en paralelo) | 1 (lote) | 5 (HTTP en paralelo) |
+| **Velocidad** | Instantáneo (servidor local persistente) | Más lento (JVM se inicia cada vez) | Depende de la red |
 
-- **Modo Fast** (por defecto) — inicia un servidor PlantUML persistente en `localhost`. Elimina el coste de inicio de la JVM en cada edición, permitiendo redibujados instantáneos con alta concurrencia. Los diagramas nunca salen de tu máquina.
+- **Modo Fast** (por defecto) — inicia un servidor PlantUML persistente en `localhost`. Elimina el coste de inicio de la JVM en cada edición, permitiendo redibujados instantáneos. Los diagramas nunca salen de tu máquina.
 - **Modo Secure** — usa Java + el archivo jar de PlantUML en tu máquina. Los diagramas nunca salen de tu máquina. Sin acceso a la red. Las imágenes locales se bloquean por defecto para una seguridad máxima.
 - **Modo Easy** — envía el código fuente de PlantUML a un servidor PlantUML para su renderizado. No requiere configuración. Usa el servidor público (`https://www.plantuml.com/plantuml`) por defecto, o establece tu propia URL de servidor autohospedado para mayor privacidad.
 
@@ -741,7 +740,7 @@ Sí. Establece `mode` en `"easy"` en los ajustes de la extensión. El modo Easy 
 <details>
 <summary><strong>El modo Secure es lento con muchos diagramas. ¿Cómo puedo acelerarlo?</strong></summary>
 
-Cambia al **modo Fast** (`mode: "fast"`). Inicia un servidor PlantUML persistente en localhost, por lo que los redibujados son instantáneos: sin coste de inicio de JVM por edición. La concurrencia también es mucho mayor (50 peticiones paralelas vs 1 en el modo Secure).
+Cambia al **modo Fast** (`mode: "fast"`). Inicia un servidor PlantUML persistente en localhost, por lo que los redibujados son instantáneos: sin coste de inicio de JVM por edición.
 
 </details>
 
