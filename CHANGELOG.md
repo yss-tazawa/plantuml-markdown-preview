@@ -11,7 +11,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 ### Added
 
 - Bulk diagram export: export all diagrams from a Markdown file as individual PNG or SVG files
-- Output directory name is customizable via save dialog (default: `{filename}_diagrams`)
 
 ### Fixed
 
