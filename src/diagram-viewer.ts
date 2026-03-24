@@ -9,7 +9,7 @@
 import * as vscode from 'vscode';
 import { getNonce, escapeHtml, CSS_COLOR_RE } from './utils.js';
 import { getPanZoomScript } from './webview/pan-zoom-script.js';
-import { saveDiagramFile } from './export-handler.js';
+import { saveDiagramFile, sanitizeSvgEntities } from './export-handler.js';
 
 /** Active viewer panels keyed by 1-based diagram index. */
 const viewers = new Map<number, vscode.WebviewPanel>();
@@ -203,7 +203,7 @@ export function diagramAction(action: 'save' | 'copy', format: 'png' | 'svg', pr
 async function saveSvgFromHtml(html: string, diagramIndex: number): Promise<void> {
     const match = html.match(/<svg[\s\S]*<\/svg>/i);
     if (!match) return;
-    await saveDiagramFile(match[0], vscode.Uri.file(`diagram-${diagramIndex}.svg`), 'svg');
+    await saveDiagramFile(sanitizeSvgEntities(match[0]), vscode.Uri.file(`diagram-${diagramIndex}.svg`), 'svg');
     pendingSave = null;
 }
 

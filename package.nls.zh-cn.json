@@ -15,6 +15,8 @@
   "command.openDiagramViewer.title": "在图表查看器中打开",
   "command.saveDiagramAsPng.title": "将图表保存为 PNG",
   "command.saveDiagramAsSvg.title": "将图表保存为 SVG",
+  "command.exportAllDiagramsAsSvg.title": "将所有图表导出为 SVG",
+  "command.exportAllDiagramsAsPng.title": "将所有图表导出为 PNG",
   "command.copyDiagramAsPng.title": "将图表复制为 PNG",
   "command.selectMode.title": "选择渲染模式",
   "command.goToIncludeFile.title": "跳转到包含文件",

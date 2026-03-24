@@ -6,6 +6,25 @@ import * as vscode from 'vscode';
 import { writeFile } from 'fs/promises';
 import { handleCopyResult } from './diagram-viewer.js';
 
+/** HTML entity name -> Unicode code point map for XML-invalid entities. */
+const HTML_ENTITY_MAP: Record<string, number> = { nbsp: 160, copy: 169, reg: 174, trade: 8482, mdash: 8212, ndash: 8211, laquo: 171, raquo: 187, bull: 8226, hellip: 8230, prime: 8242, Prime: 8243, lsquo: 8216, rsquo: 8217, ldquo: 8220, rdquo: 8221, euro: 8364, pound: 163, yen: 165, cent: 162, times: 215, divide: 247, minus: 8722, plusmn: 177, deg: 176, micro: 181, para: 182, middot: 183, frac12: 189, frac14: 188, frac34: 190 };
+
+/**
+ * Replace HTML named entities (e.g. &nbsp;) with numeric character references
+ * so the SVG is valid standalone XML.
+ */
+export function sanitizeSvgEntities(svg: string): string {
+    return svg
+        // Strip comments that may contain "--" (invalid in XML comments)
+        .replace(/<!--[\s\S]*?-->/g, '')
+        // Replace HTML named entities with numeric character references
+        .replace(/&([a-zA-Z][a-zA-Z0-9]*);/g, (match, name) => {
+            if (name === 'amp' || name === 'lt' || name === 'gt' || name === 'quot' || name === 'apos') return match;
+            const code = HTML_ENTITY_MAP[name];
+            return code ? `&#${code};` : match;
+        });
+}
+
 /**
  * Show a save dialog and write diagram data to the chosen file.
  *
@@ -50,7 +69,7 @@ export async function handleExportMessage(
     const format = msg.format;
     const fileData = format === 'png'
         ? Buffer.from(msg.data.replace(/^data:image\/png;base64,/, ''), 'base64')
-        : msg.data;
+        : sanitizeSvgEntities(msg.data);
 
     const defaultName = defaultFilePath
         ? defaultFilePath.replace(/\.[^.]+$/, `.${format}`)

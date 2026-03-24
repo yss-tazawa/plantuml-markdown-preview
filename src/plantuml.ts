@@ -325,6 +325,83 @@ export function renderToSvgAsync(pumlContent: string, config: Config, signal?: A
 }
 
 /**
+ * Render PlantUML text to a PNG buffer (asynchronous).
+ *
+ * Spawns `java -jar plantuml.jar -pipe -tpng` and collects binary stdout.
+ * Unlike SVG rendering, results are NOT cached (PNG is used only for export).
+ *
+ * @param pumlContent - Raw PlantUML source text (with or without @startuml/@enduml).
+ * @param config - Paths and theme settings for the PlantUML invocation.
+ * @param [signal] - Optional signal to cancel the child process.
+ * @returns PNG buffer on success, or null on failure.
+ */
+export function renderToPngAsync(pumlContent: string, config: Config, signal?: AbortSignal): Promise<Buffer | null> {
+    const { jarPath, javaPath, dotPath, plantumlTheme } = resolveConfigPaths(config);
+    if (!jarPath) return Promise.resolve(null);
+
+    const trimmed = pumlContent.trim();
+    const content = ensureStartEndTags(trimmed);
+    const includePath = resolveIncludePath(config);
+
+    const args = ['-Djava.awt.headless=true', '-jar', jarPath, '-pipe', '-tpng', '-charset', 'UTF-8'];
+    if (dotPath !== 'dot') args.push('-graphvizdot', dotPath);
+    if (plantumlTheme !== 'default') args.push('-theme', plantumlTheme);
+
+    if (signal?.aborted) return Promise.resolve(null);
+
+    return new Promise<Buffer | null>((resolve) => {
+        const child = spawnJava(javaPath, args, { stdio: ['pipe', 'pipe', 'pipe'], cwd: includePath });
+        activeChildren.add(child);
+        const stdoutBufs: Buffer[] = [];
+        let settled = false;
+
+        const settle = (value: Buffer | null) => {
+            if (settled) return;
+            settled = true;
+            activeChildren.delete(child);
+            resolve(value);
+        };
+
+        const onAbort = () => {
+            clearTimeout(timer);
+            signal?.removeEventListener('abort', onAbort);
+            child.kill('SIGTERM');
+            settle(null);
+        };
+        signal?.addEventListener('abort', onAbort, { once: true });
+
+        const timer = setTimeout(() => {
+            child.kill('SIGTERM');
+            settle(null);
+        }, 15000);
+
+        child.stdout!.on('data', (chunk: Buffer) => { stdoutBufs.push(chunk); });
+
+        child.on('error', () => {
+            clearTimeout(timer);
+            signal?.removeEventListener('abort', onAbort);
+            settle(null);
+        });
+
+        child.on('close', (code: number | null) => {
+            clearTimeout(timer);
+            signal?.removeEventListener('abort', onAbort);
+            if (settled) return;
+            if (code !== 0) { settle(null); return; }
+            settle(Buffer.concat(stdoutBufs));
+        });
+
+        child.stdin!.on('error', () => {});
+        try {
+            child.stdin!.write(content);
+            child.stdin!.end();
+        } catch {
+            // stdin closed; close/error handler will settle
+        }
+    });
+}
+
+/**
  * Split concatenated SVG output from PlantUML -pipe mode into individual SVGs.
  *
  * PlantUML outputs each diagram's SVG consecutively in stdout. Each SVG starts

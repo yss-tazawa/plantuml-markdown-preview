@@ -208,6 +208,72 @@ export function renderAllServer(
     return batchRender(blocks, concurrency, (content, sig) => renderToSvgServer(content, config, sig), signal);
 }
 
+/**
+ * Render PlantUML text to a PNG buffer via a PlantUML server (async).
+ *
+ * @param pumlContent - Raw PlantUML source text (with or without @startuml/@enduml).
+ * @param config - Server URL and theme settings.
+ * @param [signal] - Optional AbortSignal.
+ * @returns PNG buffer on success, or null on failure.
+ */
+export async function renderToPngServer(pumlContent: string, config: Config, signal?: AbortSignal): Promise<Buffer | null> {
+    const trimmed = pumlContent.trim();
+    const content = ensureStartEndTags(trimmed);
+    const themedContent = (config.plantumlTheme && config.plantumlTheme !== 'default')
+        ? injectThemeDirective(content, config.plantumlTheme)
+        : content;
+
+    const encoded = encodePlantUml(themedContent);
+    const url = `${config.plantumlServerUrl.replace(/\/+$/, '')}/png/${encoded}`;
+
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), DEFAULT_TIMEOUT_MS);
+    if (signal?.aborted) { clearTimeout(timeout); return null; }
+    const onAbort = () => controller.abort();
+    signal?.addEventListener('abort', onAbort, { once: true });
+
+    try {
+        const response = await fetch(url, { signal: controller.signal });
+        if (!response.ok) return null;
+        return Buffer.from(await response.arrayBuffer());
+    } catch {
+        return null;
+    } finally {
+        clearTimeout(timeout);
+        signal?.removeEventListener('abort', onAbort);
+    }
+}
+
+/**
+ * Render multiple PlantUML blocks to PNG buffers via server with controlled concurrency.
+ *
+ * @param blocks - Array of PlantUML source texts.
+ * @param config - Server URL and theme settings.
+ * @param [signal] - Optional AbortSignal.
+ * @param [concurrency] - Max parallel requests.
+ * @returns Map from trimmed content -> PNG buffer (null entries omitted).
+ */
+export async function renderAllServerPng(
+    blocks: string[],
+    config: Config,
+    signal?: AbortSignal,
+    concurrency = MAX_SERVER_CONCURRENCY
+): Promise<Map<string, Buffer>> {
+    const results = new Map<string, Buffer>();
+    const unique = [...new Set(blocks.map(b => b.trim()))];
+    for (let i = 0; i < unique.length; i += concurrency) {
+        if (signal?.aborted) break;
+        const batch = unique.slice(i, i + concurrency);
+        const pngs = await Promise.all(batch.map(content =>
+            signal?.aborted ? Promise.resolve(null) : renderToPngServer(content, config, signal)
+        ));
+        for (let j = 0; j < batch.length; j++) {
+            if (pngs[j]) results.set(batch[j], pngs[j]!);
+        }
+    }
+    return results;
+}
+
 /** Clear the server SVG cache. */
 export function clearServerCache(): void {
     cache.clear();

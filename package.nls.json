@@ -15,6 +15,8 @@
   "command.openDiagramViewer.title": "Open in Diagram Viewer",
   "command.saveDiagramAsPng.title": "Save Diagram as PNG",
   "command.saveDiagramAsSvg.title": "Save Diagram as SVG",
+  "command.exportAllDiagramsAsSvg.title": "Export All Diagrams as SVG",
+  "command.exportAllDiagramsAsPng.title": "Export All Diagrams as PNG",
   "command.copyDiagramAsPng.title": "Copy Diagram as PNG",
   "command.selectMode.title": "Select Rendering Mode",
   "command.goToIncludeFile.title": "Go to Include File",
