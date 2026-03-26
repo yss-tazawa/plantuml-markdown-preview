@@ -16,7 +16,8 @@ import fs from 'fs';
 import os from 'os';
 import path from 'path';
 import url from 'url';
-import { execFile } from 'child_process';
+import { spawn } from 'child_process';
+import http from 'http';
 import MarkdownIt from 'markdown-it';
 import hljs from 'highlight.js';
 import { plantumlPlugin, type RenderEnv } from './renderer.js';
@@ -151,8 +152,10 @@ export interface RenderOptions {
     navReloadTitle?: string;
     /** Tooltip for "TOC" nav button (preview only). */
     navTocTitle?: string;
-    /** When true, override scales to auto and remove max-width for fit-to-width layout. */
-    fitToWidth?: boolean;
+    /** When true, override scales to auto and apply 100% fit-to-width layout. When a number, apply max-width in pixels. */
+    fitToWidth?: boolean | number;
+    /** Alignment when fitToWidth is a number. 'center' (default) or 'left'. */
+    fitToWidthAlign?: 'center' | 'left';
     /** KaTeX CSS <style> block to inject into <head> (already includes @font-face with resolved URIs). */
     katexCssHtml?: string;
     /** When true, relax CSP font-src from 'none' to cspSource for KaTeX fonts. */
@@ -369,22 +372,23 @@ export async function renderHtmlAsync(source: string, title: string, config: Con
  * @param mdFilePath - Absolute path to the Markdown file.
  * @param config - PlantUML and theme configuration.
  * @param [signal] - Optional AbortSignal to cancel in-flight rendering processes.
- * @param [fitToWidth] - When true, override diagram scales to auto and apply fit-to-width layout.
+ * @param [fitToWidth] - When true, override diagram scales to auto and apply 100% fit-to-width layout. When a number, apply max-width in pixels.
+ * @param [fitToWidthAlign] - Alignment when fitToWidth is a number. 'center' (default) or 'left'.
  * @returns Absolute path of the generated HTML file.
  */
-export async function exportToHtml(mdFilePath: string, config: Config, signal?: AbortSignal, fitToWidth?: boolean): Promise<string> {
+export async function exportToHtml(mdFilePath: string, config: Config, signal?: AbortSignal, fitToWidth?: boolean | number, fitToWidthAlign?: 'center' | 'left'): Promise<string> {
     const source = await fs.promises.readFile(mdFilePath, 'utf8');
-    const effectiveConfig = fitToWidth ? { ...config, plantumlScale: 'auto', d2Scale: 'auto' } : config;
     const exportOptions: RenderOptions = {
         mermaidTheme: config.mermaidTheme,
-        mermaidScale: fitToWidth ? 'auto' : config.mermaidScale,
+        mermaidScale: config.mermaidScale,
         htmlMaxWidth: config.htmlMaxWidth,
         htmlAlignment: config.htmlAlignment,
         fitToWidth,
+        fitToWidthAlign,
         katexCssHtml: config.enableMath ? await buildKatexCdnCssHtml() : '',
         enableMath: config.enableMath,
     };
-    const fullHtml = await renderHtmlAsync(source, path.basename(mdFilePath, '.md'), effectiveConfig, exportOptions, signal);
+    const fullHtml = await renderHtmlAsync(source, path.basename(mdFilePath, '.md'), config, exportOptions, signal);
     if (signal?.aborted || !fullHtml) throw new Error('Aborted');
     const outputPath = mdFilePath.replace(/\.md$/, '.html');
     await fs.promises.writeFile(outputPath, fullHtml, 'utf8');
@@ -395,19 +399,151 @@ export async function exportToHtml(mdFilePath: string, config: Config, signal?: 
 const PDF_TIMEOUT_MS = 30_000;
 
 /**
- * Export a Markdown file to PDF using a headless Chromium-based browser.
+ * Make an HTTP GET request and return the response body as a string.
+ */
+function httpGet(reqUrl: string): Promise<string> {
+    return new Promise((resolve, reject) => {
+        http.get(reqUrl, res => {
+            let data = '';
+            res.on('data', (chunk: Buffer) => { data += chunk; });
+            res.on('end', () => resolve(data));
+            res.on('error', reject);
+        }).on('error', reject);
+    });
+}
+
+/**
+ * Minimal CDP client over raw WebSocket (no external dependency).
+ * Supports sending multiple commands on a single connection.
+ */
+class CdpConnection {
+    private socket!: import('net').Socket;
+    private buf = Buffer.alloc(0);
+    private nextId = 1;
+    private pending = new Map<number, { resolve: (v: Record<string, unknown>) => void; reject: (e: Error) => void }>();
+    private msgBuf = ''; // accumulates text across continuation frames
+
+    static connect(wsUrl: string): Promise<CdpConnection> {
+        return new Promise((resolve, reject) => {
+            const conn = new CdpConnection();
+            const parsed = new URL(wsUrl);
+            const key = Buffer.from(crypto.getRandomValues(new Uint8Array(16))).toString('base64');
+            const req = http.request({
+                hostname: parsed.hostname,
+                port: parsed.port,
+                path: parsed.pathname,
+                headers: {
+                    'Upgrade': 'websocket',
+                    'Connection': 'Upgrade',
+                    'Sec-WebSocket-Key': key,
+                    'Sec-WebSocket-Version': '13',
+                },
+            });
+            req.on('upgrade', (_res, socket) => {
+                conn.socket = socket;
+                socket.on('data', (chunk: Buffer) => conn.onData(chunk));
+                socket.on('error', e => {
+                    for (const p of conn.pending.values()) p.reject(e);
+                    conn.pending.clear();
+                });
+                resolve(conn);
+            });
+            req.on('error', reject);
+            req.end();
+        });
+    }
+
+    send(method: string, params: Record<string, unknown> = {}): Promise<Record<string, unknown>> {
+        return new Promise((resolve, reject) => {
+            const id = this.nextId++;
+            this.pending.set(id, { resolve, reject });
+            const payload = Buffer.from(JSON.stringify({ id, method, params }));
+            // Build masked WebSocket frame (client must mask)
+            let header: Buffer;
+            if (payload.length < 126) {
+                header = Buffer.alloc(6);
+                header[0] = 0x81;
+                header[1] = 0x80 | payload.length;
+            } else if (payload.length < 65536) {
+                header = Buffer.alloc(8);
+                header[0] = 0x81;
+                header[1] = 0x80 | 126;
+                header.writeUInt16BE(payload.length, 2);
+            } else {
+                header = Buffer.alloc(14);
+                header[0] = 0x81;
+                header[1] = 0x80 | 127;
+                // Write 64-bit length (high 32 bits then low 32 bits)
+                header.writeUInt32BE(0, 2);
+                header.writeUInt32BE(payload.length, 6);
+            }
+            // Mask key = 0 (simplest valid mask)
+            const maskOffset = header.length - 4;
+            header[maskOffset] = 0; header[maskOffset + 1] = 0;
+            header[maskOffset + 2] = 0; header[maskOffset + 3] = 0;
+            this.socket.write(Buffer.concat([header, payload]));
+        });
+    }
+
+    close(): void { this.socket.destroy(); }
+
+    private onData(chunk: Buffer): void {
+        this.buf = Buffer.concat([this.buf, chunk]);
+        while (this.buf.length >= 2) {
+            const fin = (this.buf[0] & 0x80) !== 0;
+            const opcode = this.buf[0] & 0x0f;
+            let payloadLen = this.buf[1] & 0x7f;
+            let offset = 2;
+            if (payloadLen === 126) {
+                if (this.buf.length < 4) return;
+                payloadLen = this.buf.readUInt16BE(2);
+                offset = 4;
+            } else if (payloadLen === 127) {
+                if (this.buf.length < 10) return;
+                // Read 64-bit length (ignore high 32 bits — safe for < 4GB)
+                payloadLen = this.buf.readUInt32BE(6);
+                offset = 10;
+            }
+            if (this.buf.length < offset + payloadLen) return;
+            const frame = this.buf.subarray(offset, offset + payloadLen);
+            this.buf = this.buf.subarray(offset + payloadLen);
+
+            if (opcode === 0x1 || opcode === 0x0) {
+                // Text frame or continuation frame
+                this.msgBuf += frame.toString();
+                if (fin) {
+                    try {
+                        const msg = JSON.parse(this.msgBuf);
+                        const p = this.pending.get(msg.id);
+                        if (p) {
+                            this.pending.delete(msg.id);
+                            if (msg.error) p.reject(new Error(msg.error.message));
+                            else p.resolve(msg.result ?? {});
+                        }
+                    } catch { /* ignore */ }
+                    this.msgBuf = '';
+                }
+            }
+            // Ignore ping/pong/close frames
+        }
+    }
+}
+
+/**
+ * Export a Markdown file to PDF using Chrome DevTools Protocol.
  *
- * Generates a temporary fit-to-width HTML file, then runs the user's local
- * Chrome / Edge / Chromium in headless mode with `--print-to-pdf`.
- * The temporary HTML file is deleted after conversion.
+ * Launches Chrome/Edge/Chromium in headless mode with a remote debugging port,
+ * connects via CDP, navigates to the HTML, and calls Page.printToPDF with
+ * a scale parameter so text and diagrams shrink uniformly.
  *
  * @param mdFilePath - Absolute path to the Markdown file.
  * @param config - PlantUML and theme configuration.
  * @param [signal] - Optional AbortSignal to cancel in-flight rendering.
+ * @param [landscape] - When true, use landscape orientation.
  * @returns Absolute path of the generated PDF file.
  * @throws When no supported browser is found or when the browser process fails.
  */
-export async function exportToPdf(mdFilePath: string, config: Config, signal?: AbortSignal): Promise<string> {
+export async function exportToPdf(mdFilePath: string, config: Config, signal?: AbortSignal, landscape?: boolean): Promise<string> {
     const browserPath = await findBrowser();
     if (!browserPath) {
         throw new Error(vscode.l10n.t('Chrome, Edge, or Chromium is required for PDF export. No supported browser was found.'));
@@ -415,65 +551,102 @@ export async function exportToPdf(mdFilePath: string, config: Config, signal?: A
 
     // Generate fit-to-width HTML to a temporary file
     const source = await fs.promises.readFile(mdFilePath, 'utf8');
-    const effectiveConfig = { ...config, plantumlScale: 'auto', d2Scale: 'auto' };
     const exportOptions: RenderOptions = {
         mermaidTheme: config.mermaidTheme,
-        mermaidScale: 'auto',
+        mermaidScale: config.mermaidScale,
         htmlMaxWidth: 'none',
-        htmlAlignment: config.htmlAlignment,
+        htmlAlignment: 'left',
         fitToWidth: true,
         katexCssHtml: config.enableMath ? await buildKatexCdnCssHtml() : '',
         enableMath: config.enableMath,
     };
-    const fullHtml = await renderHtmlAsync(source, path.basename(mdFilePath, '.md'), effectiveConfig, exportOptions, signal);
+    const fullHtml = await renderHtmlAsync(source, path.basename(mdFilePath, '.md'), config, exportOptions, signal);
     if (signal?.aborted || !fullHtml) throw new Error('Aborted');
 
-    // Add @page CSS for print margins (insert before </head> to avoid matching </style> in theme CSS)
     const printHtml = fullHtml.replace('</head>', '<style>@page{margin:15mm}</style>\n</head>');
 
     const tmpHtml = path.join(os.tmpdir(), `plantuml-md-preview-${Date.now()}.html`);
     const outputPath = mdFilePath.replace(/\.md$/, '.pdf');
 
+    // Launch Chrome with remote debugging
+    const args = [
+        '--headless',
+        '--disable-gpu',
+        '--remote-debugging-port=0',
+        '--no-first-run',
+        '--no-default-browser-check',
+        url.pathToFileURL(tmpHtml).href,
+    ];
+
+    let proc: ReturnType<typeof spawn> | undefined;
     try {
         await fs.promises.writeFile(tmpHtml, printHtml, 'utf8');
 
-        await new Promise<void>((resolve, reject) => {
-            let settled = false;
-            const args = [
-                '--headless',
-                '--disable-gpu',
-                `--print-to-pdf=${outputPath}`,
-                '--no-pdf-header-footer',
-                '--run-all-compositor-stages-before-draw',
-                '--virtual-time-budget=5000',
-                url.pathToFileURL(tmpHtml).href,
-            ];
-            const onAbort = () => {
-                if (settled) return;
-                settled = true;
-                proc.kill();
-                reject(new Error('Aborted'));
-            };
-            // timeout: process-level safety net; signal handles user-initiated cancellation
-            const proc = execFile(browserPath, args, { timeout: PDF_TIMEOUT_MS }, (err, _stdout, stderr) => {
-                if (settled) return;
-                settled = true;
-                signal?.removeEventListener('abort', onAbort);
-                if (err) {
-                    const detail = stderr?.trim() || err.message;
-                    reject(new Error(vscode.l10n.t('PDF export failed: {0}', detail)));
-                } else {
-                    resolve();
-                }
+        // Start Chrome and extract the DevTools WebSocket URL from stderr
+        proc = spawn(browserPath, args, { stdio: ['ignore', 'ignore', 'pipe'] });
+
+        let onAbort: (() => void) | undefined;
+        const wsUrl = await new Promise<string>((resolve, reject) => {
+            const timer = setTimeout(() => reject(new Error('Chrome did not start in time')), PDF_TIMEOUT_MS);
+            let stderrBuf = '';
+            proc!.stderr!.on('data', (chunk: Buffer) => {
+                stderrBuf += chunk.toString();
+                const m = stderrBuf.match(/DevTools listening on (ws:\/\/[^\s]+)/);
+                if (m) { clearTimeout(timer); resolve(m[1]); }
             });
+            proc!.on('error', e => { clearTimeout(timer); reject(e); });
+            proc!.on('exit', (code) => { clearTimeout(timer); reject(new Error(`Chrome exited with code ${code}`)); });
             if (signal) {
-                if (signal.aborted) { onAbort(); }
-                else { signal.addEventListener('abort', onAbort, { once: true }); }
+                onAbort = () => { clearTimeout(timer); proc!.kill(); reject(new Error('Aborted')); };
+                if (signal.aborted) onAbort();
+                else signal.addEventListener('abort', onAbort, { once: true });
             }
+        }).finally(() => {
+            if (onAbort && signal) signal.removeEventListener('abort', onAbort);
         });
+
+        // Get the page target's WebSocket debugger URL
+        const debugPort = new URL(wsUrl).port;
+        const targetsJson = await httpGet(`http://127.0.0.1:${debugPort}/json`);
+        const targets = JSON.parse(targetsJson) as Array<{ type: string; webSocketDebuggerUrl?: string }>;
+        const page = targets.find(t => t.type === 'page');
+        if (!page?.webSocketDebuggerUrl) throw new Error('No page target found');
+
+        const cdp = await CdpConnection.connect(page.webSocketDebuggerUrl);
+        try {
+            await cdp.send('Page.enable');
+            await cdp.send('Runtime.enable');
+            // Wait for page load and Mermaid rendering to complete
+            await cdp.send('Runtime.evaluate', {
+                expression: 'new Promise(r => { if (document.readyState === "complete") r(); else window.addEventListener("load", r); })',
+                awaitPromise: true,
+            });
+            await cdp.send('Runtime.evaluate', {
+                expression: 'window.__renderMermaidDone || Promise.resolve()',
+                awaitPromise: true,
+            });
+            // Extra wait for any remaining async rendering (KaTeX, etc.)
+            await new Promise(r => setTimeout(r, 500));
+
+            // Print to PDF with scale
+            const pdfScale = config.pdfScale || 0.625;
+            const result = await cdp.send('Page.printToPDF', {
+                printBackground: true,
+                preferCSSPageSize: true,
+                scale: pdfScale,
+                landscape: landscape ?? false,
+            });
+
+            // Write the base64-encoded PDF data to disk
+            const pdfData = Buffer.from(result.data as string, 'base64');
+            await fs.promises.writeFile(outputPath, pdfData);
+        } finally {
+            cdp.close();
+        }
 
         return outputPath;
     } finally {
+        proc?.kill();
         await fs.promises.unlink(tmpHtml).catch(() => {});
     }
 }
@@ -535,7 +708,7 @@ function buildHtml(title: string, body: string, previewTheme?: string, options?:
         mermaidScriptUri, mermaidTheme, mermaidScale,
         htmlMaxWidth, htmlAlignment,
         navTopTitle, navBottomTitle, navReloadTitle, navTocTitle,
-        fitToWidth, katexCssHtml, enableMath, hideBodyInitially,
+        fitToWidth, fitToWidthAlign, katexCssHtml, enableMath, hideBodyInitially,
     } = options || {};
     const fontSrc = enableMath && cspSource ? cspSource : "'none'";
     const cspMeta = cspNonce
@@ -586,7 +759,7 @@ function buildHtml(title: string, body: string, previewTheme?: string, options?:
   <style id="theme-css">
 ${theme.css}
   </style>${katexCssHtml || ''}${buildLayoutOverrideStyle(htmlMaxWidth, htmlAlignment)}${fitToWidth ? `
-  <style>.plantuml-diagram svg{max-width:100%;height:auto}pre.mermaid svg{max-width:100%;height:auto}img{max-width:100%;height:auto}table{width:100%;table-layout:fixed}table td,table th{word-break:break-word;overflow-wrap:break-word}</style>` : ''}${cspNonce ? `
+  <style>${typeof fitToWidth === 'number' ? `body{max-width:${fitToWidth}px;margin:${fitToWidthAlign === 'left' ? '0' : '0 auto'}}table{max-width:${fitToWidth}px;table-layout:fixed}table td,table th{word-break:break-word;overflow-wrap:break-word}` : `.plantuml-diagram svg{max-width:100%;height:auto!important}.d2-diagram svg{max-width:100%;height:auto!important}pre.mermaid svg{max-width:100%!important;height:auto}img{max-width:100%;height:auto}table{width:100%;table-layout:fixed}table td,table th{word-break:break-word;overflow-wrap:break-word}`}</style>` : ''}${cspNonce ? `
   <style>
 #nav-toolbar{position:fixed;top:8px;right:8px;display:flex;gap:2px;z-index:100}
 #nav-toolbar button{width:32px;height:32px;border:none;border-radius:4px;background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background 0.15s,opacity 0.15s;padding:0;opacity:0.45}

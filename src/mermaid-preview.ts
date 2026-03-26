@@ -236,9 +236,9 @@ const preview: StandalonePreview = createStandalonePreview({
         : [],
 
     buildHtml(content, nonce, bgColor, panel) {
-        return generateMermaidViewerHtml(
-            getMermaidScriptUri(panel), nonce, bgColor, getMermaidTheme(), content
-        );
+        const scriptUri = getMermaidScriptUri(panel);
+        if (!scriptUri) return '';
+        return generateMermaidViewerHtml(scriptUri, nonce, bgColor, getMermaidTheme(), content);
     },
 
     async updateWebview(panel, content, _bgColor, _signal) {

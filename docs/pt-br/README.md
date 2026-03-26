@@ -102,7 +102,7 @@ Controle o tamanho de exibição dos diagramas PlantUML, Mermaid e D2 independen
 
 - **Escala PlantUML** — `auto` (encolher para caber) ou porcentagem fixa (70%–120%, padrão 100%). O SVG permanece nítido em qualquer escala.
 - **Escala Mermaid** — `auto` (ajustar ao container) ou porcentagem fixa (50%–100%, padrão 80%).
-- **Escala D2** — `auto` (ajustar ao container) ou porcentagem fixa (50%–100%, padrão 75%).
+- **Escala D2** — `auto` (ajustar ao container) ou porcentagem fixa (50%–100%, padrão 70%).
 
 ### Modos de Renderização
 
@@ -136,14 +136,15 @@ Exporte seu documento Markdown para um arquivo HTML independente.
 - CSS de realce de sintaxe incluído — sem dependências externas
 - Exportar e abrir no navegador em um único comando
 - Largura do layout configurável (640px–1440px ou ilimitada) e alinhamento (centro ou esquerda)
-- **Opção Fit-to-width** dimensiona diagramas e imagens para preencher a largura da página
+- Modo **Responsivo** e **presets de largura em pixels** (640–1440px) com alinhamento central ou à esquerda
 
 ### Exportação para PDF
 
 Exporte seu documento Markdown para PDF usando um navegador baseado em Chromium headless.
 
 - Requer Chrome, Edge ou Chromium instalado no seu sistema
-- Os diagramas são redimensionados automaticamente para caber na largura da página
+- Orientação retrato e paisagem
+- Escala uniforme de texto e diagramas (configuração `pdfScale`, padrão 0.625)
 - Margens de impressão são aplicadas para um layout limpo
 
 ### Exportação em massa de diagramas
@@ -391,23 +392,28 @@ Abra arquivos `.puml` / `.plantuml`, `.mmd` / `.mermaid` ou `.d2` diretamente em
 
 ### Exportar para HTML
 
-- **Menu de contexto:** Clique com o botão direito em um arquivo `.md` → **PlantUML Markdown Preview** → **Export as HTML**
-- **Painel de prévia:** Clique com o botão direito dentro do painel de prévia → **Export as HTML** ou **Export as HTML & Open in Browser**
-- **Command Palette:** `PlantUML Markdown Preview: Export as HTML`
-- **Command Palette:** `PlantUML Markdown Preview: Export as HTML & Open in Browser`
-- **Command Palette:** `PlantUML Markdown Preview: Export as HTML (Fit to Width)`
-- **Command Palette:** `PlantUML Markdown Preview: Export as HTML & Open in Browser (Fit to Width)`
+- **Menu de contexto:** Clique com o botão direito em um arquivo `.md` → **PlantUML Markdown Preview** → **Export as HTML** → escolha uma opção de largura
+- **Painel de prévia:** Clique com o botão direito dentro do painel de prévia → **Export as HTML** ou **Export as HTML & Open**
 
-O arquivo HTML é salvo ao lado do arquivo `.md` de origem. Para exportar e abrir no seu navegador em um único passo, escolha **Export as HTML & Open in Browser**.
+O submenu oferece estas opções de largura:
+
+| Opção | Descrição |
+| ----- | --------- |
+| Current Settings | Exporta com a configuração atual (sem CSS responsivo) |
+| Responsive | Escala configurada pelo usuário; diagramas que transbordam são encolhidos para caber |
+| 640px – 1440px | Largura fixa do corpo em pixels |
+| Responsive (Left-Aligned) | Igual a Responsivo, mas alinhado à esquerda |
+| 640px – 1440px (Left-Aligned) | Largura fixa, alinhado à esquerda |
+
+O arquivo HTML é salvo ao lado do arquivo `.md` de origem.
 
 ### Exportar para PDF
 
-- **Menu de contexto:** Clique com o botão direito em um arquivo `.md` → **PlantUML Markdown Preview** → **Export as PDF**
-- **Painel de prévia:** Clique com o botão direito dentro do painel de prévia → **Export as PDF** ou **Export as PDF & Open**
-- **Command Palette:** `PlantUML Markdown Preview: Export as PDF`
-- **Command Palette:** `PlantUML Markdown Preview: Export as PDF & Open`
+- **Menu de contexto:** Clique com o botão direito em um arquivo `.md` → **PlantUML Markdown Preview** → **Export as PDF** → **Retrato** ou **Paisagem**
+- **Painel de prévia:** Clique com o botão direito dentro do painel de prévia → **Export as PDF** ou **Export as PDF & Open** → **Retrato** ou **Paisagem**
 
 O arquivo PDF é salvo ao lado do arquivo `.md` de origem. Chrome, Edge ou Chromium são necessários.
+A configuração `pdfScale` (padrão 0.625) controla a escala geral de texto e diagramas.
 
 ### Salvar / Copiar Diagrama como PNG / SVG
 
@@ -671,9 +677,10 @@ Todas as configurações usam o prefixo `plantumlMarkdownPreview.`.
 | `mermaidScale` | `"80%"` | Escala do diagrama Mermaid. `"auto"` ajusta à largura do container. Uma porcentagem (50%–100%) renderiza nessa fração do tamanho natural. |
 | `d2Theme` | `"Neutral Default"` | Tema do diagrama D2. 19 temas integrados disponíveis (ex: `"Neutral Default"`, `"Dark Mauve"`, `"Terminal"`). |
 | `d2Layout` | `"dagre"` | Motor de layout D2: `"dagre"` (padrão, rápido) ou `"elk"` (melhor para grafos complexos com muitos nós). |
-| `d2Scale` | `"75%"` | Escala do diagrama D2. `"auto"` ajusta à largura do container. Uma porcentagem (50%–100%) renderiza nessa fração do tamanho natural. |
+| `d2Scale` | `"70%"` | Escala do diagrama D2. `"auto"` ajusta à largura do container. Uma porcentagem (50%–100%) renderiza nessa fração do tamanho natural. |
 | `htmlMaxWidth` | `"960px"` | Largura máxima do corpo do HTML exportado. Opções: `"640px"` – `"1440px"`, ou `"none"` para sem limite. |
 | `htmlAlignment` | `"center"` | Alinhamento do corpo do HTML. `"center"` (padrão) ou `"left"`. |
+| `pdfScale` | `0.625` | Fator de escala para exportação PDF. Escala texto e diagramas uniformemente. Faixa: 0.1–2.0. |
 | `enableMath` | `true` | Habilita a renderização matemática KaTeX. Suporta `$...$` (inline) e `$$...$$` (bloco). Defina como `false` se os símbolos `$` causarem análise indesejada. |
 | `debounceNoDiagramChangeMs` | _(vazio)_ | Atraso de debounce (ms) para alterações de texto que não sejam diagramas (diagramas servidos do cache). Deixe vazio para usar o padrão do modo (Fast: 100, Secure: 100, Easy: 100). |
 | `debounceDiagramChangeMs` | _(vazio)_ | Atraso de debounce (ms) para alterações no conteúdo do diagrama. Deixe vazio para usar o padrão do modo (Fast: 100, Secure: 300, Easy: 300). |

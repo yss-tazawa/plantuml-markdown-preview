@@ -135,7 +135,11 @@ let themeCacheResult: string[] | null = null;
 let themePendingKey = '';
 /** Promise of the currently in-flight theme fetch, used for deduplication. */
 let themePendingPromise: Promise<string[]> | null = null;
-/** Reference to the in-flight theme fetch child process for cleanup on deactivate. */
+/**
+ * Reference to the in-flight theme fetch child process for cleanup on deactivate.
+ * Managed separately from activeChildren because theme fetching is not a render
+ * operation — it has its own lifecycle (clearCache kills it, deactivate kills it).
+ */
 let themePendingChild: ChildProcess | null = null;
 
 /** Representative themes used when dynamic discovery fails (old PlantUML versions). */

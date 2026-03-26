@@ -27,6 +27,7 @@ const MODE_LABEL: Record<Mode, string> = {
 
 /**
  * Create the status bar item. Caller must push it to context.subscriptions.
+ * @returns The created StatusBarItem.
  */
 export function createStatusBarItem(): vscode.StatusBarItem {
     const item = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 100);

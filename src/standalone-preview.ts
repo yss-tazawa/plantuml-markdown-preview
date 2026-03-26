@@ -337,8 +337,7 @@ export function createStandalonePreview(def: StandalonePreviewDef): StandalonePr
             })
         );
 
-        def.onPanelCreated?.(config);
-        isOpening = false;
+        try { def.onPanelCreated?.(config); } finally { isOpening = false; }
 
         // If another file was requested while we were opening, process it now.
         if (pendingOpen) {

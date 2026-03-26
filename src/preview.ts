@@ -706,7 +706,7 @@ export class PreviewManager implements vscode.Disposable {
         }
     }
 
-    /** Render with a loading overlay and optional progress notification. */
+    /** Render with a loading overlay and optional progress notification. @returns void */
     private renderPanelWithLoading(text: string): void {
         if (!this.panel || !this.lastConfig) return;
 

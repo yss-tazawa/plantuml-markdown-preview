@@ -2,7 +2,7 @@
   "name": "plantuml-markdown-preview",
   "displayName": "%displayName%",
   "description": "%description%",
-  "version": "0.6.18",
+  "version": "0.7.0",
   "license": "MIT",
   "publisher": "yss-tazawa",
   "icon": "images/icon.png",
@@ -173,6 +173,16 @@
         "category": "%command.category%"
       },
       {
+        "command": "plantuml-markdown-preview.exportHtmlCurrentSettings",
+        "title": "%command.exportHtmlCurrentSettings.title%",
+        "category": "%command.category%"
+      },
+      {
+        "command": "plantuml-markdown-preview.exportHtmlCurrentSettingsAndOpen",
+        "title": "%command.exportHtmlCurrentSettingsAndOpen.title%",
+        "category": "%command.category%"
+      },
+      {
         "command": "plantuml-markdown-preview.exportHtmlFitToWidth",
         "title": "%command.exportHtmlFitToWidth.title%",
         "category": "%command.category%"
@@ -183,6 +193,136 @@
         "category": "%command.category%"
       },
       {
+        "command": "plantuml-markdown-preview.exportHtmlWidth640",
+        "title": "%command.exportHtmlWidth640.title%",
+        "category": "%command.category%"
+      },
+      {
+        "command": "plantuml-markdown-preview.exportHtmlWidth640AndOpen",
+        "title": "%command.exportHtmlWidth640AndOpen.title%",
+        "category": "%command.category%"
+      },
+      {
+        "command": "plantuml-markdown-preview.exportHtmlWidth768",
+        "title": "%command.exportHtmlWidth768.title%",
+        "category": "%command.category%"
+      },
+      {
+        "command": "plantuml-markdown-preview.exportHtmlWidth768AndOpen",
+        "title": "%command.exportHtmlWidth768AndOpen.title%",
+        "category": "%command.category%"
+      },
+      {
+        "command": "plantuml-markdown-preview.exportHtmlWidth960",
+        "title": "%command.exportHtmlWidth960.title%",
+        "category": "%command.category%"
+      },
+      {
+        "command": "plantuml-markdown-preview.exportHtmlWidth960AndOpen",
+        "title": "%command.exportHtmlWidth960AndOpen.title%",
+        "category": "%command.category%"
+      },
+      {
+        "command": "plantuml-markdown-preview.exportHtmlWidth1024",
+        "title": "%command.exportHtmlWidth1024.title%",
+        "category": "%command.category%"
+      },
+      {
+        "command": "plantuml-markdown-preview.exportHtmlWidth1024AndOpen",
+        "title": "%command.exportHtmlWidth1024AndOpen.title%",
+        "category": "%command.category%"
+      },
+      {
+        "command": "plantuml-markdown-preview.exportHtmlWidth1200",
+        "title": "%command.exportHtmlWidth1200.title%",
+        "category": "%command.category%"
+      },
+      {
+        "command": "plantuml-markdown-preview.exportHtmlWidth1200AndOpen",
+        "title": "%command.exportHtmlWidth1200AndOpen.title%",
+        "category": "%command.category%"
+      },
+      {
+        "command": "plantuml-markdown-preview.exportHtmlWidth1440",
+        "title": "%command.exportHtmlWidth1440.title%",
+        "category": "%command.category%"
+      },
+      {
+        "command": "plantuml-markdown-preview.exportHtmlWidth1440AndOpen",
+        "title": "%command.exportHtmlWidth1440AndOpen.title%",
+        "category": "%command.category%"
+      },
+      {
+        "command": "plantuml-markdown-preview.exportHtmlFitToWidthLeft",
+        "title": "%command.exportHtmlFitToWidthLeft.title%",
+        "category": "%command.category%"
+      },
+      {
+        "command": "plantuml-markdown-preview.exportHtmlFitToWidthLeftAndOpen",
+        "title": "%command.exportHtmlFitToWidthLeftAndOpen.title%",
+        "category": "%command.category%"
+      },
+      {
+        "command": "plantuml-markdown-preview.exportHtmlWidth640Left",
+        "title": "%command.exportHtmlWidth640Left.title%",
+        "category": "%command.category%"
+      },
+      {
+        "command": "plantuml-markdown-preview.exportHtmlWidth640LeftAndOpen",
+        "title": "%command.exportHtmlWidth640LeftAndOpen.title%",
+        "category": "%command.category%"
+      },
+      {
+        "command": "plantuml-markdown-preview.exportHtmlWidth768Left",
+        "title": "%command.exportHtmlWidth768Left.title%",
+        "category": "%command.category%"
+      },
+      {
+        "command": "plantuml-markdown-preview.exportHtmlWidth768LeftAndOpen",
+        "title": "%command.exportHtmlWidth768LeftAndOpen.title%",
+        "category": "%command.category%"
+      },
+      {
+        "command": "plantuml-markdown-preview.exportHtmlWidth960Left",
+        "title": "%command.exportHtmlWidth960Left.title%",
+        "category": "%command.category%"
+      },
+      {
+        "command": "plantuml-markdown-preview.exportHtmlWidth960LeftAndOpen",
+        "title": "%command.exportHtmlWidth960LeftAndOpen.title%",
+        "category": "%command.category%"
+      },
+      {
+        "command": "plantuml-markdown-preview.exportHtmlWidth1024Left",
+        "title": "%command.exportHtmlWidth1024Left.title%",
+        "category": "%command.category%"
+      },
+      {
+        "command": "plantuml-markdown-preview.exportHtmlWidth1024LeftAndOpen",
+        "title": "%command.exportHtmlWidth1024LeftAndOpen.title%",
+        "category": "%command.category%"
+      },
+      {
+        "command": "plantuml-markdown-preview.exportHtmlWidth1200Left",
+        "title": "%command.exportHtmlWidth1200Left.title%",
+        "category": "%command.category%"
+      },
+      {
+        "command": "plantuml-markdown-preview.exportHtmlWidth1200LeftAndOpen",
+        "title": "%command.exportHtmlWidth1200LeftAndOpen.title%",
+        "category": "%command.category%"
+      },
+      {
+        "command": "plantuml-markdown-preview.exportHtmlWidth1440Left",
+        "title": "%command.exportHtmlWidth1440Left.title%",
+        "category": "%command.category%"
+      },
+      {
+        "command": "plantuml-markdown-preview.exportHtmlWidth1440LeftAndOpen",
+        "title": "%command.exportHtmlWidth1440LeftAndOpen.title%",
+        "category": "%command.category%"
+      },
+      {
         "command": "plantuml-markdown-preview.exportPdf",
         "title": "%command.exportPdf.title%",
         "category": "%command.category%"
@@ -190,6 +330,16 @@
       {
         "command": "plantuml-markdown-preview.exportPdfAndOpen",
         "title": "%command.exportPdfAndOpen.title%",
+        "category": "%command.category%"
+      },
+      {
+        "command": "plantuml-markdown-preview.exportPdfLandscape",
+        "title": "%command.exportPdfLandscape.title%",
+        "category": "%command.category%"
+      },
+      {
+        "command": "plantuml-markdown-preview.exportPdfLandscapeAndOpen",
+        "title": "%command.exportPdfLandscapeAndOpen.title%",
         "category": "%command.category%"
       },
       {
@@ -248,6 +398,22 @@
       {
         "id": "plantuml-markdown-preview.submenu",
         "label": "%submenu.label%"
+      },
+      {
+        "id": "plantuml-markdown-preview.exportHtmlWidthSubmenu",
+        "label": "%submenu.exportHtmlWidth.label%"
+      },
+      {
+        "id": "plantuml-markdown-preview.exportHtmlWidthAndOpenSubmenu",
+        "label": "%submenu.exportHtmlWidthAndOpen.label%"
+      },
+      {
+        "id": "plantuml-markdown-preview.exportPdfSubmenu",
+        "label": "%submenu.exportPdf.label%"
+      },
+      {
+        "id": "plantuml-markdown-preview.exportPdfAndOpenSubmenu",
+        "label": "%submenu.exportPdfAndOpen.label%"
       }
     ],
     "menus": {
@@ -324,32 +490,22 @@
       ],
       "webview/context": [
         {
-          "command": "plantuml-markdown-preview.exportHtml",
+          "submenu": "plantuml-markdown-preview.exportHtmlWidthSubmenu",
           "when": "webviewId == 'plantumlMarkdownPreview'",
           "group": "c_export@1"
         },
         {
-          "command": "plantuml-markdown-preview.exportHtmlAndOpen",
+          "submenu": "plantuml-markdown-preview.exportHtmlWidthAndOpenSubmenu",
           "when": "webviewId == 'plantumlMarkdownPreview'",
           "group": "c_export@2"
         },
         {
-          "command": "plantuml-markdown-preview.exportHtmlFitToWidth",
-          "when": "webviewId == 'plantumlMarkdownPreview'",
-          "group": "d_export_fit@1"
-        },
-        {
-          "command": "plantuml-markdown-preview.exportHtmlFitToWidthAndOpen",
-          "when": "webviewId == 'plantumlMarkdownPreview'",
-          "group": "d_export_fit@2"
-        },
-        {
-          "command": "plantuml-markdown-preview.exportPdf",
+          "submenu": "plantuml-markdown-preview.exportPdfSubmenu",
           "when": "webviewId == 'plantumlMarkdownPreview'",
           "group": "e_pdf@1"
         },
         {
-          "command": "plantuml-markdown-preview.exportPdfAndOpen",
+          "submenu": "plantuml-markdown-preview.exportPdfAndOpenSubmenu",
           "when": "webviewId == 'plantumlMarkdownPreview'",
           "group": "e_pdf@2"
         },
@@ -460,27 +616,19 @@
           "group": "a_preview@1"
         },
         {
-          "command": "plantuml-markdown-preview.exportHtml",
+          "submenu": "plantuml-markdown-preview.exportHtmlWidthSubmenu",
           "group": "c_export@1"
         },
         {
-          "command": "plantuml-markdown-preview.exportHtmlAndOpen",
+          "submenu": "plantuml-markdown-preview.exportHtmlWidthAndOpenSubmenu",
           "group": "c_export@2"
         },
         {
-          "command": "plantuml-markdown-preview.exportHtmlFitToWidth",
-          "group": "d_export_fit@1"
-        },
-        {
-          "command": "plantuml-markdown-preview.exportHtmlFitToWidthAndOpen",
-          "group": "d_export_fit@2"
-        },
-        {
-          "command": "plantuml-markdown-preview.exportPdf",
+          "submenu": "plantuml-markdown-preview.exportPdfSubmenu",
           "group": "e_pdf@1"
         },
         {
-          "command": "plantuml-markdown-preview.exportPdfAndOpen",
+          "submenu": "plantuml-markdown-preview.exportPdfAndOpenSubmenu",
           "group": "e_pdf@2"
         },
         {
@@ -490,6 +638,150 @@
         {
           "command": "plantuml-markdown-preview.exportAllDiagramsAsSvg",
           "group": "f_bulk@2"
+        }
+      ],
+      "plantuml-markdown-preview.exportHtmlWidthSubmenu": [
+        {
+          "command": "plantuml-markdown-preview.exportHtmlCurrentSettings",
+          "group": "0_current@1"
+        },
+        {
+          "command": "plantuml-markdown-preview.exportHtmlFitToWidth",
+          "group": "1_width@1"
+        },
+        {
+          "command": "plantuml-markdown-preview.exportHtmlWidth640",
+          "group": "1_width@2"
+        },
+        {
+          "command": "plantuml-markdown-preview.exportHtmlWidth768",
+          "group": "1_width@3"
+        },
+        {
+          "command": "plantuml-markdown-preview.exportHtmlWidth960",
+          "group": "1_width@4"
+        },
+        {
+          "command": "plantuml-markdown-preview.exportHtmlWidth1024",
+          "group": "1_width@5"
+        },
+        {
+          "command": "plantuml-markdown-preview.exportHtmlWidth1200",
+          "group": "1_width@6"
+        },
+        {
+          "command": "plantuml-markdown-preview.exportHtmlWidth1440",
+          "group": "1_width@7"
+        },
+        {
+          "command": "plantuml-markdown-preview.exportHtmlFitToWidthLeft",
+          "group": "2_left@1"
+        },
+        {
+          "command": "plantuml-markdown-preview.exportHtmlWidth640Left",
+          "group": "2_left@2"
+        },
+        {
+          "command": "plantuml-markdown-preview.exportHtmlWidth768Left",
+          "group": "2_left@3"
+        },
+        {
+          "command": "plantuml-markdown-preview.exportHtmlWidth960Left",
+          "group": "2_left@4"
+        },
+        {
+          "command": "plantuml-markdown-preview.exportHtmlWidth1024Left",
+          "group": "2_left@5"
+        },
+        {
+          "command": "plantuml-markdown-preview.exportHtmlWidth1200Left",
+          "group": "2_left@6"
+        },
+        {
+          "command": "plantuml-markdown-preview.exportHtmlWidth1440Left",
+          "group": "2_left@7"
+        }
+      ],
+      "plantuml-markdown-preview.exportHtmlWidthAndOpenSubmenu": [
+        {
+          "command": "plantuml-markdown-preview.exportHtmlCurrentSettingsAndOpen",
+          "group": "0_current@1"
+        },
+        {
+          "command": "plantuml-markdown-preview.exportHtmlFitToWidthAndOpen",
+          "group": "1_width@1"
+        },
+        {
+          "command": "plantuml-markdown-preview.exportHtmlWidth640AndOpen",
+          "group": "1_width@2"
+        },
+        {
+          "command": "plantuml-markdown-preview.exportHtmlWidth768AndOpen",
+          "group": "1_width@3"
+        },
+        {
+          "command": "plantuml-markdown-preview.exportHtmlWidth960AndOpen",
+          "group": "1_width@4"
+        },
+        {
+          "command": "plantuml-markdown-preview.exportHtmlWidth1024AndOpen",
+          "group": "1_width@5"
+        },
+        {
+          "command": "plantuml-markdown-preview.exportHtmlWidth1200AndOpen",
+          "group": "1_width@6"
+        },
+        {
+          "command": "plantuml-markdown-preview.exportHtmlWidth1440AndOpen",
+          "group": "1_width@7"
+        },
+        {
+          "command": "plantuml-markdown-preview.exportHtmlFitToWidthLeftAndOpen",
+          "group": "2_left@1"
+        },
+        {
+          "command": "plantuml-markdown-preview.exportHtmlWidth640LeftAndOpen",
+          "group": "2_left@2"
+        },
+        {
+          "command": "plantuml-markdown-preview.exportHtmlWidth768LeftAndOpen",
+          "group": "2_left@3"
+        },
+        {
+          "command": "plantuml-markdown-preview.exportHtmlWidth960LeftAndOpen",
+          "group": "2_left@4"
+        },
+        {
+          "command": "plantuml-markdown-preview.exportHtmlWidth1024LeftAndOpen",
+          "group": "2_left@5"
+        },
+        {
+          "command": "plantuml-markdown-preview.exportHtmlWidth1200LeftAndOpen",
+          "group": "2_left@6"
+        },
+        {
+          "command": "plantuml-markdown-preview.exportHtmlWidth1440LeftAndOpen",
+          "group": "2_left@7"
+        }
+      ],
+      "plantuml-markdown-preview.exportPdfSubmenu": [
+        {
+          "command": "plantuml-markdown-preview.exportPdf",
+          "group": "1_orientation@1"
+        },
+        {
+          "command": "plantuml-markdown-preview.exportPdfLandscape",
+          "group": "1_orientation@2"
+        }
+      ],
+      "plantuml-markdown-preview.exportPdfAndOpenSubmenu": [
+        {
+          "command": "plantuml-markdown-preview.exportPdfAndOpen",
+          "group": "1_orientation@1"
+        },
+        {
+          "command": "plantuml-markdown-preview.exportPdfLandscapeAndOpen",
+          "group": "1_orientation@2"
         }
       ]
     },
@@ -760,7 +1052,7 @@
         "plantumlMarkdownPreview.d2Scale": {
           "order": 15,
           "type": "string",
-          "default": "75%",
+          "default": "70%",
           "enum": [
             "auto",
             "100%",
@@ -835,8 +1127,16 @@
           "default": true,
           "description": "%configuration.enableMath.description%"
         },
-        "plantumlMarkdownPreview.debounceNoDiagramChangeMs": {
+        "plantumlMarkdownPreview.pdfScale": {
           "order": 19,
+          "type": "number",
+          "default": 0.625,
+          "minimum": 0.1,
+          "maximum": 2,
+          "description": "%configuration.pdfScale.description%"
+        },
+        "plantumlMarkdownPreview.debounceNoDiagramChangeMs": {
+          "order": 20,
           "type": [
             "number",
             "null"
@@ -845,7 +1145,7 @@
           "description": "%configuration.debounceNoDiagramChangeMs.description%"
         },
         "plantumlMarkdownPreview.debounceDiagramChangeMs": {
-          "order": 20,
+          "order": 21,
           "type": [
             "number",
             "null"
@@ -854,7 +1154,7 @@
           "description": "%configuration.debounceDiagramChangeMs.description%"
         },
         "plantumlMarkdownPreview.plantumlLocalServerPort": {
-          "order": 21,
+          "order": 22,
           "type": "number",
           "default": 0,
           "minimum": 0,
@@ -862,19 +1162,19 @@
           "description": "%configuration.plantumlLocalServerPort.description%"
         },
         "plantumlMarkdownPreview.plantumlServerUrl": {
-          "order": 22,
+          "order": 23,
           "type": "string",
           "default": "https://www.plantuml.com/plantuml",
           "description": "%configuration.plantumlServerUrl.description%"
         },
         "plantumlMarkdownPreview.enableDiagramViewer": {
-          "order": 23,
+          "order": 24,
           "type": "boolean",
           "default": true,
           "description": "%configuration.enableDiagramViewer.description%"
         },
         "plantumlMarkdownPreview.retainPreviewContext": {
-          "order": 24,
+          "order": 25,
           "type": "boolean",
           "default": true,
           "description": "%configuration.retainPreviewContext.description%"
