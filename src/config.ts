@@ -65,6 +65,8 @@ export interface Config {
     debounceDiagramChangeMs: number;
     /** When true, enable KaTeX math rendering ($...$ inline, $$...$$ block). */
     enableMath: boolean;
+    /** PDF export scale factor (0.1–2.0). Scales text and diagrams uniformly. */
+    pdfScale: number;
     /** Base directory for PlantUML `!include` directives. Empty string = workspace root. */
     plantumlIncludePath: string;
     /** D2 diagram theme name (maps to a themeID internally). */

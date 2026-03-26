@@ -102,7 +102,7 @@ Controla el tamaño de visualización de los diagramas PlantUML, Mermaid y D2 de
 
 - **PlantUML scale** — `auto` (reducir para ajustar) o porcentaje fijo (70%–120%, por defecto 100%). El SVG se mantiene nítido en cualquier escala.
 - **Mermaid scale** — `auto` (ajustar al contenedor) o porcentaje fijo (50%–100%, por defecto 80%).
-- **D2 scale** — `auto` (ajustar al contenedor) o porcentaje fijo (50%–100%, por defecto 75%).
+- **D2 scale** — `auto` (ajustar al contenedor) o porcentaje fijo (50%–100%, por defecto 70%).
 
 ### Modos de renderizado
 
@@ -136,14 +136,15 @@ Exporta tu documento Markdown a un archivo HTML autónomo.
 - CSS de resaltado de sintaxis incluido: sin dependencias externas.
 - Exporta y abre en el navegador con un solo comando.
 - Ancho de diseño configurable (640px–1440px o ilimitado) y alineación (centrada o izquierda).
-- **Opción Fit-to-width** escala los diagramas e imágenes para llenar el ancho de la página.
+- Modo **Responsive** y **presets de ancho en píxeles** (640–1440px) con alineación central o izquierda
 
 ### Exportación a PDF
 
 Exporta tu documento Markdown a PDF usando un navegador basado en Chromium sin cabecera.
 
 - Requiere Chrome, Edge o Chromium instalado en tu sistema.
-- Los diagramas se escalan automáticamente para ajustarse al ancho de la página.
+- Orientación vertical y horizontal
+- Escalado uniforme de texto y diagramas (configuración `pdfScale`, predeterminado 0.625)
 - Se aplican márgenes de impresión para un diseño limpio.
 
 ### Exportación masiva de diagramas
@@ -391,23 +392,27 @@ Abre archivos `.puml` / `.plantuml`, `.mmd` / `.mermaid` o `.d2` directamente en
 
 ### Exportar a HTML
 
-- **Menú contextual:** Haz clic derecho en un archivo `.md` → **PlantUML Markdown Preview** → **Export as HTML**.
-- **Panel de vista previa:** Haz clic derecho dentro del panel de vista previa → **Export as HTML** o **Export as HTML & Open in Browser**.
-- **Paleta de comandos:** `PlantUML Markdown Preview: Export as HTML`.
-- **Paleta de comandos:** `PlantUML Markdown Preview: Export as HTML & Open in Browser`.
-- **Paleta de comandos:** `PlantUML Markdown Preview: Export as HTML (Fit to Width)`.
-- **Paleta de comandos:** `PlantUML Markdown Preview: Export as HTML & Open in Browser (Fit to Width)`.
+- **Menú contextual:** Haz clic derecho en un archivo `.md` → **PlantUML Markdown Preview** → **Export as HTML** → elige una opción de ancho
+- **Panel de vista previa:** Haz clic derecho dentro del panel de vista previa → **Export as HTML** o **Export as HTML & Open**
 
-El archivo HTML se guarda junto al archivo `.md` fuente. Para exportar y abrir en tu navegador en un solo paso, elige **Export as HTML & Open in Browser**.
+El submenú ofrece estas opciones de ancho:
+
+| Opción | Descripción |
+| ------ | ----------- |
+| Current Settings | Exportar con la configuración actual (sin CSS responsive) |
+| Responsive | Escala configurada por el usuario; los diagramas que desbordan se reducen |
+| 640px – 1440px | Ancho fijo del cuerpo en píxeles |
+| Responsive (Left-Aligned) | Igual que Responsive pero alineado a la izquierda |
+| 640px – 1440px (Left-Aligned) | Ancho fijo, alineado a la izquierda |
+
+El archivo HTML se guarda junto al archivo `.md` fuente.
 
 ### Exportar a PDF
 
-- **Menú contextual:** Haz clic derecho en un archivo `.md` → **PlantUML Markdown Preview** → **Export as PDF**.
-- **Panel de vista previa:** Haz clic derecho dentro del panel de vista previa → **Export as PDF** o **Export as PDF & Open**.
-- **Paleta de comandos:** `PlantUML Markdown Preview: Export as PDF`.
-- **Paleta de comandos:** `PlantUML Markdown Preview: Export as PDF & Open`.
+- **Menú contextual:** Haz clic derecho en un archivo `.md` → **PlantUML Markdown Preview** → **Export as PDF** → **Portrait** (Vertical) o **Landscape** (Horizontal)
+- **Panel de vista previa:** Haz clic derecho dentro del panel de vista previa → **Export as PDF** o **Export as PDF & Open** → **Portrait** (Vertical) o **Landscape** (Horizontal)
 
-El archivo PDF se guarda junto al archivo `.md` fuente. Se requiere Chrome, Edge o Chromium.
+El archivo PDF se guarda junto al archivo `.md` fuente. Se requiere Chrome, Edge o Chromium. La configuración `pdfScale` (predeterminado 0.625) controla la escala general del texto y los diagramas.
 
 ### Guardar / Copiar diagrama como PNG / SVG
 
@@ -671,9 +676,10 @@ Todos los ajustes usan el prefijo `plantumlMarkdownPreview.`.
 | `mermaidScale` | `"80%"` | Escala del diagrama Mermaid. `"auto"` escala para ajustarse al ancho del contenedor. Un porcentaje (50%–100%) renderiza a esa fracción del tamaño natural. |
 | `d2Theme` | `"Neutral Default"` | Tema del diagrama D2. 19 temas integrados disponibles (ej. `"Neutral Default"`, `"Dark Mauve"`, `"Terminal"`). |
 | `d2Layout` | `"dagre"` | Motor de diseño de D2: `"dagre"` (por defecto, rápido) o `"elk"` (mejor para gráficos complejos con muchos nodos). |
-| `d2Scale` | `"75%"` | Escala del diagrama D2. `"auto"` escala para ajustarse al ancho del contenedor. Un porcentaje (50%–100%) renderiza a esa fracción del tamaño natural. |
+| `d2Scale` | `"70%"` | Escala del diagrama D2. `"auto"` escala para ajustarse al ancho del contenedor. Un porcentaje (50%–100%) renderiza a esa fracción del tamaño natural. |
 | `htmlMaxWidth` | `"960px"` | Ancho máximo del cuerpo del HTML exportado. Opciones: `"640px"` – `"1440px"`, o `"none"` para sin límite. |
 | `htmlAlignment` | `"center"` | Alineación del cuerpo del HTML. `"center"` (por defecto) o `"left"`. |
+| `pdfScale` | `0.625` | Factor de escala para exportación PDF. Escala texto y diagramas uniformemente. Rango: 0.1–2.0. |
 | `enableMath` | `true` | Habilita el renderizado matemático de KaTeX. Soporta `$...$` (en línea) y `$$...$$` (en bloque). Establécelo en `false` si los símbolos `$` causan un procesamiento matemático no deseado. |
 | `debounceNoDiagramChangeMs` | _(vacío)_ | Retraso de antirrebote (ms) para cambios de texto que no son diagramas (los diagramas se sirven desde la caché). Déjalo vacío para usar el valor por defecto del modo (Fast: 100, Secure: 100, Easy: 100). |
 | `debounceDiagramChangeMs` | _(vacío)_ | Retraso de antirrebote (ms) para cambios en el contenido del diagrama. Déjalo vacío para usar el valor por defecto del modo (Fast: 100, Secure: 300, Easy: 300). |

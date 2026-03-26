@@ -102,7 +102,7 @@ Control the display size of PlantUML, Mermaid, and D2 diagrams independently.
 
 - **PlantUML scale** — `auto` (shrink to fit) or fixed percentage (70%–120%, default 100%). SVG stays crisp at any scale.
 - **Mermaid scale** — `auto` (fit container) or fixed percentage (50%–100%, default 80%).
-- **D2 scale** — `auto` (fit container) or fixed percentage (50%–100%, default 75%).
+- **D2 scale** — `auto` (fit container) or fixed percentage (50%–100%, default 70%).
 
 ### Rendering Modes
 
@@ -136,14 +136,15 @@ Export your Markdown document to a self-contained HTML file.
 - Syntax highlighting CSS included — no external dependencies
 - Export and open in browser in one command
 - Configurable layout width (640px–1440px or unlimited) and alignment (center or left)
-- **Fit-to-width** option scales diagrams and images to fill the page width
+- **Responsive** mode and **pixel-width presets** (640–1440px) with center or left alignment
 
 ### PDF Export
 
 Export your Markdown document to PDF using a headless Chromium-based browser.
 
 - Requires Chrome, Edge, or Chromium installed on your system
-- Diagrams are automatically scaled to fit the page width
+- Portrait and landscape orientation
+- Uniform scaling of text and diagrams (`pdfScale` setting, default 0.625)
 - Print margins are applied for a clean layout
 
 ### Bulk Diagram Export
@@ -405,24 +406,28 @@ Open `.puml` / `.plantuml`, `.mmd` / `.mermaid`, or `.d2` files directly in a pa
 
 ### Export to HTML
 
-- **Context menu:** Right-click a `.md` file → **PlantUML Markdown Preview** → **Export as HTML**
-- **Preview panel:** Right-click inside the preview panel → **Export as HTML** or **Export as HTML & Open in Browser**
-- **Command Palette:** `PlantUML Markdown Preview: Export as HTML`
-- **Command Palette:** `PlantUML Markdown Preview: Export as HTML & Open in Browser`
-- **Command Palette:** `PlantUML Markdown Preview: Export as HTML (Fit to Width)`
-- **Command Palette:** `PlantUML Markdown Preview: Export as HTML & Open in Browser (Fit to Width)`
+- **Context menu:** Right-click a `.md` file → **PlantUML Markdown Preview** → **Export as HTML** → choose a width option
+- **Preview panel:** Right-click inside the preview panel → **Export as HTML** or **Export as HTML & Open**
 
-The HTML file is saved alongside the source `.md` file. To export and open in
-your browser in one step, choose **Export as HTML & Open in Browser**.
+The submenu offers these width options:
+
+| Option | Description |
+| ------ | ----------- |
+| Current Settings | Export with the current configuration (no responsive CSS) |
+| Responsive | User-configured scale; diagrams that overflow are shrunk to fit |
+| 640px – 1440px | Fixed body width in pixels |
+| Responsive (Left-Aligned) | Same as Responsive but left-aligned |
+| 640px – 1440px (Left-Aligned) | Fixed width, left-aligned |
+
+The HTML file is saved alongside the source `.md` file.
 
 ### Export to PDF
 
-- **Context menu:** Right-click a `.md` file → **PlantUML Markdown Preview** → **Export as PDF**
-- **Preview panel:** Right-click inside the preview panel → **Export as PDF** or **Export as PDF & Open**
-- **Command Palette:** `PlantUML Markdown Preview: Export as PDF`
-- **Command Palette:** `PlantUML Markdown Preview: Export as PDF & Open`
+- **Context menu:** Right-click a `.md` file → **PlantUML Markdown Preview** → **Export as PDF** → **Portrait** or **Landscape**
+- **Preview panel:** Right-click inside the preview panel → **Export as PDF** or **Export as PDF & Open** → **Portrait** or **Landscape**
 
 The PDF file is saved alongside the source `.md` file. Chrome, Edge, or Chromium is required.
+The `pdfScale` setting (default 0.625) controls the overall scale of text and diagrams.
 
 ### Save / Copy Diagram as PNG / SVG
 
@@ -686,9 +691,10 @@ All settings use the `plantumlMarkdownPreview.` prefix.
 | `mermaidScale` | `"80%"` | Mermaid diagram scale. `"auto"` scales to fit container width. A percentage (50%–100%) renders at that fraction of natural size. |
 | `d2Theme` | `"Neutral Default"` | D2 diagram theme. 19 built-in themes available (e.g. `"Neutral Default"`, `"Dark Mauve"`, `"Terminal"`). |
 | `d2Layout` | `"dagre"` | D2 layout engine: `"dagre"` (default, fast) or `"elk"` (better for complex graphs with many nodes). |
-| `d2Scale` | `"75%"` | D2 diagram scale. `"auto"` scales to fit container width. A percentage (50%–100%) renders at that fraction of natural size. |
+| `d2Scale` | `"70%"` | D2 diagram scale. `"auto"` scales to fit container width. A percentage (50%–100%) renders at that fraction of natural size. |
 | `htmlMaxWidth` | `"960px"` | Maximum width of the exported HTML body. Options: `"640px"` – `"1440px"`, or `"none"` for no limit. |
 | `htmlAlignment` | `"center"` | HTML body alignment. `"center"` (default) or `"left"`. |
+| `pdfScale` | `0.625` | PDF export scale factor. Scales text and diagrams uniformly. Range: 0.1–2.0. |
 | `enableMath` | `true` | Enable KaTeX math rendering. Supports `$...$` (inline) and `$$...$$` (block). Set to `false` if `$` symbols cause unwanted math parsing. |
 | `debounceNoDiagramChangeMs` | _(empty)_ | Debounce delay (ms) for non-diagram text changes (diagrams served from cache). Leave empty to use the mode default (Fast: 100, Secure: 100, Easy: 100). |
 | `debounceDiagramChangeMs` | _(empty)_ | Debounce delay (ms) for diagram content changes. Leave empty to use the mode default (Fast: 100, Secure: 300, Easy: 300). |

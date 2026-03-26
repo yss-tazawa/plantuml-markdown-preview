@@ -102,7 +102,7 @@
 
 - **PlantUML 缩放** — `auto`（缩小以适应宽度）或固定百分比（70%–120%，默认 100%）
 - **Mermaid 缩放** — `auto`（适应容器宽度）或固定百分比（50%–100%，默认 80%）
-- **D2 缩放** — `auto`（适应容器宽度）或固定百分比（50%–100%，默认 75%）
+- **D2 缩放** — `auto`（适应容器宽度）或固定百分比（50%–100%，默认 70%）
 
 ### 渲染模式
 
@@ -114,7 +114,6 @@
 | **网络** | 无（仅 localhost） | 无 | 需要 |
 | **隐私** | 图表保留在本机 | 图表保留在本机 | 图表源码发送至 PlantUML 服务器 |
 | **速度** | 常驻 PlantUML 服务器 — 即时重渲染 | 每次渲染启动 JVM | 依赖网络 |
-| **并发数** | 50（并行 HTTP） | 1（批处理） | 5（并行 HTTP） |
 
 - **Fast 模式**（默认）— 在 `localhost` 启动常驻 PlantUML 服务器。消除每次编辑的 JVM 启动开销，以高并发实现即时重渲染。图表不会发送到机器外部。
 - **Secure 模式** — 在本地使用 Java + PlantUML jar。图表不会发送到机器外部。无网络访问。为最高安全性，默认阻止本地图片。
@@ -135,14 +134,15 @@
 - 包含语法高亮 CSS — 无需外部依赖
 - 一条命令即可导出并在浏览器中打开
 - 可配置布局宽度（640px–1440px 或无限制）和对齐方式（居中或左对齐）
-- **适应宽度**选项将图表和图片缩放至页面宽度
+- **响应式** 模式和 **像素宽度预设**（640–1440px），支持居中或左对齐
 
 ### PDF 导出
 
 使用无头 Chromium 浏览器将 Markdown 文档导出为 PDF。
 
 - 需要系统安装 Chrome、Edge 或 Chromium
-- 图表自动缩放以适应页面宽度
+- 支持纵向和横向
+- 文本和图表均匀缩放（`pdfScale` 设置，默认 0.625）
 - 应用打印边距确保整洁布局
 
 ### 批量图表导出
@@ -403,23 +403,28 @@ PlantUML、Mermaid 和 D2 图表也可在 VS Code 内置 Markdown 预览（`Mark
 
 ### 导出为 HTML
 
-- **右键菜单：** 右键 `.md` 文件 → **PlantUML Markdown Preview** → **导出为 HTML**
-- **预览面板：** 在预览内右键 → **导出为 HTML** 或 **导出为 HTML 并在浏览器中打开**
-- **命令面板：** `PlantUML Markdown Preview: Export as HTML`
-- **命令面板：** `PlantUML Markdown Preview: Export as HTML & Open in Browser`
-- **命令面板：** `PlantUML Markdown Preview: Export as HTML (Fit to Width)`
-- **命令面板：** `PlantUML Markdown Preview: Export as HTML & Open in Browser (Fit to Width)`
+- **右键菜单：** 右键 `.md` 文件 → **PlantUML Markdown Preview** → **导出为 HTML** → 选择宽度选项
+- **预览面板：** 在预览内右键 → **导出为 HTML** 或 **导出为 HTML 并打开**
 
-HTML 文件保存在源 `.md` 文件旁边。选择 **导出为 HTML 并在浏览器中打开** 可一步完成导出并打开。
+子菜单提供以下宽度选项：
+
+| 选项 | 说明 |
+| ---- | ---- |
+| Current Settings | 使用当前配置导出（无响应式 CSS） |
+| Responsive | 用户配置的缩放；溢出的图表缩小以适应 |
+| 640px – 1440px | 固定像素宽度 |
+| Responsive (Left-Aligned) | 与响应式相同，但靠左对齐 |
+| 640px – 1440px (Left-Aligned) | 固定宽度，靠左对齐 |
+
+HTML 文件保存在源 `.md` 文件旁边。
 
 ### 导出为 PDF
 
-- **右键菜单：** 右键 `.md` 文件 → **PlantUML Markdown Preview** → **导出为 PDF**
-- **预览面板：** 在预览内右键 → **导出为 PDF** 或 **导出为 PDF 并打开**
-- **命令面板：** `PlantUML Markdown Preview: Export as PDF`
-- **命令面板：** `PlantUML Markdown Preview: Export as PDF & Open`
+- **右键菜单：** 右键 `.md` 文件 → **PlantUML Markdown Preview** → **导出为 PDF** → **纵向** 或 **横向**
+- **预览面板：** 在预览内右键 → **导出为 PDF** 或 **导出为 PDF 并打开** → **纵向** 或 **横向**
 
 PDF 文件保存在源 `.md` 文件旁边。需要 Chrome、Edge 或 Chromium。
+`pdfScale` 设置（默认 0.625）控制文本和图表的整体缩放。
 
 ### 将图表保存/复制为 PNG/SVG
 
@@ -677,9 +682,10 @@ PlantUML、Mermaid 和 D2 的上下文感知关键字建议。适用于独立文
 | `mermaidScale` | `"80%"` | Mermaid 图表缩放。`"auto"` 适应容器宽度。 |
 | `d2Theme` | `"Neutral Default"` | D2 图表主题。19 种内置主题可用。 |
 | `d2Layout` | `"dagre"` | D2 布局引擎：`"dagre"`（默认，快速）或 `"elk"`（适合复杂图）。 |
-| `d2Scale` | `"75%"` | D2 图表缩放。 |
+| `d2Scale` | `"70%"` | D2 图表缩放。`"auto"` 缩小超出容器宽度的图表。百分比（50%–100%）按原始大小的指定比例渲染。 |
 | `htmlMaxWidth` | `"960px"` | 导出 HTML 的最大宽度。 |
 | `htmlAlignment` | `"center"` | HTML 对齐方式。`"center"`（默认）或 `"left"`。 |
+| `pdfScale` | `0.625` | PDF 导出缩放比例。均匀缩放文本和图表。范围: 0.1–2.0。 |
 | `enableMath` | `true` | 启用 KaTeX 数学渲染。支持 `$...$`（行内）和 `$$...$$`（块级）。如 `$` 符号导致意外的数学解析，可设为 `false`。 |
 | `debounceNoDiagramChangeMs` | _(空)_ | 非图表文本变更的防抖延迟（毫秒）。图表从缓存中提供。留空使用模式默认值（Fast: 100, Secure: 100, Easy: 100）。 |
 | `debounceDiagramChangeMs` | _(空)_ | 图表内容变更的防抖延迟（毫秒）。留空使用模式默认值（Fast: 100, Secure: 300, Easy: 300）。 |
@@ -764,7 +770,7 @@ D2 使用内置 Wasm 模块渲染 — 无需外部 CLI。
 <details>
 <summary><strong>Secure 模式在多图表时很慢。如何加速？</strong></summary>
 
-切换到 **Fast 模式**（`mode: "fast"`）。Fast 模式在 localhost 启动常驻 PlantUML 服务器，重新渲染即时完成 — 无需每次编辑都启动 JVM。并发数也更高（50 个并行请求 vs Secure 模式的 1 个）。
+切换到 **Fast 模式**（`mode: "fast"`）。Fast 模式在 localhost 启动常驻 PlantUML 服务器，重新渲染即时完成 — 无需每次编辑都启动 JVM。
 
 </details>
 

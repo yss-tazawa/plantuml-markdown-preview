@@ -102,7 +102,7 @@
 
 - **PlantUML 縮放** — `auto`（縮小以適應寬度）或固定百分比（70%–120%，預設 100%）。SVG 在任何縮放比例下都保持清晰。
 - **Mermaid 縮放** — `auto`（適應容器寬度）或固定百分比（50%–100%，預設 80%）
-- **D2 縮放** — `auto`（適應容器寬度）或固定百分比（50%–100%，預設 75%）
+- **D2 縮放** — `auto`（適應容器寬度）或固定百分比（50%–100%，預設 70%）
 
 ### 渲染模式
 
@@ -134,14 +134,15 @@
 - 包含語法醒目提示 CSS — 無需外部依賴
 - 一條命令即可匯出並在瀏覽器中開啟
 - 可設定版面寬度（640px–1440px 或無限制）和對齊方式（置中或靠左）
-- **適應寬度**選項將圖表和圖片縮放至頁面寬度
+- **響應式** 模式和 **像素寬度預設**（640–1440px），支援置中或靠左對齊
 
 ### PDF 匯出
 
 使用無頭 Chromium 瀏覽器將 Markdown 文件匯出為 PDF。
 
 - 需要系統安裝 Chrome、Edge 或 Chromium
-- 圖表自動縮放以適應頁面寬度
+- 支援直向和橫向
+- 文字和圖表均勻縮放（`pdfScale` 設定，預設 0.625）
 - 套用列印邊界確保整潔版面
 
 ### 批次圖表匯出
@@ -402,23 +403,28 @@ PlantUML、Mermaid 和 D2 圖表也可在 VS Code 內建 Markdown 預覽（`Mark
 
 ### 匯出為 HTML
 
-- **右鍵選單：** 右鍵 `.md` 檔案 → **PlantUML Markdown Preview** → **匯出為 HTML**
-- **預覽面板：** 在預覽內右鍵 → **匯出為 HTML** 或 **匯出為 HTML 並在瀏覽器中開啟**
-- **命令面板：** `PlantUML Markdown Preview: Export as HTML`
-- **命令面板：** `PlantUML Markdown Preview: Export as HTML & Open in Browser`
-- **命令面板：** `PlantUML Markdown Preview: Export as HTML (Fit to Width)`
-- **命令面板：** `PlantUML Markdown Preview: Export as HTML & Open in Browser (Fit to Width)`
+- **右鍵選單：** 右鍵 `.md` 檔案 → **PlantUML Markdown Preview** → **匯出為 HTML** → 選擇寬度選項
+- **預覽面板：** 在預覽內右鍵 → **匯出為 HTML** 或 **匯出為 HTML 並開啟**
 
-HTML 檔案儲存在來源 `.md` 檔案旁邊。選擇 **匯出為 HTML 並在瀏覽器中開啟** 可一步完成匯出並開啟。
+子選單提供以下寬度選項：
+
+| 選項 | 說明 |
+| ---- | ---- |
+| Current Settings | 使用目前設定匯出（無響應式 CSS） |
+| Responsive | 使用者設定的縮放；溢出的圖表縮小以適應 |
+| 640px – 1440px | 固定像素寬度 |
+| Responsive (Left-Aligned) | 與響應式相同，但靠左對齊 |
+| 640px – 1440px (Left-Aligned) | 固定寬度，靠左對齊 |
+
+HTML 檔案儲存在來源 `.md` 檔案旁邊。
 
 ### 匯出為 PDF
 
-- **右鍵選單：** 右鍵 `.md` 檔案 → **PlantUML Markdown Preview** → **匯出為 PDF**
-- **預覽面板：** 在預覽內右鍵 → **匯出為 PDF** 或 **匯出為 PDF 並開啟**
-- **命令面板：** `PlantUML Markdown Preview: Export as PDF`
-- **命令面板：** `PlantUML Markdown Preview: Export as PDF & Open`
+- **右鍵選單：** 右鍵 `.md` 檔案 → **PlantUML Markdown Preview** → **匯出為 PDF** → **直向** 或 **橫向**
+- **預覽面板：** 在預覽內右鍵 → **匯出為 PDF** 或 **匯出為 PDF 並開啟** → **直向** 或 **橫向**
 
 PDF 檔案儲存在來源 `.md` 檔案旁邊。需要 Chrome、Edge 或 Chromium。
+`pdfScale` 設定（預設 0.625）控制文字和圖表的整體縮放。
 
 ### 儲存/複製圖表為 PNG/SVG
 
@@ -678,12 +684,13 @@ PlantUML、Mermaid 和 D2 的上下文感知關鍵字建議。適用於獨立檔
 | `mermaidScale` | `"80%"` | Mermaid 圖表縮放。`"auto"` 適應容器寬度。 |
 | `d2Theme` | `"Neutral Default"` | D2 圖表主題。19 種內建主題可用。 |
 | `d2Layout` | `"dagre"` | D2 版面引擎：`"dagre"`（預設，快速）或 `"elk"`（適合複雜圖）。 |
-| `d2Scale` | `"75%"` | D2 圖表縮放。 |
+| `d2Scale` | `"70%"` | D2 圖表縮放。`"auto"` 在超出容器寬度時自動縮小。百分比（50%–100%）按原始大小的指定比例顯示。 |
 | `htmlMaxWidth` | `"960px"` | 匯出 HTML 的最大寬度。 |
 | `htmlAlignment` | `"center"` | HTML 對齊方式。`"center"`（預設）或 `"left"`。 |
+| `pdfScale` | `0.625` | PDF 匯出縮放比例。均勻縮放文字和圖表。範圍: 0.1–2.0。 |
 | `enableMath` | `true` | 啟用 KaTeX 數學渲染。支援 `$...$`（行內）和 `$$...$$`（區塊）。如 `$` 符號導致意外的數學解析，可設為 `false`。 |
 | `debounceNoDiagramChangeMs` | _(空)_ | 非圖表文字變更的防抖延遲（毫秒）。圖表從快取中提供。留空使用模式預設值（Fast: 100, Secure: 100, Easy: 100）。 |
-| `debounceDiagramChangeMs` | _(空)_ | 圖表內容變更的防抖延遲（毫秒）。��空使用模式預設值（Fast: 100, Secure: 300, Easy: 300）。 |
+| `debounceDiagramChangeMs` | _(空)_ | 圖表內容變更的防抖延遲（毫秒）。留空使用模式預設值（Fast: 100, Secure: 300, Easy: 300）。 |
 | `plantumlLocalServerPort` | `0` | 本機 PlantUML 伺服器連接埠（僅 Fast 模式）。`0` = 自動指派空閒連接埠。 |
 | `plantumlServerUrl` | `"https://www.plantuml.com/plantuml"` | Easy 模式的 PlantUML 伺服器 URL。 |
 | `enableDiagramViewer` | `true` | 啟用右鍵選單中的「在圖表檢視器中開啟」項目。 |

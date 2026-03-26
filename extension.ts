@@ -3,7 +3,7 @@
  * @description VS Code extension entry point.
  *
  * Responsibilities:
- * - Register commands: openPreview / exportHtml / exportHtmlAndOpen / exportHtmlFitToWidth / exportHtmlFitToWidthAndOpen / exportPdf / exportPdfAndOpen / changeTheme / openDiagramViewer / saveDiagramAsPng / saveDiagramAsSvg / copyDiagramAsPng / exportAllDiagramsAsSvg / exportAllDiagramsAsPng / goToIncludeFile / openIncludeSource
+ * - Register commands: openPreview / exportHtml / exportHtmlAndOpen / exportHtmlFitToWidth / exportHtmlFitToWidthAndOpen / exportHtmlWidth{640,768,960,1024,1200,1440}[AndOpen] / exportPdf / exportPdfAndOpen / changeTheme / openDiagramViewer / saveDiagramAsPng / saveDiagramAsSvg / copyDiagramAsPng / exportAllDiagramsAsSvg / exportAllDiagramsAsPng / goToIncludeFile / openIncludeSource
  * - Read VS Code settings (getConfig)
  * - Auto-follow active editor tab (editorTracker)
  * - Propagate settings changes to the preview (configWatcher)
@@ -107,10 +107,11 @@ function getConfig(): Config {
         htmlMaxWidth: cfg.get<string>('htmlMaxWidth', '960px'),
         htmlAlignment: cfg.get<string>('htmlAlignment', 'center'),
         enableMath: cfg.get<boolean>('enableMath', true),
+        pdfScale: cfg.get<number>('pdfScale', 0.625),
         plantumlIncludePath: cfg.get<string>('plantumlIncludePath', ''),
         d2Theme: cfg.get<string>('d2Theme', 'Neutral Default'),
         d2Layout: cfg.get<string>('d2Layout', 'dagre'),
-        d2Scale: cfg.get<string>('d2Scale', '75%'),
+        d2Scale: cfg.get<string>('d2Scale', '70%'),
         // Intentionally not declared in package.json contributes.configuration (hidden debug setting)
         debugSimulateNoJava: cfg.get<boolean>('debugSimulateNoJava', false),
     };
@@ -219,7 +220,7 @@ function resolveD2Path(uri?: vscode.Uri): string | null {
  * @param [options] - Export options (fitToWidth, pdf).
  * @returns Absolute path of the generated file (HTML or PDF), or null on failure.
  */
-async function runExport(uri?: vscode.Uri, options?: { fitToWidth?: boolean; pdf?: boolean }): Promise<string | null> {
+async function runExport(uri?: vscode.Uri, options?: { fitToWidth?: boolean | number; fitToWidthAlign?: 'center' | 'left'; pdf?: boolean; landscape?: boolean }): Promise<string | null> {
     const filePath = resolveMarkdownPath(uri);
     if (!filePath) {
         vscode.window.showErrorMessage(vscode.l10n.t('No Markdown file (.md) is selected.'));
@@ -255,9 +256,9 @@ async function runExport(uri?: vscode.Uri, options?: { fitToWidth?: boolean; pdf
             },
             async () => {
                 if (options?.pdf) {
-                    return await exportToPdf(filePath, config);
+                    return await exportToPdf(filePath, config, undefined, options?.landscape);
                 }
-                return await exportToHtml(filePath, config, undefined, options?.fitToWidth);
+                return await exportToHtml(filePath, config, undefined, options?.fitToWidth, options?.fitToWidthAlign);
             }
         );
     } catch (err) {
@@ -466,7 +467,7 @@ export function activate(context: vscode.ExtensionContext): { extendMarkdownIt: 
 
     function registerExportCommand(
         id: string,
-        exportOptions: { fitToWidth?: boolean; pdf?: boolean } | undefined,
+        exportOptions: { fitToWidth?: boolean | number; fitToWidthAlign?: 'center' | 'left'; pdf?: boolean; landscape?: boolean } | undefined,
         autoOpen: boolean,
         showNotification?: (outputPath: string) => Thenable<void>
     ): vscode.Disposable {
@@ -505,17 +506,44 @@ export function activate(context: vscode.ExtensionContext): { extendMarkdownIt: 
     const exportAndOpenCmd = registerExportCommand(
         'plantuml-markdown-preview.exportHtmlAndOpen', undefined, true
     );
+    const exportCurrentCmd = registerExportCommand(
+        'plantuml-markdown-preview.exportHtmlCurrentSettings', undefined, false, notifyHtmlExported
+    );
+    const exportCurrentAndOpenCmd = registerExportCommand(
+        'plantuml-markdown-preview.exportHtmlCurrentSettingsAndOpen', undefined, true
+    );
     const exportHtmlFitCmd = registerExportCommand(
         'plantuml-markdown-preview.exportHtmlFitToWidth', { fitToWidth: true }, false, notifyHtmlExported
     );
     const exportHtmlFitAndOpenCmd = registerExportCommand(
         'plantuml-markdown-preview.exportHtmlFitToWidthAndOpen', { fitToWidth: true }, true
     );
+    const widthValues = [640, 768, 960, 1024, 1200, 1440] as const;
+    const exportHtmlWidthCmds = widthValues.flatMap(w => [
+        registerExportCommand(`plantuml-markdown-preview.exportHtmlWidth${w}`, { fitToWidth: w }, false, notifyHtmlExported),
+        registerExportCommand(`plantuml-markdown-preview.exportHtmlWidth${w}AndOpen`, { fitToWidth: w }, true),
+    ]);
+    const exportHtmlFitLeftCmd = registerExportCommand(
+        'plantuml-markdown-preview.exportHtmlFitToWidthLeft', { fitToWidth: true, fitToWidthAlign: 'left' }, false, notifyHtmlExported
+    );
+    const exportHtmlFitLeftAndOpenCmd = registerExportCommand(
+        'plantuml-markdown-preview.exportHtmlFitToWidthLeftAndOpen', { fitToWidth: true, fitToWidthAlign: 'left' }, true
+    );
+    const exportHtmlWidthLeftCmds = widthValues.flatMap(w => [
+        registerExportCommand(`plantuml-markdown-preview.exportHtmlWidth${w}Left`, { fitToWidth: w, fitToWidthAlign: 'left' }, false, notifyHtmlExported),
+        registerExportCommand(`plantuml-markdown-preview.exportHtmlWidth${w}LeftAndOpen`, { fitToWidth: w, fitToWidthAlign: 'left' }, true),
+    ]);
     const exportPdfCmd = registerExportCommand(
         'plantuml-markdown-preview.exportPdf', { pdf: true }, false, notifyPdfExported
     );
     const exportPdfAndOpenCmd = registerExportCommand(
         'plantuml-markdown-preview.exportPdfAndOpen', { pdf: true }, true
+    );
+    const exportPdfLandscapeCmd = registerExportCommand(
+        'plantuml-markdown-preview.exportPdfLandscape', { pdf: true, landscape: true }, false, notifyPdfExported
+    );
+    const exportPdfLandscapeAndOpenCmd = registerExportCommand(
+        'plantuml-markdown-preview.exportPdfLandscapeAndOpen', { pdf: true, landscape: true }, true
     );
 
     const previewCmd = vscode.commands.registerCommand(
@@ -835,7 +863,7 @@ export function activate(context: vscode.ExtensionContext): { extendMarkdownIt: 
         }
     );
 
-    context.subscriptions.push(exportCmd, exportAndOpenCmd, exportHtmlFitCmd, exportHtmlFitAndOpenCmd, exportPdfCmd, exportPdfAndOpenCmd, previewCmd, pumlPreviewCmd, mermaidPreviewCmd, d2PreviewCmd, changeThemeCmd, openViewerCmd, savePngCmd, saveSvgCmd, copyPngCmd, exportAllSvgCmd, exportAllPngCmd, goToIncludeCmd, openIncludeSourceCmd, includeContextTracker, editorTracker, configWatcher);
+    context.subscriptions.push(exportCmd, exportAndOpenCmd, exportCurrentCmd, exportCurrentAndOpenCmd, exportHtmlFitCmd, exportHtmlFitAndOpenCmd, ...exportHtmlWidthCmds, exportHtmlFitLeftCmd, exportHtmlFitLeftAndOpenCmd, ...exportHtmlWidthLeftCmds, exportPdfCmd, exportPdfAndOpenCmd, exportPdfLandscapeCmd, exportPdfLandscapeAndOpenCmd, previewCmd, pumlPreviewCmd, mermaidPreviewCmd, d2PreviewCmd, changeThemeCmd, openViewerCmd, savePngCmd, saveSvgCmd, copyPngCmd, exportAllSvgCmd, exportAllPngCmd, goToIncludeCmd, openIncludeSourceCmd, includeContextTracker, editorTracker, configWatcher);
 
     // Start local PlantUML picoweb server if local-server mode is selected.
     // prepareLocalServer() pre-creates the readyPromise so that any preview
@@ -967,10 +995,11 @@ const builtInPreviewConfig: Config = {
     allowLocalImages: true,
     allowHttpImages: false,
     enableMath: true,
+    pdfScale: 0.625,
     plantumlIncludePath: '',
     d2Theme: 'Neutral Default',
     d2Layout: 'dagre',
-    d2Scale: '75%',
+    d2Scale: '70%',
     debounceNoDiagramChangeMs: 100,
     debounceDiagramChangeMs: 100,
     debugSimulateNoJava: false,

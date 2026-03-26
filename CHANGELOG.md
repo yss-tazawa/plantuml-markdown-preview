@@ -6,6 +6,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## 0.7.0 - 2026-03-26
+
+### Added
+
+- HTML export width submenu: choose Responsive, pixel-width presets (640–1440px), or left-aligned variants from the context menu
+- PDF export orientation submenu: choose Portrait or Landscape
+- `pdfScale` setting to control PDF export scale — text and diagrams scale uniformly (default 0.625)
+
+### Changed
+
+- Renamed "Fit to Width" to "Responsive" across all languages
+- Shortened "Export as HTML & Open in Browser" to "Export as HTML & Open"
+- HTML/PDF responsive export now preserves user-configured diagram scale (shrinks only if overflowing)
+- D2 default scale changed from 75% to 70%
+
+### Fixed
+
+- Fix Mermaid diagrams not rendered in PDF export
+- Fix PlantUML/D2 diagrams distorted (height not scaling with width) in responsive HTML export
+- Fix D2 diagrams not shrinking in responsive HTML export
+
 ## 0.6.18 - 2026-03-25
 
 ### Added
