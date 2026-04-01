@@ -171,7 +171,7 @@ Markdown ファイル内のすべてのダイアグラムを個別の PNG また
 - 別のソースファイルに切り替えると自動で閉じる
 - **PNG / SVG として保存・コピー** — プレビューまたはダイアグラムビューア内でダイアグラムを右クリックしてファイル保存またはクリップボードにコピー
 - **ビューア内検索** — `Cmd+F` / `Ctrl+F` で検索ウィジェットを開く
-- `enableDiagramViewer: false` で無効��可能
+- `enableDiagramViewer: false` で無効化が可能
 
 ### PlantUML `!include` サポート
 
