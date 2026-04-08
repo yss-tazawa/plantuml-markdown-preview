@@ -15,11 +15,19 @@
 
 declare function acquireVsCodeApi(): { postMessage(msg: unknown): void };
 
-// Use a typed reference to window for the loading timeout property.
+// Minimal interface for the mermaid global that this script touches.
+// Only the methods actually invoked are typed.
+interface MermaidLib {
+    initialize(options: Record<string, unknown>): void;
+    render(id: string, source: string): Promise<{ svg: string }>;
+}
+
+// Use a typed reference to window for globals the script accesses.
 interface ExtendedWindow extends Window {
     __loadingTimeout: ReturnType<typeof setTimeout> | null;
     __renderMermaid?: () => Promise<void>;
     __renderMermaidDone?: Promise<void>;
+    mermaid?: MermaidLib;
 }
 const win = window as unknown as ExtendedWindow;
 
@@ -469,8 +477,8 @@ interface Anchor {
             requestAnimationFrame(notifyDiagramViewers);
         } else if (message && message.type === 'reinitMermaid' && typeof message.theme === 'string') {
             // Re-initialize Mermaid with a new theme so the next __renderMermaid() uses it.
-            if (typeof (window as any).mermaid !== 'undefined') {
-                (window as any).mermaid.initialize({ startOnLoad: false, theme: message.theme });
+            if (win.mermaid) {
+                win.mermaid.initialize({ startOnLoad: false, theme: message.theme });
             }
         } else if (message && message.type === 'showLoading') {
             let overlay = document.getElementById('loading-overlay');
@@ -549,9 +557,9 @@ interface Anchor {
                 }
             }
             // Mermaid: re-render changed blocks client-side
-            if (Array.isArray(message.mermaid) && message.mermaid.length > 0 && typeof win.__renderMermaid === 'function') {
+            if (Array.isArray(message.mermaid) && message.mermaid.length > 0 && typeof win.__renderMermaid === 'function' && win.mermaid) {
                 var mermaidDiagrams = document.querySelectorAll('.mermaid-diagram');
-                var mermaidLib = (window as any).mermaid;
+                var mermaidLib = win.mermaid;
                 var mPrefix = 'mp' + Date.now() + '_';
                 var mScale = typeof message.mermaidScale === 'number' ? message.mermaidScale : 0;
                 (async function () {

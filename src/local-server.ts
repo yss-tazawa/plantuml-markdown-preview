@@ -188,7 +188,7 @@ export async function startLocalServer(config: Config): Promise<void> {
                 // Safe to reset synchronously: removeAllListeners('close') above ensures
                 // no close callback fires between kill() and the reset.
                 stoppingIntentionally = true;
-                serverProcess.kill();
+                try { serverProcess.kill(); } catch { /* process already gone (ESRCH) */ }
                 serverProcess = null;
                 stoppingIntentionally = false;
             }

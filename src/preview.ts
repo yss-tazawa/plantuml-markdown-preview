@@ -101,9 +101,12 @@ export class PreviewManager implements vscode.Disposable {
 
     // -- scroll sync --------------------------------------------------
     private syncMaster: SyncMaster = 'none';
-    /** Last line reported by the preview via revealLine (tracked even when blocked). */
-    private lastPreviewReportedLine = -1;
-    private activeEditorDisposable: vscode.Disposable | null = null;
+    /** Tracks whether the source editor was visible at the last check.
+     *  Used to detect hidden->visible transitions so the re-displayed source
+     *  can be scrolled to the preview's current position (per user's rule:
+     *  the re-displayed side follows the active side). */
+    private sourceWasVisible = false;
+    private visibleEditorsDisposable: vscode.Disposable | null = null;
 
     constructor(outputChannel: vscode.OutputChannel) {
         this.outputChannel = outputChannel;
@@ -207,7 +210,7 @@ export class PreviewManager implements vscode.Disposable {
         if (this.loadingRenderTimer) { clearTimeout(this.loadingRenderTimer); this.loadingRenderTimer = null; }
         if (this.loadingResolve) { this.loadingResolve(); this.loadingResolve = null; }
         if (this.syncMasterTimer) { clearTimeout(this.syncMasterTimer); this.syncMasterTimer = null; }
-        if (this.activeEditorDisposable) { this.activeEditorDisposable.dispose(); this.activeEditorDisposable = null; }
+        if (this.visibleEditorsDisposable) { this.visibleEditorsDisposable.dispose(); this.visibleEditorsDisposable = null; }
         if (this.renderAbortController) { this.renderAbortController.abort(); this.renderAbortController = null; }
         this.includePaths = new Set<string>();
     }
@@ -226,12 +229,12 @@ export class PreviewManager implements vscode.Disposable {
         this.lastRenderFailed = false;
         this.panelWasHidden = false;
         this.syncMaster = 'none';
+        this.sourceWasVisible = false;
         this.lastPlantUmlBlocks = [];
         this.lastMermaidBlocks = [];
         this.lastD2Blocks = [];
         this.lastRenderedText = null;
 
-        this.lastPreviewReportedLine = -1;
         if (this.firstRenderResolve) { this.firstRenderResolve(); this.firstRenderResolve = null; }
         this.disposeEventHandlers(true);
     }
@@ -271,9 +274,13 @@ export class PreviewManager implements vscode.Disposable {
 
         this.messageDisposable = this.panel.webview.onDidReceiveMessage((message) => {
             if (message.type === 'revealLine' && typeof message.line === 'number') {
-                // Always track the preview's position (used for initial sync on editor activation).
+                // Always track the preview's position regardless of editor visibility.
+                // lastScrollLine is used by onDidChangeViewState to restore the preview's
+                // position when it re-gains focus — if we don't update it here, a stale
+                // editor-side value would cause the preview to jump back to that old
+                // position when re-focused after scrolling while the source was hidden.
                 const line = Math.max(0, Math.round(message.line));
-                this.lastPreviewReportedLine = line;
+                this.lastScrollLine = line;
 
                 if (this.syncMaster === 'editor') return;
                 const editor = vscode.window.visibleTextEditors.find(
@@ -284,7 +291,6 @@ export class PreviewManager implements vscode.Disposable {
                 this.setSyncMaster('preview');
                 const range = new vscode.Range(line, 0, line, 0);
                 editor.revealRange(range, vscode.TextEditorRevealType.InCenter);
-                this.lastScrollLine = line;
             } else if (this.enableDiagramViewer && message.type === 'updateDiagramViewer') {
                 updateDiagramViewer(message.diagramIndex, message.svg, message.bgColor);
             } else if (this.enableDiagramViewer && message.type === 'diagramCount') {
@@ -358,6 +364,26 @@ export class PreviewManager implements vscode.Disposable {
             if (!this.panel) return;
             if (event.textEditor.document.uri.fsPath !== this.currentFilePath) return;
             if (event.visibleRanges.length === 0) return;
+
+            // Hidden -> visible transition: the source editor is being re-displayed.
+            // Per user's rule, the re-displayed side follows the active side — so
+            // scroll the source to the preview's current position (lastScrollLine)
+            // instead of sending the source's restored (stale) position to the
+            // preview. This is done here (rather than only in onDidChangeVisible-
+            // TextEditors) to handle the race where visibleRanges may fire first.
+            if (!this.sourceWasVisible) {
+                this.sourceWasVisible = true;
+                if (this.lastScrollLine >= 0) {
+                    // setSyncMaster('preview') must be set BEFORE revealRange because
+                    // revealRange triggers a secondary visibleRanges event; this flag
+                    // causes the 'syncMaster === preview' guard below to suppress it.
+                    this.setSyncMaster('preview');
+                    const range = new vscode.Range(this.lastScrollLine, 0, this.lastScrollLine, 0);
+                    event.textEditor.revealRange(range, vscode.TextEditorRevealType.InCenter);
+                }
+                return;
+            }
+
             if (this.syncMaster === 'preview') return;
             if (this.pendingScrollRestore) return;
 
@@ -381,24 +407,20 @@ export class PreviewManager implements vscode.Disposable {
             void this.panel.webview.postMessage({ type: 'scrollToLine', line: midLine, maxTopLine, atBottom });
         });
 
-        this.activeEditorDisposable = vscode.window.onDidChangeActiveTextEditor((editor) => {
-            if (!editor || editor.document.uri.fsPath !== this.currentFilePath) return;
+        // Initial snapshot: is the source editor currently visible?
+        this.sourceWasVisible = vscode.window.visibleTextEditors.some(
+            e => e.document.uri.fsPath === this.currentFilePath
+        );
 
-            // Suppress stale onDidChangeTextEditorVisibleRanges events from moving
-            // the preview during the activation transition.
-            this.setSyncMaster('preview');
-
-            // Initial sync: scroll the editor to the preview's last known position.
-            // The pre-scroll in onDidChangeViewState may have already positioned it;
-            // only call revealRange as a fallback if the editor is not yet there.
-            if (this.lastPreviewReportedLine >= 0) {
-                // Always apply revealRange — during tab switch, editor.visibleRanges
-                // reports the default position (line 0) before VS Code restores the
-                // previous scroll state, so comparing currentTop is unreliable.
-                const range = new vscode.Range(this.lastPreviewReportedLine, 0, this.lastPreviewReportedLine, 0);
-                editor.revealRange(range, vscode.TextEditorRevealType.InCenter);
-                this.lastScrollLine = this.lastPreviewReportedLine;
-            }
+        // We track source visibility so that the hidden->visible transition can
+        // be detected inside onDidChangeTextEditorVisibleRanges. This subscription
+        // exists mainly to reset sourceWasVisible to false when the source becomes
+        // hidden (no visibleRanges event fires for a hidden editor, so we need
+        // this separate signal).
+        this.visibleEditorsDisposable = vscode.window.onDidChangeVisibleTextEditors((editors) => {
+            if (!this.currentFilePath) return;
+            const isVisible = editors.some(e => e.document.uri.fsPath === this.currentFilePath);
+            if (!isVisible) this.sourceWasVisible = false;
         });
     }
 
@@ -635,6 +657,12 @@ export class PreviewManager implements vscode.Disposable {
                 this.pendingScrollRestore = false;
                 htmlReplaced = true;
                 this.lastRenderFailed = false;
+                // Reset to -1 after embedding the initial scroll position into the HTML.
+                // The webview now owns the scroll position from here on; the next
+                // onDidChangeTextEditorVisibleRanges event will re-populate these
+                // fields from the editor's actual position, and the equality check
+                // in the handler (midLine === lastScrollLine) will then correctly
+                // detect real scroll changes versus the initial -1 state.
                 this.lastScrollLine = -1;
                 this.lastMaxTopLine = -1;
             } else {
@@ -840,29 +868,21 @@ export class PreviewManager implements vscode.Disposable {
                     });
                 }
                 if (!this.panel.active) {
-                    // Preview lost focus — pre-scroll the editor to the preview's
-                    // position while it is still in the background tab so no scroll
-                    // animation is visible when the editor tab appears.
-                    if (this.lastPreviewReportedLine >= 0 && this.currentFilePath) {
-                        const editor = vscode.window.visibleTextEditors.find(
-                            e => e.document.uri.fsPath === this.currentFilePath
-                        );
-                        if (editor) {
-                            this.setSyncMaster('preview');
-                            const range = new vscode.Range(this.lastPreviewReportedLine, 0, this.lastPreviewReportedLine, 0);
-                            editor.revealRange(range, vscode.TextEditorRevealType.InCenter);
-                            this.lastScrollLine = this.lastPreviewReportedLine;
-                        }
-                    }
+                    // Preview lost focus — do NOT move the source editor here.
+                    // Per the user's rule, whichever side becomes current stays
+                    // put; the other side follows. When the source becomes the
+                    // new current, it is the preview that must follow, not the
+                    // source that gets yanked to the preview's position.
                     return;
                 }
 
-                // Suppress editor→preview feedback during initial sync so the editor
-                // doesn't jump when the preview scrolls to the editor's position.
-                this.setSyncMaster('editor');
-                if (this.retainCtx && this.lastScrollLine >= 0) {
-                    void this.panel.webview.postMessage({ type: 'scrollToLine', line: this.lastScrollLine, maxTopLine: this.lastMaxTopLine, atBottom: this.lastAtBottom });
-                }
+                // When retainContextWhenHidden is true the webview preserves its
+                // own scroll state, so no restore message is needed here. Sending
+                // scrollToLine would cause a sub-line round-trip drift because
+                // the line number passed through revealLine is rounded to an
+                // integer, losing the webview's exact pixel position.
+                // Re-render paths (retainCtx === false) restore scroll via the
+                // render pipeline (pendingScrollRestore), not through this block.
             });
             this.registerEventHandlers();
         }

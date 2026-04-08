@@ -1,5 +1,5 @@
 <p align="center">
-  <a href="#/">English</a> | <a href="#/zh-cn/">简体中文</a> | <a href="#/zh-tw/">繁體中文</a> | <a href="#/es/">Español</a> | <a href="#/pt-br/">Português</a> | <a href="#/ja/">日本語</a> | <strong>한국어</strong>
+  <a href="#/">English</a> | <a href="#/zh-cn/">简体中文</a> | <a href="#/ja/">日本語</a> | <a href="#/es/">Español</a> | <a href="#/pt-br/">Português</a> | <strong>한국어</strong> | <a href="#/zh-tw/">繁體中文</a>
 </p>
 
 <p align="center">
@@ -315,7 +315,7 @@ PlantUML, Mermaid 및 D2 다이어그램은 VS Code의 내장 Markdown 미리보
 2. 확장 뷰(`Ctrl+Shift+X` / `Cmd+Shift+X`)에서 **PlantUML Markdown Preview** 검색
 3. **Install** 클릭
 
-### 설정
+### 초기 설정
 
 **Fast 모드** (기본값): 즉각적인 재렌더링을 위해 상주 로컬 PlantUML 서버를 시작합니다. Java 11+이 필요합니다.
 
@@ -371,7 +371,7 @@ PlantUML, Mermaid 및 D2 다이어그램은 VS Code의 내장 Markdown 미리보
    ```
    VS Code 설정(`Ctrl+,`)을 열고 `plantumlMarkdownPreview.dotPath`를 검색한 후 위에서 확인한 경로를 입력하십시오.
 
-> **참고:** `javaPath` 기본값은 `"java"`입니다. 기본값 그대로 두면 `JAVA_HOME/bin/java`를 먼저 시도하고, 그다음 PATH의 `java`를 시도합니다.
+> **참고:** `javaPath` 기본값은 `"java"`입니다. 기본값 그대로 두면 `JAVA_HOME/bin/` (Windows에서는 `JAVA_HOME\bin\`) 아래의 Java 바이너리를 먼저 시도하고, 그다음 PATH의 `java`를 시도합니다.
 > `dotPath`와 `plantumlJarPath`는 각각 `"dot"`과 포함된 jar가 기본값입니다.
 > 해당 명령어가 PATH에 없거나 다른 jar를 사용하려는 경우에만 설정하십시오.
 

@@ -6,6 +6,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## 0.7.1 - 2026-04-09
+
+### Fixed
+
+- Fix preview jumping back to a stale source position after scrolling the preview while the source editor was hidden
+- Fix source editor not following the preview when its tab is re-opened after being hidden
+- Fix sub-line scroll drift when switching focus between the preview and the source editor
+
 ## 0.7.0 - 2026-03-26
 
 ### Added
