@@ -1,5 +1,5 @@
 <p align="center">
-  <a href="#/">English</a> | <strong>简体中文</strong> | <a href="#/zh-tw/">繁體中文</a> | <a href="#/es/">Español</a> | <a href="#/pt-br/">Português</a> | <a href="#/ja/">日本語</a> | <a href="#/ko/">한국어</a>
+  <a href="#/">English</a> | <strong>简体中文</strong> | <a href="#/ja/">日本語</a> | <a href="#/es/">Español</a> | <a href="#/pt-br/">Português</a> | <a href="#/ko/">한국어</a> | <a href="#/zh-tw/">繁體中文</a>
 </p>
 
 <p align="center">
@@ -381,7 +381,7 @@ PlantUML、Mermaid 和 D2 图表也可在 VS Code 内置 Markdown 预览（`Mark
 
    打开 VS Code 设置（`Ctrl+,`），搜索 `plantumlMarkdownPreview.dotPath`，输入上述路径
 
-> **注意：** `javaPath` 默认为 `"java"`。默认情况下先尝试 `JAVA_HOME/bin/java`，再尝试 PATH 中的 `java`。`dotPath` 和 `plantumlJarPath` 分别默认为 `"dot"` 和内置 jar。仅在这些命令不在 PATH 中或需要使用其他 jar 时才进行配置。
+> **注意：** `javaPath` 默认为 `"java"`。默认情况下先尝试 `JAVA_HOME/bin/`（Windows 上为 `JAVA_HOME\bin\`）下的 Java 可执行文件，再尝试 PATH 中的 `java`。`dotPath` 和 `plantumlJarPath` 分别默认为 `"dot"` 和内置 jar。仅在这些命令不在 PATH 中或需要使用其他 jar 时才进行配置。
 
 ## 使用方法
 

@@ -1,5 +1,5 @@
 <p align="center">
-  <a href="https://yss-tazawa.github.io/plantuml-markdown-preview/">English</a> | <a href="https://yss-tazawa.github.io/plantuml-markdown-preview/#/zh-cn/">简体中文</a> | <a href="https://yss-tazawa.github.io/plantuml-markdown-preview/#/zh-tw/">繁體中文</a> | <strong>Español</strong> | <a href="https://yss-tazawa.github.io/plantuml-markdown-preview/#/pt-br/">Português</a> | <a href="https://yss-tazawa.github.io/plantuml-markdown-preview/#/ja/">日本語</a> | <a href="https://yss-tazawa.github.io/plantuml-markdown-preview/#/ko/">한국어</a>
+  <a href="https://yss-tazawa.github.io/plantuml-markdown-preview/">English</a> | <a href="https://yss-tazawa.github.io/plantuml-markdown-preview/#/zh-cn/">简体中文</a> | <a href="https://yss-tazawa.github.io/plantuml-markdown-preview/#/ja/">日本語</a> | <strong>Español</strong> | <a href="https://yss-tazawa.github.io/plantuml-markdown-preview/#/pt-br/">Português</a> | <a href="https://yss-tazawa.github.io/plantuml-markdown-preview/#/ko/">한국어</a> | <a href="https://yss-tazawa.github.io/plantuml-markdown-preview/#/zh-tw/">繁體中文</a>
 </p>
 
 <p align="center">
@@ -136,7 +136,7 @@ Exporta tu documento Markdown a un archivo HTML autónomo.
 - CSS de resaltado de sintaxis incluido: sin dependencias externas.
 - Exporta y abre en el navegador con un solo comando.
 - Ancho de diseño configurable (640px–1440px o ilimitado) y alineación (centrada o izquierda).
-- Modo **Responsive** y **presets de ancho en píxeles** (640–1440px) con alineación central o izquierda
+- Modo **Responsive** y **presets de ancho en píxeles** (640–1440px) con alineación central o izquierda.
 
 ### Exportación a PDF
 
@@ -315,7 +315,7 @@ Lo que funciona depende de tu configuración:
 2. Busca **PlantUML Markdown Preview** en la vista de Extensiones (`Ctrl+Shift+X` / `Cmd+Shift+X`).
 3. Haz clic en **Install**.
 
-### Configuración
+### Configuración inicial
 
 **Modo Fast** (por defecto): Inicia un servidor PlantUML local persistente para redibujados instantáneos. Requiere Java 11+.
 
@@ -370,7 +370,7 @@ Lo que funciona depende de tu configuración:
    ```
    Abre los ajustes de VS Code (`Ctrl+,`), busca `plantumlMarkdownPreview.dotPath` e introduce la ruta mostrada arriba.
 
-> **Nota:** `javaPath` por defecto es `"java"`. Si se deja por defecto, se intenta primero con `JAVA_HOME/bin/java`, luego con `java` en el PATH. `dotPath` y `plantumlJarPath` tienen como valor por defecto `"dot"` y el jar incluido respectivamente. Solo configúralos si estos comandos no están en tu PATH o si quieres usar un jar diferente.
+> **Nota:** `javaPath` por defecto es `"java"`. Si se deja por defecto, se intenta primero el binario Java bajo `JAVA_HOME/bin/` (o `JAVA_HOME\bin\` en Windows), luego `java` en el PATH. `dotPath` y `plantumlJarPath` tienen como valor por defecto `"dot"` y el jar incluido respectivamente. Solo configúralos si estos comandos no están en tu PATH o si quieres usar un jar diferente.
 
 ## Uso
 

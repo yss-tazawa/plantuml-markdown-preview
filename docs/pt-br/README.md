@@ -1,5 +1,5 @@
 <p align="center">
-  <a href="#/">English</a> | <a href="#/zh-cn/">简体中文</a> | <a href="#/zh-tw/">繁體中文</a> | <a href="#/es/">Español</a> | <strong>Português</strong> | <a href="#/ja/">日本語</a> | <a href="#/ko/">한국어</a>
+  <a href="#/">English</a> | <a href="#/zh-cn/">简体中文</a> | <a href="#/ja/">日本語</a> | <a href="#/es/">Español</a> | <strong>Português</strong> | <a href="#/ko/">한국어</a> | <a href="#/zh-tw/">繁體中文</a>
 </p>
 
 <p align="center">
@@ -315,7 +315,7 @@ O que funciona depende da sua configuração:
 2. Procure por **PlantUML Markdown Preview** na visualização de Extensões (`Ctrl+Shift+X` / `Cmd+Shift+X`)
 3. Clique em **Install**
 
-### Configuração
+### Configuração inicial
 
 **Modo Fast** (padrão): Inicia um servidor PlantUML local persistente para re-renderizações instantâneas. Requer Java 11+.
 
@@ -370,7 +370,7 @@ O que funciona depende da sua configuração:
    ```
    Abra as configurações do VS Code (`Ctrl+,`), procure por `plantumlMarkdownPreview.dotPath` e insira o caminho mostrado acima
 
-> **Nota:** `javaPath` tem como padrão `"java"`. Se deixado no padrão, o caminho `JAVA_HOME/bin/java` é tentado primeiro, depois o `java` no PATH. `dotPath` e `plantumlJarPath` têm como padrão `"dot"` e o JAR incluído, respectivamente. Configure-os apenas se esses comandos não estiverem no seu PATH ou se quiser usar um JAR diferente.
+> **Nota:** `javaPath` tem como padrão `"java"`. Se deixado no padrão, o binário Java em `JAVA_HOME/bin/` (ou `JAVA_HOME\bin\` no Windows) é tentado primeiro, depois o `java` no PATH. `dotPath` e `plantumlJarPath` têm como padrão `"dot"` e o JAR incluído, respectivamente. Configure-os apenas se esses comandos não estiverem no seu PATH ou se quiser usar um JAR diferente.
 
 ## Uso
 

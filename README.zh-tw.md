@@ -1,5 +1,5 @@
 <p align="center">
-  <a href="https://yss-tazawa.github.io/plantuml-markdown-preview/">English</a> | <a href="https://yss-tazawa.github.io/plantuml-markdown-preview/#/zh-cn/">简体中文</a> | <strong>繁體中文</strong> | <a href="https://yss-tazawa.github.io/plantuml-markdown-preview/#/es/">Español</a> | <a href="https://yss-tazawa.github.io/plantuml-markdown-preview/#/pt-br/">Português</a> | <a href="https://yss-tazawa.github.io/plantuml-markdown-preview/#/ja/">日本語</a> | <a href="https://yss-tazawa.github.io/plantuml-markdown-preview/#/ko/">한국어</a>
+  <a href="https://yss-tazawa.github.io/plantuml-markdown-preview/">English</a> | <a href="https://yss-tazawa.github.io/plantuml-markdown-preview/#/zh-cn/">简体中文</a> | <a href="https://yss-tazawa.github.io/plantuml-markdown-preview/#/ja/">日本語</a> | <a href="https://yss-tazawa.github.io/plantuml-markdown-preview/#/es/">Español</a> | <a href="https://yss-tazawa.github.io/plantuml-markdown-preview/#/pt-br/">Português</a> | <a href="https://yss-tazawa.github.io/plantuml-markdown-preview/#/ko/">한국어</a> | <strong>繁體中文</strong>
 </p>
 
 <p align="center">
@@ -381,7 +381,7 @@ PlantUML、Mermaid 和 D2 圖表也可在 VS Code 內建 Markdown 預覽（`Mark
 
    開啟 VS Code 設定（`Ctrl+,`），搜尋 `plantumlMarkdownPreview.dotPath`，輸入上述路徑
 
-> **注意：** `javaPath` 預設為 `"java"`。預設情況下先嘗試 `JAVA_HOME/bin/java`，再嘗試 PATH 中的 `java`。`dotPath` 和 `plantumlJarPath` 分別預設為 `"dot"` 和內建 jar。僅在這些命令不在 PATH 中或需要使用其他 jar 時才進行設定。
+> **注意：** `javaPath` 預設為 `"java"`。預設情況下先嘗試 `JAVA_HOME/bin/`（Windows 上為 `JAVA_HOME\bin\`）下的 Java 可執行檔，再嘗試 PATH 中的 `java`。`dotPath` 和 `plantumlJarPath` 分別預設為 `"dot"` 和內建 jar。僅在這些命令不在 PATH 中或需要使用其他 jar 時才進行設定。
 
 ## 使用方式
 
