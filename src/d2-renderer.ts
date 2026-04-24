@@ -34,9 +34,12 @@ interface D2Instance {
 async function getD2Ctor(): Promise<new () => D2Instance> {
     if (D2Ctor) return D2Ctor;
     const path = await import('node:path');
+    const { pathToFileURL } = await import('node:url');
     // __dirname in the bundled CJS output points to dist/
     const d2IndexPath = path.join(__dirname, 'd2', 'index.js');
-    const d2Module = await import(/* webpackIgnore: true */ d2IndexPath);
+    // Windows requires file:// URLs for dynamic import of absolute paths.
+    const d2IndexUrl = pathToFileURL(d2IndexPath).href;
+    const d2Module = await import(/* webpackIgnore: true */ d2IndexUrl);
     D2Ctor = d2Module.D2;
     if (!D2Ctor) throw new Error('D2 module does not export a D2 class');
     return D2Ctor;
