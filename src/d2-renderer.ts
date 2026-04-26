@@ -7,7 +7,11 @@
  * is not blocked.
  */
 import { type Config, D2_THEME_MAP } from './config.js';
-import { escapeHtml } from './utils.js';
+import { computeHash, escapeHtml, LruCache } from './utils.js';
+
+/** LRU cache for D2 SVG outputs. Keyed by SHA-256 of (themeID, layout, source). */
+const D2_CACHE_SIZE = 200;
+const d2Cache = new LruCache<string>(D2_CACHE_SIZE);
 
 /** Lazily resolved D2 class constructor. */
 let D2Ctor: (new () => D2Instance) | null = null;
@@ -23,6 +27,34 @@ interface D2Instance {
     ready: Promise<void>;
     compile(source: string | { fs: { index: string }; options?: Record<string, unknown> }, options?: Record<string, unknown>): Promise<{ diagram: Record<string, unknown>; renderOptions: Record<string, unknown> }>;
     render(diagram: Record<string, unknown>, options?: Record<string, unknown>): Promise<string>;
+}
+
+/**
+ * Error patterns that indicate the D2 Wasm instance is permanently broken
+ * (e.g. Go runtime out-of-memory panic, dead worker). When matched, the
+ * instance is recycled before retrying.
+ */
+const D2_FATAL_ERROR_PATTERNS = [
+    /out of memory/i,
+    /memory access out of bounds/i,
+    /unreachable/i,
+    /WebAssembly\.Memory/i,
+    /maximum memory size exceeded/i,
+    /worker.*(terminated|exited)/i,
+    /channel closed/i,
+    /transport.*(closed|race)/i,
+];
+
+/**
+ * Detect whether an error indicates the D2 Wasm instance itself is broken.
+ * D2 syntax errors come back as JSON arrays starting with `[{` and are
+ * explicitly excluded — only true infrastructure failures should trigger
+ * a recycle.
+ */
+function isD2InstanceFatalError(err: unknown): boolean {
+    const msg = err instanceof Error ? err.message : String(err);
+    if (msg.startsWith('[{')) return false;
+    return D2_FATAL_ERROR_PATTERNS.some(re => re.test(msg));
 }
 
 /**
@@ -69,6 +101,42 @@ export async function initD2(): Promise<void> {
 }
 
 /**
+ * Force-terminate the D2 worker thread and discard the instance.
+ *
+ * D2 v0.1.33 does not expose a public cleanup method; the only reliable way
+ * to free the Worker thread (and the Go heap inside its Wasm) is to reach
+ * into the internal `worker` field and call `terminate()`. `D2Ctor` is
+ * intentionally preserved so the next `initD2()` skips the dynamic import.
+ * `initPromise` is also cleared in case a recycle interrupts a concurrent
+ * init — the next initD2() should start fresh, not await a dead promise.
+ */
+async function forceDisposeD2(): Promise<void> {
+    if (d2Instance) {
+        const inst = d2Instance as unknown as {
+            worker?: { terminate?: () => Promise<number> | number };
+        };
+        try {
+            if (inst.worker && typeof inst.worker.terminate === 'function') {
+                await Promise.resolve(inst.worker.terminate());
+            }
+        } catch (err) {
+            console.warn('[d2] worker.terminate() failed:', err);
+        }
+    }
+    d2Instance = null;
+    initPromise = null;
+}
+
+/**
+ * Discard the current D2 instance and create a new one. Called after a
+ * fatal Wasm error (e.g. Go runtime OOM) leaves the singleton unusable.
+ */
+async function recycleD2Instance(): Promise<void> {
+    await forceDisposeD2();
+    await initD2();
+}
+
+/**
  * Post-process D2 SVG output for HTML embedding.
  *
  * 1. Strips the XML declaration (`<?xml ...?>`) which is invalid in HTML5.
@@ -108,63 +176,67 @@ function getRenderOptions(result: Record<string, unknown>): Record<string, unkno
 /**
  * Render a D2 source string to SVG.
  *
+ * Results are cached by (themeID, layout, source) hash. On fatal Wasm errors
+ * (Go runtime OOM, dead worker, transport race) the singleton instance is
+ * recycled and the render is retried once.
+ *
  * @param source - D2 diagram source code.
  * @param themeID - D2 theme number.
  * @param layout - Layout engine ('dagre' or 'elk').
  * @returns SVG markup string.
  */
 export async function renderD2ToSvg(source: string, themeID: number, layout: string): Promise<string> {
-    if (!d2Instance) {
-        await initD2();
-    }
-    if (!d2Instance) {
-        throw new Error('D2 instance failed to initialize');
-    }
+    const cacheKey = computeHash(String(themeID), layout, source);
+    const cached = d2Cache.get(cacheKey);
+    if (cached !== undefined) return cached;
 
-    // Ensure Wasm initialization is complete before compiling.
-    await d2Instance.ready;
+    // attempt 0: initial render. attempt 1: post-recycle retry.
+    // Every loop body path returns or throws — the loop never falls through.
+    for (let attempt = 0; attempt < 2; attempt++) {
+        if (!d2Instance) await initD2();
+        if (!d2Instance) throw new Error('D2 instance failed to initialize');
 
-    // compile() throws on syntax errors — this does NOT corrupt the instance,
-    // so we let the error propagate without discarding d2Instance.
-    const result = await d2Instance.compile(source, { layout, themeID });
-
-    if (!result || !result.diagram) {
-        throw new Error('D2 compile returned no diagram');
+        try {
+            await d2Instance.ready;
+            const result = await d2Instance.compile(source, { layout, themeID });
+            if (!result || !result.diagram) {
+                throw new Error('D2 compile returned no diagram');
+            }
+            const renderResult = await d2Instance.render(
+                result.diagram, getRenderOptions(result),
+            );
+            if (typeof renderResult === 'string') {
+                const svg = fixupD2Svg(renderResult);
+                d2Cache.set(cacheKey, svg);
+                return svg;
+            }
+            // Non-string result indicates a Wasm transport race; treat as fatal
+            // so the catch block recycles the instance.
+            throw new Error('D2 render: transport race (non-string result)');
+        } catch (err) {
+            const msg = err instanceof Error ? err.message : String(err);
+            // Syntax errors and incomplete-input markers must surface to the
+            // caller without recycling the instance.
+            if (msg.startsWith('[{') || msg.includes('returned no diagram')) {
+                throw err;
+            }
+            if (isD2InstanceFatalError(err) && attempt === 0) {
+                console.warn(`[d2] recycling instance after fatal error: ${msg}`);
+                try {
+                    await recycleD2Instance();
+                } catch (recycleErr) {
+                    throw new Error(
+                        `D2 recycle failed: ${recycleErr instanceof Error ? recycleErr.message : recycleErr}`
+                    );
+                }
+                continue;
+            }
+            throw err;
+        }
     }
-
-    const renderResult = await d2Instance.render(
-        result.diagram, getRenderOptions(result),
-    );
-
-    if (typeof renderResult === 'string') {
-        return fixupD2Svg(renderResult);
-    }
-
-    // render() returned non-string (Wasm transport race) — retry with fresh instance.
-    d2Instance = null;
-    initPromise = null;
-    try {
-        await initD2();
-    } catch (initErr) {
-        throw new Error(`D2 render failed: could not reinitialise D2 instance: ${initErr instanceof Error ? initErr.message : initErr}`);
-    }
-    // d2Instance is reassigned inside initD2(); TypeScript cannot track this
-    // side-effect across await, so use a type assertion to break narrowing.
-    const fresh = d2Instance as D2Instance | null;
-    if (!fresh) {
-        throw new Error('D2 render failed: could not reinitialise D2 instance');
-    }
-    const result2 = await fresh.compile(source, { layout, themeID });
-    if (!result2 || !result2.diagram) {
-        throw new Error('D2 compile returned no diagram on retry');
-    }
-    const svg2 = await fresh.render(
-        result2.diagram, getRenderOptions(result2),
-    );
-    if (typeof svg2 === 'string') {
-        return fixupD2Svg(svg2);
-    }
-    throw new Error('D2 render failed to produce SVG');
+    // Unreachable: every iteration above either returns, throws, or continues
+    // (and continue only happens on attempt 0). Required for the type checker.
+    throw new Error('D2 render: unreachable');
 }
 
 /**
@@ -233,21 +305,12 @@ export async function renderAllD2(
 
 /**
  * Dispose the shared D2 instance. Called during extension deactivate().
+ *
+ * Fires off worker termination via {@link forceDisposeD2} but does not await
+ * it — `deactivate()` is synchronous, and the host process is exiting anyway.
  */
 export function disposeD2(): void {
-    if (d2Instance) {
-        // Attempt to terminate the internal Worker thread if the API exposes a cleanup method
-        const inst = d2Instance as unknown as Record<string, unknown>;
-        try {
-            if (typeof inst.close === 'function') (inst.close as () => void)();
-            else if (typeof inst.terminate === 'function') (inst.terminate as () => void)();
-            else if (typeof inst.dispose === 'function') (inst.dispose as () => void)();
-            else console.warn('[d2] No cleanup method found on D2 instance');
-        } catch (err) {
-            console.warn('[d2] cleanup failed:', err);
-        }
-    }
-    d2Instance = null;
+    void forceDisposeD2();
     D2Ctor = null;
-    initPromise = null;
+    d2Cache.clear();
 }
