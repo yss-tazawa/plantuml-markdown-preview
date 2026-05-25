@@ -759,7 +759,7 @@ function buildHtml(title: string, body: string, previewTheme?: string, options?:
   <style id="theme-css">
 ${theme.css}
   </style>${katexCssHtml || ''}${buildLayoutOverrideStyle(htmlMaxWidth, htmlAlignment)}${fitToWidth ? `
-  <style>${typeof fitToWidth === 'number' ? `body{max-width:${fitToWidth}px;margin:${fitToWidthAlign === 'left' ? '0' : '0 auto'}}table{max-width:${fitToWidth}px;table-layout:fixed}table td,table th{word-break:break-word;overflow-wrap:break-word}` : `.plantuml-diagram svg{max-width:100%;height:auto!important}.d2-diagram svg{max-width:100%;height:auto!important}pre.mermaid svg{max-width:100%!important;height:auto}img{max-width:100%;height:auto}table{width:100%;table-layout:fixed}table td,table th{word-break:break-word;overflow-wrap:break-word}`}</style>` : ''}${cspNonce ? `
+  <style>${typeof fitToWidth === 'number' ? `body{max-width:${fitToWidth}px;margin:${fitToWidthAlign === 'left' ? '0' : '0 auto'}}table{max-width:${fitToWidth}px;table-layout:fixed}table td,table th{word-break:break-word;overflow-wrap:break-word}` : `body{max-width:none;margin:0}.plantuml-diagram svg{max-width:100%;height:auto!important}.d2-diagram svg{max-width:100%;height:auto!important}pre.mermaid svg{max-width:100%!important;height:auto}img{max-width:100%;height:auto}table{width:100%;table-layout:fixed}table td,table th{word-break:break-word;overflow-wrap:break-word}`}</style>` : ''}${cspNonce ? `
   <style>
 #nav-toolbar{position:fixed;top:8px;right:8px;display:flex;gap:2px;z-index:100}
 #nav-toolbar button{width:32px;height:32px;border:none;border-radius:4px;background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background 0.15s,opacity 0.15s;padding:0;opacity:0.45}

@@ -6,6 +6,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## 0.7.4 - 2026-05-25
+
+### Fixed
+
+- Fix HTML export "Responsive (Left-Aligned)" not actually left-aligning or expanding to viewport width; the body now stretches to the full window with content anchored to the left edge
+
+### Removed
+
+- Remove HTML export "Responsive" (centered) command — center-alignment requires a constrained width, which is incompatible with truly viewport-responsive sizing; use a fixed-width preset (640px–1440px) for centered layout, or the left-aligned responsive variant for full-width
+
 ## 0.7.3 - 2026-04-26
 
 ### Fixed

@@ -10,8 +10,6 @@
   "command.exportHtmlAndOpen.title": "匯出為 HTML 並開啟",
   "command.exportHtmlCurrentSettings.title": "目前設定",
   "command.exportHtmlCurrentSettingsAndOpen.title": "目前設定",
-  "command.exportHtmlFitToWidth.title": "響應式",
-  "command.exportHtmlFitToWidthAndOpen.title": "響應式",
   "command.exportHtmlWidth640.title": "640px",
   "command.exportHtmlWidth640AndOpen.title": "640px",
   "command.exportHtmlWidth768.title": "768px",

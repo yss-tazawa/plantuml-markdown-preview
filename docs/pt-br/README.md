@@ -136,7 +136,7 @@ Exporte seu documento Markdown para um arquivo HTML independente.
 - CSS de realce de sintaxe incluído — sem dependências externas
 - Exportar e abrir no navegador em um único comando
 - Largura do layout configurável (640px–1440px ou ilimitada) e alinhamento (centro ou esquerda)
-- Modo **Responsivo** e **presets de largura em pixels** (640–1440px) com alinhamento central ou à esquerda
+- **Presets de largura em pixels** (640–1440px) com alinhamento central, mais um modo **Responsivo** (alinhado à esquerda) que se expande para a largura do viewport
 
 ### Exportação para PDF
 
@@ -400,9 +400,8 @@ O submenu oferece estas opções de largura:
 | Opção | Descrição |
 | ----- | --------- |
 | Current Settings | Exporta com a configuração atual (sem CSS responsivo) |
-| Responsive | Escala configurada pelo usuário; diagramas que transbordam são encolhidos para caber |
-| 640px – 1440px | Largura fixa do corpo em pixels |
-| Responsive (Left-Aligned) | Igual a Responsivo, mas alinhado à esquerda |
+| 640px – 1440px | Largura fixa do corpo em pixels, centralizado |
+| Responsive (Left-Aligned) | Corpo com largura do viewport alinhado à esquerda; diagramas reduzidos apenas se transbordarem |
 | 640px – 1440px (Left-Aligned) | Largura fixa, alinhado à esquerda |
 
 O arquivo HTML é salvo ao lado do arquivo `.md` de origem.

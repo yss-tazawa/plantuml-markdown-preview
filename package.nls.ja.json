@@ -10,8 +10,6 @@
   "command.exportHtmlAndOpen.title": "HTML としてエクスポートして開く",
   "command.exportHtmlCurrentSettings.title": "現在の設定",
   "command.exportHtmlCurrentSettingsAndOpen.title": "現在の設定",
-  "command.exportHtmlFitToWidth.title": "レスポンシブ",
-  "command.exportHtmlFitToWidthAndOpen.title": "レスポンシブ",
   "command.exportHtmlWidth640.title": "640px",
   "command.exportHtmlWidth640AndOpen.title": "640px",
   "command.exportHtmlWidth768.title": "768px",

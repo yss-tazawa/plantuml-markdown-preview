@@ -3,7 +3,7 @@
  * @description VS Code extension entry point.
  *
  * Responsibilities:
- * - Register commands: openPreview / exportHtml / exportHtmlAndOpen / exportHtmlFitToWidth / exportHtmlFitToWidthAndOpen / exportHtmlWidth{640,768,960,1024,1200,1440}[AndOpen] / exportPdf / exportPdfAndOpen / changeTheme / openDiagramViewer / saveDiagramAsPng / saveDiagramAsSvg / copyDiagramAsPng / exportAllDiagramsAsSvg / exportAllDiagramsAsPng / goToIncludeFile / openIncludeSource
+ * - Register commands: openPreview / exportHtml / exportHtmlAndOpen / exportHtmlWidth{640,768,960,1024,1200,1440}[AndOpen] / exportHtmlFitToWidthLeft[AndOpen] / exportHtmlWidth{640,768,960,1024,1200,1440}Left[AndOpen] / exportPdf / exportPdfAndOpen / changeTheme / openDiagramViewer / saveDiagramAsPng / saveDiagramAsSvg / copyDiagramAsPng / exportAllDiagramsAsSvg / exportAllDiagramsAsPng / goToIncludeFile / openIncludeSource
  * - Read VS Code settings (getConfig)
  * - Auto-follow active editor tab (editorTracker)
  * - Propagate settings changes to the preview (configWatcher)
@@ -512,12 +512,6 @@ export function activate(context: vscode.ExtensionContext): { extendMarkdownIt: 
     const exportCurrentAndOpenCmd = registerExportCommand(
         'plantuml-markdown-preview.exportHtmlCurrentSettingsAndOpen', undefined, true
     );
-    const exportHtmlFitCmd = registerExportCommand(
-        'plantuml-markdown-preview.exportHtmlFitToWidth', { fitToWidth: true }, false, notifyHtmlExported
-    );
-    const exportHtmlFitAndOpenCmd = registerExportCommand(
-        'plantuml-markdown-preview.exportHtmlFitToWidthAndOpen', { fitToWidth: true }, true
-    );
     const widthValues = [640, 768, 960, 1024, 1200, 1440] as const;
     const exportHtmlWidthCmds = widthValues.flatMap(w => [
         registerExportCommand(`plantuml-markdown-preview.exportHtmlWidth${w}`, { fitToWidth: w }, false, notifyHtmlExported),
@@ -863,7 +857,7 @@ export function activate(context: vscode.ExtensionContext): { extendMarkdownIt: 
         }
     );
 
-    context.subscriptions.push(exportCmd, exportAndOpenCmd, exportCurrentCmd, exportCurrentAndOpenCmd, exportHtmlFitCmd, exportHtmlFitAndOpenCmd, ...exportHtmlWidthCmds, exportHtmlFitLeftCmd, exportHtmlFitLeftAndOpenCmd, ...exportHtmlWidthLeftCmds, exportPdfCmd, exportPdfAndOpenCmd, exportPdfLandscapeCmd, exportPdfLandscapeAndOpenCmd, previewCmd, pumlPreviewCmd, mermaidPreviewCmd, d2PreviewCmd, changeThemeCmd, openViewerCmd, savePngCmd, saveSvgCmd, copyPngCmd, exportAllSvgCmd, exportAllPngCmd, goToIncludeCmd, openIncludeSourceCmd, includeContextTracker, editorTracker, configWatcher);
+    context.subscriptions.push(exportCmd, exportAndOpenCmd, exportCurrentCmd, exportCurrentAndOpenCmd, ...exportHtmlWidthCmds, exportHtmlFitLeftCmd, exportHtmlFitLeftAndOpenCmd, ...exportHtmlWidthLeftCmds, exportPdfCmd, exportPdfAndOpenCmd, exportPdfLandscapeCmd, exportPdfLandscapeAndOpenCmd, previewCmd, pumlPreviewCmd, mermaidPreviewCmd, d2PreviewCmd, changeThemeCmd, openViewerCmd, savePngCmd, saveSvgCmd, copyPngCmd, exportAllSvgCmd, exportAllPngCmd, goToIncludeCmd, openIncludeSourceCmd, includeContextTracker, editorTracker, configWatcher);
 
     // Start local PlantUML picoweb server if local-server mode is selected.
     // prepareLocalServer() pre-creates the readyPromise so that any preview

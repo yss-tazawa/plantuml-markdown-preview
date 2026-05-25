@@ -10,8 +10,6 @@
   "command.exportHtmlAndOpen.title": "HTML로 내보내고 열기",
   "command.exportHtmlCurrentSettings.title": "현재 설정",
   "command.exportHtmlCurrentSettingsAndOpen.title": "현재 설정",
-  "command.exportHtmlFitToWidth.title": "반응형",
-  "command.exportHtmlFitToWidthAndOpen.title": "반응형",
   "command.exportHtmlWidth640.title": "640px",
   "command.exportHtmlWidth640AndOpen.title": "640px",
   "command.exportHtmlWidth768.title": "768px",

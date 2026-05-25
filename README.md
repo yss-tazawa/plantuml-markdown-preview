@@ -136,7 +136,7 @@ Export your Markdown document to a self-contained HTML file.
 - Syntax highlighting CSS included — no external dependencies
 - Export and open in browser in one command
 - Configurable layout width (640px–1440px or unlimited) and alignment (center or left)
-- **Responsive** mode and **pixel-width presets** (640–1440px) with center or left alignment
+- **Pixel-width presets** (640–1440px) for centered layout, plus a **Responsive** mode (left-aligned) that expands to the viewport width
 
 ### PDF Export
 
@@ -414,9 +414,8 @@ The submenu offers these width options:
 | Option | Description |
 | ------ | ----------- |
 | Current Settings | Export with the current configuration (no responsive CSS) |
-| Responsive | User-configured scale; diagrams that overflow are shrunk to fit |
-| 640px – 1440px | Fixed body width in pixels |
-| Responsive (Left-Aligned) | Same as Responsive but left-aligned |
+| 640px – 1440px | Fixed body width in pixels, centered |
+| Responsive (Left-Aligned) | Viewport-width body anchored to the left; diagrams shrink only if they overflow |
 | 640px – 1440px (Left-Aligned) | Fixed width, left-aligned |
 
 The HTML file is saved alongside the source `.md` file.

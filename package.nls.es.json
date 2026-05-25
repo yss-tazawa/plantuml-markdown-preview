@@ -10,8 +10,6 @@
   "command.exportHtmlAndOpen.title": "Exportar como HTML y abrir",
   "command.exportHtmlCurrentSettings.title": "Configuración actual",
   "command.exportHtmlCurrentSettingsAndOpen.title": "Configuración actual",
-  "command.exportHtmlFitToWidth.title": "Responsive",
-  "command.exportHtmlFitToWidthAndOpen.title": "Responsive",
   "command.exportHtmlWidth640.title": "640px",
   "command.exportHtmlWidth640AndOpen.title": "640px",
   "command.exportHtmlWidth768.title": "768px",
