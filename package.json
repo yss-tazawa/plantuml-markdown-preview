@@ -2,7 +2,7 @@
   "name": "plantuml-markdown-preview",
   "displayName": "%displayName%",
   "description": "%description%",
-  "version": "0.7.3",
+  "version": "0.7.4",
   "license": "MIT",
   "publisher": "yss-tazawa",
   "icon": "images/icon.png",
@@ -180,16 +180,6 @@
       {
         "command": "plantuml-markdown-preview.exportHtmlCurrentSettingsAndOpen",
         "title": "%command.exportHtmlCurrentSettingsAndOpen.title%",
-        "category": "%command.category%"
-      },
-      {
-        "command": "plantuml-markdown-preview.exportHtmlFitToWidth",
-        "title": "%command.exportHtmlFitToWidth.title%",
-        "category": "%command.category%"
-      },
-      {
-        "command": "plantuml-markdown-preview.exportHtmlFitToWidthAndOpen",
-        "title": "%command.exportHtmlFitToWidthAndOpen.title%",
         "category": "%command.category%"
       },
       {
@@ -646,10 +636,6 @@
           "group": "0_current@1"
         },
         {
-          "command": "plantuml-markdown-preview.exportHtmlFitToWidth",
-          "group": "1_width@1"
-        },
-        {
           "command": "plantuml-markdown-preview.exportHtmlWidth640",
           "group": "1_width@2"
         },
@@ -706,10 +692,6 @@
         {
           "command": "plantuml-markdown-preview.exportHtmlCurrentSettingsAndOpen",
           "group": "0_current@1"
-        },
-        {
-          "command": "plantuml-markdown-preview.exportHtmlFitToWidthAndOpen",
-          "group": "1_width@1"
         },
         {
           "command": "plantuml-markdown-preview.exportHtmlWidth640AndOpen",
