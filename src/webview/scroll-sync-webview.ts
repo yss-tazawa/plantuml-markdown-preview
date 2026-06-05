@@ -255,6 +255,12 @@ interface Anchor {
      * @param [atBottom] - When true, snap to the bottom of the preview.
      */
     function scrollToSourceLine(topLine: number, maxTopLine: number, atBottom?: boolean): void {
+        // Every call here is a programmatic scroll (editor-driven sync, restore
+        // after re-render/tab-switch, image-settle re-sync) — never a user action.
+        // Mark the editor as master so the scroll events it produces aren't echoed
+        // back as revealLine (which would move the source editor). User scrolls go
+        // straight through the 'scroll' listener (not here), so they still sync.
+        setSyncMaster('editor');
         // Track the current logical position so DOM-change recovery restores
         // the correct scroll position (applyPendingBodyUpdate needs lastSentLine >= 0
         // to re-sync; onImageSettled needs it to avoid falling back to INITIAL_LINE).
@@ -466,8 +472,13 @@ interface Anchor {
     window.addEventListener('message', function (event: MessageEvent) {
         const message = event.data;
         if (message && message.type === 'scrollToLine') {
+            // Always defer to an in-progress initial restore (DOMContentLoaded path)
+            // to avoid a double-scroll; that path will apply the correct position.
             if (initialRestorePending) return;
-            if (syncMaster === 'preview') return;
+            // force (explicit host restore, e.g. preview regained focus) bypasses
+            // only the preview-master guard: becoming visible can fire a layout-shift
+            // scroll that flips syncMaster to 'preview', which would drop the restore.
+            if (syncMaster === 'preview' && !message.force) return;
             setSyncMaster('editor');
             scrollToSourceLine(message.line, message.maxTopLine, message.atBottom);
         } else if (message && message.type === 'updateTheme' && typeof message.css === 'string') {
