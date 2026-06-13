@@ -342,11 +342,12 @@ export class PreviewManager implements vscode.Disposable {
                 this.lastScrollLine = line;
 
                 if (this.syncMaster === 'editor') return;
-                // Only move the editor when the preview is the active pane — i.e. the
-                // user is actively scrolling the preview. Otherwise (editor is the
-                // active pane: tab switches, typing, scrolling the source) the editor
-                // is the master and must not be yanked around by the preview.
-                if (!this.panel?.active) return;
+                // A revealLine here means the user actively scrolled the preview:
+                // programmatic scrolls (tab-switch restore, re-sync, editor->preview
+                // sync) set the webview's syncMaster to 'editor' and never post
+                // revealLine. So this is a genuine preview-driven scroll — follow it.
+                // (No panel.active check: mouse-wheel scrolling the preview does not
+                // make the panel active, so that guard would wrongly drop it.)
                 const editor = vscode.window.visibleTextEditors.find(
                     e => e.document.uri.fsPath === this.currentFilePath
                 );

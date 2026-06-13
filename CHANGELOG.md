@@ -6,6 +6,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## 0.7.6 - 2026-06-06
+
+### Fixed
+
+- Fix the editor not following when you scroll the preview unless the preview was clicked first; scrolling the preview now syncs the editor immediately
+
 ## 0.7.5 - 2026-06-06
 
 ### Fixed
