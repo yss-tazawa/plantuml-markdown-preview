@@ -1190,6 +1190,6 @@
   "scripts": {
     "build": "node esbuild.js",
     "typecheck": "tsc --noEmit && tsc --noEmit -p src/webview/tsconfig.webview.json",
-    "package": "npm run typecheck && npm run build && npx @vscode/vsce package"
+    "package": "npm run typecheck && npm run build && npx @vscode/vsce package --baseContentUrl https://github.com/yss-tazawa/plantuml-markdown-preview/blob/main --baseImagesUrl https://raw.githubusercontent.com/yss-tazawa/plantuml-markdown-preview/main"
   }
 }
