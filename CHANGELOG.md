@@ -16,6 +16,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 - Updated bundled dependencies (markdown-it, mermaid, KaTeX, esbuild) to their latest compatible versions
 
+### Fixed
+
+- Consecutive blockquotes (and alerts) separated by a blank line now render as visually distinct boxes instead of merging into one, matching GitHub
+
 ## 0.7.7 - 2026-07-12
 
 ### Fixed

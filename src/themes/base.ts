@@ -204,7 +204,7 @@ export function buildThemeCss(p: ThemePalette): string {
     tr:nth-child(even) { background: ${p.trEvenBg}; }
     blockquote {
       border-left: 4px solid ${p.blockquoteBorder};
-      margin: 0;
+      margin: 0.8em 0; /* vertical margin so consecutive blockquotes stay separate, like GitHub */
       padding: 0.5em 1em;
       color: ${p.blockquoteColor};
       background-color: ${p.blockquoteBg};
