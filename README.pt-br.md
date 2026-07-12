@@ -121,6 +121,22 @@ Escolha um modo predefinido que controla como os diagramas PlantUML são renderi
 
 Se o Java não for encontrado ao abrir uma prévia, uma notificação oferecerá a mudança para o modo Easy.
 
+#### Modo Fast: conectando ao seu próprio servidor PlantUML
+
+Por padrão, o modo Fast inicia e gerencia seu próprio servidor PlantUML vinculado a `127.0.0.1` — nenhuma configuração necessária. Você também pode apontá-lo para um servidor que você mesmo executa (por exemplo `java -jar plantuml.jar -picoweb`), incluindo um em outra máquina da sua rede local:
+
+| Configuração | Padrão | Efeito |
+|---|---|---|
+| `plantumlLocalServerAutoStart` | `true` | Ativado: a extensão inicia e gerencia o servidor. Desativado: ela se conecta a um servidor existente em vez de iniciar um. |
+| `plantumlLocalServerHost` | `127.0.0.1` | Host ao qual se conectar quando o início automático está **desativado** (por exemplo, um servidor picoweb em outro ponto da sua rede local). Ignorado quando o início automático está ativado — um servidor gerenciado sempre se vincula a `127.0.0.1`. |
+| `plantumlLocalServerPort` | `0` | Início automático **ativado**: porta na qual iniciar (`0` = atribui automaticamente uma porta livre). Início automático **desativado**: porta à qual se conectar. |
+
+Notas:
+
+- Com o início automático **ativado** e uma porta fixa, se já houver um servidor PlantUML saudável em execução nessa porta, a extensão o reutiliza em vez de iniciar um segundo — assim ela deixa de entrar em conflito com um processo remanescente ou com um servidor que você mesmo iniciou.
+- Com o início automático **desativado**, a extensão nunca inicia um servidor (e não precisa de Java local) — ela apenas se conecta ao host/porta configurados.
+- A extensão só interrompe os servidores que ela mesma iniciou; um servidor que você executa nunca é encerrado pela extensão.
+
 ### Barra de Status
 
 A barra de status mostra o modo de renderização atual (Fast / Secure / Easy) e, no modo Fast, o estado do servidor local (executando, iniciando, erro, parado).

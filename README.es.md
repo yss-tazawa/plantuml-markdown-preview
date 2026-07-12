@@ -121,6 +121,22 @@ Elige un modo preestablecido que controla cómo se renderizan los diagramas Plan
 
 Si no se encuentra Java al abrir una vista previa, una notificación te ofrecerá cambiar al modo Easy.
 
+#### Modo Fast: conectar con tu propio servidor PlantUML
+
+Por defecto, el modo Fast inicia y gestiona su propio servidor PlantUML vinculado a `127.0.0.1` — no requiere configuración. También puedes apuntarlo a un servidor que gestiones tú mismo (por ejemplo `java -jar plantuml.jar -picoweb`), incluido uno en otra máquina de tu red local:
+
+| Ajuste | Por defecto | Efecto |
+|---|---|---|
+| `plantumlLocalServerAutoStart` | `true` | Activado: la extensión inicia y gestiona el servidor. Desactivado: se conecta a un servidor existente en lugar de iniciar uno. |
+| `plantumlLocalServerHost` | `127.0.0.1` | Host al que conectarse cuando el inicio automático está **desactivado** (por ejemplo, un servidor picoweb en otro punto de tu red local). Se ignora cuando el inicio automático está activado — un servidor gestionado siempre se vincula a `127.0.0.1`. |
+| `plantumlLocalServerPort` | `0` | Inicio automático **activado**: puerto en el que iniciar (`0` = asigna automáticamente un puerto libre). Inicio automático **desactivado**: puerto al que conectarse. |
+
+Notas:
+
+- Con el inicio automático **activado** y un puerto fijo, si ya hay un servidor PlantUML saludable ejecutándose en ese puerto, la extensión lo reutiliza en lugar de iniciar uno nuevo — así deja de entrar en conflicto con un proceso residual o con un servidor que hayas iniciado tú mismo.
+- Con el inicio automático **desactivado**, la extensión nunca inicia un servidor (y no necesita Java local) — solo se conecta al host/puerto que configures.
+- La extensión solo detiene los servidores que ella misma inició; un servidor que ejecutes tú nunca es terminado por la extensión.
+
 ### Barra de estado
 
 La barra de estado muestra el modo de renderizado actual (Fast / Secure / Easy) y, en el modo Fast, el estado del servidor local (iniciado, iniciando, error, detenido).

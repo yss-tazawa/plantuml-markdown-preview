@@ -17,7 +17,7 @@ import { exportToHtml, exportToPdf, clearMdCache } from './src/exporter.js';
 import { plantumlPlugin } from './src/renderer.js';
 import { clearCache, resolveIncludePath, extractIncludeFromLine, extractIncludePaths } from './src/plantuml.js';
 import { clearServerCache } from './src/plantuml-server.js';
-import { prepareLocalServer, startLocalServer, stopLocalServer, restartLocalServer, setLocalServerOutputChannel, setOnServerStateChange, setConfigGetter } from './src/local-server.js';
+import { prepareLocalServer, startLocalServer, stopLocalServer, restartLocalServer, setLocalServerOutputChannel, setOnServerStateChange, setConfigGetter, setLocalServerPidStore, cleanupStaleLocalServer, setJavaAvailabilityChecker } from './src/local-server.js';
 import type { LocalServerState } from './src/local-server.js';
 import { createStatusBarItem, updateStatusBar, showModeQuickPick, SELECT_MODE_COMMAND } from './src/status-bar.js';
 import { PreviewManager } from './src/preview.js';
@@ -102,6 +102,8 @@ function getConfig(): Config {
         renderMode: preset.renderMode,
         plantumlServerUrl: cfg.get<string>('plantumlServerUrl', 'https://www.plantuml.com/plantuml'),
         plantumlLocalServerPort: cfg.get<number>('plantumlLocalServerPort', 0),
+        plantumlLocalServerAutoStart: cfg.get<boolean>('plantumlLocalServerAutoStart', true),
+        plantumlLocalServerHost: cfg.get<string>('plantumlLocalServerHost', '127.0.0.1'),
         mermaidTheme: cfg.get<string>('mermaidTheme', 'default'),
         mermaidScale: cfg.get<string>('mermaidScale', '80%'),
         htmlMaxWidth: cfg.get<string>('htmlMaxWidth', '960px'),
@@ -433,6 +435,14 @@ export function activate(context: vscode.ExtensionContext): { extendMarkdownIt: 
     context.subscriptions.push(previewManager);
     setLocalServerOutputChannel(channel);
     setConfigGetter(getConfig);
+    // Java is only required when spawning a managed server; adoption and
+    // external-connect start without it. The checker shows its own dialogs.
+    setJavaAvailabilityChecker(checkJavaAvailability);
+    // Persist the spawned server PID so a crashed/force-closed session can be
+    // recovered next launch (VS Code may skip deactivate on hard exit).
+    setLocalServerPidStore(context.globalState);
+    // Kill any leftover picoweb from a dead session before starting a new one.
+    void cleanupStaleLocalServer();
     registerCompletionProviders(context);
     registerColorProviders(context);
 
@@ -859,24 +869,16 @@ export function activate(context: vscode.ExtensionContext): { extendMarkdownIt: 
 
     context.subscriptions.push(exportCmd, exportAndOpenCmd, exportCurrentCmd, exportCurrentAndOpenCmd, ...exportHtmlWidthCmds, exportHtmlFitLeftCmd, exportHtmlFitLeftAndOpenCmd, ...exportHtmlWidthLeftCmds, exportPdfCmd, exportPdfAndOpenCmd, exportPdfLandscapeCmd, exportPdfLandscapeAndOpenCmd, previewCmd, pumlPreviewCmd, mermaidPreviewCmd, d2PreviewCmd, changeThemeCmd, openViewerCmd, savePngCmd, saveSvgCmd, copyPngCmd, exportAllSvgCmd, exportAllPngCmd, goToIncludeCmd, openIncludeSourceCmd, includeContextTracker, editorTracker, configWatcher);
 
-    // Start local PlantUML picoweb server if local-server mode is selected.
+    // Start the local PlantUML server if local-server mode is selected.
     // prepareLocalServer() pre-creates the readyPromise so that any preview
-    // opened while Java is being checked will wait instead of failing immediately.
-    // Check Java availability first — if not found, show the server-mode switch
-    // notification instead of attempting to start the local server.
+    // opened during startup will wait instead of failing immediately.
+    // startLocalServer() itself decides between external-connect, adopting an
+    // existing server, and spawning (Java is checked only before a spawn).
     if (initialConfig.renderMode === 'local-server') {
         prepareLocalServer();
-        checkJavaAvailability(initialConfig).then(javaFound => {
-            if (javaFound) {
-                startLocalServer(initialConfig).catch(err =>
-                    channel.appendLine(`[local-server start error] ${err}`)
-                );
-            } else {
-                stopLocalServer();
-            }
-        }).catch(() => {
-            stopLocalServer();
-        });
+        startLocalServer(initialConfig).catch(err =>
+            channel.appendLine(`[local-server start error] ${err}`)
+        );
     }
 
     // For 'local' (secure) mode, check Java availability at startup and warm up JVM cache.
@@ -893,7 +895,7 @@ export function activate(context: vscode.ExtensionContext): { extendMarkdownIt: 
 }
 
 /** Keys that affect the local-server process and require a restart when changed. */
-const LOCAL_SERVER_KEYS = ['plantumlJarPath', 'javaPath', 'dotPath', 'plantumlLocalServerPort', 'plantumlIncludePath'] as const;
+const LOCAL_SERVER_KEYS = ['plantumlJarPath', 'javaPath', 'dotPath', 'plantumlLocalServerPort', 'plantumlLocalServerAutoStart', 'plantumlLocalServerHost', 'plantumlIncludePath'] as const;
 
 /**
  * Handle local-server lifecycle when configuration changes.
@@ -910,14 +912,10 @@ function handleLocalServerConfigChange(oldConfig: Config | null, newConfig: Conf
     const isLocalServer = newConfig.renderMode === 'local-server';
 
     if (!wasLocalServer && isLocalServer) {
-        // Switched TO local-server mode — check Java first
+        // Switched TO local-server mode — startLocalServer handles the
+        // external-connect / adopt / spawn (with Java check) dispatch itself.
         prepareLocalServer();
-        checkJavaAvailability(newConfig).then(javaFound => {
-            if (javaFound) startLocalServer(newConfig).catch(() => {});
-            else stopLocalServer();
-        }).catch(() => {
-            stopLocalServer();
-        });
+        startLocalServer(newConfig).catch(() => {});
     } else if (wasLocalServer && !isLocalServer) {
         // Switched AWAY from local-server mode
         stopLocalServer();
@@ -982,6 +980,8 @@ const builtInPreviewConfig: Config = {
     renderMode: 'local-server',
     plantumlServerUrl: 'https://www.plantuml.com/plantuml',
     plantumlLocalServerPort: 0,
+    plantumlLocalServerAutoStart: true,
+    plantumlLocalServerHost: '127.0.0.1',
     mermaidTheme: 'default',
     mermaidScale: '80%',
     htmlMaxWidth: '960px',

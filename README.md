@@ -121,6 +121,22 @@ Choose a preset mode that controls how PlantUML diagrams are rendered:
 
 If Java is not found when opening a preview, a notification offers to switch to Easy mode.
 
+#### Fast mode: connecting to your own PlantUML server
+
+By default, Fast mode spawns and manages its own PlantUML server bound to `127.0.0.1` — no configuration needed. You can also point it at a server you run yourself (for example `java -jar plantuml.jar -picoweb`), including one on another machine in your LAN:
+
+| Setting | Default | Effect |
+|---|---|---|
+| `plantumlLocalServerAutoStart` | `true` | On: the extension starts and manages the server. Off: it connects to an existing server instead of starting one. |
+| `plantumlLocalServerHost` | `127.0.0.1` | Host to connect to when auto-start is **off** (e.g. a picoweb server elsewhere on your LAN). Ignored when auto-start is on — a managed server always binds to `127.0.0.1`. |
+| `plantumlLocalServerPort` | `0` | Auto-start **on**: port to start on (`0` = auto-assign a free port). Auto-start **off**: port to connect to. |
+
+Notes:
+
+- With auto-start **on** and a fixed port, if a healthy PlantUML server is already running on that port, the extension reuses it instead of starting a second one — so it no longer conflicts with a leftover process or a server you started yourself.
+- With auto-start **off**, the extension never starts a server (and needs no local Java) — it only connects to the host/port you configure.
+- The extension only stops servers it started itself; a server you run is never terminated by the extension.
+
 ### Status Bar
 
 The status bar shows the current rendering mode (Fast / Secure / Easy) and, in Fast mode, the local server state (running, starting, error, stopped).
