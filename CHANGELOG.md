@@ -6,10 +6,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
-## 0.7.8 - 2026-07-12
+## 0.7.7 - 2026-07-12
 
 ### Added
 
+- Fast mode can now connect to a PlantUML server you run yourself instead of starting its own — including one on another machine in your LAN. New settings: `plantumlLocalServerAutoStart` (default on), `plantumlLocalServerHost` (default `127.0.0.1`), and the existing `plantumlLocalServerPort`
+- With a fixed port, multiple VS Code windows share one local server: the first window starts it and the rest connect to it. If the window that owns the server closes, another open window automatically takes over (restarts or reconnects) instead of losing rendering
 - GitHub-style alerts: `> [!NOTE]`, `> [!TIP]`, `> [!IMPORTANT]`, `> [!WARNING]`, and `> [!CAUTION]` render as colored callouts with icons, in both the preview and HTML/PDF export. Colors adapt to the active light/dark theme
 
 ### Changed
@@ -18,19 +20,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
-- Consecutive blockquotes (and alerts) separated by a blank line now render as visually distinct boxes instead of merging into one, matching GitHub
-
-## 0.7.7 - 2026-07-12
-
-### Fixed
-
 - Fix Fast mode getting stuck in a "local server crashed" loop when the configured port was already taken (e.g. by a leftover server from a previous session); the extension now reuses a healthy PlantUML server already running on that port instead of failing to start a second one
 - Reliably clean up a leftover local server process on the next launch (VS Code may skip shutdown cleanup on a hard exit, especially on Windows), so it no longer holds the port as a zombie
-
-### Added
-
-- Fast mode can now connect to a PlantUML server you run yourself instead of starting its own — including one on another machine in your LAN. New settings: `plantumlLocalServerAutoStart` (default on), `plantumlLocalServerHost` (default `127.0.0.1`), and the existing `plantumlLocalServerPort`
-- With a fixed port, multiple VS Code windows share one local server: the first window starts it and the rest connect to it. If the window that owns the server closes, another open window automatically takes over (restarts or reconnects) instead of losing rendering
+- Consecutive blockquotes (and alerts) separated by a blank line now render as visually distinct boxes instead of merging into one, matching GitHub
 
 ## 0.7.6 - 2026-06-06
 
