@@ -6,6 +6,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## 0.7.8 - 2026-07-12
+
+### Added
+
+- GitHub-style alerts: `> [!NOTE]`, `> [!TIP]`, `> [!IMPORTANT]`, `> [!WARNING]`, and `> [!CAUTION]` render as colored callouts with icons, in both the preview and HTML/PDF export. Colors adapt to the active light/dark theme
+
+### Changed
+
+- Updated bundled dependencies (markdown-it, mermaid, KaTeX, esbuild) to their latest compatible versions
+
 ## 0.7.7 - 2026-07-12
 
 ### Fixed

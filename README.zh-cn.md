@@ -53,6 +53,7 @@
 - **编辑器辅助** — PlantUML、Mermaid、D2 的关键字补全、颜色选择器和代码片段
 - **国际化** — 支持英语、简体中文 / 繁体中文、西班牙语、巴西葡萄牙语、日语和韩语界面
 - **数学公式支持** — 使用 [KaTeX](https://katex.org/) 渲染 `$...$` 内联公式和 `$$...$$` 块级公式
+- **GitHub 风格提示** — `> [!NOTE]`、`> [!TIP]`、`> [!IMPORTANT]`、`> [!WARNING]`、`> [!CAUTION]` 渲染为彩色标注框
 
 ## 目录
 
@@ -95,6 +96,32 @@
 - 服务端渲染 — Webview 中无需 JavaScript，仅使用 HTML/CSS
 - 适用于预览和 HTML/PDF 导出
 - 如果 `$` 符号导致意外的公式解析，可通过 `enableMath: false` 禁用
+
+### GitHub 风格提示
+
+从块引用标记渲染 GitHub 风格的提示（标注框），与 GitHub 官方输出保持一致。
+
+```markdown
+> [!NOTE]
+> Highlights information that users should take into account.
+
+> [!TIP]
+> Optional information to help a user be more successful.
+
+> [!IMPORTANT]
+> Crucial information necessary for users to succeed.
+
+> [!WARNING]
+> Critical content demanding immediate user attention.
+
+> [!CAUTION]
+> Negative potential consequences of an action.
+```
+
+- 五种类型：`NOTE`、`TIP`、`IMPORTANT`、`WARNING`、`CAUTION` — 每种都有独立的图标和强调色
+- 标记仅大写有效，与 GitHub 保持一致（`[!note]` 仍为普通块引用）
+- 颜色会随预览主题（浅色 / 深色）自适应变化
+- 适用于预览和 HTML/PDF 导出
 
 ### 图表缩放
 
@@ -832,6 +859,7 @@ Easy 模式下，PlantUML 源文本会发送至配置的服务器。默认的公
 - [mermaid.js](https://mermaid.js.org/) — [MIT License](https://github.com/mermaid-js/mermaid/blob/develop/LICENSE)
 - [KaTeX](https://katex.org/) — [MIT License](https://github.com/KaTeX/KaTeX/blob/main/LICENSE)
 - [@terrastruct/d2](https://d2lang.com/)（Wasm 构建）— [Mozilla Public License 2.0 (MPL-2.0)](https://github.com/terrastruct/d2/blob/master/LICENSE.txt)
+- [markdown-it-github-alerts](https://github.com/antfu/markdown-it-github-alerts) — [MIT License](https://github.com/antfu/markdown-it-github-alerts/blob/main/LICENSE)
 
 ## 许可证
 

@@ -53,6 +53,7 @@ Switch between modes anytime with a single setting — no migration, no restart.
 - **Editor assistance** — keyword completion, color picker, and code snippets for PlantUML, Mermaid, and D2
 - **Internationalization** — English, Chinese (Simplified / Traditional), Spanish, Brazilian Portuguese, Japanese, and Korean UI
 - **Math support** — `$...$` inline and `$$...$$` block math rendered with [KaTeX](https://katex.org/)
+- **GitHub-style alerts** — `> [!NOTE]`, `> [!TIP]`, `> [!IMPORTANT]`, `> [!WARNING]`, `> [!CAUTION]` render as colored callouts
 
 ## Table of Contents
 
@@ -95,6 +96,32 @@ Render mathematical expressions using [KaTeX](https://katex.org/).
 - Server-side rendering — no JavaScript in the Webview, just HTML/CSS
 - Works in both preview and HTML/PDF export
 - Disable with `enableMath: false` if `$` symbols cause unwanted math parsing
+
+### GitHub-style Alerts
+
+Render GitHub-style alerts (callouts) from blockquote markers, matching GitHub's own output.
+
+```markdown
+> [!NOTE]
+> Highlights information that users should take into account.
+
+> [!TIP]
+> Optional information to help a user be more successful.
+
+> [!IMPORTANT]
+> Crucial information necessary for users to succeed.
+
+> [!WARNING]
+> Critical content demanding immediate user attention.
+
+> [!CAUTION]
+> Negative potential consequences of an action.
+```
+
+- Five types: `NOTE`, `TIP`, `IMPORTANT`, `WARNING`, `CAUTION` — each with its own icon and accent color
+- Markers are uppercase only, matching GitHub (`[!note]` stays a plain blockquote)
+- Colors adapt to the active preview theme (light / dark)
+- Works in both preview and HTML/PDF export
 
 ### Diagram Scale
 
@@ -850,6 +877,7 @@ This extension bundles the following third-party software:
 - [mermaid.js](https://mermaid.js.org/) — [MIT License](https://github.com/mermaid-js/mermaid/blob/develop/LICENSE)
 - [KaTeX](https://katex.org/) — [MIT License](https://github.com/KaTeX/KaTeX/blob/main/LICENSE)
 - [@terrastruct/d2](https://d2lang.com/) (Wasm build) — [Mozilla Public License 2.0 (MPL-2.0)](https://github.com/terrastruct/d2/blob/master/LICENSE.txt)
+- [markdown-it-github-alerts](https://github.com/antfu/markdown-it-github-alerts) — [MIT License](https://github.com/antfu/markdown-it-github-alerts/blob/main/LICENSE)
 
 ## License
 

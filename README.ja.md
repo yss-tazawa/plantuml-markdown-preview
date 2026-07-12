@@ -53,6 +53,7 @@
 - **エディタ支援** — PlantUML、Mermaid、D2 のキーワード補完、カラーピッカー、コードスニペット
 - **国際化対応** — 英語、中国語（簡体字 / 繁体字）、スペイン語、ブラジルポルトガル語、日本語、韓国語の UI
 - **数式サポート** — `$...$` インライン・`$$...$$` ブロック数式を [KaTeX](https://katex.org/) でレンダリング
+- **GitHub 形式のアラート** — `> [!NOTE]`、`> [!TIP]`、`> [!IMPORTANT]`、`> [!WARNING]`、`> [!CAUTION]` を色分けされたコールアウトとしてレンダリング
 
 ## 目次
 
@@ -95,6 +96,32 @@
 - サーバーサイドレンダリング — Webview 内で JavaScript 不要、HTML/CSS のみ
 - プレビューと HTML/PDF エクスポートの両方で動作
 - `$` 記号が意図しない数式パースを引き起こす場合は `enableMath: false` で無効化
+
+### GitHub 形式のアラート
+
+引用ブロックのマーカーから GitHub 形式のアラート（コールアウト）をレンダリングし、GitHub 本家の出力に合わせます。
+
+```markdown
+> [!NOTE]
+> Highlights information that users should take into account.
+
+> [!TIP]
+> Optional information to help a user be more successful.
+
+> [!IMPORTANT]
+> Crucial information necessary for users to succeed.
+
+> [!WARNING]
+> Critical content demanding immediate user attention.
+
+> [!CAUTION]
+> Negative potential consequences of an action.
+```
+
+- 5 種類: `NOTE`、`TIP`、`IMPORTANT`、`WARNING`、`CAUTION` — それぞれ専用のアイコンとアクセントカラーを持つ
+- マーカーは大文字のみ有効（GitHub と同様）、`[!note]` は通常の引用ブロックのまま
+- 色はアクティブなプレビューテーマ（ライト / ダーク）に応じて変化
+- プレビューと HTML/PDF エクスポートの両方で動作
 
 ### ダイアグラムスケール
 
@@ -838,6 +865,7 @@ Easy モードでは、PlantUML ソーステキストが設定されたサーバ
 - [mermaid.js](https://mermaid.js.org/) — [MIT License](https://github.com/mermaid-js/mermaid/blob/develop/LICENSE)
 - [KaTeX](https://katex.org/) — [MIT License](https://github.com/KaTeX/KaTeX/blob/main/LICENSE)
 - [@terrastruct/d2](https://d2lang.com/)（Wasm ビルド）— [Mozilla Public License 2.0 (MPL-2.0)](https://github.com/terrastruct/d2/blob/master/LICENSE.txt)
+- [markdown-it-github-alerts](https://github.com/antfu/markdown-it-github-alerts) — [MIT License](https://github.com/antfu/markdown-it-github-alerts/blob/main/LICENSE)
 
 ## ライセンス
 

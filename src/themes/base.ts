@@ -78,6 +78,72 @@ export interface ThemePalette {
 }
 
 /**
+ * GitHub Primer accent colors for alert types, per light/dark theme.
+ * Applied to `.markdown-alert-<type>` (left border + title/icon color).
+ * Values mirror markdown-it-github-alerts' bundled github-colors CSS.
+ */
+const ALERT_COLORS = {
+    light: { note: '#0969da', tip: '#1a7f37', important: '#8250df', warning: '#9a6700', caution: '#d1242f' },
+    dark:  { note: '#2f81f7', tip: '#3fb950', important: '#a371f7', warning: '#d29922', caution: '#f85149' },
+} as const;
+
+/**
+ * Decide whether a background color is dark, from its perceived luminance.
+ * Used to pick the light/dark alert accent set without per-theme config.
+ * Falls back to light (false) for any color that isn't a #rgb / #rrggbb hex.
+ *
+ * @param bg - CSS hex color (e.g. `#ffffff`, `#0d1117`).
+ * @returns True when the background is dark.
+ */
+function isDarkBg(bg: string): boolean {
+    const hex = bg.trim().replace(/^#/, '');
+    const full = hex.length === 3 ? hex.split('').map(c => c + c).join('') : hex;
+    if (!/^[0-9a-fA-F]{6}$/.test(full)) return false;
+    const r = parseInt(full.slice(0, 2), 16);
+    const g = parseInt(full.slice(2, 4), 16);
+    const b = parseInt(full.slice(4, 6), 16);
+    // Rec. 601 relative luminance; < 128 reads as a dark background.
+    return (0.299 * r + 0.587 * g + 0.114 * b) < 128;
+}
+
+/**
+ * Build the CSS for GitHub-style alerts (`> [!NOTE]` etc.), theme-aware.
+ * Structure matches markdown-it-github-alerts' output; colors come from
+ * {@link ALERT_COLORS} based on the theme background.
+ *
+ * @param bg - Theme background color, used to choose the light/dark accents.
+ * @returns CSS string for the `.markdown-alert*` classes.
+ */
+function buildAlertCss(bg: string): string {
+    const c = isDarkBg(bg) ? ALERT_COLORS.dark : ALERT_COLORS.light;
+    const perType = (Object.keys(c) as (keyof typeof c)[]).map(type => `
+    .markdown-alert-${type} { border-left-color: ${c[type]}; }
+    .markdown-alert-${type} > .markdown-alert-title { color: ${c[type]}; }`).join('');
+    return `
+    .markdown-alert {
+      padding: 0.5em 1em;
+      margin: 0.8em 0;
+      border-left: 0.25em solid ${c.note};
+      color: inherit;
+    }
+    .markdown-alert > :first-child { margin-top: 0; }
+    .markdown-alert > :last-child { margin-bottom: 0; }
+    .markdown-alert-title {
+      display: flex;
+      align-items: center;
+      font-weight: 600;
+      line-height: 1;
+      margin-bottom: 0.5em;
+    }
+    .markdown-alert-title .octicon {
+      margin-right: 0.5em;
+      fill: currentColor;
+      overflow: visible;
+      vertical-align: text-bottom;
+    }${perType}`;
+}
+
+/**
  * Generate a complete theme CSS string from a color palette.
  *
  * Produces CSS rules for body layout, headings, links, inline/block code,
@@ -145,6 +211,7 @@ export function buildThemeCss(p: ThemePalette): string {
     }
     blockquote > :first-child { margin-top: 0; }
     blockquote > :last-child { margin-bottom: 0; }
+    ${buildAlertCss(p.bg)}
     hr { border: none; border-top: 2px solid ${p.border}; margin: 2em 0; }
     img { max-width: 100%; height: auto; }
     .plantuml-diagram { margin: 1.5em 0; text-align: left; width: fit-content; }

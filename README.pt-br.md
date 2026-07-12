@@ -53,6 +53,7 @@ Alterne entre modos a qualquer momento com uma única configuração — sem mig
 - **Assistência ao editor** — completamento de palavras-chave, seletor de cores e trechos de código (snippets) para PlantUML, Mermaid e D2
 - **Internacionalização** — interface em Inglês, Chinês (Simplificado / Tradicional), Espanhol, Português Brasileiro, Japonês e Coreano
 - **Suporte a matemática** — fórmulas inline `$...$` e em bloco `$$...$$` renderizadas com [KaTeX](https://katex.org/)
+- **Alertas ao estilo GitHub** — `> [!NOTE]`, `> [!TIP]`, `> [!IMPORTANT]`, `> [!WARNING]`, `> [!CAUTION]` são renderizados como caixas de destaque coloridas
 
 ## Sumário
 
@@ -95,6 +96,32 @@ Renderize expressões matemáticas usando [KaTeX](https://katex.org/).
 - Renderização no lado do servidor — sem JavaScript no Webview, apenas HTML/CSS
 - Funciona tanto na prévia quanto na exportação para HTML/PDF
 - Desative com `enableMath: false` se os símbolos `$` causarem análise matemática indesejada
+
+### Alertas ao estilo GitHub
+
+Renderiza alertas ao estilo GitHub (caixas de destaque) a partir de marcadores de citação, igualando a saída nativa do GitHub.
+
+```markdown
+> [!NOTE]
+> Highlights information that users should take into account.
+
+> [!TIP]
+> Optional information to help a user be more successful.
+
+> [!IMPORTANT]
+> Crucial information necessary for users to succeed.
+
+> [!WARNING]
+> Critical content demanding immediate user attention.
+
+> [!CAUTION]
+> Negative potential consequences of an action.
+```
+
+- Cinco tipos: `NOTE`, `TIP`, `IMPORTANT`, `WARNING`, `CAUTION` — cada um com ícone e cor de destaque próprios
+- Os marcadores funcionam apenas em maiúsculas, como no GitHub (`[!note]` permanece uma citação comum)
+- As cores se adaptam ao tema de prévia ativo (claro / escuro)
+- Funciona tanto na prévia quanto na exportação para HTML/PDF
 
 ### Escala do Diagrama
 
@@ -825,6 +852,7 @@ Esta extensão inclui os seguintes softwares de terceiros:
 - [mermaid.js](https://mermaid.js.org/) — [Licença MIT](https://github.com/mermaid-js/mermaid/blob/develop/LICENSE)
 - [KaTeX](https://katex.org/) — [Licença MIT](https://github.com/KaTeX/KaTeX/blob/main/LICENSE)
 - [@terrastruct/d2](https://d2lang.com/) (build Wasm) — [Mozilla Public License 2.0 (MPL-2.0)](https://github.com/terrastruct/d2/blob/master/LICENSE.txt)
+- [markdown-it-github-alerts](https://github.com/antfu/markdown-it-github-alerts) — [MIT License](https://github.com/antfu/markdown-it-github-alerts/blob/main/LICENSE)
 
 ## Licença
 
