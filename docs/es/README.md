@@ -53,6 +53,7 @@ Cambia entre modos en cualquier momento con un solo ajuste: sin migración, sin 
 - **Asistencia al editor**: autocompletado de palabras clave, selector de color y fragmentos de código para PlantUML, Mermaid y D2.
 - **Internacionalización**: interfaz en inglés, chino (simplificado / tradicional), español, portugués brasileño, japonés y coreano.
 - **Soporte para matemáticas**: matemáticas en línea `$...$` y en bloque `$$...$$` renderizadas con [KaTeX](https://katex.org/).
+- **Alertas al estilo GitHub**: `> [!NOTE]`, `> [!TIP]`, `> [!IMPORTANT]`, `> [!WARNING]`, `> [!CAUTION]` se renderizan como llamadas de atención con colores.
 
 ## Tabla de contenidos
 
@@ -96,6 +97,32 @@ Renderiza expresiones matemáticas usando [KaTeX](https://katex.org/).
 - Funciona tanto en la vista previa como en la exportación a HTML/PDF.
 - Desactívalo con `enableMath: false` si los símbolos `$` causan un procesamiento matemático no deseado.
 
+### Alertas al estilo GitHub
+
+Renderiza alertas al estilo GitHub (llamadas de atención) a partir de marcadores de cita en bloque, igualando la salida propia de GitHub.
+
+```markdown
+> [!NOTE]
+> Highlights information that users should take into account.
+
+> [!TIP]
+> Optional information to help a user be more successful.
+
+> [!IMPORTANT]
+> Crucial information necessary for users to succeed.
+
+> [!WARNING]
+> Critical content demanding immediate user attention.
+
+> [!CAUTION]
+> Negative potential consequences of an action.
+```
+
+- Cinco tipos: `NOTE`, `TIP`, `IMPORTANT`, `WARNING`, `CAUTION`, cada uno con su propio icono y color de acento.
+- Los marcadores solo funcionan en mayúsculas, igual que en GitHub (`[!note]` se queda como una cita en bloque normal).
+- Los colores se adaptan al tema de vista previa activo (claro / oscuro).
+- Funciona tanto en la vista previa como en la exportación a HTML/PDF.
+
 ### Escala de diagramas
 
 Controla el tamaño de visualización de los diagramas PlantUML, Mermaid y D2 de forma independiente.
@@ -120,6 +147,22 @@ Elige un modo preestablecido que controla cómo se renderizan los diagramas Plan
 - **Modo Easy** — envía el código fuente de PlantUML a un servidor PlantUML para su renderizado. No requiere configuración. Usa el servidor público (`https://www.plantuml.com/plantuml`) por defecto, o establece tu propia URL de servidor autohospedado para mayor privacidad.
 
 Si no se encuentra Java al abrir una vista previa, una notificación te ofrecerá cambiar al modo Easy.
+
+#### Modo Fast: conectar con tu propio servidor PlantUML
+
+Por defecto, el modo Fast inicia y gestiona su propio servidor PlantUML vinculado a `127.0.0.1` — no requiere configuración. También puedes apuntarlo a un servidor que gestiones tú mismo (por ejemplo `java -jar plantuml.jar -picoweb`), incluido uno en otra máquina de tu red local:
+
+| Ajuste | Por defecto | Efecto |
+|---|---|---|
+| `plantumlLocalServerAutoStart` | `true` | Activado: la extensión inicia y gestiona el servidor. Desactivado: se conecta a un servidor existente en lugar de iniciar uno. |
+| `plantumlLocalServerHost` | `127.0.0.1` | Host al que conectarse cuando el inicio automático está **desactivado** (por ejemplo, un servidor picoweb en otro punto de tu red local). Se ignora cuando el inicio automático está activado — un servidor gestionado siempre se vincula a `127.0.0.1`. |
+| `plantumlLocalServerPort` | `0` | Inicio automático **activado**: puerto en el que iniciar (`0` = asigna automáticamente un puerto libre). Inicio automático **desactivado**: puerto al que conectarse. |
+
+Notas:
+
+- Con el inicio automático **activado** y un puerto fijo, si ya hay un servidor PlantUML saludable ejecutándose en ese puerto, la extensión lo reutiliza en lugar de iniciar uno nuevo — así deja de entrar en conflicto con un proceso residual o con un servidor que hayas iniciado tú mismo.
+- Con el inicio automático **desactivado**, la extensión nunca inicia un servidor (y no necesita Java local) — solo se conecta al host/puerto que configures.
+- La extensión solo detiene los servidores que ella misma inició; un servidor que ejecutes tú nunca es terminado por la extensión.
 
 ### Barra de estado
 
@@ -808,6 +851,7 @@ Esta extensión incluye el siguiente software de terceros:
 - [mermaid.js](https://mermaid.js.org/) — [Licencia MIT](https://github.com/mermaid-js/mermaid/blob/develop/LICENSE).
 - [KaTeX](https://katex.org/) — [Licencia MIT](https://github.com/KaTeX/KaTeX/blob/main/LICENSE).
 - [@terrastruct/d2](https://d2lang.com/) (versión Wasm) — [Mozilla Public License 2.0 (MPL-2.0)](https://github.com/terrastruct/d2/blob/master/LICENSE.txt).
+- [markdown-it-github-alerts](https://github.com/antfu/markdown-it-github-alerts) — [MIT License](https://github.com/antfu/markdown-it-github-alerts/blob/main/LICENSE)
 
 ## Licencia
 

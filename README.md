@@ -53,6 +53,7 @@ Switch between modes anytime with a single setting — no migration, no restart.
 - **Editor assistance** — keyword completion, color picker, and code snippets for PlantUML, Mermaid, and D2
 - **Internationalization** — English, Chinese (Simplified / Traditional), Spanish, Brazilian Portuguese, Japanese, and Korean UI
 - **Math support** — `$...$` inline and `$$...$$` block math rendered with [KaTeX](https://katex.org/)
+- **GitHub-style alerts** — `> [!NOTE]`, `> [!TIP]`, `> [!IMPORTANT]`, `> [!WARNING]`, `> [!CAUTION]` render as colored callouts
 
 ## Table of Contents
 
@@ -96,6 +97,32 @@ Render mathematical expressions using [KaTeX](https://katex.org/).
 - Works in both preview and HTML/PDF export
 - Disable with `enableMath: false` if `$` symbols cause unwanted math parsing
 
+### GitHub-style Alerts
+
+Render GitHub-style alerts (callouts) from blockquote markers, matching GitHub's own output.
+
+```markdown
+> [!NOTE]
+> Highlights information that users should take into account.
+
+> [!TIP]
+> Optional information to help a user be more successful.
+
+> [!IMPORTANT]
+> Crucial information necessary for users to succeed.
+
+> [!WARNING]
+> Critical content demanding immediate user attention.
+
+> [!CAUTION]
+> Negative potential consequences of an action.
+```
+
+- Five types: `NOTE`, `TIP`, `IMPORTANT`, `WARNING`, `CAUTION` — each with its own icon and accent color
+- Markers are uppercase only, matching GitHub (`[!note]` stays a plain blockquote)
+- Colors adapt to the active preview theme (light / dark)
+- Works in both preview and HTML/PDF export
+
 ### Diagram Scale
 
 Control the display size of PlantUML, Mermaid, and D2 diagrams independently.
@@ -120,6 +147,22 @@ Choose a preset mode that controls how PlantUML diagrams are rendered:
 - **Easy mode** — sends PlantUML source to a PlantUML server for rendering. No setup required. Uses the public server (`https://www.plantuml.com/plantuml`) by default, or set your own self-hosted server URL for privacy.
 
 If Java is not found when opening a preview, a notification offers to switch to Easy mode.
+
+#### Fast mode: connecting to your own PlantUML server
+
+By default, Fast mode spawns and manages its own PlantUML server bound to `127.0.0.1` — no configuration needed. You can also point it at a server you run yourself (for example `java -jar plantuml.jar -picoweb`), including one on another machine in your LAN:
+
+| Setting | Default | Effect |
+|---|---|---|
+| `plantumlLocalServerAutoStart` | `true` | On: the extension starts and manages the server. Off: it connects to an existing server instead of starting one. |
+| `plantumlLocalServerHost` | `127.0.0.1` | Host to connect to when auto-start is **off** (e.g. a picoweb server elsewhere on your LAN). Ignored when auto-start is on — a managed server always binds to `127.0.0.1`. |
+| `plantumlLocalServerPort` | `0` | Auto-start **on**: port to start on (`0` = auto-assign a free port). Auto-start **off**: port to connect to. |
+
+Notes:
+
+- With auto-start **on** and a fixed port, if a healthy PlantUML server is already running on that port, the extension reuses it instead of starting a second one — so it no longer conflicts with a leftover process or a server you started yourself.
+- With auto-start **off**, the extension never starts a server (and needs no local Java) — it only connects to the host/port you configure.
+- The extension only stops servers it started itself; a server you run is never terminated by the extension.
 
 ### Status Bar
 
@@ -834,6 +877,7 @@ This extension bundles the following third-party software:
 - [mermaid.js](https://mermaid.js.org/) — [MIT License](https://github.com/mermaid-js/mermaid/blob/develop/LICENSE)
 - [KaTeX](https://katex.org/) — [MIT License](https://github.com/KaTeX/KaTeX/blob/main/LICENSE)
 - [@terrastruct/d2](https://d2lang.com/) (Wasm build) — [Mozilla Public License 2.0 (MPL-2.0)](https://github.com/terrastruct/d2/blob/master/LICENSE.txt)
+- [markdown-it-github-alerts](https://github.com/antfu/markdown-it-github-alerts) — [MIT License](https://github.com/antfu/markdown-it-github-alerts/blob/main/LICENSE)
 
 ## License
 

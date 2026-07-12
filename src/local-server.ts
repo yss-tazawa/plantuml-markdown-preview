@@ -13,7 +13,7 @@
 import * as net from 'net';
 import * as vscode from 'vscode';
 import type { ChildProcess } from 'child_process';
-import { spawnJava } from './utils.js';
+import { spawnJava, killProcessTree, isProcessAlive, looksLikeJavaProcess } from './utils.js';
 import { resolveIncludePath } from './plantuml.js';
 import type { Config } from './config.js';
 import { CONFIG_SECTION } from './config.js';
@@ -26,6 +26,34 @@ import { CONFIG_SECTION } from './config.js';
 let serverProcess: ChildProcess | null = null;
 /** Base URL of the running server (e.g. `http://127.0.0.1:8080`), or null. */
 let serverUrl: string | null = null;
+/**
+ * Whether the current server was spawned and is managed by us (true), or adopted
+ * from an already-running instance / external host (false). We only ever kill
+ * processes we own — an adopted server (a zombie, the user's manual picoserver,
+ * or a LAN server) must never be terminated by us.
+ */
+let ownedProcess = false;
+
+/** Persistent store for the spawned server PID (survives crashes/reloads). */
+let pidStore: vscode.Memento | null = null;
+/** Key under which the spawned server PID record is persisted. */
+const PID_KEY = 'localServer.lastPid';
+
+/**
+ * Persisted record of a spawned server. globalState is shared across ALL
+ * VS Code windows, so the PID alone is not enough: ownerPid identifies the
+ * extension host that spawned the server, letting other windows tell a live
+ * sibling's server apart from a leftover of a dead session.
+ */
+interface StoredServerPid {
+    pid: number;
+    ownerPid: number;
+}
+/**
+ * In-flight stale-process cleanup (from a previous session). startLocalServer awaits
+ * this so a new server never binds a port while a leftover process is still dying.
+ */
+let staleCleanupPromise: Promise<void> | null = null;
 
 export type LocalServerState = 'stopped' | 'starting' | 'running' | 'error';
 let serverState: LocalServerState = 'stopped';
@@ -88,6 +116,85 @@ export function setConfigGetter(getter: () => Config): void {
     getLatestConfig = getter;
 }
 
+/** Java availability checker registered by extension.ts (shows its own dialogs). */
+let javaChecker: ((config: Config) => Promise<boolean>) | null = null;
+
+/**
+ * Register the Java availability checker used before spawning a managed server.
+ * Adoption and external-connect paths never invoke it — they need no local Java.
+ *
+ * @param checker - Function resolving to true when a usable Java is available.
+ */
+export function setJavaAvailabilityChecker(checker: (config: Config) => Promise<boolean>): void {
+    javaChecker = checker;
+}
+
+/**
+ * Register the persistent store (VS Code Memento) used to remember the spawned
+ * server PID across sessions, so a leftover process can be cleaned up next launch.
+ *
+ * @param store - A Memento (e.g. `context.globalState`).
+ */
+export function setLocalServerPidStore(store: vscode.Memento): void {
+    pidStore = store;
+}
+
+/**
+ * Persist the PID of the server we spawned (owned), or clear it (undefined).
+ * Clearing only removes a record this window wrote — the key is shared across
+ * windows, and another window's live record must not be clobbered.
+ */
+function rememberPid(pid: number | undefined): void {
+    if (pid === undefined) {
+        const rec = pidStore?.get<StoredServerPid | number>(PID_KEY);
+        if (rec && typeof rec === 'object' && rec.ownerPid !== process.pid) return;
+        void pidStore?.update(PID_KEY, undefined);
+    } else {
+        void pidStore?.update(PID_KEY, { pid, ownerPid: process.pid } satisfies StoredServerPid);
+    }
+}
+
+/**
+ * Kill any picoweb process left over from a dead session (e.g. VS Code was
+ * force-closed and deactivate never ran, orphaning the JVM on Windows).
+ *
+ * Safety guards, in order:
+ * 1. Owner liveness — if the extension host that spawned the server is still
+ *    running (another window), the server is alive and in use: leave both the
+ *    process and the record alone.
+ * 2. PID recycling — only kill a process that still looks like Java; a PID
+ *    reassigned by the OS to an unrelated process must never be killed.
+ */
+export function cleanupStaleLocalServer(): Promise<void> {
+    staleCleanupPromise = (async () => {
+        const rec = pidStore?.get<StoredServerPid | number>(PID_KEY);
+        if (!rec) return;
+        // Defer past the caller's synchronous call stack — killProcessTree uses a
+        // blocking taskkill on Windows and must not stall extension activation.
+        await sleep(0);
+        const pid = typeof rec === 'number' ? rec : rec.pid;
+        const ownerPid = typeof rec === 'number' ? 0 : rec.ownerPid;
+        if (typeof pid !== 'number' || pid <= 0) {
+            void pidStore?.update(PID_KEY, undefined);
+            return;
+        }
+        if (ownerPid > 0 && ownerPid !== process.pid && isProcessAlive(ownerPid)) {
+            log(`[local-server] Server pid ${pid} belongs to a live session (owner ${ownerPid}) — leaving it running`);
+            return;
+        }
+        if (looksLikeJavaProcess(pid)) {
+            log(`[local-server] Cleaning up stale server process (pid ${pid}) from a previous session`);
+            killProcessTree(pid);
+            // Give the OS a moment to release the port before the new server starts.
+            await sleep(300);
+        }
+        // Direct clear: the record's owner is dead, so the ownership guard in
+        // rememberPid(undefined) would refuse to remove it.
+        void pidStore?.update(PID_KEY, undefined);
+    })();
+    return staleCleanupPromise;
+}
+
 /**
  * Pre-create the readyPromise so that waitForLocalServer() can block
  * even before startLocalServer() is called (e.g. while Java is being checked).
@@ -102,18 +209,17 @@ export function prepareLocalServer(): void {
 }
 
 /**
- * Start the local PlantUML picoweb server.
+ * Start the local PlantUML server.
  * No-op if already running or starting.
  *
- * @param config - Current extension settings (plantumlJarPath, javaPath, dotPath, plantumlLocalServerPort).
+ * Dispatches on the `plantumlLocalServerAutoStart` setting:
+ * - false: connect to an existing server at host:port (never spawn).
+ * - true : if a fixed port already serves a healthy picoweb, adopt it; otherwise spawn.
+ *
+ * @param config - Current extension settings.
  */
 export async function startLocalServer(config: Config): Promise<void> {
     if (serverState === 'running' || serverState === 'starting') return;
-
-    if (!config.plantumlJarPath) {
-        log('[local-server] plantumlJarPath is not configured, cannot start');
-        return;
-    }
 
     stoppingIntentionally = false;
     setServerState('starting');
@@ -124,6 +230,72 @@ export async function startLocalServer(config: Config): Promise<void> {
         });
     }
 
+    // Wait for any previous-session cleanup so we don't bind a port still held by a dying zombie.
+    if (staleCleanupPromise) {
+        await staleCleanupPromise;
+        if (stoppingIntentionally) return;
+    }
+
+    const port = config.plantumlLocalServerPort;
+
+    // --- External-connect mode: never spawn, just connect to host:port ---
+    if (!config.plantumlLocalServerAutoStart) {
+        const host = config.plantumlLocalServerHost || '127.0.0.1';
+        if (port <= 0) {
+            failStart(vscode.l10n.t('Set a port for the external PlantUML server (Fast mode, auto-start off).'));
+            return;
+        }
+        const url = `http://${host}:${port}`;
+        if (await probeExisting(url)) {
+            if (stoppingIntentionally) return;
+            adoptServer(url, vscode.l10n.t('Connected to PlantUML server at {0}', url));
+        } else if (!stoppingIntentionally) {
+            failStart(vscode.l10n.t('No PlantUML server found at {0}. Start it, or turn auto-start on.', url));
+        }
+        return;
+    }
+
+    // --- Auto-start mode: adopt an existing healthy picoweb on a fixed port, else spawn ---
+    // Adopt is attempted before the jar/Java requirements: connecting to an
+    // already-running server needs neither.
+    if (port > 0) {
+        const url = `http://127.0.0.1:${port}`;
+        if (await probeExisting(url)) {
+            if (stoppingIntentionally) return;
+            adoptServer(url, vscode.l10n.t('Reusing PlantUML server already running on port {0}.', String(port)));
+            return;
+        }
+        if (stoppingIntentionally) return;
+    }
+
+    if (!config.plantumlJarPath) {
+        log('[local-server] plantumlJarPath is not configured, cannot start');
+        failStart(vscode.l10n.t('PlantUML jar path is not configured.'));
+        return;
+    }
+
+    // Spawning requires a working Java; adoption and external-connect do not.
+    // The checker (registered by extension.ts) shows its own guidance dialogs.
+    if (javaChecker) {
+        const javaFound = await javaChecker(config).catch(() => false);
+        if (stoppingIntentionally) return;
+        if (!javaFound) {
+            // Same behavior as the old pre-start check: release waiters and stop.
+            stopLocalServer();
+            return;
+        }
+    }
+
+    await spawnManagedServer(config);
+}
+
+/**
+ * Spawn and manage our own picoweb server (owned=true), bound to 127.0.0.1.
+ * Retries on a different port only in auto-port mode.
+ *
+ * @param config - Current extension settings.
+ */
+async function spawnManagedServer(config: Config): Promise<void> {
     const MAX_PORT_RETRIES = 3;
     const useAutoPort = config.plantumlLocalServerPort <= 0;
     const usedPorts = new Set<number>();
@@ -142,6 +314,12 @@ export async function startLocalServer(config: Config): Promise<void> {
                 cwd: resolveIncludePath(config),
             });
             serverProcess = child;
+            // A process we spawned is owned from the moment it exists — not from
+            // readiness. Otherwise a stop during the boot window would skip the
+            // kill (owned=false) and leak the JVM, and the PID record would be
+            // missing for next-launch cleanup.
+            ownedProcess = true;
+            if (child.pid) rememberPid(child.pid);
 
             let stderrBuf = '';
             child.stdout?.on('data', (chunk: Buffer) => log(`[local-server stdout] ${chunk.toString().trimEnd()}`));
@@ -190,6 +368,8 @@ export async function startLocalServer(config: Config): Promise<void> {
                 stoppingIntentionally = true;
                 try { serverProcess.kill(); } catch { /* process already gone (ESRCH) */ }
                 serverProcess = null;
+                ownedProcess = false;
+                rememberPid(undefined);
                 stoppingIntentionally = false;
             }
             if (!useAutoPort || attempt === MAX_PORT_RETRIES - 1) {
@@ -223,38 +403,59 @@ export function stopLocalServer(): void {
     // Reject pending waiters before resetting state so they don't hang until timeout.
     readyReject?.(new Error('Server stopped'));
     readyReject = null; // prevent double-reject in resetState()
-    const wasRunning = serverProcess !== null;
-    if (serverProcess) {
+    const wasRunning = serverState === 'running';
+    const wasOwned = ownedProcess;
+    // Only terminate a process we spawned. An adopted server (owned=false — zombie,
+    // the user's manual picoserver, or a LAN host) must never be killed by us.
+    if (ownedProcess && serverProcess) {
         serverProcess.removeAllListeners('error');
         serverProcess.removeAllListeners('close');
         serverProcess.stdout?.removeAllListeners('data');
         serverProcess.stderr?.removeAllListeners('data');
         const proc = serverProcess;
         serverProcess = null;
-        proc.kill('SIGTERM');
-        // SIGKILL fallback if SIGTERM doesn't terminate within 3 seconds
-        const timerHandle = setTimeout(() => {
-            if (killTimer !== timerHandle) return; // superseded by a newer stop call
-            try { proc.kill('SIGKILL'); } catch { /* already exited */ }
-            killTimer = null;
-        }, 3000);
-        killTimer = timerHandle;
+        let timerHandle: ReturnType<typeof setTimeout> | null = null;
+        if (process.platform === 'win32' && proc.pid) {
+            // taskkill /T /F reliably kills the JVM tree (a plain kill() can orphan it on Windows).
+            killProcessTree(proc.pid, 'SIGKILL');
+        } else {
+            proc.kill('SIGTERM');
+            // SIGKILL fallback if SIGTERM doesn't terminate within 3 seconds
+            timerHandle = setTimeout(() => {
+                if (killTimer !== timerHandle) return; // superseded by a newer stop call
+                try { proc.kill('SIGKILL'); } catch { /* already exited */ }
+                killTimer = null;
+            }, 3000);
+            killTimer = timerHandle;
+        }
         stopExitPromise = new Promise<void>(resolve => {
+            let settled = false;
             const done = () => {
-                if (killTimer === timerHandle) { clearTimeout(timerHandle); killTimer = null; }
+                if (settled) return;
+                settled = true;
+                clearTimeout(failsafe);
+                if (timerHandle && killTimer === timerHandle) { clearTimeout(timerHandle); killTimer = null; }
                 resolve();
             };
+            // Failsafe: if the kill silently failed (e.g. taskkill access denied),
+            // 'exit' never fires — resolve anyway so restartLocalServer can't hang.
+            const failsafe = setTimeout(done, 5000);
             proc.once('exit', done);
             proc.once('error', done);
         });
     } else {
+        // Adopted server or nothing running: just drop our reference.
+        serverProcess = null;
         stopExitPromise = Promise.resolve();
     }
+    rememberPid(undefined);
     resetState();
     log('[local-server] Stopped');
     if (wasRunning) {
-        void vscode.window.showInformationMessage(
-            vscode.l10n.t('Local PlantUML server stopped.')
+        // An adopted server is not terminated by us — say "disconnected", not "stopped".
+        void vscode.window.showInformationMessage(wasOwned
+            ? vscode.l10n.t('Local PlantUML server stopped.')
+            : vscode.l10n.t('Disconnected from the PlantUML server.')
         );
     }
 }
@@ -374,31 +575,182 @@ function buildArgs(config: Config, port: number): string[] {
 }
 
 /**
- * Poll the server until it responds with HTTP 200, or timeout.
- * Uses a minimal PlantUML diagram encoded as a URL path segment.
+ * Health-check URL path for a picoweb server. A minimal encoded PlantUML
+ * diagram (`@startuml\nBob->Alice:hi\n@enduml`) rendered as SVG. A PlantUML
+ * server returns HTTP 200 + SVG; anything else is not a usable picoweb.
+ */
+const HEALTH_CHECK_PATH = '/svg/SoWkIImgAStDuNBAJrBGjLDmpCbCJbMmKiX8pSd9vt98pKi1IW80';
+
+/**
+ * Probe a base URL to check whether a healthy PlantUML server is serving there.
+ * The single health check used both to adopt an existing server (a zombie, the
+ * user's manual picoserver, or a LAN host) and to poll our own spawned child
+ * for readiness — one implementation so the two paths can never disagree.
+ *
+ * Requires an SVG Content-Type, not just a 200: a catch-all web server (e.g. an
+ * SPA dev server returning index.html with inline SVG for every path) must not
+ * pass as a PlantUML server.
+ *
+ * @param baseUrl - Server base URL (e.g. `http://127.0.0.1:4243`).
+ * @param timeoutMs - Request timeout. Default is generous because a cold
+ *   picoweb's FIRST render takes ~5-6s (JVM/font warmup; ~100ms once warm),
+ *   and a free port fails instantly with ECONNREFUSED regardless — the
+ *   timeout only matters when something is listening but slow.
+ * @returns True if the URL responds with HTTP 200 and an SVG Content-Type.
+ */
+export async function probeExisting(baseUrl: string, timeoutMs = 8000): Promise<boolean> {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+        const res = await fetch(`${baseUrl}${HEALTH_CHECK_PATH}`, { signal: controller.signal });
+        // Consume the response body to release the HTTP connection back to the pool.
+        await res.text();
+        const contentType = res.headers.get('content-type') ?? '';
+        return res.ok && contentType.includes('svg');
+    } catch {
+        return false;
+    } finally {
+        clearTimeout(timer);
+    }
+}
+
+/**
+ * Adopt an already-running server (owned=false — we never kill it).
+ * Transitions to 'running', resolves waiters, and starts the liveness watchdog.
+ *
+ * @param url - Base URL of the server to use.
+ * @param notice - Message shown to the user.
+ */
+function adoptServer(url: string, notice: string): void {
+    serverUrl = url;
+    ownedProcess = false;
+    rememberPid(undefined); // we don't own it; nothing to clean up later
+    setServerState('running');
+    readyResolve?.();
+    log(`[local-server] Adopted existing server at ${url}`);
+    void vscode.window.showInformationMessage(notice);
+    startAdoptWatchdog(url);
+}
+
+/** Liveness watchdog for adopted servers (they have no process handle to watch). */
+let adoptWatchTimer: ReturnType<typeof setInterval> | null = null;
+/** Consecutive failed probes; the watchdog trips on the second miss. */
+let adoptProbeFailures = 0;
+/** Interval between liveness probes of an adopted server. */
+const ADOPT_WATCH_INTERVAL_MS = 30_000;
+
+/**
+ * Periodically re-probe an adopted server. A spawned server reports crashes via
+ * its process events; an adopted one has no process handle, so without this the
+ * extension would stay 'running' forever after the external server dies.
+ *
+ * @param url - Base URL of the adopted server.
+ */
+function startAdoptWatchdog(url: string): void {
+    stopAdoptWatchdog();
+    adoptProbeFailures = 0;
+    adoptWatchTimer = setInterval(async () => {
+        if (serverState !== 'running' || ownedProcess || serverUrl !== url) {
+            stopAdoptWatchdog();
+            return;
+        }
+        if (await probeExisting(url)) {
+            adoptProbeFailures = 0;
+            return;
+        }
+        if (++adoptProbeFailures < 2) return;
+        stopAdoptWatchdog();
+        // Re-check after the await — a stop/crash may have won the race.
+        if (serverState !== 'running' || ownedProcess || serverUrl !== url) return;
+        log(`[local-server] Lost connection to the adopted PlantUML server at ${url}`);
+
+        // When auto-start is on (the default), transparently recover instead of
+        // parking in 'error': this is the "owner window closed first, another
+        // window was adopting it" case. startLocalServer() re-runs the full
+        // dispatch — if another window already respawned on the fixed port we
+        // re-adopt it; otherwise this window spawns and becomes the new owner.
+        // Concurrent windows racing to respawn converge naturally (a BindException
+        // loser's next probe adopts the winner).
+        const config = getLatestConfig?.();
+        if (config?.plantumlLocalServerAutoStart) {
+            serverUrl = null;
+            resetState(); // back to 'stopped', fresh readyPromise on next start
+            prepareLocalServer();
+            void startLocalServer(config);
+            return;
+        }
+
+        // External-connect mode (auto-start off): we must not spawn — surface the
+        // loss with a manual Retry.
+        serverUrl = null;
+        setServerState('error');
+        const message = vscode.l10n.t('Lost connection to the PlantUML server at {0}.', url);
+        log(`[local-server] ${message}`);
+        notifyErrorWithRetry(message);
+    }, ADOPT_WATCH_INTERVAL_MS);
+}
+
+/** Stop the adopted-server liveness watchdog, if running. */
+function stopAdoptWatchdog(): void {
+    if (adoptWatchTimer) {
+        clearInterval(adoptWatchTimer);
+        adoptWatchTimer = null;
+    }
+}
+
+/**
+ * Mark startup as failed: set 'error' state, reject and clear waiters,
+ * notify the user with a Retry action.
+ *
+ * @param message - Human-readable error shown to the user and logged.
+ */
+function failStart(message: string): void {
+    setServerState('error');
+    // Clear the promise trio like handleCrash does — a later start must create
+    // a fresh pending promise, never reuse this settled one.
+    const rejectFn = readyReject;
+    readyPromise = null;
+    readyResolve = null;
+    readyReject = null;
+    rejectFn?.(new Error(message));
+    log(`[local-server] ${message}`);
+    notifyErrorWithRetry(message);
+}
+
+/**
+ * Show an error notification with a Retry button that re-attempts the start
+ * with the latest configuration (e.g. after the user launched their server).
+ *
+ * @param message - Error text to display.
+ */
+function notifyErrorWithRetry(message: string): void {
+    const retryLabel = vscode.l10n.t('Retry');
+    void vscode.window.showErrorMessage(message, retryLabel).then(async (action) => {
+        if (action !== retryLabel || !getLatestConfig) return;
+        try {
+            prepareLocalServer();
+            await startLocalServer(getLatestConfig());
+        } catch { /* already logged by startLocalServer */ }
+    });
+}
+
+/**
+ * Poll our spawned server until it passes the shared health check, or timeout.
+ *
+ * Uses probeExisting (Content-Type validated): a foreign server that happens to
+ * answer 200 on the same port while our child died of BindException must not be
+ * mistaken for our own child becoming ready.
  *
  * @param port - Port number to health-check.
  * @param timeoutMs - Maximum wait time in milliseconds.
  * @param intervalMs - Polling interval in milliseconds.
  */
 async function waitForReady(port: number, timeoutMs = 15_000, intervalMs = 500): Promise<void> {
-    // Minimal encoded PlantUML: @startuml\nBob->Alice:hi\n@enduml
-    const testUrl = `http://127.0.0.1:${port}/svg/SoWkIImgAStDuNBAJrBGjLDmpCbCJbMmKiX8pSd9vt98pKi1IW80`;
+    const baseUrl = `http://127.0.0.1:${port}`;
     const deadline = Date.now() + timeoutMs;
 
     while (Date.now() < deadline && serverState === 'starting') {
-        const controller = new AbortController();
-        const timer = setTimeout(() => controller.abort(), 2000);
-        try {
-            const res = await fetch(testUrl, { signal: controller.signal });
-            // Consume the response body to release the HTTP connection back to the pool.
-            await res.text();
-            if (res.ok) return;
-        } catch {
-            // Server not ready yet
-        } finally {
-            clearTimeout(timer);
-        }
+        if (await probeExisting(baseUrl, 2000)) return;
         await sleep(intervalMs);
     }
 
@@ -420,8 +772,10 @@ function sleep(ms: number): Promise<void> {
  *  exclusively by the SIGKILL fallback and the process exit handler
  *  in stopLocalServer() so that SIGKILL can still fire after resetState(). */
 function resetState(): void {
+    stopAdoptWatchdog();
     setServerState('stopped');
     serverUrl = null;
+    ownedProcess = false;
     // Reject any pending waiters. When called from stopLocalServer(), readyReject
     // is already null (cleared in stopLocalServer) so rejectFn is a no-op. However, if
     // startLocalServer's retry loop replaced readyReject with a new Promise before
@@ -443,6 +797,34 @@ function log(message: string): void {
 }
 
 /**
+ * After a fixed-port BindException under auto-start, wait for the racing winner
+ * (another window that respawned on the same port) to become ready, then adopt
+ * it. Falls back to the normal crash dialog if nothing healthy appears in time.
+ *
+ * @param config - Current extension settings.
+ */
+async function recoverByAdoptingPort(config: Config): Promise<void> {
+    const url = `http://127.0.0.1:${config.plantumlLocalServerPort}`;
+    log(`[local-server] Port ${config.plantumlLocalServerPort} busy — waiting to adopt the server another window is starting`);
+    const deadline = Date.now() + 12_000;
+    while (Date.now() < deadline) {
+        // A user action (stop / mode switch / manual restart) supersedes recovery.
+        if (stoppingIntentionally || serverState !== 'error') return;
+        if (await probeExisting(url, 2000)) {
+            if (stoppingIntentionally || serverState !== 'error') return;
+            prepareLocalServer();
+            adoptServer(url, vscode.l10n.t('Reusing PlantUML server already running on port {0}.', String(config.plantumlLocalServerPort)));
+            return;
+        }
+        await sleep(1000);
+    }
+    // No winner appeared — surface the port conflict for the user to resolve.
+    const message = vscode.l10n.t('The configured local server port is already in use by another process. Set the port to 0 (auto) or choose a different port.');
+    log(`[local-server] ${message}`);
+    notifyErrorWithRetry(message);
+}
+
+/**
  * Handle unexpected server crash: notify user with action buttons.
  *
  * @param reason - Human-readable crash reason (e.g. exit code or signal).
@@ -452,6 +834,8 @@ function log(message: string): void {
 function handleCrash(reason: string, config: Config, stderr?: string): void {
     if (serverState === 'error') return;
     serverProcess = null;
+    ownedProcess = false;
+    rememberPid(undefined); // our process died; nothing left to clean up
     setServerState('error');
     serverUrl = null;
     const rejectFn = readyReject;
@@ -477,12 +861,30 @@ function handleCrash(reason: string, config: Config, stderr?: string): void {
         return;
     }
 
+    const isPortInUse = stderr?.includes('BindException')
+        || stderr?.includes('Address already in use');
+
+    // Multi-window convergence: with auto-start on and a fixed port, several
+    // windows can race to respawn after the owner window closed. The loser gets
+    // BindException — but the winner is (cold-)starting on that same port, so
+    // wait briefly and adopt it instead of dead-ending in an error dialog.
+    if (isPortInUse && config.plantumlLocalServerAutoStart && config.plantumlLocalServerPort > 0) {
+        void recoverByAdoptingPort(config);
+        return;
+    }
+
     const switchLabel = vscode.l10n.t('Switch to Secure Mode');
     const restartLabel = vscode.l10n.t('Restart Server');
     const dismissLabel = vscode.l10n.t('Dismiss');
 
+    // A fixed port occupied by a non-PlantUML process: we couldn't adopt it (not a
+    // picoweb) and couldn't bind. Tell the user plainly instead of a generic crash.
+    const message = isPortInUse
+        ? vscode.l10n.t('The configured local server port is already in use by another process. Set the port to 0 (auto) or choose a different port.')
+        : vscode.l10n.t('Local PlantUML server crashed: {0}', reason);
+
     void vscode.window.showErrorMessage(
-        vscode.l10n.t('Local PlantUML server crashed: {0}', reason),
+        message,
         switchLabel, restartLabel, dismissLabel
     ).then(async (action) => {
         try {

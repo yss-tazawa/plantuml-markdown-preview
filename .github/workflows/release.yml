@@ -32,7 +32,14 @@ jobs:
         run: npm run build
 
       - name: Package (.vsix)
-        run: npx @vscode/vsce package --no-dependencies
+        # Pin README image/link base to the main branch. By default vsce rewrites
+        # relative paths to .../raw/HEAD/..., which resolves to the GitHub default
+        # branch (develop). We publish from main, so the published README must
+        # reference main.
+        run: >-
+          npx @vscode/vsce package --no-dependencies
+          --baseContentUrl https://github.com/yss-tazawa/plantuml-markdown-preview/blob/main
+          --baseImagesUrl https://raw.githubusercontent.com/yss-tazawa/plantuml-markdown-preview/main
 
       - name: Get version from tag
         id: version

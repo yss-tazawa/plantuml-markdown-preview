@@ -23,4 +23,5 @@ extension.ts
 extension.js
 jsconfig.json
 tsconfig.json
+vitest.config.ts
 src/**

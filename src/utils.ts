@@ -303,6 +303,70 @@ export function spawnJava(configJavaPath: string, args: string[], options?: Spaw
 }
 
 /**
+ * Forcibly terminate a process (and its child tree) by PID, cross-platform.
+ *
+ * On Windows a `kill()` signal only targets the immediate process, which can
+ * orphan the JVM's children and leave the picoweb port held; `taskkill /T /F`
+ * kills the whole tree. On POSIX we send the given signal directly.
+ *
+ * Best-effort: errors (e.g. the process already exited, ESRCH) are swallowed.
+ *
+ * @param pid - Process id to terminate.
+ * @param signal - POSIX signal to send (ignored on Windows). Default 'SIGKILL'.
+ */
+export function killProcessTree(pid: number, signal: NodeJS.Signals = 'SIGKILL'): void {
+    if (!pid || pid <= 0) return;
+    try {
+        if (process.platform === 'win32') {
+            nodeSpawnSync('taskkill', ['/PID', String(pid), '/T', '/F']);
+        } else {
+            process.kill(pid, signal);
+        }
+    } catch { /* process already gone (ESRCH) or no permission */ }
+}
+
+/**
+ * Check whether a process with the given PID currently exists.
+ *
+ * Uses signal 0 (existence probe, no signal delivered). EPERM means the
+ * process exists but belongs to another user — treated as alive.
+ *
+ * @param pid - Process id to check.
+ * @returns True if a process with this PID exists.
+ */
+export function isProcessAlive(pid: number): boolean {
+    if (!pid || pid <= 0) return false;
+    try {
+        process.kill(pid, 0);
+        return true;
+    } catch (e) {
+        return (e as NodeJS.ErrnoException).code === 'EPERM';
+    }
+}
+
+/**
+ * Check whether the process with the given PID looks like a Java process.
+ * Guards PID-recycling: a persisted PID may have been reassigned by the OS
+ * to an unrelated process, which must never be killed.
+ *
+ * @param pid - Process id to inspect.
+ * @returns True if the process's command/image name contains "java".
+ */
+export function looksLikeJavaProcess(pid: number): boolean {
+    if (!pid || pid <= 0) return false;
+    try {
+        if (process.platform === 'win32') {
+            const r = nodeSpawnSync('tasklist', ['/FI', `PID eq ${pid}`, '/FO', 'CSV', '/NH'], { encoding: 'utf8' });
+            return /java/i.test(r.stdout ?? '');
+        }
+        const r = nodeSpawnSync('ps', ['-p', String(pid), '-o', 'comm='], { encoding: 'utf8' });
+        return /java/i.test(r.stdout ?? '');
+    } catch {
+        return false;
+    }
+}
+
+/**
  * Spawn a Java child process (sync).
  *
  * Wraps Node `spawnSync` with the same resolution as {@link spawnJava}.

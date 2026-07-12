@@ -149,7 +149,9 @@
   "configuration.previewTheme.one-dark": "One Dark — fondo oscuro, texto suave. Inspirado en Atom/VS Code.",
   "configuration.previewTheme.dracula": "Dracula — fondo oscuro, colores vibrantes.",
   "configuration.previewTheme.solarized-dark": "Solarized Dark — fondo verde azulado profundo, colores amigables para la vista.",
-  "configuration.plantumlLocalServerPort.description": "Puerto para el servidor PlantUML local en modo Fast. 0 = asignar automáticamente un puerto libre (recomendado). Predeterminado: 0",
+  "configuration.plantumlLocalServerAutoStart.description": "Modo Fast: inicia y gestiona automáticamente un servidor PlantUML local (vinculado a 127.0.0.1). Desactívalo para conectarte a un servidor PlantUML existente que ejecutes tú mismo (p. ej. en otra máquina) — configura el host y el puerto a continuación. Predeterminado: on",
+  "configuration.plantumlLocalServerHost.description": "Modo Fast: host del servidor PlantUML al que conectarse cuando el inicio automático está desactivado (p. ej. un servidor picoweb en otra máquina de tu LAN). Se ignora cuando el inicio automático está activado (los servidores gestionados siempre se vinculan a 127.0.0.1). Predeterminado: 127.0.0.1",
+  "configuration.plantumlLocalServerPort.description": "Puerto para el servidor PlantUML local en modo Fast. Cuando el inicio automático está activado, es el puerto en el que se inicia (0 = asignar automáticamente un puerto libre, recomendado). Cuando el inicio automático está desactivado, es el puerto al que conectarse. Predeterminado: 0",
   "configuration.previewTheme.monokai": "Monokai — fondo oscuro, colores de sintaxis vívidos. Inspirado en Sublime Text.",
   "configuration.enableDiagramViewer.description": "Activar clic derecho en un diagrama de la vista previa para abrirlo en un visor de pan y zoom. (Requiere reabrir la vista previa)",
   "configuration.retainPreviewContext.description": "Retener el contenido de la vista previa cuando la pestaña está oculta. Evita el re-renderizado al cambiar de pestaña, pero usa más memoria. (Requiere reabrir la vista previa)"

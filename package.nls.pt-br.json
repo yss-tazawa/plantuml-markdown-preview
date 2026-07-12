@@ -149,7 +149,9 @@
   "configuration.previewTheme.one-dark": "One Dark — fundo escuro, texto suave. Inspirado no Atom/VS Code.",
   "configuration.previewTheme.dracula": "Dracula — fundo escuro, cores vibrantes.",
   "configuration.previewTheme.solarized-dark": "Solarized Dark — fundo verde-azulado profundo, cores amigáveis para os olhos.",
-  "configuration.plantumlLocalServerPort.description": "Porta para o servidor PlantUML local no modo Fast. 0 = atribuir automaticamente uma porta livre (recomendado). Padrão: 0",
+  "configuration.plantumlLocalServerAutoStart.description": "Modo Fast: inicia e gerencia automaticamente um servidor PlantUML local (vinculado a 127.0.0.1). Desative para se conectar a um servidor PlantUML existente que você mesmo executa (ex.: em outra máquina) — defina o host e a porta abaixo. Padrão: on",
+  "configuration.plantumlLocalServerHost.description": "Modo Fast: host do servidor PlantUML ao qual se conectar quando o início automático estiver desativado (ex.: um servidor picoweb em outra máquina na sua LAN). Ignorado quando o início automático está ativado (servidores gerenciados sempre se vinculam a 127.0.0.1). Padrão: 127.0.0.1",
+  "configuration.plantumlLocalServerPort.description": "Porta para o servidor PlantUML local no modo Fast. Quando o início automático está ativado, é a porta em que o servidor é iniciado (0 = atribuir automaticamente uma porta livre, recomendado). Quando o início automático está desativado, é a porta à qual se conectar. Padrão: 0",
   "configuration.previewTheme.monokai": "Monokai — fundo escuro, cores de sintaxe vívidas. Inspirado no Sublime Text.",
   "configuration.enableDiagramViewer.description": "Ativar clique com botão direito em um diagrama na pré-visualização para abri-lo em um visualizador de pan e zoom. (Requer reabrir a pré-visualização)",
   "configuration.retainPreviewContext.description": "Reter o conteúdo da pré-visualização quando a aba está oculta. Evita re-renderização ao trocar de aba, mas usa mais memória. (Requer reabrir a pré-visualização)"

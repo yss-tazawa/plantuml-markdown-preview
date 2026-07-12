@@ -47,6 +47,17 @@ export interface Config {
     plantumlServerUrl: string;
     /** Port for the local PlantUML picoweb server. 0 = auto-assign a free port. Only used in Fast mode. */
     plantumlLocalServerPort: number;
+    /**
+     * When true (default), the extension spawns and manages its own local picoweb server (bound to 127.0.0.1).
+     * When false, the extension does not spawn a server and instead connects to an existing one at
+     * plantumlLocalServerHost:plantumlLocalServerPort. Only used in Fast mode.
+     */
+    plantumlLocalServerAutoStart: boolean;
+    /**
+     * Host to connect to when plantumlLocalServerAutoStart is false (e.g. a picoweb server on another
+     * machine in the LAN). Ignored when auto-starting (spawned servers always bind to 127.0.0.1). Only used in Fast mode.
+     */
+    plantumlLocalServerHost: string;
     /** Mermaid diagram theme (e.g. 'default', 'dark', 'forest'). */
     mermaidTheme: string;
     /** Mermaid diagram scale ('auto' or '50%'–'100%'). */

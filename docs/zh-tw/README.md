@@ -53,6 +53,7 @@
 - **編輯器輔助** — PlantUML、Mermaid、D2 的關鍵字補全、顏色選擇器和程式碼片段
 - **國際化** — 支援英語、簡體中文 / 繁體中文、西班牙語、巴西葡萄牙語、日語和韓語介面
 - **數學公式支援** — 使用 [KaTeX](https://katex.org/) 渲染 `$...$` 行內公式和 `$$...$$` 區塊公式
+- **GitHub 風格提示** — `> [!NOTE]`、`> [!TIP]`、`> [!IMPORTANT]`、`> [!WARNING]`、`> [!CAUTION]` 渲染為彩色標註框
 
 ## 目錄
 
@@ -96,6 +97,32 @@
 - 適用於預覽和 HTML/PDF 匯出
 - 如果 `$` 符號導致意外的公式解析，可透過 `enableMath: false` 停用
 
+### GitHub 風格提示
+
+從區塊引用標記渲染 GitHub 風格的提示（標註框），與 GitHub 官方輸出保持一致。
+
+```markdown
+> [!NOTE]
+> Highlights information that users should take into account.
+
+> [!TIP]
+> Optional information to help a user be more successful.
+
+> [!IMPORTANT]
+> Crucial information necessary for users to succeed.
+
+> [!WARNING]
+> Critical content demanding immediate user attention.
+
+> [!CAUTION]
+> Negative potential consequences of an action.
+```
+
+- 五種類型：`NOTE`、`TIP`、`IMPORTANT`、`WARNING`、`CAUTION` — 每種都有專屬圖示和強調色
+- 標記僅大寫有效，與 GitHub 一致（`[!note]` 仍為一般區塊引用）
+- 顏色會依作用中的預覽主題（淺色 / 深色）自動調整
+- 適用於預覽和 HTML/PDF 匯出
+
 ### 圖表縮放
 
 獨立控制 PlantUML、Mermaid 和 D2 的圖表顯示大小。
@@ -120,6 +147,22 @@
 - **Easy 模式** — 將 PlantUML 原始碼傳送至伺服器渲染。無需設定。預設使用公共伺服器（`https://www.plantuml.com/plantuml`）。可設定自己的伺服器 URL 保護隱私。
 
 未偵測到 Java 時，開啟預覽會提示切換到 Easy 模式。
+
+#### Fast 模式：連接到您自己的 PlantUML 伺服器
+
+預設情況下，Fast 模式會自行啟動並管理一個綁定到 `127.0.0.1` 的 PlantUML 伺服器 —— 無需任何設定。您也可以讓它連接到自己執行的伺服器（例如 `java -jar plantuml.jar -picoweb`），包括區域網路內其他機器上的伺服器：
+
+| 設定 | 預設值 | 說明 |
+|---|---|---|
+| `plantumlLocalServerAutoStart` | `true` | 開啟：擴充功能啟動並管理伺服器。關閉：連接到現有伺服器，而不是啟動新的。 |
+| `plantumlLocalServerHost` | `127.0.0.1` | 自動啟動**關閉**時要連接的主機（例如區域網路中其他位置的 picoweb 伺服器）。自動啟動開啟時會被忽略 —— 由擴充功能管理的伺服器一律綁定到 `127.0.0.1`。 |
+| `plantumlLocalServerPort` | `0` | 自動啟動**開啟**時：要啟動的連接埠（`0` 表示自動分配空閒連接埠）。自動啟動**關閉**時：要連接的連接埠。 |
+
+備註：
+
+- 自動啟動**開啟**且使用固定連接埠時，若該連接埠上已有正常運作的 PlantUML 伺服器，擴充功能會重複使用它而不是再啟動一個 —— 因此不會與殘留程序或您自己啟動的伺服器衝突。
+- 自動啟動**關閉**時，擴充功能不會啟動任何伺服器（也不需要本機 Java）—— 只會連接到您設定的主機/連接埠。
+- 擴充功能只會停止自己啟動的伺服器；您自己執行的伺服器永遠不會被擴充功能終止。
 
 ### 狀態列
 
@@ -826,6 +869,7 @@ Easy 模式下，PlantUML 原始文字會傳送至設定的伺服器。預設的
 - [mermaid.js](https://mermaid.js.org/) — [MIT License](https://github.com/mermaid-js/mermaid/blob/develop/LICENSE)
 - [KaTeX](https://katex.org/) — [MIT License](https://github.com/KaTeX/KaTeX/blob/main/LICENSE)
 - [@terrastruct/d2](https://d2lang.com/)（Wasm 建置）— [Mozilla Public License 2.0 (MPL-2.0)](https://github.com/terrastruct/d2/blob/master/LICENSE.txt)
+- [markdown-it-github-alerts](https://github.com/antfu/markdown-it-github-alerts) — [MIT License](https://github.com/antfu/markdown-it-github-alerts/blob/main/LICENSE)
 
 ## 授權
 

@@ -2,7 +2,7 @@
   "name": "plantuml-markdown-preview",
   "displayName": "%displayName%",
   "description": "%description%",
-  "version": "0.7.6",
+  "version": "0.7.7",
   "license": "MIT",
   "publisher": "yss-tazawa",
   "icon": "images/icon.png",
@@ -1135,8 +1135,20 @@
           "default": null,
           "description": "%configuration.debounceDiagramChangeMs.description%"
         },
-        "plantumlMarkdownPreview.plantumlLocalServerPort": {
+        "plantumlMarkdownPreview.plantumlLocalServerAutoStart": {
           "order": 22,
+          "type": "boolean",
+          "default": true,
+          "description": "%configuration.plantumlLocalServerAutoStart.description%"
+        },
+        "plantumlMarkdownPreview.plantumlLocalServerHost": {
+          "order": 23,
+          "type": "string",
+          "default": "127.0.0.1",
+          "description": "%configuration.plantumlLocalServerHost.description%"
+        },
+        "plantumlMarkdownPreview.plantumlLocalServerPort": {
+          "order": 24,
           "type": "number",
           "default": 0,
           "minimum": 0,
@@ -1144,19 +1156,19 @@
           "description": "%configuration.plantumlLocalServerPort.description%"
         },
         "plantumlMarkdownPreview.plantumlServerUrl": {
-          "order": 23,
+          "order": 25,
           "type": "string",
           "default": "https://www.plantuml.com/plantuml",
           "description": "%configuration.plantumlServerUrl.description%"
         },
         "plantumlMarkdownPreview.enableDiagramViewer": {
-          "order": 24,
+          "order": 26,
           "type": "boolean",
           "default": true,
           "description": "%configuration.enableDiagramViewer.description%"
         },
         "plantumlMarkdownPreview.retainPreviewContext": {
-          "order": 25,
+          "order": 27,
           "type": "boolean",
           "default": true,
           "description": "%configuration.retainPreviewContext.description%"
@@ -1170,6 +1182,7 @@
     "highlight.js": "^11.11.1",
     "katex": "^0.16.35",
     "markdown-it": "^14.1.1",
+    "markdown-it-github-alerts": "^1.0.1",
     "mermaid": "^11.12.3"
   },
   "devDependencies": {
@@ -1177,7 +1190,8 @@
     "@types/node": "^20.17.0",
     "@types/vscode": "^1.83.0",
     "esbuild": "^0.27.3",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "vitest": "^4.1.10"
   },
   "repository": {
     "type": "git",
@@ -1189,7 +1203,10 @@
   },
   "scripts": {
     "build": "node esbuild.js",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "typecheck": "tsc --noEmit && tsc --noEmit -p src/webview/tsconfig.webview.json",
-    "package": "npm run typecheck && npm run build && npx @vscode/vsce package"
+    "typecheck:tests": "tsc --noEmit -p private/tests/tsconfig.tests.json",
+    "package": "npm run typecheck && npm run build && npx @vscode/vsce package --baseContentUrl https://github.com/yss-tazawa/plantuml-markdown-preview/blob/main --baseImagesUrl https://raw.githubusercontent.com/yss-tazawa/plantuml-markdown-preview/main"
   }
 }

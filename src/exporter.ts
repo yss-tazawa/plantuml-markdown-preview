@@ -202,6 +202,35 @@ function invalidateMdCache(config: Config): void {
  * @param [withSourceMap] - Whether to enable the source_map core rule.
  * @returns Configured markdown-it instance (possibly cached).
  */
+/** markdown-it plugin type (matches the first arg of md.use). */
+type MdPlugin = Parameters<MarkdownIt['use']>[0];
+
+/**
+ * Loaded markdown-it-github-alerts plugin, or null until preloaded.
+ * The package is ESM-only; a CommonJS build (esbuild/tsc Node16) cannot import
+ * it statically, so it is loaded once via dynamic import.
+ */
+let githubAlertsPlugin: MdPlugin | null = null;
+/** In-flight dynamic import, so concurrent renders load the plugin only once. */
+let githubAlertsLoading: Promise<void> | null = null;
+
+/**
+ * Preload the ESM-only GitHub-alerts plugin. Idempotent; safe to await on every
+ * render. A load failure is swallowed so alerts degrade to plain blockquotes
+ * rather than breaking rendering.
+ */
+async function ensureGithubAlerts(): Promise<void> {
+    if (githubAlertsPlugin || githubAlertsLoading) return githubAlertsLoading ?? undefined;
+    githubAlertsLoading = (async () => {
+        try {
+            githubAlertsPlugin = (await import('markdown-it-github-alerts')).default as MdPlugin;
+        } catch {
+            githubAlertsPlugin = null;
+        }
+    })();
+    return githubAlertsLoading;
+}
+
 function getOrCreateMd(config: Config, withSourceMap?: boolean): MarkdownIt {
     invalidateMdCache(config);
 
@@ -216,6 +245,13 @@ function getOrCreateMd(config: Config, withSourceMap?: boolean): MarkdownIt {
     if (config.enableMath) {
         md.use(mk, { throwOnError: false, output: 'html' });
     }
+    // GitHub-style alerts (> [!NOTE] etc.). Emits the same markup GitHub uses
+    // (div.markdown-alert + p.markdown-alert-title); styled per theme in themes/base.ts.
+    // The plugin is ESM-only, so it is dynamically preloaded (ensureGithubAlerts)
+    // before this factory runs; skip if that hasn't completed yet.
+    // matchCaseSensitive: GitHub only recognizes uppercase markers ([!NOTE]);
+    // lowercase [!note] stays a plain blockquote.
+    if (githubAlertsPlugin) md.use(githubAlertsPlugin, { matchCaseSensitive: true });
 
     // Add id attributes to headings so that anchor links (#section-name) work
     // in both the preview panel and HTML export.
@@ -338,6 +374,9 @@ export async function renderBodyAsync(
     // back to synchronous renderToSvg (spawnSync), freezing the extension host.
     if (signal?.aborted) return { bodyHtml: '', hasMermaid: false };
 
+    // Ensure the ESM-only GitHub-alerts plugin is loaded before the (cached) md
+    // instance is built, so the first render already includes alert support.
+    await ensureGithubAlerts();
     const md = getOrCreateMd(config, options?.sourceMap);
     const env: RenderEnv = { preRenderedSvgs, preRenderedD2Svgs, plantumlScale: config.plantumlScale, d2Scale: config.d2Scale };
     const bodyHtml = md.render(source, env);

@@ -149,7 +149,9 @@
   "configuration.previewTheme.one-dark": "One Dark — 深色背景、柔和色調。Atom / VS Code 風格。",
   "configuration.previewTheme.dracula": "Dracula — 深色背景、鮮豔配色。",
   "configuration.previewTheme.solarized-dark": "Solarized Dark — 深青色背景、護眼配色。",
-  "configuration.plantumlLocalServerPort.description": "Fast 模式下本地 PlantUML 伺服器使用的連接埠。0 = 自動分配空閒連接埠（建議）。預設: 0",
+  "configuration.plantumlLocalServerAutoStart.description": "Fast 模式：自動啟動並管理本機 PlantUML 伺服器（繫結至 127.0.0.1）。關閉此選項以連線至你自行執行的現有 PlantUML 伺服器（例如在另一台機器上）— 請在下方設定主機和連接埠。預設: on",
+  "configuration.plantumlLocalServerHost.description": "Fast 模式：自動啟動關閉時要連線的 PlantUML 伺服器主機（例如區域網路中另一台機器上執行的 picoweb 伺服器）。自動啟動開啟時會被忽略（受管理的伺服器一律繫結至 127.0.0.1）。預設: 127.0.0.1",
+  "configuration.plantumlLocalServerPort.description": "Fast 模式下本機 PlantUML 伺服器使用的連接埠。自動啟動開啟時，這是啟動伺服器所用的連接埠（0 = 自動分配空閒連接埠，建議）。自動啟動關閉時，這是要連線的連接埠。預設: 0",
   "configuration.previewTheme.monokai": "Monokai — 深色背景、鮮明語法高亮色。Sublime Text 風格。",
   "configuration.enableDiagramViewer.description": "在預覽中右鍵點擊圖表即可在平移和縮放檢視器中開啟。（需要重新開啟預覽）",
   "configuration.retainPreviewContext.description": "索引標籤隱藏時保留預覽內容。防止切換索引標籤時重新渲染，但會使用更多記憶體。（需要重新開啟預覽）"
