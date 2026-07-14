@@ -152,10 +152,17 @@ export function extractD2Blocks(source: string): string[] {
  * @returns Array of captured block content strings in document order.
  */
 function extractFencedBlocks(source: string, reSource: string): string[] {
+    // Normalize CRLF/CR to LF before matching. The fence patterns anchor on `\n`,
+    // so on Windows (CRLF) files the opening fence ```lang\r\n would not match and
+    // extraction returned []. Normalizing also makes the captured block content
+    // use LF, matching markdown-it's token.content (which it normalizes to LF) so
+    // the pre-rendered SVG map lookups in the fence renderer hit instead of falling
+    // back to raw source (D2) or synchronous rendering (PlantUML).
+    const normalized = source.replace(/\r\n?/g, '\n');
     const blocks: string[] = [];
     const re = new RegExp(reSource, 'gim');
     let match;
-    while ((match = re.exec(source)) !== null) {
+    while ((match = re.exec(normalized)) !== null) {
         blocks.push(match[1]);
     }
     return blocks;

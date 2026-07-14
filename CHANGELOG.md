@@ -6,6 +6,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## 0.7.8 - 2026-07-14
+
+### Fixed
+
+- D2 diagrams now render on Windows instead of showing the raw source text; files saved with Windows (CRLF) line endings are no longer skipped during diagram detection
+
 ## 0.7.7 - 2026-07-12
 
 ### Added
