@@ -1178,7 +1178,7 @@
   },
   "dependencies": {
     "@terrastruct/d2": "^0.1.33",
-    "@traptitech/markdown-it-katex": "^3.6.0",
+    "@vscode/markdown-it-katex": "^1.1.2",
     "highlight.js": "^11.11.1",
     "katex": "^0.16.35",
     "markdown-it": "^14.1.1",

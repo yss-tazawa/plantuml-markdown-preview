@@ -29,7 +29,18 @@ import { escapeHtml, extractPlantUmlBlocks, extractD2Blocks, errorHtml } from '.
 import { renderAllD2 } from './d2-renderer.js';
 import { findBrowser } from './browser-finder.js';
 import { MERMAID_THEME_SET, type Config } from './config.js';
-import mk from '@traptitech/markdown-it-katex';
+import katexPlugin, { type MarkdownKatexOptions } from '@vscode/markdown-it-katex';
+import type { KatexOptions } from 'katex';
+
+// KaTeX プラグインのオプション。throwOnError:false で不正な数式でも例外を投げず
+// katex-error 表示にフォールバックする。output:'html' は KaTeX 側のレンダオプションで
+// @vscode 版が options をそのまま katex.renderToString へ転送するため有効
+// （MathML 併記を抑え HTML のみ出力）。output は MarkdownKatexOptions 型に無いため
+// KatexOptions と合成してキャストする。
+const KATEX_OPTIONS: MarkdownKatexOptions & Pick<KatexOptions, 'output'> = {
+    throwOnError: false,
+    output: 'html',
+};
 
 import {
     githubLight, atomLight, oneLight, solarizedLight,
@@ -243,7 +254,7 @@ function getOrCreateMd(config: Config, withSourceMap?: boolean): MarkdownIt {
     const md = new MarkdownIt(MD_OPTIONS);
     plantumlPlugin(md, config);
     if (config.enableMath) {
-        md.use(mk, { throwOnError: false, output: 'html' });
+        md.use(katexPlugin, KATEX_OPTIONS);
     }
     // GitHub-style alerts (> [!NOTE] etc.). Emits the same markup GitHub uses
     // (div.markdown-alert + p.markdown-alert-title); styled per theme in themes/base.ts.
