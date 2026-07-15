@@ -6,6 +6,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## 0.7.9 - 2026-07-16
+
+### Changed
+
+- Math (`$...$` inline and `$$...$$` block) now renders with the same KaTeX plugin that VS Code uses for its built-in Markdown preview, keeping math behavior consistent across the editor
+
 ## 0.7.8 - 2026-07-14
 
 ### Fixed
