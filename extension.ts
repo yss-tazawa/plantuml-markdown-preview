@@ -104,6 +104,9 @@ function getConfig(): Config {
         plantumlLocalServerPort: cfg.get<number>('plantumlLocalServerPort', 0),
         plantumlLocalServerAutoStart: cfg.get<boolean>('plantumlLocalServerAutoStart', true),
         plantumlLocalServerHost: cfg.get<string>('plantumlLocalServerHost', '127.0.0.1'),
+        plantumlLocalServerJvmHeapPreset: cfg.get<Config['plantumlLocalServerJvmHeapPreset']>('plantumlLocalServerJvmHeapPreset', 'medium'),
+        plantumlLocalServerJvmInitialHeapMb: cfg.get<number>('plantumlLocalServerJvmInitialHeapMb', 16),
+        plantumlLocalServerJvmMaxHeapMb: cfg.get<number>('plantumlLocalServerJvmMaxHeapMb', 512),
         mermaidTheme: cfg.get<string>('mermaidTheme', 'default'),
         mermaidScale: cfg.get<string>('mermaidScale', '80%'),
         htmlMaxWidth: cfg.get<string>('htmlMaxWidth', '960px'),
@@ -895,7 +898,7 @@ export function activate(context: vscode.ExtensionContext): { extendMarkdownIt: 
 }
 
 /** Keys that affect the local-server process and require a restart when changed. */
-const LOCAL_SERVER_KEYS = ['plantumlJarPath', 'javaPath', 'dotPath', 'plantumlLocalServerPort', 'plantumlLocalServerAutoStart', 'plantumlLocalServerHost', 'plantumlIncludePath'] as const;
+const LOCAL_SERVER_KEYS = ['plantumlJarPath', 'javaPath', 'dotPath', 'plantumlLocalServerPort', 'plantumlLocalServerAutoStart', 'plantumlLocalServerHost', 'plantumlIncludePath', 'plantumlLocalServerJvmHeapPreset', 'plantumlLocalServerJvmInitialHeapMb', 'plantumlLocalServerJvmMaxHeapMb'] as const;
 
 /**
  * Handle local-server lifecycle when configuration changes.
@@ -982,6 +985,9 @@ const builtInPreviewConfig: Config = {
     plantumlLocalServerPort: 0,
     plantumlLocalServerAutoStart: true,
     plantumlLocalServerHost: '127.0.0.1',
+    plantumlLocalServerJvmHeapPreset: 'medium',
+    plantumlLocalServerJvmInitialHeapMb: 16,
+    plantumlLocalServerJvmMaxHeapMb: 512,
     mermaidTheme: 'default',
     mermaidScale: '80%',
     htmlMaxWidth: '960px',

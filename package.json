@@ -1155,20 +1155,56 @@
           "maximum": 65535,
           "description": "%configuration.plantumlLocalServerPort.description%"
         },
-        "plantumlMarkdownPreview.plantumlServerUrl": {
+        "plantumlMarkdownPreview.plantumlLocalServerJvmHeapPreset": {
           "order": 25,
+          "type": "string",
+          "default": "medium",
+          "enum": [
+            "small",
+            "medium",
+            "large",
+            "unlimited",
+            "custom"
+          ],
+          "enumDescriptions": [
+            "%configuration.plantumlLocalServerJvmHeapPreset.small%",
+            "%configuration.plantumlLocalServerJvmHeapPreset.medium%",
+            "%configuration.plantumlLocalServerJvmHeapPreset.large%",
+            "%configuration.plantumlLocalServerJvmHeapPreset.unlimited%",
+            "%configuration.plantumlLocalServerJvmHeapPreset.custom%"
+          ],
+          "description": "%configuration.plantumlLocalServerJvmHeapPreset.description%"
+        },
+        "plantumlMarkdownPreview.plantumlLocalServerJvmInitialHeapMb": {
+          "order": 26,
+          "type": "integer",
+          "default": 16,
+          "minimum": 8,
+          "maximum": 32768,
+          "description": "%configuration.plantumlLocalServerJvmInitialHeapMb.description%"
+        },
+        "plantumlMarkdownPreview.plantumlLocalServerJvmMaxHeapMb": {
+          "order": 27,
+          "type": "integer",
+          "default": 512,
+          "minimum": 64,
+          "maximum": 32768,
+          "description": "%configuration.plantumlLocalServerJvmMaxHeapMb.description%"
+        },
+        "plantumlMarkdownPreview.plantumlServerUrl": {
+          "order": 28,
           "type": "string",
           "default": "https://www.plantuml.com/plantuml",
           "description": "%configuration.plantumlServerUrl.description%"
         },
         "plantumlMarkdownPreview.enableDiagramViewer": {
-          "order": 26,
+          "order": 29,
           "type": "boolean",
           "default": true,
           "description": "%configuration.enableDiagramViewer.description%"
         },
         "plantumlMarkdownPreview.retainPreviewContext": {
-          "order": 27,
+          "order": 30,
           "type": "boolean",
           "default": true,
           "description": "%configuration.retainPreviewContext.description%"

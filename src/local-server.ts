@@ -16,7 +16,7 @@ import type { ChildProcess } from 'child_process';
 import { spawnJava, killProcessTree, isProcessAlive, looksLikeJavaProcess } from './utils.js';
 import { resolveIncludePath } from './plantuml.js';
 import type { Config } from './config.js';
-import { CONFIG_SECTION } from './config.js';
+import { CONFIG_SECTION, resolveJvmHeapArgs } from './config.js';
 
 // ---------------------------------------------------------------------------
 // State
@@ -562,14 +562,19 @@ async function findFreePort(preferredPort: number, excludePorts?: Set<number>): 
 /**
  * Build Java CLI arguments for the picoweb server.
  *
- * @param config - Extension settings (plantumlJarPath, dotPath).
+ * @param config - Extension settings (plantumlJarPath, dotPath, JVM heap settings).
  * @param port - Port number for the picoweb server.
  * @returns Array of CLI arguments.
  */
-function buildArgs(config: Config, port: number): string[] {
-    const args = ['-Djava.awt.headless=true', '-jar', config.plantumlJarPath, '-picoweb:' + port + ':127.0.0.1'];
+export function buildArgs(config: Config, port: number): string[] {
+    // ヒープフラグ（-Xms/-Xmx＋固定フラグ）は JVM オプションなので必ず -jar より前に置く。
+    // unlimited のときは空配列＝現行と完全に同一の引数列になる（設計書 §1.2 / §5.3）。
+    const heapArgs = resolveJvmHeapArgs(config);
+    const args = [...heapArgs, '-Djava.awt.headless=true', '-jar', config.plantumlJarPath, '-picoweb:' + port + ':127.0.0.1'];
     if (config.dotPath && config.dotPath !== 'dot') {
-        args.splice(3, 0, '-graphvizdot', config.dotPath);
+        // -graphvizdot は PlantUML アプリ引数。jar パスの直後（-picoweb の前）に挿入する。
+        const jarIndex = args.indexOf('-jar');
+        args.splice(jarIndex + 2, 0, '-graphvizdot', config.dotPath);
     }
     return args;
 }
