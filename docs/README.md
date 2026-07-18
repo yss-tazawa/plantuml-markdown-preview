@@ -53,7 +53,6 @@ Switch between modes anytime with a single setting — no migration, no restart.
 - **Editor assistance** — keyword completion, color picker, and code snippets for PlantUML, Mermaid, and D2
 - **Internationalization** — English, Chinese (Simplified / Traditional), Spanish, Brazilian Portuguese, Japanese, and Korean UI
 - **Math support** — `$...$` inline and `$$...$$` block math rendered with [KaTeX](https://katex.org/)
-- **GitHub-style alerts** — `> [!NOTE]`, `> [!TIP]`, `> [!IMPORTANT]`, `> [!WARNING]`, `> [!CAUTION]` render as colored callouts
 
 ## Table of Contents
 
@@ -97,32 +96,6 @@ Render mathematical expressions using [KaTeX](https://katex.org/).
 - Works in both preview and HTML/PDF export
 - Disable with `enableMath: false` if `$` symbols cause unwanted math parsing
 
-### GitHub-style Alerts
-
-Render GitHub-style alerts (callouts) from blockquote markers, matching GitHub's own output.
-
-```markdown
-> [!NOTE]
-> Highlights information that users should take into account.
-
-> [!TIP]
-> Optional information to help a user be more successful.
-
-> [!IMPORTANT]
-> Crucial information necessary for users to succeed.
-
-> [!WARNING]
-> Critical content demanding immediate user attention.
-
-> [!CAUTION]
-> Negative potential consequences of an action.
-```
-
-- Five types: `NOTE`, `TIP`, `IMPORTANT`, `WARNING`, `CAUTION` — each with its own icon and accent color
-- Markers are uppercase only, matching GitHub (`[!note]` stays a plain blockquote)
-- Colors adapt to the active preview theme (light / dark)
-- Works in both preview and HTML/PDF export
-
 ### Diagram Scale
 
 Control the display size of PlantUML, Mermaid, and D2 diagrams independently.
@@ -142,27 +115,47 @@ Choose a preset mode that controls how PlantUML diagrams are rendered:
 | **Privacy** | Diagrams stay on your machine | Diagrams stay on your machine | Diagram source sent to PlantUML server |
 | **Speed** | Instant (persistent local server) | Slower (JVM starts each time) | Depends on network |
 
-- **Fast mode** (default) — starts a persistent PlantUML server on `localhost`. Eliminates JVM startup cost on every edit, enabling instant re-renders. Diagrams never leave your machine.
+- **Fast mode** (default) — runs a persistent PlantUML server on `localhost`, started lazily at the first diagram render (configurable — see [Start mode](#fast-mode-server-start-mode)). Eliminates JVM startup cost on every edit, enabling instant re-renders. Diagrams never leave your machine.
 - **Secure mode** — uses Java + PlantUML jar on your machine. Diagrams never leave your machine. No network access. Local images are blocked by default for maximum security.
 - **Easy mode** — sends PlantUML source to a PlantUML server for rendering. No setup required. Uses the public server (`https://www.plantuml.com/plantuml`) by default, or set your own self-hosted server URL for privacy.
 
 If Java is not found when opening a preview, a notification offers to switch to Easy mode.
 
-#### Fast mode: connecting to your own PlantUML server
+#### Fast mode: server start mode
 
-By default, Fast mode spawns and manages its own PlantUML server bound to `127.0.0.1` — no configuration needed. You can also point it at a server you run yourself (for example `java -jar plantuml.jar -picoweb`), including one on another machine in your LAN:
+By default, Fast mode spawns and manages its own PlantUML server bound to `127.0.0.1` — no configuration needed. `plantumlLocalServerStartMode` controls when (and whether) that happens:
+
+| Value | Effect |
+|---|---|
+| `"lazy"` (default) | Start the managed server at the first diagram render. No JVM runs while you don't render any PlantUML diagram; the very first render takes a few seconds longer. |
+| `"on"` | Start the managed server as soon as the extension activates. The first render is instant, at the cost of a resident JVM from startup. |
+| `"off"` | Never start a server. Connect to one you run yourself (for example `java -jar plantuml.jar -picoweb`), including one on another machine in your LAN: |
 
 | Setting | Default | Effect |
 |---|---|---|
-| `plantumlLocalServerAutoStart` | `true` | On: the extension starts and manages the server. Off: it connects to an existing server instead of starting one. |
-| `plantumlLocalServerHost` | `127.0.0.1` | Host to connect to when auto-start is **off** (e.g. a picoweb server elsewhere on your LAN). Ignored when auto-start is on — a managed server always binds to `127.0.0.1`. |
-| `plantumlLocalServerPort` | `0` | Auto-start **on**: port to start on (`0` = auto-assign a free port). Auto-start **off**: port to connect to. |
+| `plantumlLocalServerHost` | `127.0.0.1` | Host to connect to when Start Mode is `"off"` (e.g. a picoweb server elsewhere on your LAN). Ignored for `"on"`/`"lazy"` — a managed server always binds to `127.0.0.1`. |
+| `plantumlLocalServerPort` | `0` | Start Mode `"on"`/`"lazy"`: port to start on (`0` = auto-assign a free port). Start Mode `"off"`: port to connect to. |
 
 Notes:
 
-- With auto-start **on** and a fixed port, if a healthy PlantUML server is already running on that port, the extension reuses it instead of starting a second one — so it no longer conflicts with a leftover process or a server you started yourself.
-- With auto-start **off**, the extension never starts a server (and needs no local Java) — it only connects to the host/port you configure.
+- In a managed mode (`"on"`/`"lazy"`) with a fixed port, if a healthy PlantUML server is already running on that port, the extension reuses it instead of starting a second one — so it doesn't conflict with a leftover process or a server you started yourself.
+- With Start Mode `"off"`, the extension never starts a server (and needs no local Java) — it only connects to the host/port you configure.
 - The extension only stops servers it started itself; a server you run is never terminated by the extension.
+- The former `plantumlLocalServerAutoStart` boolean is deprecated but still honored when Start Mode is not set explicitly (`true` → `"on"`, `false` → `"off"`). An explicitly set Start Mode always wins.
+
+#### Fast mode: JVM memory (heap) settings
+
+The managed server's memory footprint is capped by heap presets (`plantumlLocalServerJvmHeapPreset`):
+
+| Preset | JVM heap flags | Use when |
+|---|---|---|
+| `small` | `-Xms16m -Xmx256m` | Lowest memory use; small diagrams only. |
+| `medium` (default) | `-Xms16m -Xmx512m` | Balanced; handles most diagrams comfortably. |
+| `large` | `-Xms64m -Xmx1024m` | Very large diagrams; matches the PlantUML FAQ recommendation. |
+| `unlimited` | _(none)_ | No flags at all — the JVM decides (max heap defaults to 1/4 of physical RAM). Fallback to the pre-0.7.10 behavior. |
+| `custom` | your values | Reads `plantumlLocalServerJvmInitialHeapMb` (8–32768, default 16) and `plantumlLocalServerJvmMaxHeapMb` (64–32768, default 512). |
+
+Every preset except `unlimited` also pins `-XX:+UseSerialGC`, `-XX:MaxMetaspaceSize=128m`, and `-XX:ReservedCodeCacheSize=64m` to keep the server small. These settings apply only to the server the extension spawns itself (Fast mode, Start Mode `"on"`/`"lazy"`).
 
 ### Status Bar
 
@@ -225,6 +218,8 @@ Use `!include` directives to share common styles, macros, and component definiti
 - **Go to Include File** — right-click on a `!include` line in `.puml` or Markdown files to open the referenced file (menu item appears only when the cursor is on an `!include` line)
 - **Open Include Source** — right-click a PlantUML diagram in the preview to open its included files directly
 - Works in Fast and Secure modes. Not available in Easy mode (the remote server cannot access local files).
+
+> **Note:** `plantumlIncludePath` (and workspace-root resolution) takes effect only when the extension itself launches the PlantUML process — always in Secure mode, but in Fast mode only when the extension spawns its own local server. If Fast mode connects to an already-running server (Start Mode "off", or an existing server reused on a fixed port), includes are resolved against that server's own working directory instead. To make sure the setting takes effect in Fast mode, set the port to 0 (auto).
 
 ### Standalone Diagram Preview
 
@@ -311,6 +306,32 @@ PlantUML, Mermaid, and D2 diagrams also render in VS Code's built-in Markdown pr
 > PlantUML diagrams may briefly freeze the editor. For heavy diagrams, use the
 > extension's own preview panel instead.
 
+### GitHub-style Alerts
+
+Render GitHub-style alerts (callouts) from blockquote markers, matching GitHub's own output.
+
+```markdown
+> [!NOTE]
+> Highlights information that users should take into account.
+
+> [!TIP]
+> Optional information to help a user be more successful.
+
+> [!IMPORTANT]
+> Crucial information necessary for users to succeed.
+
+> [!WARNING]
+> Critical content demanding immediate user attention.
+
+> [!CAUTION]
+> Negative potential consequences of an action.
+```
+
+- Five types: `NOTE`, `TIP`, `IMPORTANT`, `WARNING`, `CAUTION` — each with its own icon and accent color
+- Markers are uppercase only, matching GitHub (`[!note]` stays a plain blockquote)
+- Colors adapt to the active preview theme (light / dark)
+- Works in both preview and HTML/PDF export
+
 ## Quick Start
 
 ### Prerequisites
@@ -369,7 +390,7 @@ What works depends on your setup:
 
 ### Setup
 
-**Fast mode** (default): Starts a persistent local PlantUML server for instant re-renders. Requires Java 11+.
+**Fast mode** (default): Runs a persistent local PlantUML server for instant re-renders, started at the first diagram render. Requires Java 11+.
 
 **To use Secure mode**: Set `mode` to `"secure"`. Uses Java 11+ per render without a background server or network access.
 
@@ -740,7 +761,12 @@ All settings use the `plantumlMarkdownPreview.` prefix.
 | `enableMath` | `true` | Enable KaTeX math rendering. Supports `$...$` (inline) and `$$...$$` (block). Set to `false` if `$` symbols cause unwanted math parsing. |
 | `debounceNoDiagramChangeMs` | _(empty)_ | Debounce delay (ms) for non-diagram text changes (diagrams served from cache). Leave empty to use the mode default (Fast: 100, Secure: 100, Easy: 100). |
 | `debounceDiagramChangeMs` | _(empty)_ | Debounce delay (ms) for diagram content changes. Leave empty to use the mode default (Fast: 100, Secure: 300, Easy: 300). |
-| `plantumlLocalServerPort` | `0` | Port for the local PlantUML server (Fast mode only). `0` = auto-assign a free port. |
+| `plantumlLocalServerStartMode` | `"lazy"` | When to start the local PlantUML server (Fast mode only): `"on"` (at activation), `"lazy"` (at the first diagram render), `"off"` (never — connect to an existing server). See [Start mode](#fast-mode-server-start-mode). |
+| `plantumlLocalServerHost` | `"127.0.0.1"` | Host to connect to when Start Mode is `"off"` (Fast mode only). Ignored for `"on"`/`"lazy"`. |
+| `plantumlLocalServerPort` | `0` | Port for the local PlantUML server (Fast mode only). `0` = auto-assign a free port. With Start Mode `"off"`, the port to connect to. |
+| `plantumlLocalServerJvmHeapPreset` | `"medium"` | JVM heap preset for the managed local server: `"small"`, `"medium"`, `"large"`, `"unlimited"`, or `"custom"`. See [JVM memory settings](#fast-mode-jvm-memory-heap-settings). |
+| `plantumlLocalServerJvmInitialHeapMb` | `16` | Initial heap (`-Xms`, MB) for the `"custom"` preset. Ignored for other presets. Range: 8–32768. |
+| `plantumlLocalServerJvmMaxHeapMb` | `512` | Max heap (`-Xmx`, MB) for the `"custom"` preset. Ignored for other presets. Range: 64–32768. |
 | `plantumlServerUrl` | `"https://www.plantuml.com/plantuml"` | PlantUML server URL for Easy mode. Set to a self-hosted server URL for privacy. |
 | `enableDiagramViewer` | `true` | Enable the "Open in Diagram Viewer" context menu item when right-clicking a diagram. Requires reopening the preview to take effect. |
 | `retainPreviewContext` | `true` | Retain preview content when the tab is hidden. Prevents re-rendering on tab switch but uses more memory. Requires reopening the preview to take effect. |
@@ -853,6 +879,7 @@ title bar icon and select a dark PlantUML theme (e.g. `cyborg`, `mars`) or set t
 the remote server cannot access your local files.
 
 - Paths are resolved relative to the workspace root by default. Set `plantumlIncludePath` to use a different base directory.
+- In Fast mode, the include base directory takes effect only when the extension starts its own local server. If you connect to an already-running server (Start Mode "off", or an existing server reused on a fixed port), includes are resolved against that server's working directory instead — set the port to 0 (auto) to make the extension always spawn its own server.
 - Saving an included file automatically refreshes the preview. You can also click the **Reload** button (↻) to force a manual refresh.
 
 </details>

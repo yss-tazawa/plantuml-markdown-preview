@@ -2,7 +2,7 @@
   "name": "plantuml-markdown-preview",
   "displayName": "%displayName%",
   "description": "%description%",
-  "version": "0.7.9",
+  "version": "0.7.10",
   "license": "MIT",
   "publisher": "yss-tazawa",
   "icon": "images/icon.png",
@@ -1135,40 +1135,93 @@
           "default": null,
           "description": "%configuration.debounceDiagramChangeMs.description%"
         },
-        "plantumlMarkdownPreview.plantumlLocalServerAutoStart": {
+        "plantumlMarkdownPreview.plantumlLocalServerStartMode": {
           "order": 22,
+          "type": "string",
+          "default": "lazy",
+          "enum": [
+            "on",
+            "lazy",
+            "off"
+          ],
+          "enumDescriptions": [
+            "%configuration.plantumlLocalServerStartMode.on%",
+            "%configuration.plantumlLocalServerStartMode.lazy%",
+            "%configuration.plantumlLocalServerStartMode.off%"
+          ],
+          "description": "%configuration.plantumlLocalServerStartMode.description%"
+        },
+        "plantumlMarkdownPreview.plantumlLocalServerAutoStart": {
+          "order": 23,
           "type": "boolean",
           "default": true,
+          "markdownDeprecationMessage": "Deprecated: use the `#plantumlMarkdownPreview.plantumlLocalServerStartMode#` setting instead. This setting is still read for backward compatibility (off = start mode \"off\"), but Start Mode takes precedence whenever it is set explicitly.",
           "description": "%configuration.plantumlLocalServerAutoStart.description%"
         },
         "plantumlMarkdownPreview.plantumlLocalServerHost": {
-          "order": 23,
+          "order": 24,
           "type": "string",
           "default": "127.0.0.1",
           "description": "%configuration.plantumlLocalServerHost.description%"
         },
         "plantumlMarkdownPreview.plantumlLocalServerPort": {
-          "order": 24,
+          "order": 25,
           "type": "number",
           "default": 0,
           "minimum": 0,
           "maximum": 65535,
           "description": "%configuration.plantumlLocalServerPort.description%"
         },
+        "plantumlMarkdownPreview.plantumlLocalServerJvmHeapPreset": {
+          "order": 26,
+          "type": "string",
+          "default": "medium",
+          "enum": [
+            "small",
+            "medium",
+            "large",
+            "unlimited",
+            "custom"
+          ],
+          "enumDescriptions": [
+            "%configuration.plantumlLocalServerJvmHeapPreset.small%",
+            "%configuration.plantumlLocalServerJvmHeapPreset.medium%",
+            "%configuration.plantumlLocalServerJvmHeapPreset.large%",
+            "%configuration.plantumlLocalServerJvmHeapPreset.unlimited%",
+            "%configuration.plantumlLocalServerJvmHeapPreset.custom%"
+          ],
+          "description": "%configuration.plantumlLocalServerJvmHeapPreset.description%"
+        },
+        "plantumlMarkdownPreview.plantumlLocalServerJvmInitialHeapMb": {
+          "order": 27,
+          "type": "integer",
+          "default": 16,
+          "minimum": 8,
+          "maximum": 32768,
+          "description": "%configuration.plantumlLocalServerJvmInitialHeapMb.description%"
+        },
+        "plantumlMarkdownPreview.plantumlLocalServerJvmMaxHeapMb": {
+          "order": 28,
+          "type": "integer",
+          "default": 512,
+          "minimum": 64,
+          "maximum": 32768,
+          "description": "%configuration.plantumlLocalServerJvmMaxHeapMb.description%"
+        },
         "plantumlMarkdownPreview.plantumlServerUrl": {
-          "order": 25,
+          "order": 29,
           "type": "string",
           "default": "https://www.plantuml.com/plantuml",
           "description": "%configuration.plantumlServerUrl.description%"
         },
         "plantumlMarkdownPreview.enableDiagramViewer": {
-          "order": 26,
+          "order": 30,
           "type": "boolean",
           "default": true,
           "description": "%configuration.enableDiagramViewer.description%"
         },
         "plantumlMarkdownPreview.retainPreviewContext": {
-          "order": 27,
+          "order": 31,
           "type": "boolean",
           "default": true,
           "description": "%configuration.retainPreviewContext.description%"

@@ -6,6 +6,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## 0.7.10 - 2026-07-18
+
+### Added
+
+- Start Mode for the local PlantUML server (`plantumlLocalServerStartMode`): `lazy` (default) starts the server at the first diagram render, `on` starts it when VS Code opens, and `off` never starts one — the extension just connects to the host and port you configure
+- JVM heap settings for the local PlantUML server: `plantumlLocalServerJvmHeapPreset` (`small` / `medium` / `large` / `unlimited` / `custom`, default `medium`), with `plantumlLocalServerJvmInitialHeapMb` and `plantumlLocalServerJvmMaxHeapMb` for the `custom` preset
+
+### Changed
+
+- With default settings the local PlantUML server now starts at the first diagram render instead of when VS Code opens, so windows that never render a diagram no longer keep a JVM running
+
 ## 0.7.9 - 2026-07-16
 
 ### Changed

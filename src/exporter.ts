@@ -24,7 +24,7 @@ import { plantumlPlugin, type RenderEnv } from './renderer.js';
 import * as vscode from 'vscode';
 import { renderAllLocal } from './plantuml.js';
 import { renderAllServer, MAX_LOCAL_SERVER_CONCURRENCY } from './plantuml-server.js';
-import { getLocalServerUrl, waitForLocalServer } from './local-server.js';
+import { getLocalServerUrl, waitForLocalServer, ensureLocalServerStarted, localServerUnavailableMessage } from './local-server.js';
 import { escapeHtml, extractPlantUmlBlocks, extractD2Blocks, errorHtml } from './utils.js';
 import { renderAllD2 } from './d2-renderer.js';
 import { findBrowser } from './browser-finder.js';
@@ -32,11 +32,11 @@ import { MERMAID_THEME_SET, type Config } from './config.js';
 import katexPlugin, { type MarkdownKatexOptions } from '@vscode/markdown-it-katex';
 import type { KatexOptions } from 'katex';
 
-// KaTeX プラグインのオプション。throwOnError:false で不正な数式でも例外を投げず
-// katex-error 表示にフォールバックする。output:'html' は KaTeX 側のレンダオプションで
-// @vscode 版が options をそのまま katex.renderToString へ転送するため有効
-// （MathML 併記を抑え HTML のみ出力）。output は MarkdownKatexOptions 型に無いため
-// KatexOptions と合成してキャストする。
+// KaTeX plugin options. throwOnError:false renders invalid math as a katex-error
+// display instead of throwing. output:'html' is a KaTeX render option that works
+// because the @vscode plugin forwards options straight to katex.renderToString
+// (suppresses the MathML output, emitting HTML only). Since output is not part of
+// the MarkdownKatexOptions type, it is combined with KatexOptions and cast.
 const KATEX_OPTIONS: MarkdownKatexOptions & Pick<KatexOptions, 'output'> = {
     throwOnError: false,
     output: 'html',
@@ -357,13 +357,15 @@ export async function renderBodyAsync(
 
     if (blocks.length > 0) {
         if (config.renderMode === 'local-server') {
+            // In lazy mode this render request is the first-start trigger (idempotent).
+            ensureLocalServerStarted(config);
             await waitForLocalServer();
             const localUrl = getLocalServerUrl();
             if (localUrl) {
                 const serverConfig = { ...config, plantumlServerUrl: localUrl };
                 preRenderedSvgs = await renderAllServer(blocks, serverConfig, signal, MAX_LOCAL_SERVER_CONCURRENCY);
             } else {
-                const msg = errorHtml(vscode.l10n.t('Local PlantUML server is not running. Check the output panel for details.'));
+                const msg = errorHtml(localServerUnavailableMessage(config));
                 preRenderedSvgs = new Map(blocks.map(b => [b.trim(), msg]));
             }
         } else if (config.renderMode === 'server' && config.plantumlServerUrl) {

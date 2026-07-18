@@ -53,7 +53,6 @@ Cambia entre modos en cualquier momento con un solo ajuste: sin migración, sin 
 - **Asistencia al editor**: autocompletado de palabras clave, selector de color y fragmentos de código para PlantUML, Mermaid y D2.
 - **Internacionalización**: interfaz en inglés, chino (simplificado / tradicional), español, portugués brasileño, japonés y coreano.
 - **Soporte para matemáticas**: matemáticas en línea `$...$` y en bloque `$$...$$` renderizadas con [KaTeX](https://katex.org/).
-- **Alertas al estilo GitHub**: `> [!NOTE]`, `> [!TIP]`, `> [!IMPORTANT]`, `> [!WARNING]`, `> [!CAUTION]` se renderizan como llamadas de atención con colores.
 
 ## Tabla de contenidos
 
@@ -97,32 +96,6 @@ Renderiza expresiones matemáticas usando [KaTeX](https://katex.org/).
 - Funciona tanto en la vista previa como en la exportación a HTML/PDF.
 - Desactívalo con `enableMath: false` si los símbolos `$` causan un procesamiento matemático no deseado.
 
-### Alertas al estilo GitHub
-
-Renderiza alertas al estilo GitHub (llamadas de atención) a partir de marcadores de cita en bloque, igualando la salida propia de GitHub.
-
-```markdown
-> [!NOTE]
-> Highlights information that users should take into account.
-
-> [!TIP]
-> Optional information to help a user be more successful.
-
-> [!IMPORTANT]
-> Crucial information necessary for users to succeed.
-
-> [!WARNING]
-> Critical content demanding immediate user attention.
-
-> [!CAUTION]
-> Negative potential consequences of an action.
-```
-
-- Cinco tipos: `NOTE`, `TIP`, `IMPORTANT`, `WARNING`, `CAUTION`, cada uno con su propio icono y color de acento.
-- Los marcadores solo funcionan en mayúsculas, igual que en GitHub (`[!note]` se queda como una cita en bloque normal).
-- Los colores se adaptan al tema de vista previa activo (claro / oscuro).
-- Funciona tanto en la vista previa como en la exportación a HTML/PDF.
-
 ### Escala de diagramas
 
 Controla el tamaño de visualización de los diagramas PlantUML, Mermaid y D2 de forma independiente.
@@ -142,27 +115,47 @@ Elige un modo preestablecido que controla cómo se renderizan los diagramas Plan
 | **Privacidad** | Los diagramas permanecen en tu máquina | Los diagramas permanecen en tu máquina | El código se envía al servidor PlantUML |
 | **Velocidad** | Instantáneo (servidor local persistente) | Más lento (JVM se inicia cada vez) | Depende de la red |
 
-- **Modo Fast** (por defecto) — inicia un servidor PlantUML persistente en `localhost`. Elimina el coste de inicio de la JVM en cada edición, permitiendo redibujados instantáneos. Los diagramas nunca salen de tu máquina.
+- **Modo Fast** (por defecto) — ejecuta un servidor PlantUML persistente en `localhost`, iniciado de forma diferida en el primer renderizado de un diagrama (configurable — ver [Modo de inicio](#modo-fast-modo-de-inicio-del-servidor)). Elimina el coste de inicio de la JVM en cada edición, permitiendo redibujados instantáneos. Los diagramas nunca salen de tu máquina.
 - **Modo Secure** — usa Java + el archivo jar de PlantUML en tu máquina. Los diagramas nunca salen de tu máquina. Sin acceso a la red. Las imágenes locales se bloquean por defecto para una seguridad máxima.
 - **Modo Easy** — envía el código fuente de PlantUML a un servidor PlantUML para su renderizado. No requiere configuración. Usa el servidor público (`https://www.plantuml.com/plantuml`) por defecto, o establece tu propia URL de servidor autohospedado para mayor privacidad.
 
 Si no se encuentra Java al abrir una vista previa, una notificación te ofrecerá cambiar al modo Easy.
 
-#### Modo Fast: conectar con tu propio servidor PlantUML
+#### Modo Fast: modo de inicio del servidor
 
-Por defecto, el modo Fast inicia y gestiona su propio servidor PlantUML vinculado a `127.0.0.1` — no requiere configuración. También puedes apuntarlo a un servidor que gestiones tú mismo (por ejemplo `java -jar plantuml.jar -picoweb`), incluido uno en otra máquina de tu red local:
+Por defecto, el modo Fast inicia y gestiona su propio servidor PlantUML vinculado a `127.0.0.1` — no requiere configuración. `plantumlLocalServerStartMode` controla cuándo (y si) ocurre esto:
+
+| Valor | Efecto |
+|---|---|
+| `"lazy"` (por defecto) | Inicia el servidor gestionado en el primer renderizado de un diagrama. No se ejecuta ninguna JVM mientras no renderices ningún diagrama PlantUML; el primer renderizado tarda unos segundos más. |
+| `"on"` | Inicia el servidor gestionado en cuanto se activa la extensión. El primer renderizado es instantáneo, a costa de mantener una JVM residente desde el arranque. |
+| `"off"` | Nunca inicia un servidor. Conéctate a uno que gestiones tú mismo (por ejemplo `java -jar plantuml.jar -picoweb`), incluido uno en otra máquina de tu red local: |
 
 | Ajuste | Por defecto | Efecto |
 |---|---|---|
-| `plantumlLocalServerAutoStart` | `true` | Activado: la extensión inicia y gestiona el servidor. Desactivado: se conecta a un servidor existente en lugar de iniciar uno. |
-| `plantumlLocalServerHost` | `127.0.0.1` | Host al que conectarse cuando el inicio automático está **desactivado** (por ejemplo, un servidor picoweb en otro punto de tu red local). Se ignora cuando el inicio automático está activado — un servidor gestionado siempre se vincula a `127.0.0.1`. |
-| `plantumlLocalServerPort` | `0` | Inicio automático **activado**: puerto en el que iniciar (`0` = asigna automáticamente un puerto libre). Inicio automático **desactivado**: puerto al que conectarse. |
+| `plantumlLocalServerHost` | `127.0.0.1` | Host al que conectarse cuando el Start Mode es `"off"` (por ejemplo, un servidor picoweb en otro punto de tu red local). Se ignora para `"on"`/`"lazy"` — un servidor gestionado siempre se vincula a `127.0.0.1`. |
+| `plantumlLocalServerPort` | `0` | Start Mode `"on"`/`"lazy"`: puerto en el que iniciar (`0` = asigna automáticamente un puerto libre). Start Mode `"off"`: puerto al que conectarse. |
 
 Notas:
 
-- Con el inicio automático **activado** y un puerto fijo, si ya hay un servidor PlantUML saludable ejecutándose en ese puerto, la extensión lo reutiliza en lugar de iniciar uno nuevo — así deja de entrar en conflicto con un proceso residual o con un servidor que hayas iniciado tú mismo.
-- Con el inicio automático **desactivado**, la extensión nunca inicia un servidor (y no necesita Java local) — solo se conecta al host/puerto que configures.
+- En un modo gestionado (`"on"`/`"lazy"`) con un puerto fijo, si ya hay un servidor PlantUML saludable ejecutándose en ese puerto, la extensión lo reutiliza en lugar de iniciar uno nuevo — así deja de entrar en conflicto con un proceso residual o con un servidor que hayas iniciado tú mismo.
+- Con Start Mode `"off"`, la extensión nunca inicia un servidor (y no necesita Java local) — solo se conecta al host/puerto que configures.
 - La extensión solo detiene los servidores que ella misma inició; un servidor que ejecutes tú nunca es terminado por la extensión.
+- El antiguo booleano `plantumlLocalServerAutoStart` está obsoleto pero se sigue respetando cuando el Start Mode no se establece explícitamente (`true` → `"on"`, `false` → `"off"`). Un Start Mode establecido explícitamente siempre prevalece.
+
+#### Modo Fast: ajustes de memoria (heap) de la JVM
+
+El consumo de memoria del servidor gestionado está limitado por presets de heap (`plantumlLocalServerJvmHeapPreset`):
+
+| Preset | Flags de heap de la JVM | Úsalo cuando |
+|---|---|---|
+| `small` | `-Xms16m -Xmx256m` | Menor consumo de memoria; solo diagramas pequeños. |
+| `medium` (por defecto) | `-Xms16m -Xmx512m` | Equilibrado; maneja la mayoría de los diagramas sin problemas. |
+| `large` | `-Xms64m -Xmx1024m` | Diagramas muy grandes; coincide con la recomendación de las FAQ de PlantUML. |
+| `unlimited` | _(ninguno)_ | Sin flags — la JVM decide (el heap máximo por defecto es 1/4 de la RAM física). Recupera el comportamiento anterior a la 0.7.10. |
+| `custom` | tus valores | Usa `plantumlLocalServerJvmInitialHeapMb` (8–32768, por defecto 16) y `plantumlLocalServerJvmMaxHeapMb` (64–32768, por defecto 512). |
+
+Todos los presets excepto `unlimited` también fijan `-XX:+UseSerialGC`, `-XX:MaxMetaspaceSize=128m` y `-XX:ReservedCodeCacheSize=64m` para mantener el servidor ligero. Estos ajustes solo se aplican al servidor que la extensión inicia por sí misma (modo Fast, Start Mode `"on"`/`"lazy"`).
 
 ### Barra de estado
 
@@ -225,6 +218,8 @@ Usa las directivas `!include` para compartir estilos comunes, macros y definicio
 - **Go to Include File** — haz clic derecho en una línea `!include` en archivos `.puml` o Markdown para abrir el archivo referenciado (la opción del menú solo aparece cuando el cursor está sobre una línea `!include`).
 - **Open Include Source** — haz clic derecho en un diagrama PlantUML en la vista previa para abrir sus archivos incluidos directamente.
 - Funciona en los modos Fast y Secure. No disponible en el modo Easy (el servidor remoto no puede acceder a archivos locales).
+
+> **Nota:** `plantumlIncludePath` (y la resolución basada en la raíz del espacio de trabajo) solo tiene efecto cuando es la propia extensión la que inicia el proceso de PlantUML — siempre en el modo Secure, pero en el modo Fast solo cuando la extensión inicia su propio servidor local. Si el modo Fast se conecta a un servidor que ya está en ejecución (Start Mode `"off"`, o un servidor existente reutilizado en un puerto fijo), los includes se resuelven en cambio respecto al propio directorio de trabajo de ese servidor. Para asegurarte de que el ajuste tenga efecto en el modo Fast, configura el puerto en `0` (auto).
 
 ### Vista previa de diagramas independiente
 
@@ -303,6 +298,32 @@ Los diagramas PlantUML, Mermaid y D2 también se renderizan en la vista previa d
 >
 > **Nota:** La vista previa integrada renderiza los diagramas de forma síncrona. Los diagramas PlantUML grandes o complejos pueden congelar brevemente el editor. Para diagramas pesados, usa el panel de vista previa de la extensión en su lugar.
 
+### Alertas al estilo GitHub
+
+Renderiza alertas al estilo GitHub (llamadas de atención) a partir de marcadores de cita en bloque, igualando la salida propia de GitHub.
+
+```markdown
+> [!NOTE]
+> Highlights information that users should take into account.
+
+> [!TIP]
+> Optional information to help a user be more successful.
+
+> [!IMPORTANT]
+> Crucial information necessary for users to succeed.
+
+> [!WARNING]
+> Critical content demanding immediate user attention.
+
+> [!CAUTION]
+> Negative potential consequences of an action.
+```
+
+- Cinco tipos: `NOTE`, `TIP`, `IMPORTANT`, `WARNING`, `CAUTION`, cada uno con su propio icono y color de acento.
+- Los marcadores solo funcionan en mayúsculas, igual que en GitHub (`[!note]` se queda como una cita en bloque normal).
+- Los colores se adaptan al tema de vista previa activo (claro / oscuro).
+- Funciona tanto en la vista previa como en la exportación a HTML/PDF.
+
 ## Inicio rápido
 
 ### Requisitos previos
@@ -360,7 +381,7 @@ Lo que funciona depende de tu configuración:
 
 ### Configuración inicial
 
-**Modo Fast** (por defecto): Inicia un servidor PlantUML local persistente para redibujados instantáneos. Requiere Java 11+.
+**Modo Fast** (por defecto): Ejecuta un servidor PlantUML local persistente para redibujados instantáneos, iniciado en el primer renderizado de un diagrama. Requiere Java 11+.
 
 **Para usar el modo Secure**: Establece `mode` en `"secure"`. Usa Java 11+ por renderizado sin un servidor en segundo plano ni acceso a la red.
 
@@ -725,7 +746,12 @@ Todos los ajustes usan el prefijo `plantumlMarkdownPreview.`.
 | `enableMath` | `true` | Habilita el renderizado matemático de KaTeX. Soporta `$...$` (en línea) y `$$...$$` (en bloque). Establécelo en `false` si los símbolos `$` causan un procesamiento matemático no deseado. |
 | `debounceNoDiagramChangeMs` | _(vacío)_ | Retraso de antirrebote (ms) para cambios de texto que no son diagramas (los diagramas se sirven desde la caché). Déjalo vacío para usar el valor por defecto del modo (Fast: 100, Secure: 100, Easy: 100). |
 | `debounceDiagramChangeMs` | _(vacío)_ | Retraso de antirrebote (ms) para cambios en el contenido del diagrama. Déjalo vacío para usar el valor por defecto del modo (Fast: 100, Secure: 300, Easy: 300). |
-| `plantumlLocalServerPort` | `0` | Puerto para el servidor PlantUML local (solo modo Fast). `0` = auto-asignar un puerto libre. |
+| `plantumlLocalServerStartMode` | `"lazy"` | Cuándo se inicia el servidor PlantUML local (solo modo Fast): `"on"` (al activarse la extensión), `"lazy"` (en el primer renderizado de un diagrama), `"off"` (nunca — se conecta a un servidor existente). Ver [Modo de inicio](#modo-fast-modo-de-inicio-del-servidor). |
+| `plantumlLocalServerHost` | `"127.0.0.1"` | Host al que conectarse cuando el Start Mode es `"off"` (solo modo Fast). Se ignora para `"on"`/`"lazy"`. |
+| `plantumlLocalServerPort` | `0` | Puerto para el servidor PlantUML local (solo modo Fast). `0` = auto-asignar un puerto libre. Con Start Mode `"off"`, el puerto al que conectarse. |
+| `plantumlLocalServerJvmHeapPreset` | `"medium"` | Preset de heap de la JVM para el servidor local gestionado: `"small"`, `"medium"`, `"large"`, `"unlimited"` o `"custom"`. Ver [Ajustes de memoria de la JVM](#modo-fast-ajustes-de-memoria-heap-de-la-jvm). |
+| `plantumlLocalServerJvmInitialHeapMb` | `16` | Heap inicial (`-Xms`, MB) para el preset `"custom"`. Se ignora para otros presets. Rango: 8–32768. |
+| `plantumlLocalServerJvmMaxHeapMb` | `512` | Heap máximo (`-Xmx`, MB) para el preset `"custom"`. Se ignora para otros presets. Rango: 64–32768. |
 | `plantumlServerUrl` | `"https://www.plantuml.com/plantuml"` | URL del servidor PlantUML para el modo Easy. Establécela en una URL de servidor autohospedado por privacidad. |
 | `enableDiagramViewer` | `true` | Habilita la opción del menú contextual "Open in Diagram Viewer" al hacer clic derecho en un diagrama. Requiere volver a abrir la vista previa para que surta efecto. |
 | `retainPreviewContext` | `true` | Mantiene el contenido de la vista previa cuando la pestaña está oculta. Evita el redibujado al cambiar de pestaña pero usa más memoria. Requiere volver a abrir la vista previa para que surta efecto. |
@@ -828,6 +854,7 @@ Establece un tema de diagrama que coincida con tu tema de vista previa. Abre el 
 `!include` requiere el modo Fast o Secure: no funciona en el modo Easy porque el servidor remoto no puede acceder a tus archivos locales.
 
 - Las rutas se resuelven de forma relativa a la raíz del espacio de trabajo por defecto. Configura `plantumlIncludePath` para usar un directorio base diferente.
+- En el modo Fast, el directorio base de los includes solo tiene efecto cuando la extensión inicia su propio servidor local. Si te conectas a un servidor que ya está en ejecución (Start Mode `"off"`, o un servidor existente reutilizado en un puerto fijo), los includes se resuelven en cambio respecto al directorio de trabajo de ese servidor — configura el puerto en `0` (auto) para que la extensión inicie siempre su propio servidor.
 - Guardar un archivo incluido refresca automáticamente la vista previa. También puedes hacer clic en el botón de recarga (↻) para forzar un refresco manual.
 
 </details>
