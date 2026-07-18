@@ -29,7 +29,7 @@ import { openPumlPreview, updatePumlConfig, getCurrentPumlFilePath, disposePumlP
 import { openMermaidPreview, updateMermaidConfig, getCurrentMermaidFilePath, disposeMermaidPreview, getMermaidPreviewPanel, changeMermaidTheme } from './src/mermaid-preview.js';
 import { openD2Preview, updateD2Config, getCurrentD2FilePath, disposeD2Preview, getD2PreviewPanel, changeD2Theme } from './src/d2-preview.js';
 import { initD2, disposeD2 } from './src/d2-renderer.js';
-import { CONFIG_SECTION, MODE_PRESETS, type Config, type Mode } from './src/config.js';
+import { CONFIG_SECTION, MODE_PRESETS, OUTPUT_CHANNEL_NAME, isLazyDeferralActive, resolveStartMode, type Config, type Mode } from './src/config.js';
 import { registerCompletionProviders } from './src/completion/register.js';
 import { registerColorProviders } from './src/color/register.js';
 import type MarkdownIt from 'markdown-it';
@@ -87,6 +87,13 @@ function getConfig(): Config {
     const userJarPath = cfg.get<string>('plantumlJarPath', '');
     const mode = (cfg.get<string>('mode', 'fast') as Mode);
     const preset = MODE_PRESETS[mode] ?? MODE_PRESETS.fast;
+    // Resolve the start mode from the new StartMode setting, honoring the legacy autoStart boolean.
+    // inspect() distinguishes a user-set value (global/workspace/folder) from a package.json default,
+    // so an unset StartMode does not mask a user's explicit legacy autoStart=false.
+    const startModeInspect = cfg.inspect<string>('plantumlLocalServerStartMode');
+    const autoStartInspect = cfg.inspect<boolean>('plantumlLocalServerAutoStart');
+    const explicitStartMode = startModeInspect?.workspaceFolderValue ?? startModeInspect?.workspaceValue ?? startModeInspect?.globalValue;
+    const explicitAutoStart = autoStartInspect?.workspaceFolderValue ?? autoStartInspect?.workspaceValue ?? autoStartInspect?.globalValue;
     return {
         mode,
         plantumlJarPath: (userJarPath && existsSync(userJarPath) ? userJarPath : '') || resolveBundledJarPath(),
@@ -102,7 +109,7 @@ function getConfig(): Config {
         renderMode: preset.renderMode,
         plantumlServerUrl: cfg.get<string>('plantumlServerUrl', 'https://www.plantuml.com/plantuml'),
         plantumlLocalServerPort: cfg.get<number>('plantumlLocalServerPort', 0),
-        plantumlLocalServerAutoStart: cfg.get<boolean>('plantumlLocalServerAutoStart', true),
+        plantumlLocalServerStartMode: resolveStartMode(explicitStartMode, explicitAutoStart),
         plantumlLocalServerHost: cfg.get<string>('plantumlLocalServerHost', '127.0.0.1'),
         plantumlLocalServerJvmHeapPreset: cfg.get<Config['plantumlLocalServerJvmHeapPreset']>('plantumlLocalServerJvmHeapPreset', 'medium'),
         plantumlLocalServerJvmInitialHeapMb: cfg.get<number>('plantumlLocalServerJvmInitialHeapMb', 16),
@@ -432,7 +439,7 @@ export function activate(context: vscode.ExtensionContext): { extendMarkdownIt: 
 
     // Create and register the shared output channel so its lifecycle is managed
     // by context.subscriptions regardless of preview panel state.
-    const channel = vscode.window.createOutputChannel('PlantUML Markdown Preview');
+    const channel = vscode.window.createOutputChannel(OUTPUT_CHANNEL_NAME);
     context.subscriptions.push(channel);
     previewManager = new PreviewManager(channel);
     context.subscriptions.push(previewManager);
@@ -877,7 +884,10 @@ export function activate(context: vscode.ExtensionContext): { extendMarkdownIt: 
     // opened during startup will wait instead of failing immediately.
     // startLocalServer() itself decides between external-connect, adopting an
     // existing server, and spawning (Java is checked only before a spawn).
-    if (initialConfig.renderMode === 'local-server') {
+    // Start mode 'lazy': do not spawn here — defer the resident JVM until the first
+    // render request (ensureLocalServerStarted). 'on' (default) spawns eagerly and 'off'
+    // connects to an external server; both start eagerly here as before.
+    if (initialConfig.renderMode === 'local-server' && !isLazyDeferralActive(initialConfig)) {
         prepareLocalServer();
         startLocalServer(initialConfig).catch(err =>
             channel.appendLine(`[local-server start error] ${err}`)
@@ -898,7 +908,38 @@ export function activate(context: vscode.ExtensionContext): { extendMarkdownIt: 
 }
 
 /** Keys that affect the local-server process and require a restart when changed. */
-const LOCAL_SERVER_KEYS = ['plantumlJarPath', 'javaPath', 'dotPath', 'plantumlLocalServerPort', 'plantumlLocalServerAutoStart', 'plantumlLocalServerHost', 'plantumlIncludePath', 'plantumlLocalServerJvmHeapPreset', 'plantumlLocalServerJvmInitialHeapMb', 'plantumlLocalServerJvmMaxHeapMb'] as const;
+const LOCAL_SERVER_KEYS = ['plantumlJarPath', 'javaPath', 'dotPath', 'plantumlLocalServerPort', 'plantumlLocalServerStartMode', 'plantumlLocalServerHost', 'plantumlIncludePath', 'plantumlLocalServerJvmHeapPreset', 'plantumlLocalServerJvmInitialHeapMb', 'plantumlLocalServerJvmMaxHeapMb'] as const;
+
+/**
+ * Start the local server while honoring the start mode.
+ * When the mode is 'lazy', do not spawn — defer to the first render request (ensureLocalServerStarted).
+ * 'on' spawns eagerly; 'off' connects to an external server (both go through startLocalServer).
+ *
+ * @param config - Extension settings to apply.
+ */
+function startOrDeferLocalServer(config: Config): void {
+    if (isLazyDeferralActive(config)) return; // start mode 'lazy': defer to the first render request
+    prepareLocalServer();
+    startLocalServer(config).catch(() => {});
+}
+
+/**
+ * Stop the running server, then restart or defer depending on the start mode.
+ * When switching to 'lazy', or changing settings while in 'lazy', stop the running
+ * server to free memory and let the next render request start it lazily. For 'on'/'off',
+ * restart immediately as before.
+ *
+ * @param config - Extension settings to apply.
+ */
+function restartOrDeferLocalServer(config: Config): void {
+    if (isLazyDeferralActive(config)) {
+        // Start mode 'lazy': stop the running server to free memory; next render starts it lazily.
+        stopLocalServer();
+    } else {
+        // 'on' or 'off' (external connect): restart immediately as before.
+        restartLocalServer(config).catch(() => {});
+    }
+}
 
 /**
  * Handle local-server lifecycle when configuration changes.
@@ -917,8 +958,8 @@ function handleLocalServerConfigChange(oldConfig: Config | null, newConfig: Conf
     if (!wasLocalServer && isLocalServer) {
         // Switched TO local-server mode — startLocalServer handles the
         // external-connect / adopt / spawn (with Java check) dispatch itself.
-        prepareLocalServer();
-        startLocalServer(newConfig).catch(() => {});
+        // When lazy is on, do not spawn — defer to the first render request.
+        startOrDeferLocalServer(newConfig);
     } else if (wasLocalServer && !isLocalServer) {
         // Switched AWAY from local-server mode
         stopLocalServer();
@@ -926,7 +967,8 @@ function handleLocalServerConfigChange(oldConfig: Config | null, newConfig: Conf
         // Stayed in local-server mode — check if relevant settings changed
         const needsRestart = LOCAL_SERVER_KEYS.some(key => oldConfig[key] !== newConfig[key]);
         if (needsRestart) {
-            restartLocalServer(newConfig).catch(() => {});
+            // Lazy on: stop only (next render starts it lazily); off: restart immediately.
+            restartOrDeferLocalServer(newConfig);
         }
     }
 }
@@ -983,7 +1025,7 @@ const builtInPreviewConfig: Config = {
     renderMode: 'local-server',
     plantumlServerUrl: 'https://www.plantuml.com/plantuml',
     plantumlLocalServerPort: 0,
-    plantumlLocalServerAutoStart: true,
+    plantumlLocalServerStartMode: 'lazy',
     plantumlLocalServerHost: '127.0.0.1',
     plantumlLocalServerJvmHeapPreset: 'medium',
     plantumlLocalServerJvmInitialHeapMb: 16,

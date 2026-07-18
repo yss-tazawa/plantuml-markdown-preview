@@ -16,7 +16,7 @@ import fs from 'fs';
 import { renderHtmlAsync, renderBodyAsync, getThemeCss, LIGHT_THEME_KEYS, DARK_THEME_KEYS } from './exporter.js';
 import { listThemesAsync, prefetchThemes, clearCache, resolveIncludePath, collectIncludePaths, renderToSvgAsync, renderAllLocal } from './plantuml.js';
 import { clearServerCache, renderToSvgServer } from './plantuml-server.js';
-import { getLocalServerUrl, waitForLocalServer } from './local-server.js';
+import { getLocalServerUrl, waitForLocalServer, ensureLocalServerStarted } from './local-server.js';
 import { scalePlantUmlSvg, scaleD2Svg } from './renderer.js';
 import { renderD2ToSvg } from './d2-renderer.js';
 import { getScrollSyncScriptTag } from './scroll-sync.js';
@@ -535,6 +535,8 @@ export class PreviewManager implements vscode.Disposable {
             if (newPuml.some((b, i) => b.trim() !== this.lastPlantUmlBlocks[i]?.trim())) {
                 let serverConfig: Config | undefined;
                 if (this.lastConfig.renderMode === 'local-server') {
+                    // In lazy mode this render request is the first-start trigger (idempotent).
+                    ensureLocalServerStarted(this.lastConfig);
                     await waitForLocalServer();
                     const localUrl = getLocalServerUrl();
                     if (signal.aborted) return true;

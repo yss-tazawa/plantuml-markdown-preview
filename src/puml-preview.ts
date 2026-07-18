@@ -10,7 +10,7 @@ import * as vscode from 'vscode';
 import { generateViewerHtml } from './diagram-viewer.js';
 import { renderToSvgAsync, listThemesAsync, prefetchThemes, extractIncludePaths, resolveIncludePath, clearCache } from './plantuml.js';
 import { renderToSvgServer, clearServerCache } from './plantuml-server.js';
-import { getLocalServerUrl, waitForLocalServer } from './local-server.js';
+import { getLocalServerUrl, waitForLocalServer, ensureLocalServerStarted, localServerUnavailableMessage } from './local-server.js';
 import { type Config } from './config.js';
 import { errorHtml, buildThemeItems } from './utils.js';
 import { createStandalonePreview, type StandalonePreview } from './standalone-preview.js';
@@ -48,13 +48,15 @@ function getEffectiveConfig(): Config | null {
  */
 async function renderSvg(content: string, config: Config, signal?: AbortSignal): Promise<string> {
     if (config.renderMode === 'local-server') {
+        // In lazy mode this render request is the first-start trigger (idempotent).
+        ensureLocalServerStarted(config);
         await waitForLocalServer();
         const localUrl = getLocalServerUrl();
         if (localUrl) {
             const serverConfig = { ...config, plantumlServerUrl: localUrl };
             return renderToSvgServer(content, serverConfig, signal);
         }
-        return errorHtml(vscode.l10n.t('Local PlantUML server is not running. Check the output panel for details.'));
+        return errorHtml(localServerUnavailableMessage(config));
     }
     if (config.renderMode === 'server') {
         return renderToSvgServer(content, config, signal);

@@ -16,7 +16,7 @@ import type { ChildProcess } from 'child_process';
 import { spawnJava, killProcessTree, isProcessAlive, looksLikeJavaProcess } from './utils.js';
 import { resolveIncludePath } from './plantuml.js';
 import type { Config } from './config.js';
-import { CONFIG_SECTION, resolveJvmHeapArgs } from './config.js';
+import { CONFIG_SECTION, OUTPUT_CHANNEL_NAME, resolveJvmHeapArgs, isLazyDeferralActive, isManagedServerMode, serverUnavailableReason } from './config.js';
 
 // ---------------------------------------------------------------------------
 // State
@@ -212,9 +212,10 @@ export function prepareLocalServer(): void {
  * Start the local PlantUML server.
  * No-op if already running or starting.
  *
- * Dispatches on the `plantumlLocalServerAutoStart` setting:
- * - false: connect to an existing server at host:port (never spawn).
- * - true : if a fixed port already serves a healthy picoweb, adopt it; otherwise spawn.
+ * Dispatches on the resolved start mode (config.plantumlLocalServerStartMode):
+ * - 'off'      : connect to an existing server at host:port (never spawn).
+ * - 'on'/'lazy': if a fixed port already serves a healthy picoweb, adopt it; otherwise spawn.
+ *   (The lazy/eager distinction only decides WHEN this is called, not what it does here.)
  *
  * @param config - Current extension settings.
  */
@@ -238,11 +239,11 @@ export async function startLocalServer(config: Config): Promise<void> {
 
     const port = config.plantumlLocalServerPort;
 
-    // --- External-connect mode: never spawn, just connect to host:port ---
-    if (!config.plantumlLocalServerAutoStart) {
+    // --- External-connect mode ('off'): never spawn, just connect to host:port ---
+    if (!isManagedServerMode(config)) {
         const host = config.plantumlLocalServerHost || '127.0.0.1';
         if (port <= 0) {
-            failStart(vscode.l10n.t('Set a port for the external PlantUML server (Fast mode, auto-start off).'));
+            failStart(vscode.l10n.t('Set a port for the external PlantUML server (Fast mode, Start Mode "off").'));
             return;
         }
         const url = `http://${host}:${port}`;
@@ -250,12 +251,12 @@ export async function startLocalServer(config: Config): Promise<void> {
             if (stoppingIntentionally) return;
             adoptServer(url, vscode.l10n.t('Connected to PlantUML server at {0}', url));
         } else if (!stoppingIntentionally) {
-            failStart(vscode.l10n.t('No PlantUML server found at {0}. Start it, or turn auto-start on.', url));
+            failStart(vscode.l10n.t('No PlantUML server found at {0}. Start it, or set Start Mode to "on".', url));
         }
         return;
     }
 
-    // --- Auto-start mode: adopt an existing healthy picoweb on a fixed port, else spawn ---
+    // --- Managed mode ('on'/'lazy'): adopt an existing healthy picoweb on a fixed port, else spawn ---
     // Adopt is attempted before the jar/Java requirements: connecting to an
     // already-running server needs neither.
     if (port > 0) {
@@ -470,6 +471,23 @@ export function getLocalServerUrl(): string | null {
 }
 
 /**
+ * Build a cause-specific message for when the local server URL is unavailable at render time.
+ * - Start mode 'off' (external connect): no server was reachable — point at the configured host/port.
+ * - Start mode 'on'/'lazy' (managed): our spawned server failed to start — point at the Output channel.
+ *
+ * @param config - Current extension settings (start mode, host, port).
+ * @returns A localized, user-facing message string.
+ */
+export function localServerUnavailableMessage(config: Config): string {
+    if (serverUnavailableReason(config) === 'external-not-found') {
+        const host = config.plantumlLocalServerHost || '127.0.0.1';
+        const port = config.plantumlLocalServerPort;
+        return vscode.l10n.t('No PlantUML server found at {0}:{1}. Start a server there, or change "Start Mode" to "on" or "lazy".', host, String(port));
+    }
+    return vscode.l10n.t('The local PlantUML server failed to start. See the "{0}" channel in the Output panel for details.', OUTPUT_CHANNEL_NAME);
+}
+
+/**
  * Wait for the server to become ready.
  * Resolves immediately if already running. Returns without error if stopped/error
  * and no pending readyPromise (caller should check getLocalServerUrl).
@@ -516,6 +534,32 @@ export async function restartLocalServer(config: Config): Promise<void> {
     await stopExitPromise;
     prepareLocalServer();
     await startLocalServer(config);
+}
+
+/**
+ * Lazy-start trigger: spawn the local server on the first render request (idempotent).
+ *
+ * Does nothing unless the start mode is 'lazy' (in 'on' the start already ran in
+ * activate(); 'off' is external-connect). It also does nothing when the server is
+ * already starting/running/error, or a start was prepared (readyPromise present),
+ * so concurrent render requests from multiple previews still spawn only once.
+ *
+ * Call this from the render paths, right before waitForLocalServer()
+ * (preview.ts / puml-preview.ts / exporter.ts). The start is fire-and-forget;
+ * the following waitForLocalServer() awaits readiness via the readyPromise.
+ *
+ * @param config - Current extension settings (reads startMode / renderMode).
+ */
+export function ensureLocalServerStarted(config: Config): void {
+    // Do nothing unless lazy deferral applies (local-server + start mode 'lazy').
+    // Start mode 'on' and 'off' already started/connected in activate().
+    if (!isLazyDeferralActive(config)) return;
+    // Start only when 'stopped' with no readyPromise = never started yet.
+    // starting/running/error or an already-prepared start is skipped idempotently (no double spawn).
+    if (serverState !== 'stopped' || readyPromise) return;
+    prepareLocalServer();
+    // Errors are logged/notified inside startLocalServer; swallow the rejection here.
+    startLocalServer(config).catch(() => { /* handled in startLocalServer */ });
 }
 
 // ---------------------------------------------------------------------------
@@ -567,12 +611,12 @@ async function findFreePort(preferredPort: number, excludePorts?: Set<number>): 
  * @returns Array of CLI arguments.
  */
 export function buildArgs(config: Config, port: number): string[] {
-    // ヒープフラグ（-Xms/-Xmx＋固定フラグ）は JVM オプションなので必ず -jar より前に置く。
-    // unlimited のときは空配列＝現行と完全に同一の引数列になる（設計書 §1.2 / §5.3）。
+    // Heap flags (-Xms/-Xmx + fixed flags) are JVM options, so they must come before -jar.
+    // For unlimited this is an empty array = exactly the legacy argument list (design §1.2 / §5.3).
     const heapArgs = resolveJvmHeapArgs(config);
     const args = [...heapArgs, '-Djava.awt.headless=true', '-jar', config.plantumlJarPath, '-picoweb:' + port + ':127.0.0.1'];
     if (config.dotPath && config.dotPath !== 'dot') {
-        // -graphvizdot は PlantUML アプリ引数。jar パスの直後（-picoweb の前）に挿入する。
+        // -graphvizdot is a PlantUML app arg; insert it right after the jar path (before -picoweb).
         const jarIndex = args.indexOf('-jar');
         args.splice(jarIndex + 2, 0, '-graphvizdot', config.dotPath);
     }
@@ -669,7 +713,7 @@ function startAdoptWatchdog(url: string): void {
         if (serverState !== 'running' || ownedProcess || serverUrl !== url) return;
         log(`[local-server] Lost connection to the adopted PlantUML server at ${url}`);
 
-        // When auto-start is on (the default), transparently recover instead of
+        // In a managed mode ('on'/'lazy', the default), transparently recover instead of
         // parking in 'error': this is the "owner window closed first, another
         // window was adopting it" case. startLocalServer() re-runs the full
         // dispatch — if another window already respawned on the fixed port we
@@ -677,7 +721,7 @@ function startAdoptWatchdog(url: string): void {
         // Concurrent windows racing to respawn converge naturally (a BindException
         // loser's next probe adopts the winner).
         const config = getLatestConfig?.();
-        if (config?.plantumlLocalServerAutoStart) {
+        if (config && isManagedServerMode(config)) {
             serverUrl = null;
             resetState(); // back to 'stopped', fresh readyPromise on next start
             prepareLocalServer();
@@ -685,7 +729,7 @@ function startAdoptWatchdog(url: string): void {
             return;
         }
 
-        // External-connect mode (auto-start off): we must not spawn — surface the
+        // External-connect mode ('off'): we must not spawn — surface the
         // loss with a manual Retry.
         serverUrl = null;
         setServerState('error');
@@ -869,11 +913,11 @@ function handleCrash(reason: string, config: Config, stderr?: string): void {
     const isPortInUse = stderr?.includes('BindException')
         || stderr?.includes('Address already in use');
 
-    // Multi-window convergence: with auto-start on and a fixed port, several
+    // Multi-window convergence: in a managed mode ('on'/'lazy') with a fixed port, several
     // windows can race to respawn after the owner window closed. The loser gets
     // BindException — but the winner is (cold-)starting on that same port, so
     // wait briefly and adopt it instead of dead-ending in an error dialog.
-    if (isPortInUse && config.plantumlLocalServerAutoStart && config.plantumlLocalServerPort > 0) {
+    if (isPortInUse && isManagedServerMode(config) && config.plantumlLocalServerPort > 0) {
         void recoverByAdoptingPort(config);
         return;
     }

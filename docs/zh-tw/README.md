@@ -142,27 +142,47 @@
 | **隱私** | 圖表保留在本機 | 圖表保留在本機 | 圖表原始碼傳送至 PlantUML 伺服器 |
 | **速度** | 即時（常駐本機伺服器） | 較慢（每次啟動 JVM） | 依賴網路 |
 
-- **Fast 模式**（預設）— 在 `localhost` 啟動常駐 PlantUML 伺服器。消除每次編輯的 JVM 啟動開銷，實現即時重新渲染。圖表不會傳送到機器外部。
+- **Fast 模式**（預設）— 在 `localhost` 執行常駐 PlantUML 伺服器，於首次渲染圖表時延遲啟動（可設定 — 詳見[啟動模式](#fast-模式伺服器啟動模式)）。消除每次編輯的 JVM 啟動開銷，實現即時重新渲染。圖表不會傳送到機器外部。
 - **Secure 模式** — 在本機使用 Java + PlantUML jar。圖表不會傳送到機器外部。無網路存取。為最高安全性，預設封鎖本機圖片。
 - **Easy 模式** — 將 PlantUML 原始碼傳送至伺服器渲染。無需設定。預設使用公共伺服器（`https://www.plantuml.com/plantuml`）。可設定自己的伺服器 URL 保護隱私。
 
 未偵測到 Java 時，開啟預覽會提示切換到 Easy 模式。
 
-#### Fast 模式：連接到您自己的 PlantUML 伺服器
+#### Fast 模式：伺服器啟動模式
 
-預設情況下，Fast 模式會自行啟動並管理一個綁定到 `127.0.0.1` 的 PlantUML 伺服器 —— 無需任何設定。您也可以讓它連接到自己執行的伺服器（例如 `java -jar plantuml.jar -picoweb`），包括區域網路內其他機器上的伺服器：
+預設情況下，Fast 模式會自行啟動並管理一個綁定到 `127.0.0.1` 的 PlantUML 伺服器 —— 無需任何設定。`plantumlLocalServerStartMode` 控制何時（以及是否）啟動該伺服器（設定 UI 與錯誤訊息中顯示為「Start Mode」，以下稱「啟動模式」）：
+
+| 值 | 效果 |
+|---|---|
+| `"lazy"`（預設） | 於首次渲染圖表時啟動受管理的伺服器。只要您不渲染任何 PlantUML 圖表，就不會有 JVM 執行；第一次渲染會多花幾秒鐘。 |
+| `"on"` | 擴充功能一啟用就啟動受管理的伺服器。第一次渲染立即完成，但代價是啟動後就常駐一個 JVM。 |
+| `"off"` | 永不啟動伺服器。連接到您自己執行的伺服器（例如 `java -jar plantuml.jar -picoweb`），包括區域網路內其他機器上的伺服器： |
 
 | 設定 | 預設值 | 說明 |
 |---|---|---|
-| `plantumlLocalServerAutoStart` | `true` | 開啟：擴充功能啟動並管理伺服器。關閉：連接到現有伺服器，而不是啟動新的。 |
-| `plantumlLocalServerHost` | `127.0.0.1` | 自動啟動**關閉**時要連接的主機（例如區域網路中其他位置的 picoweb 伺服器）。自動啟動開啟時會被忽略 —— 由擴充功能管理的伺服器一律綁定到 `127.0.0.1`。 |
-| `plantumlLocalServerPort` | `0` | 自動啟動**開啟**時：要啟動的連接埠（`0` 表示自動分配空閒連接埠）。自動啟動**關閉**時：要連接的連接埠。 |
+| `plantumlLocalServerHost` | `127.0.0.1` | 啟動模式為 `"off"` 時要連接的主機（例如區域網路中其他位置的 picoweb 伺服器）。`"on"`/`"lazy"` 時會被忽略 —— 由擴充功能管理的伺服器一律綁定到 `127.0.0.1`。 |
+| `plantumlLocalServerPort` | `0` | 啟動模式為 `"on"`/`"lazy"` 時：要啟動的連接埠（`0` 表示自動分配空閒連接埠）。啟動模式為 `"off"` 時：要連接的連接埠。 |
 
 備註：
 
-- 自動啟動**開啟**且使用固定連接埠時，若該連接埠上已有正常運作的 PlantUML 伺服器，擴充功能會重複使用它而不是再啟動一個 —— 因此不會與殘留程序或您自己啟動的伺服器衝突。
-- 自動啟動**關閉**時，擴充功能不會啟動任何伺服器（也不需要本機 Java）—— 只會連接到您設定的主機/連接埠。
+- 在受管理模式（`"on"`/`"lazy"`）下使用固定連接埠時，若該連接埠上已有正常運作的 PlantUML 伺服器，擴充功能會重複使用它而不是再啟動一個 —— 因此不會與殘留程序或您自己啟動的伺服器衝突。
+- 啟動模式為 `"off"` 時，擴充功能不會啟動任何伺服器（也不需要本機 Java）—— 只會連接到您設定的主機/連接埠。
 - 擴充功能只會停止自己啟動的伺服器；您自己執行的伺服器永遠不會被擴充功能終止。
+- 舊有的 `plantumlLocalServerAutoStart` 布林值已棄用，但在未明確設定啟動模式時仍會被採用（`true` → `"on"`，`false` → `"off"`）。明確設定的啟動模式一律優先。
+
+#### Fast 模式：JVM 記憶體（堆積）設定
+
+受管理伺服器的記憶體用量由堆積預設值（`plantumlLocalServerJvmHeapPreset`）限制：
+
+| 預設值 | JVM 堆積旗標 | 適用情境 |
+|---|---|---|
+| `small` | `-Xms16m -Xmx256m` | 記憶體用量最低；僅適合小型圖表。 |
+| `medium`（預設） | `-Xms16m -Xmx512m` | 平衡型；能輕鬆處理大多數圖表。 |
+| `large` | `-Xms64m -Xmx1024m` | 非常大的圖表；符合 PlantUML FAQ 建議值。 |
+| `unlimited` | _（無）_ | 完全不套用旗標 —— 由 JVM 自行決定（最大堆積預設為實體記憶體的 1/4）。回退至 0.7.10 之前的行為。 |
+| `custom` | 您自訂的值 | 讀取 `plantumlLocalServerJvmInitialHeapMb`（8–32768，預設 16）與 `plantumlLocalServerJvmMaxHeapMb`（64–32768，預設 512）。 |
+
+除 `unlimited` 外，每個預設值都會固定套用 `-XX:+UseSerialGC`、`-XX:MaxMetaspaceSize=128m` 與 `-XX:ReservedCodeCacheSize=64m`，以維持伺服器的精簡體積。這些設定僅套用於擴充功能自行啟動的伺服器（Fast 模式，啟動模式為 `"on"`/`"lazy"`）。
 
 ### 狀態列
 
@@ -358,7 +378,7 @@ PlantUML、Mermaid 和 D2 圖表也可在 VS Code 內建 Markdown 預覽（`Mark
 
 ### 設置
 
-**Fast 模式**（預設）：啟動常駐本機 PlantUML 伺服器，即時重新渲染。需要 Java 11+。
+**Fast 模式**（預設）：執行常駐本機 PlantUML 伺服器，於首次渲染圖表時啟動，實現即時重新渲染。需要 Java 11+。
 
 **使用 Secure 模式**：將 `mode` 設為 `"secure"`。無背景伺服器或網路存取，每次渲染使用 Java 11+。
 
@@ -733,7 +753,12 @@ PlantUML、Mermaid 和 D2 的上下文感知關鍵字建議。適用於獨立檔
 | `enableMath` | `true` | 啟用 KaTeX 數學渲染。支援 `$...$`（行內）和 `$$...$$`（區塊）。如 `$` 符號導致意外的數學解析，可設為 `false`。 |
 | `debounceNoDiagramChangeMs` | _(空)_ | 非圖表文字變更的防抖延遲（毫秒）。圖表從快取中提供。留空使用模式預設值（Fast: 100, Secure: 100, Easy: 100）。 |
 | `debounceDiagramChangeMs` | _(空)_ | 圖表內容變更的防抖延遲（毫秒）。留空使用模式預設值（Fast: 100, Secure: 300, Easy: 300）。 |
-| `plantumlLocalServerPort` | `0` | 本機 PlantUML 伺服器連接埠（僅 Fast 模式）。`0` = 自動指派空閒連接埠。 |
+| `plantumlLocalServerStartMode` | `"lazy"` | 本機 PlantUML 伺服器的啟動時機（僅 Fast 模式）：`"on"`（擴充功能啟用時）、`"lazy"`（首次渲染圖表時）、`"off"`（永不啟動 — 連接到現有伺服器）。詳見[啟動模式](#fast-模式伺服器啟動模式)。 |
+| `plantumlLocalServerHost` | `"127.0.0.1"` | 啟動模式為 `"off"` 時要連接的主機（僅 Fast 模式）。`"on"`/`"lazy"` 時會被忽略。 |
+| `plantumlLocalServerPort` | `0` | 本機 PlantUML 伺服器連接埠（僅 Fast 模式）。`0` = 自動指派空閒連接埠。啟動模式為 `"off"` 時，此為要連接的連接埠。 |
+| `plantumlLocalServerJvmHeapPreset` | `"medium"` | 受管理本機伺服器的 JVM 堆積預設值：`"small"`、`"medium"`、`"large"`、`"unlimited"` 或 `"custom"`。詳見 [JVM 記憶體設定](#fast-模式jvm-記憶體堆積設定)。 |
+| `plantumlLocalServerJvmInitialHeapMb` | `16` | `"custom"` 預設值的初始堆積大小（`-Xms`，MB）。其他預設值會忽略此設定。範圍: 8–32768。 |
+| `plantumlLocalServerJvmMaxHeapMb` | `512` | `"custom"` 預設值的最大堆積大小（`-Xmx`，MB）。其他預設值會忽略此設定。範圍: 64–32768。 |
 | `plantumlServerUrl` | `"https://www.plantuml.com/plantuml"` | Easy 模式的 PlantUML 伺服器 URL。 |
 | `enableDiagramViewer` | `true` | 啟用右鍵選單中的「在圖表檢視器中開啟」項目。 |
 | `retainPreviewContext` | `true` | 索引標籤隱藏時保留預覽內容。防止切換時重新渲染，但使用更多記憶體（需要重新開啟預覽才會生效）。 |

@@ -142,27 +142,47 @@ Escolha um modo predefinido que controla como os diagramas PlantUML são renderi
 | **Privacidade** | Diagramas permanecem na sua máquina | Diagramas permanecem na sua máquina | Código fonte do diagrama enviado ao servidor PlantUML |
 | **Velocidade** | Instantâneo (servidor local persistente) | Mais lento (JVM inicia cada vez) | Depende da rede |
 
-- **Modo Fast** (padrão) — inicia um servidor PlantUML persistente em `localhost`. Elimina o custo de inicialização da JVM a cada edição, permitindo re-renderizações instantâneas. Os diagramas nunca saem da sua máquina.
+- **Modo Fast** (padrão) — executa um servidor PlantUML persistente em `localhost`, iniciado somente na primeira renderização de diagrama (configurável — veja [Modo de início](#modo-fast-modo-de-início-do-servidor)). Elimina o custo de inicialização da JVM a cada edição, permitindo re-renderizações instantâneas. Os diagramas nunca saem da sua máquina.
 - **Modo Secure** — usa Java + JAR do PlantUML na sua máquina. Os diagramas nunca saem da sua máquina. Sem acesso à rede. Imagens locais são bloqueadas por padrão para segurança máxima.
 - **Modo Easy** — envia o código fonte do PlantUML para um servidor PlantUML para renderização. Nenhuma configuração necessária. Usa o servidor público (`https://www.plantuml.com/plantuml`) por padrão, ou configure seu próprio URL de servidor auto-hospedado para maior privacidade.
 
 Se o Java não for encontrado ao abrir uma prévia, uma notificação oferecerá a mudança para o modo Easy.
 
-#### Modo Fast: conectando ao seu próprio servidor PlantUML
+#### Modo Fast: modo de início do servidor
 
-Por padrão, o modo Fast inicia e gerencia seu próprio servidor PlantUML vinculado a `127.0.0.1` — nenhuma configuração necessária. Você também pode apontá-lo para um servidor que você mesmo executa (por exemplo `java -jar plantuml.jar -picoweb`), incluindo um em outra máquina da sua rede local:
+Por padrão, o modo Fast inicia e gerencia seu próprio servidor PlantUML vinculado a `127.0.0.1` — nenhuma configuração necessária. O `plantumlLocalServerStartMode` controla quando (e se) isso acontece:
+
+| Valor | Efeito |
+|---|---|
+| `"lazy"` (padrão) | Inicia o servidor gerenciado na primeira renderização de diagrama. Nenhuma JVM é executada enquanto você não renderizar nenhum diagrama PlantUML; a primeira renderização demora alguns segundos a mais. |
+| `"on"` | Inicia o servidor gerenciado assim que a extensão é ativada. A primeira renderização é instantânea, ao custo de uma JVM residente desde a inicialização. |
+| `"off"` | Nunca inicia um servidor. Conecta-se a um que você mesmo executa (por exemplo `java -jar plantuml.jar -picoweb`), incluindo um em outra máquina da sua rede local: |
 
 | Configuração | Padrão | Efeito |
 |---|---|---|
-| `plantumlLocalServerAutoStart` | `true` | Ativado: a extensão inicia e gerencia o servidor. Desativado: ela se conecta a um servidor existente em vez de iniciar um. |
-| `plantumlLocalServerHost` | `127.0.0.1` | Host ao qual se conectar quando o início automático está **desativado** (por exemplo, um servidor picoweb em outro ponto da sua rede local). Ignorado quando o início automático está ativado — um servidor gerenciado sempre se vincula a `127.0.0.1`. |
-| `plantumlLocalServerPort` | `0` | Início automático **ativado**: porta na qual iniciar (`0` = atribui automaticamente uma porta livre). Início automático **desativado**: porta à qual se conectar. |
+| `plantumlLocalServerHost` | `127.0.0.1` | Host ao qual se conectar quando Start Mode é `"off"` (por exemplo, um servidor picoweb em outro ponto da sua rede local). Ignorado para `"on"`/`"lazy"` — um servidor gerenciado sempre se vincula a `127.0.0.1`. |
+| `plantumlLocalServerPort` | `0` | Start Mode `"on"`/`"lazy"`: porta na qual iniciar (`0` = atribui automaticamente uma porta livre). Start Mode `"off"`: porta à qual se conectar. |
 
 Notas:
 
-- Com o início automático **ativado** e uma porta fixa, se já houver um servidor PlantUML saudável em execução nessa porta, a extensão o reutiliza em vez de iniciar um segundo — assim ela deixa de entrar em conflito com um processo remanescente ou com um servidor que você mesmo iniciou.
-- Com o início automático **desativado**, a extensão nunca inicia um servidor (e não precisa de Java local) — ela apenas se conecta ao host/porta configurados.
+- Em um modo gerenciado (`"on"`/`"lazy"`) com uma porta fixa, se já houver um servidor PlantUML saudável em execução nessa porta, a extensão o reutiliza em vez de iniciar um segundo — assim ela não entra em conflito com um processo remanescente ou com um servidor que você mesmo iniciou.
+- Com Start Mode `"off"`, a extensão nunca inicia um servidor (e não precisa de Java local) — ela apenas se conecta ao host/porta configurados.
 - A extensão só interrompe os servidores que ela mesma iniciou; um servidor que você executa nunca é encerrado pela extensão.
+- O antigo booleano `plantumlLocalServerAutoStart` está obsoleto, mas ainda é respeitado quando Start Mode não é definido explicitamente (`true` → `"on"`, `false` → `"off"`). Um Start Mode definido explicitamente sempre prevalece.
+
+#### Modo Fast: configurações de memória (heap) da JVM
+
+O consumo de memória do servidor gerenciado é limitado por predefinições de heap (`plantumlLocalServerJvmHeapPreset`):
+
+| Predefinição | Flags de heap da JVM | Use quando |
+|---|---|---|
+| `small` | `-Xms16m -Xmx256m` | Menor uso de memória; apenas diagramas pequenos. |
+| `medium` (padrão) | `-Xms16m -Xmx512m` | Equilibrado; lida bem com a maioria dos diagramas. |
+| `large` | `-Xms64m -Xmx1024m` | Diagramas muito grandes; corresponde à recomendação do FAQ do PlantUML. |
+| `unlimited` | _(nenhuma)_ | Nenhuma flag — a JVM decide (o heap máximo padrão é 1/4 da RAM física). Volta ao comportamento anterior à versão 0.7.10. |
+| `custom` | seus valores | Lê `plantumlLocalServerJvmInitialHeapMb` (8–32768, padrão 16) e `plantumlLocalServerJvmMaxHeapMb` (64–32768, padrão 512). |
+
+Toda predefinição exceto `unlimited` também fixa `-XX:+UseSerialGC`, `-XX:MaxMetaspaceSize=128m` e `-XX:ReservedCodeCacheSize=64m` para manter o servidor enxuto. Essas configurações se aplicam apenas ao servidor que a própria extensão inicia (modo Fast, Start Mode `"on"`/`"lazy"`).
 
 ### Barra de Status
 
@@ -360,7 +380,7 @@ O que funciona depende da sua configuração:
 
 ### Configuração inicial
 
-**Modo Fast** (padrão): Inicia um servidor PlantUML local persistente para re-renderizações instantâneas. Requer Java 11+.
+**Modo Fast** (padrão): Executa um servidor PlantUML local persistente para re-renderizações instantâneas, iniciado na primeira renderização de diagrama. Requer Java 11+.
 
 **Para usar o modo Secure**: Defina `mode` como `"secure"`. Usa Java 11+ por renderização sem um servidor em segundo plano ou acesso à rede.
 
@@ -726,7 +746,12 @@ Todas as configurações usam o prefixo `plantumlMarkdownPreview.`.
 | `enableMath` | `true` | Habilita a renderização matemática KaTeX. Suporta `$...$` (inline) e `$$...$$` (bloco). Defina como `false` se os símbolos `$` causarem análise indesejada. |
 | `debounceNoDiagramChangeMs` | _(vazio)_ | Atraso de debounce (ms) para alterações de texto que não sejam diagramas (diagramas servidos do cache). Deixe vazio para usar o padrão do modo (Fast: 100, Secure: 100, Easy: 100). |
 | `debounceDiagramChangeMs` | _(vazio)_ | Atraso de debounce (ms) para alterações no conteúdo do diagrama. Deixe vazio para usar o padrão do modo (Fast: 100, Secure: 300, Easy: 300). |
-| `plantumlLocalServerPort` | `0` | Porta para o servidor PlantUML local (apenas modo Fast). `0` = atribui automaticamente uma porta livre. |
+| `plantumlLocalServerStartMode` | `"lazy"` | Quando iniciar o servidor PlantUML local (apenas modo Fast): `"on"` (na ativação), `"lazy"` (na primeira renderização de diagrama), `"off"` (nunca — conecta-se a um servidor existente). Veja [Modo de início](#modo-fast-modo-de-início-do-servidor). |
+| `plantumlLocalServerHost` | `"127.0.0.1"` | Host ao qual se conectar quando Start Mode é `"off"` (apenas modo Fast). Ignorado para `"on"`/`"lazy"`. |
+| `plantumlLocalServerPort` | `0` | Porta para o servidor PlantUML local (apenas modo Fast). `0` = atribui automaticamente uma porta livre. Com Start Mode `"off"`, a porta à qual se conectar. |
+| `plantumlLocalServerJvmHeapPreset` | `"medium"` | Predefinição de heap da JVM para o servidor local gerenciado: `"small"`, `"medium"`, `"large"`, `"unlimited"` ou `"custom"`. Veja [Configurações de memória da JVM](#modo-fast-configurações-de-memória-heap-da-jvm). |
+| `plantumlLocalServerJvmInitialHeapMb` | `16` | Heap inicial (`-Xms`, MB) para a predefinição `"custom"`. Ignorado para outras predefinições. Faixa: 8–32768. |
+| `plantumlLocalServerJvmMaxHeapMb` | `512` | Heap máximo (`-Xmx`, MB) para a predefinição `"custom"`. Ignorado para outras predefinições. Faixa: 64–32768. |
 | `plantumlServerUrl` | `"https://www.plantuml.com/plantuml"` | URL do servidor PlantUML para o modo Easy. Configure para um URL de servidor auto-hospedado para maior privacidade. |
 | `enableDiagramViewer` | `true` | Habilita o item de menu de contexto "Open in Diagram Viewer" ao clicar com o botão direito em um diagrama. Requer reabrir a prévia para fazer efeito. |
 | `retainPreviewContext` | `true` | Retém o conteúdo da prévia quando a aba é ocultada. Evita re-renderização ao trocar de aba, mas usa mais memória. Requer reabrir a prévia para fazer efeito. |

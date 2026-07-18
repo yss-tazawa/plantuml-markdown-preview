@@ -142,27 +142,47 @@ Choose a preset mode that controls how PlantUML diagrams are rendered:
 | **Privacy** | Diagrams stay on your machine | Diagrams stay on your machine | Diagram source sent to PlantUML server |
 | **Speed** | Instant (persistent local server) | Slower (JVM starts each time) | Depends on network |
 
-- **Fast mode** (default) — starts a persistent PlantUML server on `localhost`. Eliminates JVM startup cost on every edit, enabling instant re-renders. Diagrams never leave your machine.
+- **Fast mode** (default) — runs a persistent PlantUML server on `localhost`, started lazily at the first diagram render (configurable — see [Start mode](#fast-mode-server-start-mode)). Eliminates JVM startup cost on every edit, enabling instant re-renders. Diagrams never leave your machine.
 - **Secure mode** — uses Java + PlantUML jar on your machine. Diagrams never leave your machine. No network access. Local images are blocked by default for maximum security.
 - **Easy mode** — sends PlantUML source to a PlantUML server for rendering. No setup required. Uses the public server (`https://www.plantuml.com/plantuml`) by default, or set your own self-hosted server URL for privacy.
 
 If Java is not found when opening a preview, a notification offers to switch to Easy mode.
 
-#### Fast mode: connecting to your own PlantUML server
+#### Fast mode: server start mode
 
-By default, Fast mode spawns and manages its own PlantUML server bound to `127.0.0.1` — no configuration needed. You can also point it at a server you run yourself (for example `java -jar plantuml.jar -picoweb`), including one on another machine in your LAN:
+By default, Fast mode spawns and manages its own PlantUML server bound to `127.0.0.1` — no configuration needed. `plantumlLocalServerStartMode` controls when (and whether) that happens:
+
+| Value | Effect |
+|---|---|
+| `"lazy"` (default) | Start the managed server at the first diagram render. No JVM runs while you don't render any PlantUML diagram; the very first render takes a few seconds longer. |
+| `"on"` | Start the managed server as soon as the extension activates. The first render is instant, at the cost of a resident JVM from startup. |
+| `"off"` | Never start a server. Connect to one you run yourself (for example `java -jar plantuml.jar -picoweb`), including one on another machine in your LAN: |
 
 | Setting | Default | Effect |
 |---|---|---|
-| `plantumlLocalServerAutoStart` | `true` | On: the extension starts and manages the server. Off: it connects to an existing server instead of starting one. |
-| `plantumlLocalServerHost` | `127.0.0.1` | Host to connect to when auto-start is **off** (e.g. a picoweb server elsewhere on your LAN). Ignored when auto-start is on — a managed server always binds to `127.0.0.1`. |
-| `plantumlLocalServerPort` | `0` | Auto-start **on**: port to start on (`0` = auto-assign a free port). Auto-start **off**: port to connect to. |
+| `plantumlLocalServerHost` | `127.0.0.1` | Host to connect to when Start Mode is `"off"` (e.g. a picoweb server elsewhere on your LAN). Ignored for `"on"`/`"lazy"` — a managed server always binds to `127.0.0.1`. |
+| `plantumlLocalServerPort` | `0` | Start Mode `"on"`/`"lazy"`: port to start on (`0` = auto-assign a free port). Start Mode `"off"`: port to connect to. |
 
 Notes:
 
-- With auto-start **on** and a fixed port, if a healthy PlantUML server is already running on that port, the extension reuses it instead of starting a second one — so it no longer conflicts with a leftover process or a server you started yourself.
-- With auto-start **off**, the extension never starts a server (and needs no local Java) — it only connects to the host/port you configure.
+- In a managed mode (`"on"`/`"lazy"`) with a fixed port, if a healthy PlantUML server is already running on that port, the extension reuses it instead of starting a second one — so it doesn't conflict with a leftover process or a server you started yourself.
+- With Start Mode `"off"`, the extension never starts a server (and needs no local Java) — it only connects to the host/port you configure.
 - The extension only stops servers it started itself; a server you run is never terminated by the extension.
+- The former `plantumlLocalServerAutoStart` boolean is deprecated but still honored when Start Mode is not set explicitly (`true` → `"on"`, `false` → `"off"`). An explicitly set Start Mode always wins.
+
+#### Fast mode: JVM memory (heap) settings
+
+The managed server's memory footprint is capped by heap presets (`plantumlLocalServerJvmHeapPreset`):
+
+| Preset | JVM heap flags | Use when |
+|---|---|---|
+| `small` | `-Xms16m -Xmx256m` | Lowest memory use; small diagrams only. |
+| `medium` (default) | `-Xms16m -Xmx512m` | Balanced; handles most diagrams comfortably. |
+| `large` | `-Xms64m -Xmx1024m` | Very large diagrams; matches the PlantUML FAQ recommendation. |
+| `unlimited` | _(none)_ | No flags at all — the JVM decides (max heap defaults to 1/4 of physical RAM). Fallback to the pre-0.7.10 behavior. |
+| `custom` | your values | Reads `plantumlLocalServerJvmInitialHeapMb` (8–32768, default 16) and `plantumlLocalServerJvmMaxHeapMb` (64–32768, default 512). |
+
+Every preset except `unlimited` also pins `-XX:+UseSerialGC`, `-XX:MaxMetaspaceSize=128m`, and `-XX:ReservedCodeCacheSize=64m` to keep the server small. These settings apply only to the server the extension spawns itself (Fast mode, Start Mode `"on"`/`"lazy"`).
 
 ### Status Bar
 
@@ -369,7 +389,7 @@ What works depends on your setup:
 
 ### Setup
 
-**Fast mode** (default): Starts a persistent local PlantUML server for instant re-renders. Requires Java 11+.
+**Fast mode** (default): Runs a persistent local PlantUML server for instant re-renders, started at the first diagram render. Requires Java 11+.
 
 **To use Secure mode**: Set `mode` to `"secure"`. Uses Java 11+ per render without a background server or network access.
 
@@ -740,7 +760,12 @@ All settings use the `plantumlMarkdownPreview.` prefix.
 | `enableMath` | `true` | Enable KaTeX math rendering. Supports `$...$` (inline) and `$$...$$` (block). Set to `false` if `$` symbols cause unwanted math parsing. |
 | `debounceNoDiagramChangeMs` | _(empty)_ | Debounce delay (ms) for non-diagram text changes (diagrams served from cache). Leave empty to use the mode default (Fast: 100, Secure: 100, Easy: 100). |
 | `debounceDiagramChangeMs` | _(empty)_ | Debounce delay (ms) for diagram content changes. Leave empty to use the mode default (Fast: 100, Secure: 300, Easy: 300). |
-| `plantumlLocalServerPort` | `0` | Port for the local PlantUML server (Fast mode only). `0` = auto-assign a free port. |
+| `plantumlLocalServerStartMode` | `"lazy"` | When to start the local PlantUML server (Fast mode only): `"on"` (at activation), `"lazy"` (at the first diagram render), `"off"` (never — connect to an existing server). See [Start mode](#fast-mode-server-start-mode). |
+| `plantumlLocalServerHost` | `"127.0.0.1"` | Host to connect to when Start Mode is `"off"` (Fast mode only). Ignored for `"on"`/`"lazy"`. |
+| `plantumlLocalServerPort` | `0` | Port for the local PlantUML server (Fast mode only). `0` = auto-assign a free port. With Start Mode `"off"`, the port to connect to. |
+| `plantumlLocalServerJvmHeapPreset` | `"medium"` | JVM heap preset for the managed local server: `"small"`, `"medium"`, `"large"`, `"unlimited"`, or `"custom"`. See [JVM memory settings](#fast-mode-jvm-memory-heap-settings). |
+| `plantumlLocalServerJvmInitialHeapMb` | `16` | Initial heap (`-Xms`, MB) for the `"custom"` preset. Ignored for other presets. Range: 8–32768. |
+| `plantumlLocalServerJvmMaxHeapMb` | `512` | Max heap (`-Xmx`, MB) for the `"custom"` preset. Ignored for other presets. Range: 64–32768. |
 | `plantumlServerUrl` | `"https://www.plantuml.com/plantuml"` | PlantUML server URL for Easy mode. Set to a self-hosted server URL for privacy. |
 | `enableDiagramViewer` | `true` | Enable the "Open in Diagram Viewer" context menu item when right-clicking a diagram. Requires reopening the preview to take effect. |
 | `retainPreviewContext` | `true` | Retain preview content when the tab is hidden. Prevents re-rendering on tab switch but uses more memory. Requires reopening the preview to take effect. |
