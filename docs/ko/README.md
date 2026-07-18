@@ -53,7 +53,6 @@
 - **에디터 지원** — PlantUML, Mermaid 및 D2를 위한 키워드 완성, 컬러 피커 및 코드 스니펫을 제공합니다.
 - **국제화** — 영어, 중국어(간체/번체), 스페인어, 브라질 포르투갈어, 일본어 및 한국어 UI를 지원합니다.
 - **수학 공식 지원** — [KaTeX](https://katex.org/)를 사용하여 `$ ... $` 인라인 및 `$$ ... $$` 블록 수학 공식을 렌더링합니다.
-- **GitHub 스타일 경고문** — `> [!NOTE]`, `> [!TIP]`, `> [!IMPORTANT]`, `> [!WARNING]`, `> [!CAUTION]`이 색상이 적용된 콜아웃으로 렌더링됩니다.
 
 ## 목차
 
@@ -96,32 +95,6 @@
 - 서버 측 렌더링 — Webview에서 JavaScript 없이 HTML/CSS만 사용합니다.
 - 미리보기와 HTML/PDF 내보내기 모두에서 작동합니다.
 - `$` 기호로 인해 원치 않는 수학 파싱이 발생하는 경우 `enableMath: false`로 비활성화하십시오.
-
-### GitHub 스타일 경고문
-
-인용문 마커로부터 GitHub 스타일 경고문(콜아웃)을 렌더링하며, GitHub 자체 출력과 동일하게 표시합니다.
-
-```markdown
-> [!NOTE]
-> Highlights information that users should take into account.
-
-> [!TIP]
-> Optional information to help a user be more successful.
-
-> [!IMPORTANT]
-> Crucial information necessary for users to succeed.
-
-> [!WARNING]
-> Critical content demanding immediate user attention.
-
-> [!CAUTION]
-> Negative potential consequences of an action.
-```
-
-- 5가지 유형: `NOTE`, `TIP`, `IMPORTANT`, `WARNING`, `CAUTION` — 각각 고유한 아이콘과 강조 색상을 가집니다.
-- 마커는 대문자만 인식되며, GitHub와 동일합니다 (`[!note]`는 일반 인용문으로 유지됩니다).
-- 색상은 활성화된 미리보기 테마(라이트 / 다크)에 따라 자동으로 조정됩니다.
-- 미리보기와 HTML/PDF 내보내기 모두에서 작동합니다.
 
 ### 다이어그램 배율
 
@@ -322,6 +295,32 @@ PlantUML, Mermaid 및 D2 다이어그램은 VS Code의 내장 Markdown 미리보
 > **참고:** 내장 미리보기는 이 확장 프로그램의 미리보기 테마, 양방향 스크롤 동기화 또는 HTML 내보내기를 지원하지 않습니다. 모든 기능을 사용하려면 확장 프로그램 자체의 미리보기 패널(`Cmd+Alt+V` / `Ctrl+Alt+V`)을 사용하십시오.
 >
 > **참고:** 내장 미리보기는 다이어그램을 동기적으로 렌더링합니��. 크거나 복잡한 PlantUML 다이어그램은 에디터를 일시적으로 멈추게 할 수 있습니다. 무거운 다이어��램의 경우 확장 프로그램 자체의 미리보기 패널을 사용하십시오.
+
+### GitHub 스타일 경고문
+
+인용문 마커로부터 GitHub 스타일 경고문(콜아웃)을 렌더링하며, GitHub 자체 출력과 동일하게 표시합니다.
+
+```markdown
+> [!NOTE]
+> Highlights information that users should take into account.
+
+> [!TIP]
+> Optional information to help a user be more successful.
+
+> [!IMPORTANT]
+> Crucial information necessary for users to succeed.
+
+> [!WARNING]
+> Critical content demanding immediate user attention.
+
+> [!CAUTION]
+> Negative potential consequences of an action.
+```
+
+- 5가지 유형: `NOTE`, `TIP`, `IMPORTANT`, `WARNING`, `CAUTION` — 각각 고유한 아이콘과 강조 색상을 가집니다.
+- 마커는 대문자만 인식되며, GitHub와 동일합니다 (`[!note]`는 일반 인용문으로 유지됩니다).
+- 색상은 활성화된 미리보기 테마(라이트 / 다크)에 따라 자동으로 조정됩니다.
+- 미리보기와 HTML/PDF 내보내기 모두에서 작동합니다.
 
 ## 빠른 시작
 

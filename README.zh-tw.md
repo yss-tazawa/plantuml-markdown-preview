@@ -53,7 +53,6 @@
 - **編輯器輔助** — PlantUML、Mermaid、D2 的關鍵字補全、顏色選擇器和程式碼片段
 - **國際化** — 支援英語、簡體中文 / 繁體中文、西班牙語、巴西葡萄牙語、日語和韓語介面
 - **數學公式支援** — 使用 [KaTeX](https://katex.org/) 渲染 `$...$` 行內公式和 `$$...$$` 區塊公式
-- **GitHub 風格提示** — `> [!NOTE]`、`> [!TIP]`、`> [!IMPORTANT]`、`> [!WARNING]`、`> [!CAUTION]` 渲染為彩色標註框
 
 ## 目錄
 
@@ -96,32 +95,6 @@
 - 伺服器端渲染 — Webview 中無需 JavaScript，僅使用 HTML/CSS
 - 適用於預覽和 HTML/PDF 匯出
 - 如果 `$` 符號導致意外的公式解析，可透過 `enableMath: false` 停用
-
-### GitHub 風格提示
-
-從區塊引用標記渲染 GitHub 風格的提示（標註框），與 GitHub 官方輸出保持一致。
-
-```markdown
-> [!NOTE]
-> Highlights information that users should take into account.
-
-> [!TIP]
-> Optional information to help a user be more successful.
-
-> [!IMPORTANT]
-> Crucial information necessary for users to succeed.
-
-> [!WARNING]
-> Critical content demanding immediate user attention.
-
-> [!CAUTION]
-> Negative potential consequences of an action.
-```
-
-- 五種類型：`NOTE`、`TIP`、`IMPORTANT`、`WARNING`、`CAUTION` — 每種都有專屬圖示和強調色
-- 標記僅大寫有效，與 GitHub 一致（`[!note]` 仍為一般區塊引用）
-- 顏色會依作用中的預覽主題（淺色 / 深色）自動調整
-- 適用於預覽和 HTML/PDF 匯出
 
 ### 圖表縮放
 
@@ -320,6 +293,32 @@ PlantUML、Mermaid 和 D2 圖表也可在 VS Code 內建 Markdown 預覽（`Mark
 > **注意：** 內建預覽不支援此擴充功能的預覽主題、雙向捲動同步或 HTML 匯出。如需完整功能，請使用擴充功能自帶的預覽面板（`Cmd+Alt+V` / `Ctrl+Alt+V`）。
 >
 > **注意：** 內建預覽以同步方式渲染圖表。大型或複雜的 PlantUML 圖表可能導致編輯器短暫卡頓。對於複雜圖表，建議使用擴充功能自帶的預覽面板。
+
+### GitHub 風格提示
+
+從區塊引用標記渲染 GitHub 風格的提示（標註框），與 GitHub 官方輸出保持一致。
+
+```markdown
+> [!NOTE]
+> Highlights information that users should take into account.
+
+> [!TIP]
+> Optional information to help a user be more successful.
+
+> [!IMPORTANT]
+> Crucial information necessary for users to succeed.
+
+> [!WARNING]
+> Critical content demanding immediate user attention.
+
+> [!CAUTION]
+> Negative potential consequences of an action.
+```
+
+- 五種類型：`NOTE`、`TIP`、`IMPORTANT`、`WARNING`、`CAUTION` — 每種都有專屬圖示和強調色
+- 標記僅大寫有效，與 GitHub 一致（`[!note]` 仍為一般區塊引用）
+- 顏色會依作用中的預覽主題（淺色 / 深色）自動調整
+- 適用於預覽和 HTML/PDF 匯出
 
 ## 快速開始
 

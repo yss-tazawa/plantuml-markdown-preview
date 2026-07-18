@@ -53,7 +53,6 @@ Alterne entre modos a qualquer momento com uma única configuração — sem mig
 - **Assistência ao editor** — completamento de palavras-chave, seletor de cores e trechos de código (snippets) para PlantUML, Mermaid e D2
 - **Internacionalização** — interface em Inglês, Chinês (Simplificado / Tradicional), Espanhol, Português Brasileiro, Japonês e Coreano
 - **Suporte a matemática** — fórmulas inline `$...$` e em bloco `$$...$$` renderizadas com [KaTeX](https://katex.org/)
-- **Alertas ao estilo GitHub** — `> [!NOTE]`, `> [!TIP]`, `> [!IMPORTANT]`, `> [!WARNING]`, `> [!CAUTION]` são renderizados como caixas de destaque coloridas
 
 ## Sumário
 
@@ -96,32 +95,6 @@ Renderize expressões matemáticas usando [KaTeX](https://katex.org/).
 - Renderização no lado do servidor — sem JavaScript no Webview, apenas HTML/CSS
 - Funciona tanto na prévia quanto na exportação para HTML/PDF
 - Desative com `enableMath: false` se os símbolos `$` causarem análise matemática indesejada
-
-### Alertas ao estilo GitHub
-
-Renderiza alertas ao estilo GitHub (caixas de destaque) a partir de marcadores de citação, igualando a saída nativa do GitHub.
-
-```markdown
-> [!NOTE]
-> Highlights information that users should take into account.
-
-> [!TIP]
-> Optional information to help a user be more successful.
-
-> [!IMPORTANT]
-> Crucial information necessary for users to succeed.
-
-> [!WARNING]
-> Critical content demanding immediate user attention.
-
-> [!CAUTION]
-> Negative potential consequences of an action.
-```
-
-- Cinco tipos: `NOTE`, `TIP`, `IMPORTANT`, `WARNING`, `CAUTION` — cada um com ícone e cor de destaque próprios
-- Os marcadores funcionam apenas em maiúsculas, como no GitHub (`[!note]` permanece uma citação comum)
-- As cores se adaptam ao tema de prévia ativo (claro / escuro)
-- Funciona tanto na prévia quanto na exportação para HTML/PDF
 
 ### Escala do Diagrama
 
@@ -322,6 +295,32 @@ Diagramas PlantUML, Mermaid e D2 também são renderizados na prévia de Markdow
 > **Nota:** A prévia integrada não suporta os temas de prévia desta extensão, sincronização de rolagem bidirecional ou exportação para HTML. Para o conjunto completo de funcionalidades, use o painel de prévia da própria extensão (`Cmd+Alt+V` / `Ctrl+Alt+V`).
 >
 > **Nota:** A prévia integrada renderiza diagramas de forma síncrona. Diagramas PlantUML grandes ou complexos podem congelar o editor brevemente. Para diagramas pesados, use o painel de prévia da extensão.
+
+### Alertas ao estilo GitHub
+
+Renderiza alertas ao estilo GitHub (caixas de destaque) a partir de marcadores de citação, igualando a saída nativa do GitHub.
+
+```markdown
+> [!NOTE]
+> Highlights information that users should take into account.
+
+> [!TIP]
+> Optional information to help a user be more successful.
+
+> [!IMPORTANT]
+> Crucial information necessary for users to succeed.
+
+> [!WARNING]
+> Critical content demanding immediate user attention.
+
+> [!CAUTION]
+> Negative potential consequences of an action.
+```
+
+- Cinco tipos: `NOTE`, `TIP`, `IMPORTANT`, `WARNING`, `CAUTION` — cada um com ícone e cor de destaque próprios
+- Os marcadores funcionam apenas em maiúsculas, como no GitHub (`[!note]` permanece uma citação comum)
+- As cores se adaptam ao tema de prévia ativo (claro / escuro)
+- Funciona tanto na prévia quanto na exportação para HTML/PDF
 
 ## Início Rápido
 

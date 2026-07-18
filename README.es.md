@@ -53,7 +53,6 @@ Cambia entre modos en cualquier momento con un solo ajuste: sin migración, sin 
 - **Asistencia al editor**: autocompletado de palabras clave, selector de color y fragmentos de código para PlantUML, Mermaid y D2.
 - **Internacionalización**: interfaz en inglés, chino (simplificado / tradicional), español, portugués brasileño, japonés y coreano.
 - **Soporte para matemáticas**: matemáticas en línea `$...$` y en bloque `$$...$$` renderizadas con [KaTeX](https://katex.org/).
-- **Alertas al estilo GitHub**: `> [!NOTE]`, `> [!TIP]`, `> [!IMPORTANT]`, `> [!WARNING]`, `> [!CAUTION]` se renderizan como llamadas de atención con colores.
 
 ## Tabla de contenidos
 
@@ -96,32 +95,6 @@ Renderiza expresiones matemáticas usando [KaTeX](https://katex.org/).
 - Renderizado en el lado del servidor: sin JavaScript en el Webview, solo HTML/CSS.
 - Funciona tanto en la vista previa como en la exportación a HTML/PDF.
 - Desactívalo con `enableMath: false` si los símbolos `$` causan un procesamiento matemático no deseado.
-
-### Alertas al estilo GitHub
-
-Renderiza alertas al estilo GitHub (llamadas de atención) a partir de marcadores de cita en bloque, igualando la salida propia de GitHub.
-
-```markdown
-> [!NOTE]
-> Highlights information that users should take into account.
-
-> [!TIP]
-> Optional information to help a user be more successful.
-
-> [!IMPORTANT]
-> Crucial information necessary for users to succeed.
-
-> [!WARNING]
-> Critical content demanding immediate user attention.
-
-> [!CAUTION]
-> Negative potential consequences of an action.
-```
-
-- Cinco tipos: `NOTE`, `TIP`, `IMPORTANT`, `WARNING`, `CAUTION`, cada uno con su propio icono y color de acento.
-- Los marcadores solo funcionan en mayúsculas, igual que en GitHub (`[!note]` se queda como una cita en bloque normal).
-- Los colores se adaptan al tema de vista previa activo (claro / oscuro).
-- Funciona tanto en la vista previa como en la exportación a HTML/PDF.
 
 ### Escala de diagramas
 
@@ -322,6 +295,32 @@ Los diagramas PlantUML, Mermaid y D2 también se renderizan en la vista previa d
 > **Nota:** La vista previa integrada no soporta los temas de vista previa de esta extensión, la sincronización de desplazamiento bidireccional ni la exportación HTML. Para el conjunto completo de funciones, usa el panel de vista previa de la propia extensión (`Cmd+Alt+V` / `Ctrl+Alt+V`).
 >
 > **Nota:** La vista previa integrada renderiza los diagramas de forma síncrona. Los diagramas PlantUML grandes o complejos pueden congelar brevemente el editor. Para diagramas pesados, usa el panel de vista previa de la extensión en su lugar.
+
+### Alertas al estilo GitHub
+
+Renderiza alertas al estilo GitHub (llamadas de atención) a partir de marcadores de cita en bloque, igualando la salida propia de GitHub.
+
+```markdown
+> [!NOTE]
+> Highlights information that users should take into account.
+
+> [!TIP]
+> Optional information to help a user be more successful.
+
+> [!IMPORTANT]
+> Crucial information necessary for users to succeed.
+
+> [!WARNING]
+> Critical content demanding immediate user attention.
+
+> [!CAUTION]
+> Negative potential consequences of an action.
+```
+
+- Cinco tipos: `NOTE`, `TIP`, `IMPORTANT`, `WARNING`, `CAUTION`, cada uno con su propio icono y color de acento.
+- Los marcadores solo funcionan en mayúsculas, igual que en GitHub (`[!note]` se queda como una cita en bloque normal).
+- Los colores se adaptan al tema de vista previa activo (claro / oscuro).
+- Funciona tanto en la vista previa como en la exportación a HTML/PDF.
 
 ## Inicio rápido
 
