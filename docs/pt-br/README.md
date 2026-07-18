@@ -219,6 +219,8 @@ Use diretivas `!include` para compartilhar estilos comuns, macros e definições
 - **Open Include Source** — clique com o botão direito em um diagrama PlantUML na prévia para abrir seus arquivos incluídos diretamente
 - Funciona nos modos Fast e Secure. Não disponível no modo Easy (o servidor remoto não pode acessar arquivos locais).
 
+> **Nota:** `plantumlIncludePath` (e a resolução baseada na raiz da área de trabalho) só tem efeito quando é a própria extensão que inicia o processo do PlantUML — sempre no modo Secure, mas no modo Fast apenas quando a extensão inicia seu próprio servidor local. Se o modo Fast se conectar a um servidor que já está em execução (Start Mode `"off"`, ou um servidor existente reutilizado em uma porta fixa), os includes são resolvidos em relação ao diretório de trabalho desse servidor. Para garantir que a configuração tenha efeito no modo Fast, defina a porta como `0` (automático).
+
 ### Prévia de Diagrama Independente
 
 Abra arquivos `.puml`, `.plantuml`, `.mmd`, `.mermaid` ou `.d2` diretamente — sem necessidade de Markdown.
@@ -853,6 +855,7 @@ Configure um tema de diagrama para corresponder ao seu tema de prévia. Abra o s
 O `!include` requer o modo Fast ou Secure — ele não funciona no modo Easy porque o servidor remoto não pode acessar seus arquivos locais.
 
 - Os caminhos são resolvidos em relação à raiz da área de trabalho por padrão. Configure `plantumlIncludePath` para usar um diretório base diferente.
+- No modo Fast, o diretório base dos includes só tem efeito quando a extensão inicia seu próprio servidor local. Se você se conectar a um servidor que já está em execução (Start Mode `"off"`, ou um servidor existente reutilizado em uma porta fixa), os includes são resolvidos em relação ao diretório de trabalho desse servidor — defina a porta como `0` (automático) para que a extensão sempre inicie seu próprio servidor.
 - Salvar um arquivo incluído atualiza automaticamente a prévia. Você também pode clicar no botão **Reload** (↻) para forçar uma atualização manual.
 
 </details>

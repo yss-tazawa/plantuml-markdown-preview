@@ -219,6 +219,8 @@ Usa las directivas `!include` para compartir estilos comunes, macros y definicio
 - **Open Include Source** — haz clic derecho en un diagrama PlantUML en la vista previa para abrir sus archivos incluidos directamente.
 - Funciona en los modos Fast y Secure. No disponible en el modo Easy (el servidor remoto no puede acceder a archivos locales).
 
+> **Nota:** `plantumlIncludePath` (y la resolución basada en la raíz del espacio de trabajo) solo tiene efecto cuando es la propia extensión la que inicia el proceso de PlantUML — siempre en el modo Secure, pero en el modo Fast solo cuando la extensión inicia su propio servidor local. Si el modo Fast se conecta a un servidor que ya está en ejecución (Start Mode `"off"`, o un servidor existente reutilizado en un puerto fijo), los includes se resuelven en cambio respecto al propio directorio de trabajo de ese servidor. Para asegurarte de que el ajuste tenga efecto en el modo Fast, configura el puerto en `0` (auto).
+
 ### Vista previa de diagramas independiente
 
 Abre archivos `.puml`, `.plantuml`, `.mmd`, `.mermaid` o `.d2` directamente, sin necesidad de un envoltorio Markdown.
@@ -852,6 +854,7 @@ Establece un tema de diagrama que coincida con tu tema de vista previa. Abre el 
 `!include` requiere el modo Fast o Secure: no funciona en el modo Easy porque el servidor remoto no puede acceder a tus archivos locales.
 
 - Las rutas se resuelven de forma relativa a la raíz del espacio de trabajo por defecto. Configura `plantumlIncludePath` para usar un directorio base diferente.
+- En el modo Fast, el directorio base de los includes solo tiene efecto cuando la extensión inicia su propio servidor local. Si te conectas a un servidor que ya está en ejecución (Start Mode `"off"`, o un servidor existente reutilizado en un puerto fijo), los includes se resuelven en cambio respecto al directorio de trabajo de ese servidor — configura el puerto en `0` (auto) para que la extensión inicie siempre su propio servidor.
 - Guardar un archivo incluido refresca automáticamente la vista previa. También puedes hacer clic en el botón de recarga (↻) para forzar un refresco manual.
 
 </details>

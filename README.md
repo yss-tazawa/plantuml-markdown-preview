@@ -219,6 +219,8 @@ Use `!include` directives to share common styles, macros, and component definiti
 - **Open Include Source** — right-click a PlantUML diagram in the preview to open its included files directly
 - Works in Fast and Secure modes. Not available in Easy mode (the remote server cannot access local files).
 
+> **Note:** `plantumlIncludePath` (and workspace-root resolution) takes effect only when the extension itself launches the PlantUML process — always in Secure mode, but in Fast mode only when the extension spawns its own local server. If Fast mode connects to an already-running server (Start Mode "off", or an existing server reused on a fixed port), includes are resolved against that server's own working directory instead. To make sure the setting takes effect in Fast mode, set the port to 0 (auto).
+
 ### Standalone Diagram Preview
 
 Open `.puml`, `.plantuml`, `.mmd`, `.mermaid`, or `.d2` files directly — no Markdown wrapper needed.
@@ -877,6 +879,7 @@ title bar icon and select a dark PlantUML theme (e.g. `cyborg`, `mars`) or set t
 the remote server cannot access your local files.
 
 - Paths are resolved relative to the workspace root by default. Set `plantumlIncludePath` to use a different base directory.
+- In Fast mode, the include base directory takes effect only when the extension starts its own local server. If you connect to an already-running server (Start Mode "off", or an existing server reused on a fixed port), includes are resolved against that server's working directory instead — set the port to 0 (auto) to make the extension always spawn its own server.
 - Saving an included file automatically refreshes the preview. You can also click the **Reload** button (↻) to force a manual refresh.
 
 </details>
