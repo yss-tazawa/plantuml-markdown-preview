@@ -85,6 +85,37 @@ function setServerState(state: LocalServerState): void {
     onStateChange?.(state);
 }
 
+/**
+ * Drop the ready-promise trio, optionally rejecting any pending waiter first.
+ * Every transition into 'error' (and the final start failure) must go through
+ * this: a later retry has to be able to create a FRESH pending promise via
+ * prepareLocalServer(), which is a no-op while a settled promise lingers.
+ */
+function clearReadyPromise(rejectWith?: Error): void {
+    const rejectFn = readyReject;
+    readyPromise = null;
+    readyResolve = null;
+    readyReject = null;
+    if (rejectWith) rejectFn?.(rejectWith);
+}
+
+/**
+ * Transition to 'error' after a confirmed server loss (render-path detection or
+ * adopt watchdog trip). Clears the promise trio so the next start can prepare a
+ * fresh one, and stops the adopt watchdog.
+ *
+ * @param keepUrl - True only for external-connect mode ('off'): the URL is kept
+ *   so renders keep hitting the endpoint and a successful response can flip the
+ *   state back to 'running' (handleRenderSuccess). Managed modes must pass
+ *   false — a managed 'error' state always has serverUrl === null.
+ */
+function tripToError(keepUrl: boolean): void {
+    stopAdoptWatchdog();
+    if (!keepUrl) serverUrl = null;
+    setServerState('error');
+    clearReadyPromise(new Error('Lost connection to the PlantUML server'));
+}
+
 // ---------------------------------------------------------------------------
 // Public API
 // ---------------------------------------------------------------------------
@@ -251,6 +282,11 @@ export async function startLocalServer(config: Config): Promise<void> {
             if (stoppingIntentionally) return;
             adoptServer(url, vscode.l10n.t('Connected to PlantUML server at {0}', url));
         } else if (!stoppingIntentionally) {
+            // Keep the endpoint even though the first connect failed: error-state
+            // renders keep fetching it, so merely starting the server later is
+            // enough to recover — no manual Retry needed (same handling as a
+            // connection lost after adoption).
+            serverUrl = url;
             failStart(vscode.l10n.t('No PlantUML server found at {0}. Start it, or set Start Mode to "on".', url));
         }
         return;
@@ -375,7 +411,9 @@ async function spawnManagedServer(config: Config): Promise<void> {
             }
             if (!useAutoPort || attempt === MAX_PORT_RETRIES - 1) {
                 setServerState('error');
-                readyReject?.(err as Error);
+                // Clear the trio so the next render's retry (ensureLocalServerStarted
+                // from 'error') can prepare a fresh pending promise.
+                clearReadyPromise(err as Error);
                 log(`[local-server] Failed to start: ${(err as Error).message}`);
                 return;
             }
@@ -462,12 +500,18 @@ export function stopLocalServer(): void {
 }
 
 /**
- * Get the current server URL, or null if not running.
+ * Get the current server URL, or null if not available.
+ *
+ * In 'error' state the URL survives ONLY in external-connect mode ('off'):
+ * renders must keep hitting the configured endpoint so that a revived server is
+ * noticed and the state flips back to 'running' (handleRenderSuccess). All
+ * managed error paths null the URL, so a managed 'error' still yields null here
+ * and the render paths show the unavailability message instead.
  *
  * @returns The server base URL (e.g. `http://127.0.0.1:8080`), or null.
  */
 export function getLocalServerUrl(): string | null {
-    return serverState === 'running' ? serverUrl : null;
+    return serverState === 'running' || serverState === 'error' ? serverUrl : null;
 }
 
 /**
@@ -551,11 +595,24 @@ export async function restartLocalServer(config: Config): Promise<void> {
  * @param config - Current extension settings (reads startMode / renderMode).
  */
 export function ensureLocalServerStarted(config: Config): void {
-    // Do nothing unless lazy deferral applies (local-server + start mode 'lazy').
-    // Start mode 'on' and 'off' already started/connected in activate().
+    // Recovery retry (loss-detection spec): in a managed mode ('on'/'lazy') a
+    // render arriving while the server is in 'error' re-attempts the start, so
+    // every render keeps retrying until one start succeeds. All error paths
+    // clear the readyPromise trio; one still pending means a retry is already
+    // in flight — skip idempotently. 'off' never spawns and is excluded (its
+    // error-state renders keep fetching the kept URL instead).
+    if (config.renderMode === 'local-server' && isManagedServerMode(config)
+        && serverState === 'error' && !readyPromise) {
+        prepareLocalServer();
+        startLocalServer(config).catch(() => { /* handled in startLocalServer */ });
+        return;
+    }
+    // Lazy first-start trigger: do nothing unless lazy deferral applies
+    // (local-server + start mode 'lazy'). Start mode 'on' and 'off' already
+    // started/connected in activate().
     if (!isLazyDeferralActive(config)) return;
     // Start only when 'stopped' with no readyPromise = never started yet.
-    // starting/running/error or an already-prepared start is skipped idempotently (no double spawn).
+    // starting/running or an already-prepared start is skipped idempotently (no double spawn).
     if (serverState !== 'stopped' || readyPromise) return;
     prepareLocalServer();
     // Errors are logged/notified inside startLocalServer; swallow the rejection here.
@@ -677,8 +734,28 @@ function adoptServer(url: string, notice: string): void {
     setServerState('running');
     readyResolve?.();
     log(`[local-server] Adopted existing server at ${url}`);
-    void vscode.window.showInformationMessage(notice);
+    showTransientInfo(notice);
     startAdoptWatchdog(url);
+}
+
+/** How long a routine success notification stays visible before auto-closing. */
+const TRANSIENT_INFO_MS = 5_000;
+
+/**
+ * Show an info notification that closes itself after a few seconds.
+ *
+ * showInformationMessage has no timeout and its toast can linger; a
+ * progress-location notification closes when the task resolves, which
+ * is the only supported way to auto-dismiss. Used for routine success
+ * messages (adopt / external connect) that need no user action.
+ *
+ * @param message - Text to show in the notification.
+ */
+function showTransientInfo(message: string): void {
+    void vscode.window.withProgress(
+        { location: vscode.ProgressLocation.Notification, title: message },
+        () => sleep(TRANSIENT_INFO_MS)
+    );
 }
 
 /** Liveness watchdog for adopted servers (they have no process handle to watch). */
@@ -713,26 +790,35 @@ function startAdoptWatchdog(url: string): void {
         if (serverState !== 'running' || ownedProcess || serverUrl !== url) return;
         log(`[local-server] Lost connection to the adopted PlantUML server at ${url}`);
 
-        // In a managed mode ('on'/'lazy', the default), transparently recover instead of
-        // parking in 'error': this is the "owner window closed first, another
-        // window was adopting it" case. startLocalServer() re-runs the full
-        // dispatch — if another window already respawned on the fixed port we
-        // re-adopt it; otherwise this window spawns and becomes the new owner.
-        // Concurrent windows racing to respawn converge naturally (a BindException
-        // loser's next probe adopts the winner).
+        // In a managed mode ('on'/'lazy', the default), surface the loss first
+        // (error state + notification, so the status bar and the user see it),
+        // THEN try the start — no longer a silent transparent recovery. This is
+        // the "owner window closed first, another window was adopting it" case.
+        // startLocalServer() re-runs the full dispatch — if another window
+        // already respawned on the fixed port we re-adopt it; otherwise this
+        // window spawns and becomes the new owner. Concurrent windows racing to
+        // respawn converge naturally (a BindException loser's next probe adopts
+        // the winner). If the start fails, the state stays 'error' and every
+        // subsequent render retries the start (ensureLocalServerStarted).
         const config = getLatestConfig?.();
         if (config && isManagedServerMode(config)) {
-            serverUrl = null;
-            resetState(); // back to 'stopped', fresh readyPromise on next start
+            tripToError(false);
+            void vscode.window.showErrorMessage(
+                vscode.l10n.t('Lost connection to the PlantUML server at {0}.', url)
+            );
             prepareLocalServer();
+            // Fire-and-forget start: nobody awaits this readyPromise, so absorb
+            // its rejection here — a failure is surfaced via state/notification.
+            readyPromise?.catch(() => { /* surfaced via state/notification */ });
             void startLocalServer(config);
             return;
         }
 
-        // External-connect mode ('off'): we must not spawn — surface the
-        // loss with a manual Retry.
-        serverUrl = null;
-        setServerState('error');
+        // External-connect mode ('off'): we must not spawn — surface the loss,
+        // but KEEP the URL: error-state renders keep fetching the endpoint and
+        // a successful response flips the state back to 'running'
+        // (handleRenderSuccess). The manual Retry notification stays as well.
+        tripToError(true);
         const message = vscode.l10n.t('Lost connection to the PlantUML server at {0}.', url);
         log(`[local-server] ${message}`);
         notifyErrorWithRetry(message);
@@ -747,6 +833,129 @@ function stopAdoptWatchdog(): void {
     }
 }
 
+// ---------------------------------------------------------------------------
+// Render-path loss detection & recovery (first-line detection; the watchdog and
+// the child-process events are the fallback for "died while idle")
+// ---------------------------------------------------------------------------
+
+/**
+ * Verdict returned by handleRenderFailure:
+ * - 'alive': the server answered the confirmation probe — the failure was
+ *   transient; the caller should retry the same fetch once.
+ * - 'lost' : the loss is confirmed (state is now 'error'), or the server was
+ *   not in a probeable state to begin with. In managed modes the caller waits
+ *   for the restart (ensureLocalServerStarted + waitForLocalServer) and re-runs
+ *   the same render; in 'off' the caller shows the endpoint error.
+ */
+export type RenderFailureVerdict = 'alive' | 'lost';
+
+/**
+ * In-flight confirmation probe. Diagrams render concurrently, so one dead
+ * server produces a burst of failures — the first caller runs the probe and
+ * every later caller awaits the same conclusion (single-probe guarantee).
+ */
+let renderFailProbe: Promise<RenderFailureVerdict> | null = null;
+
+/**
+ * First-line loss detection: called by the render path when a fetch to the
+ * local server failed at the CONNECTION level (refused / timed out). An HTTP
+ * error response is proof of life and must NOT be reported here.
+ *
+ * Confirms the loss with the same strength as the adopt watchdog (2 consecutive
+ * probe failures) so a transient hiccup does not tear the connection down, then
+ * transitions to 'error' immediately (status bar follows via the state
+ * listener). Cleanup depends on how we got the server:
+ * - owned  : reclaim the unresponsive child (frees the port for the respawn)
+ * - adopted: leave the foreign process alone
+ * - off    : leave it alone AND keep the URL (renders keep fetching it)
+ *
+ * This function only trips the state — it never starts a server. The failed
+ * render drives the restart via ensureLocalServerStarted so the start is tied
+ * to a render that is actively waiting for it.
+ */
+export function handleRenderFailure(): Promise<RenderFailureVerdict> {
+    // Only a 'running' server can trip: 'error' has already tripped elsewhere,
+    // and 'starting'/'stopped' are owned by the start flow. Report 'lost' so
+    // the caller falls into the wait-for-start (managed) or error-box ('off') path.
+    if (serverState !== 'running' || !serverUrl) return Promise.resolve('lost');
+    if (renderFailProbe) return renderFailProbe;
+    renderFailProbe = confirmRenderFailure().finally(() => { renderFailProbe = null; });
+    return renderFailProbe;
+}
+
+/** Run the confirmation probes and trip to 'error' when the loss is confirmed. */
+async function confirmRenderFailure(): Promise<RenderFailureVerdict> {
+    const url = serverUrl!;
+    for (let i = 0; i < 2; i++) {
+        if (await probeExisting(url)) return 'alive';
+    }
+    // Supersede guard: a stop / restart / crash / another trip may have run
+    // while the probes were in flight — leave the state to whoever owns it now.
+    if (serverState !== 'running' || serverUrl !== url) {
+        return (serverState as string) === 'running' ? 'alive' : 'lost';
+    }
+    log(`[local-server] Render failure confirmed loss of the PlantUML server at ${url}`);
+    const wasOwned = ownedProcess;
+    if (ownedProcess && serverProcess) {
+        // Reclaim the unresponsive child so the port is free for the respawn.
+        // SIGKILL directly: the process already failed to answer two probes,
+        // a graceful SIGTERM would only delay the port release.
+        const proc = serverProcess;
+        proc.removeAllListeners('error');
+        proc.removeAllListeners('close');
+        proc.stdout?.removeAllListeners('data');
+        proc.stderr?.removeAllListeners('data');
+        if (process.platform === 'win32' && proc.pid) {
+            killProcessTree(proc.pid, 'SIGKILL');
+        } else {
+            try { proc.kill('SIGKILL'); } catch { /* already gone */ }
+        }
+        serverProcess = null;
+        ownedProcess = false;
+        rememberPid(undefined);
+    }
+    const config = getLatestConfig?.();
+    if (!config || isManagedServerMode(config)) {
+        // Managed ('on'/'lazy'): error without URL. The failed render restarts
+        // the server via ensureLocalServerStarted and re-runs itself.
+        tripToError(false);
+        void vscode.window.showErrorMessage(wasOwned
+            ? vscode.l10n.t('The local PlantUML server stopped responding ({0}).', url)
+            : vscode.l10n.t('Lost connection to the PlantUML server at {0}.', url)
+        );
+    } else {
+        // External-connect ('off'): never spawn. Keep the URL so every render
+        // keeps fetching the endpoint; a successful response recovers the state
+        // (handleRenderSuccess). The manual Retry notification stays available.
+        tripToError(true);
+        notifyErrorWithRetry(vscode.l10n.t('Lost connection to the PlantUML server at {0}.', url));
+    }
+    return 'lost';
+}
+
+/**
+ * Unconditional "the server answered a render request" notification from the
+ * render path (called on every successful response, including a syntax-error
+ * 400 + SVG — any proper HTTP response is proof of life).
+ *
+ * Only external-connect mode ('off') recovers here: when the state is 'error'
+ * with the kept URL, flip straight back to 'running' and re-arm the adopt
+ * watchdog. Managed modes recover through their start flow instead, and a
+ * healthy state makes this a no-op.
+ */
+export function handleRenderSuccess(): void {
+    if (serverState !== 'error' || !serverUrl) return;
+    const config = getLatestConfig?.();
+    if (!config || isManagedServerMode(config)) return;
+    const url = serverUrl;
+    setServerState('running');
+    log(`[local-server] External PlantUML server responded — reconnected at ${url}`);
+    void vscode.window.showInformationMessage(
+        vscode.l10n.t('Reconnected to the PlantUML server at {0}.', url)
+    );
+    startAdoptWatchdog(url);
+}
+
 /**
  * Mark startup as failed: set 'error' state, reject and clear waiters,
  * notify the user with a Retry action.
@@ -757,11 +966,7 @@ function failStart(message: string): void {
     setServerState('error');
     // Clear the promise trio like handleCrash does — a later start must create
     // a fresh pending promise, never reuse this settled one.
-    const rejectFn = readyReject;
-    readyPromise = null;
-    readyResolve = null;
-    readyReject = null;
-    rejectFn?.(new Error(message));
+    clearReadyPromise(new Error(message));
     log(`[local-server] ${message}`);
     notifyErrorWithRetry(message);
 }
@@ -874,7 +1079,20 @@ async function recoverByAdoptingPort(config: Config): Promise<void> {
 }
 
 /**
- * Handle unexpected server crash: notify user with action buttons.
+ * True while the automatic restart after a crash is in flight. Guards against a
+ * crash loop: if the restarted server crashes again, the re-entrant
+ * handleCrash only records the error and the pending restart's continuation
+ * shows the dialog — no second automatic restart, no duplicate dialog.
+ */
+let crashRestartInFlight = false;
+
+/**
+ * Handle unexpected server crash. Spec (loss detection & recovery): transition
+ * to 'error' immediately (status bar follows), then automatically attempt one
+ * restart. On success the state returns to 'running' silently (no re-render of
+ * open previews); on failure the state stays 'error' and the crash dialog is
+ * shown THEN. The Java-version and BindException special cases keep their
+ * dedicated handling and are never auto-restarted blindly.
  *
  * @param reason - Human-readable crash reason (e.g. exit code or signal).
  * @param config - Current extension settings for potential restart.
@@ -887,11 +1105,7 @@ function handleCrash(reason: string, config: Config, stderr?: string): void {
     rememberPid(undefined); // our process died; nothing left to clean up
     setServerState('error');
     serverUrl = null;
-    const rejectFn = readyReject;
-    readyPromise = null;
-    readyResolve = null;
-    readyReject = null;
-    rejectFn?.(new Error(reason));
+    clearReadyPromise(new Error(reason));
 
     const isVersionError = stderr?.includes('UnsupportedClassVersionError')
         || stderr?.includes('class file version');
@@ -922,16 +1136,49 @@ function handleCrash(reason: string, config: Config, stderr?: string): void {
         return;
     }
 
-    const switchLabel = vscode.l10n.t('Switch to Secure Mode');
-    const restartLabel = vscode.l10n.t('Restart Server');
-    const dismissLabel = vscode.l10n.t('Dismiss');
-
     // A fixed port occupied by a non-PlantUML process: we couldn't adopt it (not a
     // picoweb) and couldn't bind. Tell the user plainly instead of a generic crash.
     const message = isPortInUse
         ? vscode.l10n.t('The configured local server port is already in use by another process. Set the port to 0 (auto) or choose a different port.')
         : vscode.l10n.t('Local PlantUML server crashed: {0}', reason);
 
+    // Automatic restart. Skipped for a port conflict (respawning on the same
+    // port would fail identically) and while a previous automatic restart is
+    // still in flight (its continuation owns the dialog — see crashRestartInFlight).
+    if (!isPortInUse && !crashRestartInFlight && getLatestConfig) {
+        crashRestartInFlight = true;
+        log('[local-server] Attempting automatic restart after crash');
+        prepareLocalServer();
+        // Fire-and-forget start: nobody awaits this readyPromise, so absorb its
+        // rejection here — the outcome is decided by the state check below.
+        readyPromise?.catch(() => { /* surfaced via state/dialog below */ });
+        // Use the latest config (settings may have changed since the spawn).
+        void startLocalServer(getLatestConfig()).then(() => {
+            crashRestartInFlight = false;
+            // startLocalServer resolves even on failure — the state tells the
+            // outcome. 'stopped' means the Java checker declined and showed its
+            // own guidance; only a real 'error' warrants the crash dialog.
+            if ((serverState as string) === 'error') showCrashDialog(message);
+        }).catch(() => {
+            crashRestartInFlight = false;
+            showCrashDialog(message);
+        });
+        return;
+    }
+    if (crashRestartInFlight) return; // dialog duty lies with the pending restart above
+    showCrashDialog(message);
+}
+
+/**
+ * Crash dialog with the recovery actions (shown after the automatic restart
+ * failed, or when no automatic restart was attempted).
+ *
+ * @param message - Error text to display.
+ */
+function showCrashDialog(message: string): void {
+    const switchLabel = vscode.l10n.t('Switch to Secure Mode');
+    const restartLabel = vscode.l10n.t('Restart Server');
+    const dismissLabel = vscode.l10n.t('Dismiss');
     void vscode.window.showErrorMessage(
         message,
         switchLabel, restartLabel, dismissLabel
@@ -940,10 +1187,10 @@ function handleCrash(reason: string, config: Config, stderr?: string): void {
             if (action === switchLabel) {
                 const cfg = vscode.workspace.getConfiguration(CONFIG_SECTION);
                 await cfg.update('mode', 'secure', vscode.ConfigurationTarget.Global);
-            } else if (action === restartLabel) {
+            } else if (action === restartLabel && getLatestConfig) {
                 prepareLocalServer();
                 // Use the latest config (user may have changed settings since the crash).
-                await startLocalServer(getLatestConfig ? getLatestConfig() : config);
+                await startLocalServer(getLatestConfig());
             }
         } catch { /* already logged */ }
     });
