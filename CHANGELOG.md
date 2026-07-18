@@ -6,6 +6,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## 0.7.11 - 2026-07-19
+
+### Changed
+
+- A render that finds the PlantUML server unresponsive now recovers automatically — restarting the server (Start Mode `on`/`lazy`) or reconnecting once it is back (`off`)
+- Connection errors in diagrams now say what happened (server unreachable vs. timed out)
+
 ## 0.7.10 - 2026-07-18
 
 ### Added
