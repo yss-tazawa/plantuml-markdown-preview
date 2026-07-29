@@ -6,6 +6,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## 0.7.12 - 2026-07-29
+
+### Fixed
+
+- Heading anchor ids (shared by the preview and HTML export) now keep non-ASCII characters such as Japanese, matching GitHub's and VS Code's built-in preview anchor rules — previously ids were ASCII-only, so headings with only non-ASCII text got no id at all; existing documents linking to the old ASCII-only anchors (e.g. `#4-db`) will need updating, since the id now includes the non-ASCII text (e.g. `#4-dbテーブル`)
+
 ## 0.7.11 - 2026-07-19
 
 ### Changed

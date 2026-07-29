@@ -285,7 +285,7 @@ function getOrCreateMd(config: Config, withSourceMap?: boolean): MarkdownIt {
                     const slug = inline.content
                         .toLowerCase()
                         .replace(/<[^>]*>/g, '')
-                        .replace(/[^\w\s-]/g, '')
+                        .replace(/[^\p{L}\p{N}\s_-]/gu, '')
                         .replace(/\s+/g, '-')
                         .replace(/-+/g, '-')
                         .replace(/^-|-$/g, '');

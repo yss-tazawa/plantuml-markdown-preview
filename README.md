@@ -129,7 +129,9 @@ By default, Fast mode spawns and manages its own PlantUML server bound to `127.0
 |---|---|
 | `"lazy"` (default) | Start the managed server at the first diagram render. No JVM runs while you don't render any PlantUML diagram; the very first render takes a few seconds longer. |
 | `"on"` | Start the managed server as soon as the extension activates. The first render is instant, at the cost of a resident JVM from startup. |
-| `"off"` | Never start a server. Connect to one you run yourself (for example `java -jar plantuml.jar -picoweb`), including one on another machine in your LAN: |
+| `"off"` | Never start a server. Connect to one you run yourself (for example `java -jar plantuml.jar -picoweb`), including one on another machine in your LAN. |
+
+The host and port used to reach the server are controlled by these settings:
 
 | Setting | Default | Effect |
 |---|---|---|
