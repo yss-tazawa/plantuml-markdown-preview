@@ -129,7 +129,9 @@ Por defecto, el modo Fast inicia y gestiona su propio servidor PlantUML vinculad
 |---|---|
 | `"lazy"` (por defecto) | Inicia el servidor gestionado en el primer renderizado de un diagrama. No se ejecuta ninguna JVM mientras no renderices ningún diagrama PlantUML; el primer renderizado tarda unos segundos más. |
 | `"on"` | Inicia el servidor gestionado en cuanto se activa la extensión. El primer renderizado es instantáneo, a costa de mantener una JVM residente desde el arranque. |
-| `"off"` | Nunca inicia un servidor. Conéctate a uno que gestiones tú mismo (por ejemplo `java -jar plantuml.jar -picoweb`), incluido uno en otra máquina de tu red local: |
+| `"off"` | Nunca inicia un servidor. Conéctate a uno que gestiones tú mismo (por ejemplo `java -jar plantuml.jar -picoweb`), incluido uno en otra máquina de tu red local. |
+
+El host y el puerto que se usan para llegar al servidor se controlan con estos ajustes:
 
 | Ajuste | Por defecto | Efecto |
 |---|---|---|
