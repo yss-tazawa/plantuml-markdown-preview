@@ -1240,9 +1240,13 @@
   },
   "devDependencies": {
     "@types/markdown-it": "^14.1.2",
+    "@types/mocha": "^10.0.10",
     "@types/node": "^20.17.0",
     "@types/vscode": "^1.83.0",
+    "@vscode/test-cli": "^0.0.15",
+    "@vscode/test-electron": "^3.1.0",
     "esbuild": "^0.27.3",
+    "mocha": "^11.8.0",
     "typescript": "^5.9.3",
     "vitest": "^4.1.10"
   },
@@ -1258,6 +1262,8 @@
     "build": "node esbuild.js",
     "test": "vitest run",
     "test:watch": "vitest",
+    "pretest:integration": "npm run build && tsc -p private/integration/tsconfig.integration.json",
+    "test:integration": "vscode-test",
     "typecheck": "tsc --noEmit && tsc --noEmit -p src/webview/tsconfig.webview.json",
     "typecheck:tests": "tsc --noEmit -p private/tests/tsconfig.tests.json",
     "package": "npm run typecheck && npm run build && npx @vscode/vsce package --baseContentUrl https://github.com/yss-tazawa/plantuml-markdown-preview/blob/main --baseImagesUrl https://raw.githubusercontent.com/yss-tazawa/plantuml-markdown-preview/main"
