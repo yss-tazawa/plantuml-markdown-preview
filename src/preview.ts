@@ -117,6 +117,8 @@ export class PreviewManager implements vscode.Disposable {
      *  hidden (especially a full reload from a document switch) would bake a stale
      *  scroll position into the HTML; instead we defer and re-render when shown. */
     private pendingShowRender = false;
+    /** Last scroll instruction handed to the webview. Observation point for tests. */
+    private lastPostedScroll: { line: number; maxTopLine: number; atBottom: boolean; force: boolean } | null = null;
 
     constructor(outputChannel: vscode.OutputChannel) {
         this.outputChannel = outputChannel;
@@ -241,8 +243,17 @@ export class PreviewManager implements vscode.Disposable {
         // force: the webview just became visible and its layout-shift scroll event
         // may have set its syncMaster to 'preview', which would make it drop a
         // normal scrollToLine. This is an explicit restore, so bypass that guard.
-        void this.panel.webview.postMessage({ type: 'scrollToLine', line: midLine, maxTopLine, atBottom, force: true });
+        this.postScrollToLine(midLine, maxTopLine, atBottom, true);
         return true;
+    }
+
+    /** Send a scroll instruction to the webview, recording it for integration tests.
+     *  A test cannot read what the webview received, so the last instruction sent is
+     *  kept here as the observation point for editor -> preview sync. */
+    private postScrollToLine(line: number, maxTopLine: number, atBottom: boolean, force = false): void {
+        if (!this.panel) return;
+        this.lastPostedScroll = { line, maxTopLine, atBottom, force };
+        void this.panel.webview.postMessage({ type: 'scrollToLine', line, maxTopLine, atBottom, ...(force ? { force: true } : {}) });
     }
 
     /** Update webview localResourceRoots if changed. Returns true if updated. */
@@ -339,7 +350,43 @@ export class PreviewManager implements vscode.Disposable {
     private registerEventHandlers(): void {
         if (!this.panel) return;
 
-        this.messageDisposable = this.panel.webview.onDidReceiveMessage((message) => {
+        this.messageDisposable = this.panel.webview.onDidReceiveMessage(
+            (message) => this.handleWebviewMessage(message)
+        );
+
+        this.saveDisposable = vscode.workspace.onDidSaveTextDocument((doc) => {
+            if (!this.panel || !this.currentFilePath) return;
+
+            if (doc.uri.fsPath === this.currentFilePath) {
+                // Main file saved — existing behaviour
+                if (this.debounceTimer) { clearTimeout(this.debounceTimer); this.debounceTimer = null; }
+                const text = doc.getText();
+                this.lastDiagramContent = this.extractDiagramContent(text);
+                void this.renderPanel(text).catch(err => this.outputChannel.appendLine(`[render error] ${err}`));
+                return;
+            }
+
+            if (this.includePaths.has(doc.uri.fsPath)) {
+                // Include file saved — clear caches and re-render main file
+                clearCache();
+                clearServerCache();
+                void this.readFileContent(this.currentFilePath).then((text) => {
+                    if (text === null) return;
+                    void this.renderPanel(text).catch(err => this.outputChannel.appendLine(`[render error] ${err}`));
+                });
+            }
+        });
+
+        this.registerDocumentAndScrollHandlers();
+    }
+
+    /** Handle one message posted by the preview webview.
+     *  Extracted from the listener so integration tests can drive the same code path
+     *  — a test cannot make the real webview post a message. */
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- matches the
+    // `any` VS Code hands to onDidReceiveMessage; payload shape varies by type.
+    private handleWebviewMessage(message: any): void {
+        {
             if (message.type === 'revealLine' && typeof message.line === 'number') {
                 // Always track the preview's position regardless of editor visibility.
                 // lastScrollLine is used by onDidChangeViewState to restore the preview's
@@ -382,30 +429,12 @@ export class PreviewManager implements vscode.Disposable {
                     });
                 }
             }
-        });
+        }
+    }
 
-        this.saveDisposable = vscode.workspace.onDidSaveTextDocument((doc) => {
-            if (!this.panel || !this.currentFilePath) return;
-
-            if (doc.uri.fsPath === this.currentFilePath) {
-                // Main file saved — existing behaviour
-                if (this.debounceTimer) { clearTimeout(this.debounceTimer); this.debounceTimer = null; }
-                const text = doc.getText();
-                this.lastDiagramContent = this.extractDiagramContent(text);
-                void this.renderPanel(text).catch(err => this.outputChannel.appendLine(`[render error] ${err}`));
-                return;
-            }
-
-            if (this.includePaths.has(doc.uri.fsPath)) {
-                // Include file saved — clear caches and re-render main file
-                clearCache();
-                clearServerCache();
-                void this.readFileContent(this.currentFilePath).then((text) => {
-                    if (text === null) return;
-                    void this.renderPanel(text).catch(err => this.outputChannel.appendLine(`[render error] ${err}`));
-                });
-            }
-        });
+    /** Wire up the document-change and scroll-sync handlers. */
+    private registerDocumentAndScrollHandlers(): void {
+        if (!this.panel) return;
 
         this.changeDisposable = vscode.workspace.onDidChangeTextDocument((event) => {
             if (!this.panel || !this.currentFilePath || !this.lastConfig) return;
@@ -471,7 +500,7 @@ export class PreviewManager implements vscode.Disposable {
             // lastScrollLine is still updated above; the preview re-syncs to it via
             // syncPreviewToSourceNow() when it becomes visible again.
             if (!this.panel.visible) return;
-            void this.panel.webview.postMessage({ type: 'scrollToLine', line: midLine, maxTopLine, atBottom });
+            this.postScrollToLine(midLine, maxTopLine, atBottom);
         });
 
         // Initial snapshot: is the source editor currently visible?
@@ -874,6 +903,26 @@ export class PreviewManager implements vscode.Disposable {
 
     /** Whether the most recent render attempt failed. */
     getLastRenderFailed(): boolean { return this.lastRenderFailed; }
+
+    /** Source text of the most recent completed render. Updates for both the initial
+     *  full render and later body/patch updates, which reach the webview by message
+     *  and so never appear in `panel.webview.html` — this is what integration tests
+     *  observe to tell which revision of a file the preview is actually showing. */
+    getLastRenderedText(): string | null { return this.lastRenderedText; }
+
+    /** Last scroll instruction sent to the webview, or null if none was sent yet. */
+    getLastPostedScroll(): { line: number; maxTopLine: number; atBottom: boolean; force: boolean } | null {
+        return this.lastPostedScroll;
+    }
+
+    /** Which side currently owns the scroll. */
+    getSyncMaster(): SyncMaster { return this.syncMaster; }
+
+    /** Feed a message through the real webview message handler. Integration tests use
+     *  this to act as the preview, which they otherwise cannot script. */
+    dispatchWebviewMessageForTest(message: unknown): void {
+        this.handleWebviewMessage(message);
+    }
 
     /**
      * Open (or reuse) the preview panel for the given Markdown file.

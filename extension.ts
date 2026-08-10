@@ -428,13 +428,43 @@ function parseJavaMajorVersion(versionOutput: string): number | null {
 }
 
 /**
+ * Handles exposed on the activation result purely so integration tests running in
+ * a real extension host can observe preview state. VS Code offers no API to
+ * enumerate webview panels, so a test cannot reach the preview any other way.
+ * Nothing in the extension itself reads these.
+ */
+export interface TestHooks {
+    /** The live preview webview panel, or null when no preview is open. */
+    getPreviewPanel(): vscode.WebviewPanel | null;
+    /** Absolute path of the file the preview is currently showing. */
+    getPreviewFilePath(): string | null;
+    /** Whether the most recent render ended in an error. */
+    getLastRenderFailed(): boolean;
+    /** Source text the preview most recently rendered. */
+    getLastRenderedText(): string | null;
+    /** Last scroll instruction the preview sent to its webview. */
+    getLastPostedScroll(): { line: number; maxTopLine: number; atBottom: boolean; force: boolean } | null;
+    /** Which side currently owns the scroll: 'none' | 'editor' | 'preview'. */
+    getSyncMaster(): string;
+    /** Deliver a message as if the preview webview had posted it. */
+    dispatchWebviewMessage(message: unknown): void;
+}
+
+/** Shape returned by {@link activate}. `extendMarkdownIt` is the contract VS Code's
+ *  built-in Markdown preview consumes; `__test` exists only for integration tests. */
+export interface ExtensionApi {
+    extendMarkdownIt: (md: MarkdownIt) => MarkdownIt;
+    __test: TestHooks;
+}
+
+/**
  * Called by VS Code when the extension is activated.
  *
  * Registers all commands, the active editor tracker, and the configuration watcher.
  *
  * @param context - Extension context for managing subscriptions and storage.
  */
-export function activate(context: vscode.ExtensionContext): { extendMarkdownIt: (md: MarkdownIt) => MarkdownIt } {
+export function activate(context: vscode.ExtensionContext): ExtensionApi {
     extensionPath = context.extensionPath;
 
     // Create and register the shared output channel so its lifecycle is managed
@@ -904,7 +934,18 @@ export function activate(context: vscode.ExtensionContext): { extendMarkdownIt: 
         }).catch(() => { /* checkJavaAvailability handles the error dialog */ });
     }
 
-    return { extendMarkdownIt };
+    return {
+        extendMarkdownIt,
+        __test: {
+            getPreviewPanel: () => previewManager.getPanel(),
+            getPreviewFilePath: () => previewManager.getCurrentFilePath(),
+            getLastRenderFailed: () => previewManager.getLastRenderFailed(),
+            getLastRenderedText: () => previewManager.getLastRenderedText(),
+            getLastPostedScroll: () => previewManager.getLastPostedScroll(),
+            getSyncMaster: () => previewManager.getSyncMaster(),
+            dispatchWebviewMessage: (message) => previewManager.dispatchWebviewMessageForTest(message),
+        },
+    };
 }
 
 /** Keys that affect the local-server process and require a restart when changed. */
