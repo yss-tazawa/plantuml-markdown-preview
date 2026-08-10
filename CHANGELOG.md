@@ -6,6 +6,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## 0.7.13 - 2026-08-11
+
+### Fixed
+
+- Previews now always show the current file — while a Git diff or Local History editor for the same file was open, a preview could show that older revision instead, and neither the reload button nor reopening the preview would clear it
+- Scrolling a Git diff or Local History view of the previewed file no longer jumps the preview to a mismatched position
+
 ## 0.7.12 - 2026-07-29
 
 ### Fixed
