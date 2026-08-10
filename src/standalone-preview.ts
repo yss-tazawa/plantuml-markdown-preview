@@ -12,7 +12,7 @@
 import * as vscode from 'vscode';
 import { CONFIG_SECTION, type Config } from './config.js';
 import { LIGHT_THEME_KEYS, DARK_THEME_KEYS, getThemeBgColor } from './exporter.js';
-import { getNonce, buildThemeItems, readSource } from './utils.js';
+import { getNonce, buildThemeItems, readSource, isLiveSourceUri } from './utils.js';
 import { handleViewerMessage } from './export-handler.js';
 
 // ---------------------------------------------------------------------------
@@ -318,7 +318,12 @@ export function createStandalonePreview(def: StandalonePreviewDef): StandalonePr
 
         panelDisposables.push(
             vscode.workspace.onDidChangeTextDocument((e) => {
-                if (!currentFilePath || e.document.uri.fsPath !== currentFilePath) return;
+                if (!currentFilePath) return;
+                // A `git:` diff document shares the working-tree fsPath, and its content
+                // provider updates arrive here as ordinary change events. Without this
+                // guard, activity on the diff side triggers a needless re-render.
+                if (!isLiveSourceUri(e.document.uri)) return;
+                if (e.document.uri.fsPath !== currentFilePath) return;
                 scheduleRender();
             })
         );

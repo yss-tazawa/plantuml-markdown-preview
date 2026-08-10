@@ -20,7 +20,7 @@ import { getLocalServerUrl, waitForLocalServer, ensureLocalServerStarted } from 
 import { scalePlantUmlSvg, scaleD2Svg } from './renderer.js';
 import { renderD2ToSvg } from './d2-renderer.js';
 import { getScrollSyncScriptTag } from './scroll-sync.js';
-import { getNonce, resolveLocalImagePaths, extractPlantUmlBlocks, PLANTUML_FENCE_TEST_RE, extractMermaidBlocks, MERMAID_FENCE_TEST_RE, extractD2Blocks, D2_FENCE_TEST_RE, escapeHtml, errorHtml, buildThemeItems } from './utils.js';
+import { getNonce, resolveLocalImagePaths, extractPlantUmlBlocks, PLANTUML_FENCE_TEST_RE, extractMermaidBlocks, MERMAID_FENCE_TEST_RE, extractD2Blocks, D2_FENCE_TEST_RE, escapeHtml, errorHtml, buildThemeItems, isLiveSourceUri, findLiveSourceDocument } from './utils.js';
 import { CONFIG_SECTION, MERMAID_THEME_KEYS, D2_THEME_KEYS, D2_THEME_MAP, type Config } from './config.js';
 import { updateDiagramViewer, closeStaleViewers, disposeAllViewers, setPendingSaveDiagram, handlePngFromPreview, handleCopyResult } from './diagram-viewer.js';
 
@@ -212,14 +212,22 @@ export class PreviewManager implements vscode.Disposable {
         this.syncMasterTimer = setTimeout(() => { this.syncMaster = 'none'; this.syncMasterTimer = null; }, SYNC_MASTER_TIMEOUT_MS);
     }
 
+    /** Find the visible editor showing the previewed file. Diff editors showing the
+     *  same path under the `git:` scheme are excluded — their line numbers belong to
+     *  a different revision, so syncing against them scrolls to the wrong place. */
+    private findSourceEditor(): vscode.TextEditor | undefined {
+        if (!this.currentFilePath) return undefined;
+        return vscode.window.visibleTextEditors.find(
+            e => isLiveSourceUri(e.document.uri) && e.document.uri.fsPath === this.currentFilePath
+        );
+    }
+
     /** Force the preview to sync to the paired source editor's current position.
      *  Used when the preview regains focus after the source scrolled while it was
      *  hidden. Returns false if the source editor isn't visible (nothing to sync). */
     private syncPreviewToSourceNow(): boolean {
         if (!this.panel) return false;
-        const editor = vscode.window.visibleTextEditors.find(
-            e => e.document.uri.fsPath === this.currentFilePath
-        );
+        const editor = this.findSourceEditor();
         if (!editor || editor.visibleRanges.length === 0) return false;
 
         const topLine = editor.visibleRanges[0].start.line;
@@ -300,7 +308,7 @@ export class PreviewManager implements vscode.Disposable {
 
     /** Read file content from an open editor or disk. Returns null on failure. */
     private async readFileContent(filePath: string): Promise<string | null> {
-        const doc = vscode.workspace.textDocuments.find(d => d.uri.fsPath === filePath);
+        const doc = findLiveSourceDocument(filePath);
         if (doc) {
             return doc.getText();
         }
@@ -348,9 +356,7 @@ export class PreviewManager implements vscode.Disposable {
                 // revealLine. So this is a genuine preview-driven scroll — follow it.
                 // (No panel.active check: mouse-wheel scrolling the preview does not
                 // make the panel active, so that guard would wrongly drop it.)
-                const editor = vscode.window.visibleTextEditors.find(
-                    e => e.document.uri.fsPath === this.currentFilePath
-                );
+                const editor = this.findSourceEditor();
                 if (!editor) return;
 
                 this.setSyncMaster('preview');
@@ -402,7 +408,13 @@ export class PreviewManager implements vscode.Disposable {
         });
 
         this.changeDisposable = vscode.workspace.onDidChangeTextDocument((event) => {
-            if (!this.panel || !this.currentFilePath || !this.lastConfig || event.document.uri.fsPath !== this.currentFilePath) return;
+            if (!this.panel || !this.currentFilePath || !this.lastConfig) return;
+            // The extension host fires this for ANY tracked document, virtual ones
+            // included: a `git:` diff document's content is replaced when its content
+            // provider signals a change (commit, stage, checkout), which reaches us as
+            // a normal change event carrying the OLD revision's text.
+            if (!isLiveSourceUri(event.document.uri)) return;
+            if (event.document.uri.fsPath !== this.currentFilePath) return;
             if (this.debounceTimer) clearTimeout(this.debounceTimer);
             const text = event.document.getText();
             const currentDiagramContent = this.extractDiagramContent(text);
@@ -427,6 +439,7 @@ export class PreviewManager implements vscode.Disposable {
 
         this.scrollDisposable = vscode.window.onDidChangeTextEditorVisibleRanges((event) => {
             if (!this.panel) return;
+            if (!isLiveSourceUri(event.textEditor.document.uri)) return;
             if (event.textEditor.document.uri.fsPath !== this.currentFilePath) return;
             if (event.visibleRanges.length === 0) return;
 
@@ -462,9 +475,7 @@ export class PreviewManager implements vscode.Disposable {
         });
 
         // Initial snapshot: is the source editor currently visible?
-        this.sourceWasVisible = vscode.window.visibleTextEditors.some(
-            e => e.document.uri.fsPath === this.currentFilePath
-        );
+        this.sourceWasVisible = !!this.findSourceEditor();
 
         // We track source visibility so that the hidden->visible transition can
         // be detected inside onDidChangeTextEditorVisibleRanges. This subscription
@@ -473,7 +484,9 @@ export class PreviewManager implements vscode.Disposable {
         // this separate signal).
         this.visibleEditorsDisposable = vscode.window.onDidChangeVisibleTextEditors((editors) => {
             if (!this.currentFilePath) return;
-            const isVisible = editors.some(e => e.document.uri.fsPath === this.currentFilePath);
+            const isVisible = editors.some(
+                e => isLiveSourceUri(e.document.uri) && e.document.uri.fsPath === this.currentFilePath
+            );
             if (!isVisible) this.sourceWasVisible = false;
         });
     }
@@ -656,7 +669,8 @@ export class PreviewManager implements vscode.Disposable {
 
         if (!this.initialHtmlSet || this.pendingScrollRestore) {
             const editor = vscode.window.activeTextEditor;
-            if (editor && this.currentFilePath && editor.document.uri.fsPath === this.currentFilePath && editor.visibleRanges.length > 0) {
+            if (editor && this.currentFilePath && isLiveSourceUri(editor.document.uri)
+                    && editor.document.uri.fsPath === this.currentFilePath && editor.visibleRanges.length > 0) {
                 // Use midLine (same as the editor->preview scroll handler), NOT the
                 // top line. The webview centers the line it receives, so sending the
                 // top line here would place it at the viewport center — a half-screen

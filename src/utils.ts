@@ -467,6 +467,48 @@ export function resolveLocalImagePaths(html: string, baseDirPath: string, toUri:
     });
 }
 
+/** Schemes whose documents hold live, editable content for a path. */
+const LIVE_SOURCE_SCHEMES: ReadonlySet<string> = new Set(['file', 'untitled']);
+
+/**
+ * Check whether a URI refers to live source rather than a fixed past revision.
+ *
+ * Revision providers keep the SAME path and swap only the scheme and query:
+ * Git diff editors build `uri.with({scheme:'git', query})`, and VS Code's local
+ * history builds `uri.with({scheme:'vscode-local-history', query})`. Their fsPath
+ * is therefore identical to the working-tree file, so matching on fsPath alone
+ * picks up whichever document happens to come first — the preview then renders an
+ * old revision, and no reload fixes it because every path takes the same lookup.
+ *
+ * Deliberately an allow-list. Missing a live scheme fails loudly (the preview
+ * cannot open); missing a revision scheme fails silently (stale content), which
+ * is the bug this guards against. Every document/editor lookup keyed by fsPath
+ * must go through this check.
+ *
+ * @param uri - URI to test.
+ * @returns True when the URI holds live, editable content.
+ */
+export function isLiveSourceUri(uri: vscode.Uri): boolean {
+    return LIVE_SOURCE_SCHEMES.has(uri.scheme);
+}
+
+/**
+ * Find the open document holding live content for the given path.
+ *
+ * Ignores same-path revision documents (`git:`, `vscode-local-history:`, ...).
+ * An on-disk `file` document wins over an `untitled` one sharing the path, so the
+ * result never depends on the order documents were opened in.
+ *
+ * @param filePath - Absolute path to the source file.
+ * @returns The matching document, or undefined if none is open.
+ */
+export function findLiveSourceDocument(filePath: string): vscode.TextDocument | undefined {
+    const matches = vscode.workspace.textDocuments.filter(
+        d => isLiveSourceUri(d.uri) && d.uri.fsPath === filePath
+    );
+    return matches.find(d => d.uri.scheme === 'file') ?? matches[0];
+}
+
 /**
  * Read file content from an open editor buffer or disk.
  *
@@ -474,7 +516,7 @@ export function resolveLocalImagePaths(html: string, baseDirPath: string, toUri:
  * @returns File content string, or null if the file cannot be read.
  */
 export async function readSource(filePath: string): Promise<string | null> {
-    const openDoc = vscode.workspace.textDocuments.find(d => d.uri.fsPath === filePath);
+    const openDoc = findLiveSourceDocument(filePath);
     if (openDoc) return openDoc.getText();
     try {
         return await readFile(filePath, 'utf-8');

@@ -21,7 +21,7 @@ import { prepareLocalServer, startLocalServer, stopLocalServer, restartLocalServ
 import type { LocalServerState } from './src/local-server.js';
 import { createStatusBarItem, updateStatusBar, showModeQuickPick, SELECT_MODE_COMMAND } from './src/status-bar.js';
 import { PreviewManager } from './src/preview.js';
-import { execJava, extractPlantUmlBlocks } from './src/utils.js';
+import { execJava, extractPlantUmlBlocks, findLiveSourceDocument } from './src/utils.js';
 import { clearBrowserCache } from './src/browser-finder.js';
 import { exportAllDiagrams } from './src/bulk-export.js';
 import { disposeAllViewers, diagramAction, openPendingDiagramViewer, getPendingDiagramContext } from './src/diagram-viewer.js';
@@ -845,7 +845,7 @@ export function activate(context: vscode.ExtensionContext): { extendMarkdownIt: 
             }
             const filePath = previewManager.getCurrentFilePath();
             if (!filePath) return;
-            const doc = vscode.workspace.textDocuments.find(d => d.uri.fsPath === filePath);
+            const doc = findLiveSourceDocument(filePath);
             const text = doc?.getText();
             if (text == null) return;
             const blocks = extractPlantUmlBlocks(text);
