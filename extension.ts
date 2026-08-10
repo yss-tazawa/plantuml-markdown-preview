@@ -442,6 +442,10 @@ export interface TestHooks {
     getLastRenderFailed(): boolean;
     /** Source text the preview most recently rendered. */
     getLastRenderedText(): string | null;
+    /** Markup produced by the most recent completed render. */
+    getLastRenderedHtml(): string | null;
+    /** Theme CSS most recently sent to the preview webview. */
+    getLastPostedThemeCss(): string | null;
     /** Last scroll instruction the preview sent to its webview. */
     getLastPostedScroll(): { line: number; maxTopLine: number; atBottom: boolean; force: boolean } | null;
     /** Which side currently owns the scroll: 'none' | 'editor' | 'preview'. */
@@ -941,6 +945,8 @@ export function activate(context: vscode.ExtensionContext): ExtensionApi {
             getPreviewFilePath: () => previewManager.getCurrentFilePath(),
             getLastRenderFailed: () => previewManager.getLastRenderFailed(),
             getLastRenderedText: () => previewManager.getLastRenderedText(),
+            getLastRenderedHtml: () => previewManager.getLastRenderedHtml(),
+            getLastPostedThemeCss: () => previewManager.getLastPostedThemeCss(),
             getLastPostedScroll: () => previewManager.getLastPostedScroll(),
             getSyncMaster: () => previewManager.getSyncMaster(),
             dispatchWebviewMessage: (message) => previewManager.dispatchWebviewMessageForTest(message),

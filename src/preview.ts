@@ -119,6 +119,13 @@ export class PreviewManager implements vscode.Disposable {
     private pendingShowRender = false;
     /** Last scroll instruction handed to the webview. Observation point for tests. */
     private lastPostedScroll: { line: number; maxTopLine: number; atBottom: boolean; force: boolean } | null = null;
+    /** Theme CSS last handed to the webview. A theme change arrives by message, so it
+     *  never shows up in the panel HTML; this is where tests observe it. */
+    private lastPostedThemeCss: string | null = null;
+    /** Markup of the last completed render — the full document on a fresh panel, the
+     *  replacement body on a reuse. Observation point for tests, which cannot read
+     *  the webview once updates start arriving by message. */
+    private lastRenderedHtml: string | null = null;
 
     constructor(outputChannel: vscode.OutputChannel) {
         this.outputChannel = outputChannel;
@@ -764,6 +771,7 @@ export class PreviewManager implements vscode.Disposable {
                     );
                 }
                 this.panel.webview.html = finalHtml;
+                this.lastRenderedHtml = finalHtml;
                 this.initialHtmlSet = true;
                 this.initialHtmlHadMermaid = finalHtml.includes('__renderMermaid');
                 this.pendingScrollRestore = false;
@@ -816,6 +824,7 @@ export class PreviewManager implements vscode.Disposable {
                 }
                 this.pendingScrollRestore = false;
                 void this.panel.webview.postMessage(msg);
+                this.lastRenderedHtml = finalBody;
                 htmlReplaced = true;
                 this.lastRenderFailed = false;
             }
@@ -909,6 +918,12 @@ export class PreviewManager implements vscode.Disposable {
      *  and so never appear in `panel.webview.html` — this is what integration tests
      *  observe to tell which revision of a file the preview is actually showing. */
     getLastRenderedText(): string | null { return this.lastRenderedText; }
+
+    /** Markup produced by the most recent completed render. */
+    getLastRenderedHtml(): string | null { return this.lastRenderedHtml; }
+
+    /** Theme CSS most recently sent to the webview. */
+    getLastPostedThemeCss(): string | null { return this.lastPostedThemeCss; }
 
     /** Last scroll instruction sent to the webview, or null if none was sent yet. */
     getLastPostedScroll(): { line: number; maxTopLine: number; atBottom: boolean; force: boolean } | null {
@@ -1083,6 +1098,7 @@ export class PreviewManager implements vscode.Disposable {
 
             if (changed.size === 1 && changed.has('previewTheme')) {
                 const css = getThemeCss(config.previewTheme || 'github-light');
+                this.lastPostedThemeCss = css;
                 void this.panel.webview.postMessage({ type: 'updateTheme', css });
                 return;
             }
