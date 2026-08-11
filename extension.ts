@@ -449,7 +449,7 @@ export interface TestHooks {
     /** Theme CSS most recently sent to the preview webview. */
     getLastPostedThemeCss(): string | null;
     /** Last scroll instruction the preview sent to its webview. */
-    getLastPostedScroll(): { line: number; maxTopLine: number; atBottom: boolean; force: boolean } | null;
+    getLastPostedScroll(): { line: number; maxTopLine: number; atBottom: boolean; force: boolean; instant: boolean } | null;
     /** Which side currently owns the scroll: 'none' | 'editor' | 'preview'. */
     getSyncMaster(): string;
     /** Deliver a message as if the preview webview had posted it. */
@@ -608,7 +608,11 @@ export function activate(context: vscode.ExtensionContext): ExtensionApi {
             }
             const config = getConfig();
             void vscode.window.withProgress(
-                { location: vscode.ProgressLocation.Notification, title: vscode.l10n.t('Opening preview...') },
+                // Window, not Notification: opening a preview needs an immediate sign that
+                // something is happening, and a webview takes a beat to paint — but a popup
+                // for an action the user just took is noise. The status bar spinner appears
+                // at once and clears itself when the first render lands.
+                { location: vscode.ProgressLocation.Window, title: vscode.l10n.t('Opening preview...') },
                 async () => {
                     await openRevisionPreview(filePath, revision, config);
                     checkJavaAvailability(config).catch(() => {});
@@ -635,7 +639,11 @@ export function activate(context: vscode.ExtensionContext): ExtensionApi {
             const config = getConfig();
             // Fire-and-forget: progress notification dismissed when the async body completes
             void vscode.window.withProgress(
-                { location: vscode.ProgressLocation.Notification, title: vscode.l10n.t('Opening preview...') },
+                // Window, not Notification: opening a preview needs an immediate sign that
+                // something is happening, and a webview takes a beat to paint — but a popup
+                // for an action the user just took is noise. The status bar spinner appears
+                // at once and clears itself when the first render lands.
+                { location: vscode.ProgressLocation.Window, title: vscode.l10n.t('Opening preview...') },
                 async () => {
                     await previewManager.open(filePath, config, true, true);
                     checkJavaAvailability(config).catch(() => {});
@@ -654,7 +662,11 @@ export function activate(context: vscode.ExtensionContext): ExtensionApi {
             }
             const config = getConfig();
             void vscode.window.withProgress(
-                { location: vscode.ProgressLocation.Notification, title: vscode.l10n.t('Opening preview...') },
+                // Window, not Notification: opening a preview needs an immediate sign that
+                // something is happening, and a webview takes a beat to paint — but a popup
+                // for an action the user just took is noise. The status bar spinner appears
+                // at once and clears itself when the first render lands.
+                { location: vscode.ProgressLocation.Window, title: vscode.l10n.t('Opening preview...') },
                 async () => {
                     await openPumlPreview(filePath, config);
                     checkJavaAvailability(config).catch(() => {});
@@ -672,7 +684,16 @@ export function activate(context: vscode.ExtensionContext): ExtensionApi {
                 return;
             }
             const config = getConfig();
-            await openMermaidPreview(filePath, config, context.extensionUri);
+            // Mermaid draws in the webview rather than here, so this is quick — but the
+            // webview itself still takes a beat to appear, and that wait should look the
+            // same as it does for the other previews.
+            // Awaited, not fire-and-forget: opening can reject (the render path has no
+            // catch of its own), and awaiting keeps that rejection flowing out of the
+            // command handler to VS Code, which is what reported it before.
+            await vscode.window.withProgress(
+                { location: vscode.ProgressLocation.Window, title: vscode.l10n.t('Opening preview...') },
+                () => openMermaidPreview(filePath, config, context.extensionUri),
+            );
         }
     );
 
@@ -686,7 +707,11 @@ export function activate(context: vscode.ExtensionContext): ExtensionApi {
             }
             const config = getConfig();
             void vscode.window.withProgress(
-                { location: vscode.ProgressLocation.Notification, title: vscode.l10n.t('Opening preview...') },
+                // Window, not Notification: opening a preview needs an immediate sign that
+                // something is happening, and a webview takes a beat to paint — but a popup
+                // for an action the user just took is noise. The status bar spinner appears
+                // at once and clears itself when the first render lands.
+                { location: vscode.ProgressLocation.Window, title: vscode.l10n.t('Opening preview...') },
                 async () => {
                     await openD2Preview(filePath, config);
                 }
