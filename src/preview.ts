@@ -118,7 +118,7 @@ export class PreviewManager implements vscode.Disposable {
      *  scroll position into the HTML; instead we defer and re-render when shown. */
     private pendingShowRender = false;
     /** Last scroll instruction handed to the webview. Observation point for tests. */
-    private lastPostedScroll: { line: number; maxTopLine: number; atBottom: boolean; force: boolean } | null = null;
+    private lastPostedScroll: { line: number; maxTopLine: number; atBottom: boolean; force: boolean; instant: boolean } | null = null;
     /** Theme CSS last handed to the webview. A theme change arrives by message, so it
      *  never shows up in the panel HTML; this is where tests observe it. */
     private lastPostedThemeCss: string | null = null;
@@ -250,17 +250,26 @@ export class PreviewManager implements vscode.Disposable {
         // force: the webview just became visible and its layout-shift scroll event
         // may have set its syncMaster to 'preview', which would make it drop a
         // normal scrollToLine. This is an explicit restore, so bypass that guard.
-        this.postScrollToLine(midLine, maxTopLine, atBottom, true);
+        // instant: a restore has no motion worth showing — animating here is the same
+        // "the preview scrolls by itself" effect, just triggered by coming back to the tab.
+        this.postScrollToLine(midLine, maxTopLine, atBottom, true, true);
         return true;
     }
 
     /** Send a scroll instruction to the webview, recording it for integration tests.
      *  A test cannot read what the webview received, so the last instruction sent is
      *  kept here as the observation point for editor -> preview sync. */
-    private postScrollToLine(line: number, maxTopLine: number, atBottom: boolean, force = false): void {
+    private postScrollToLine(line: number, maxTopLine: number, atBottom: boolean, force = false, instant = false): void {
         if (!this.panel) return;
-        this.lastPostedScroll = { line, maxTopLine, atBottom, force };
-        void this.panel.webview.postMessage({ type: 'scrollToLine', line, maxTopLine, atBottom, ...(force ? { force: true } : {}) });
+        this.lastPostedScroll = { line, maxTopLine, atBottom, force, instant };
+        void this.panel.webview.postMessage({
+            type: 'scrollToLine', line, maxTopLine, atBottom,
+            ...(force ? { force: true } : {}),
+            // Separate from `force`, which only bypasses the preview-master guard. This
+            // says the preview should land on the position rather than travel to it —
+            // true for restores, false while following the editor as the user scrolls.
+            ...(instant ? { instant: true } : {}),
+        });
     }
 
     /** Update webview localResourceRoots if changed. Returns true if updated. */
@@ -926,7 +935,7 @@ export class PreviewManager implements vscode.Disposable {
     getLastPostedThemeCss(): string | null { return this.lastPostedThemeCss; }
 
     /** Last scroll instruction sent to the webview, or null if none was sent yet. */
-    getLastPostedScroll(): { line: number; maxTopLine: number; atBottom: boolean; force: boolean } | null {
+    getLastPostedScroll(): { line: number; maxTopLine: number; atBottom: boolean; force: boolean; instant: boolean } | null {
         return this.lastPostedScroll;
     }
 

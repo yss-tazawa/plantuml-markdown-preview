@@ -254,7 +254,7 @@ interface Anchor {
      * @param maxTopLine - Maximum editor top line for anchor computation.
      * @param [atBottom] - When true, snap to the bottom of the preview.
      */
-    function scrollToSourceLine(topLine: number, maxTopLine: number, atBottom?: boolean): void {
+    function scrollToSourceLine(topLine: number, maxTopLine: number, atBottom?: boolean, instant?: boolean): void {
         // Every call here is a programmatic scroll (editor-driven sync, restore
         // after re-render/tab-switch, image-settle re-sync) — never a user action.
         // Mark the editor as master so the scroll events it produces aren't echoed
@@ -266,6 +266,14 @@ interface Anchor {
         // to re-sync; onImageSettled needs it to avoid falling back to INITIAL_LINE).
         lastSentLine = Math.round(topLine);
         lastMaxTopLine = maxTopLine;
+
+        // Both paths below jump straight to their target, so any animation still in
+        // flight has to be cancelled first — otherwise its remaining steps keep running
+        // and drag the viewport away from where we just put it. (smoothScrollTo cancels
+        // it itself, so the animated path needs nothing here.)
+        if (instant || atBottom) {
+            if (smoothScrollTimer) { clearTimeout(smoothScrollTimer); smoothScrollTimer = null; }
+        }
 
         if (atBottom) {
             const ms = Math.max(0, document.body.scrollHeight - window.innerHeight);
@@ -279,6 +287,17 @@ interface Anchor {
 
         const centerPixel = lineToPixel(anc, topLine);
         const targetY = Math.max(0, Math.round(centerPixel - window.innerHeight / 2));
+        if (instant) {
+            // Restores must land, not travel. Animating from wherever the viewport
+            // happens to be is what the reader perceives as the preview scrolling by
+            // itself after a render — there is no journey to show, only a position to
+            // adopt. Live editor-driven sync keeps the animation, where it reads as
+            // following along.
+            expectingScrollEvent = true;
+            window.scrollTo({ top: targetY, behavior: 'instant' });
+            requestAnimationFrame(function () { expectingScrollEvent = false; });
+            return;
+        }
         smoothScrollTo(targetY);
     }
 
@@ -480,7 +499,7 @@ interface Anchor {
             // scroll that flips syncMaster to 'preview', which would drop the restore.
             if (syncMaster === 'preview' && !message.force) return;
             setSyncMaster('editor');
-            scrollToSourceLine(message.line, message.maxTopLine, message.atBottom);
+            scrollToSourceLine(message.line, message.maxTopLine, message.atBottom, !!message.instant);
         } else if (message && message.type === 'updateTheme' && typeof message.css === 'string') {
             const styleEl = document.getElementById('theme-css');
             if (styleEl) styleEl.textContent = message.css;
@@ -769,11 +788,11 @@ interface Anchor {
         if (update.scrollTo) {
             const st = update.scrollTo;
             requestAnimationFrame(function () {
-                scrollToSourceLine(st.line, st.maxTopLine, st.atBottom);
+                scrollToSourceLine(st.line, st.maxTopLine, st.atBottom, true);
             });
         } else if (lastSentLine >= 0 && lastMaxTopLine >= 0) {
             requestAnimationFrame(function () {
-                scrollToSourceLine(lastSentLine, lastMaxTopLine);
+                scrollToSourceLine(lastSentLine, lastMaxTopLine, false, true);
             });
         }
     }
@@ -788,11 +807,11 @@ interface Anchor {
         // Re-sync scroll position so the viewport corrects for the layout shift
         if (lastSentLine >= 0 && lastMaxTopLine >= 0) {
             requestAnimationFrame(function () {
-                scrollToSourceLine(lastSentLine, lastMaxTopLine);
+                scrollToSourceLine(lastSentLine, lastMaxTopLine, false, true);
             });
         } else if (INITIAL_LINE > 0 && !initialRestorePending) {
             requestAnimationFrame(function () {
-                scrollToSourceLine(INITIAL_LINE, INITIAL_MAX_TOP_LINE);
+                scrollToSourceLine(INITIAL_LINE, INITIAL_MAX_TOP_LINE, false, true);
             });
         }
     }
@@ -968,7 +987,7 @@ interface Anchor {
     if (INITIAL_AT_BOTTOM || INITIAL_LINE > 0) {
         var restoreScroll = function () {
             requestAnimationFrame(function () {
-                scrollToSourceLine(INITIAL_LINE, INITIAL_MAX_TOP_LINE, INITIAL_AT_BOTTOM);
+                scrollToSourceLine(INITIAL_LINE, INITIAL_MAX_TOP_LINE, INITIAL_AT_BOTTOM, true);
                 document.body.style.visibility = '';
                 initialRestorePending = false;
             });
