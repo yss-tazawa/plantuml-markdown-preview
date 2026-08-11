@@ -3,6 +3,8 @@
   "description": "워크플로에 맞는 3가지 모드. PlantUML, Mermaid, D2를 인라인으로 렌더링 — 빠르게, 안전하게, 또는 설정 없이.",
   "submenu.label": "PlantUML Markdown Preview",
   "command.openPreview.title": "미리보기를 옆에 열기",
+  "command.openHeadRevisionPreview.title": "HEAD 리비전 미리보기를 옆에 열기",
+  "command.openStagedRevisionPreview.title": "스테이징된 리비전 미리보기를 옆에 열기",
   "command.openPumlPreview.title": "PlantUML 파일 미리보기",
   "command.openMermaidPreview.title": "Mermaid 파일 미리보기",
   "command.openD2Preview.title": "D2 파일 미리보기",

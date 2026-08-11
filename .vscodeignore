@@ -25,3 +25,5 @@ jsconfig.json
 tsconfig.json
 vitest.config.ts
 src/**
+.vscode-test/**
+.vscode-test.mjs

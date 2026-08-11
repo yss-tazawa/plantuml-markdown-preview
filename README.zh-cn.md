@@ -48,6 +48,7 @@
 - **导航与目录** — 跳转至顶部/底部按钮及预览面板目录侧边栏
 - **图表查看器** — 右键任意图表打开平移和缩放面板，实时同步并匹配主题背景
 - **独立图表预览** — 直接预览 `.puml`、`.plantuml`、`.mmd`、`.mermaid`、`.d2` 文件，支持平移缩放、实时更新和主题 — 无需 Markdown 包装
+- **Git 版本预览** — 将 Markdown 文件按 HEAD 或暂存版本时的内容渲染，与当前预览并排显示，让改动过的图表可以渲染后比较
 - **保存/复制图表为 PNG/SVG** — 在预览或图表查看器中右键图表保存或复制到剪贴板
 - **14 种预览主题** — 亮色 8 种 + 暗色 6 种（GitHub、Atom、Solarized、Dracula、Monokai 等）
 - **编辑器辅助** — PlantUML、Mermaid、D2 的关键字补全、颜色选择器和代码片段
@@ -234,6 +235,16 @@
 - PlantUML：支持三种渲染模式（Fast/Secure/Easy）
 - Mermaid：使用 mermaid.js 客户端渲染
 - D2：使用 @terrastruct/d2（Wasm）渲染，可配置主题和布局引擎
+
+### Git 版本预览
+
+将 Markdown 文件按 Git 某个版本时的内容渲染到侧边面板，让你并排比较改动过的图表，而不是阅读文本差异。
+
+- **HEAD** — 最后一次提交的版本
+- **暂存** — 当前已暂存待提交的版本
+- 在现有预览旁边打开，新旧图表可以同时查看
+- 只读快照：只渲染一次，不会跟随后续编辑，面板顶部会有提示
+- 文件需要在 Git 仓库中被跟踪
 
 ### 双向滚动同步
 
@@ -466,6 +477,15 @@ PlantUML、Mermaid 和 D2 图表也可在 VS Code 内置 Markdown 预览（`Mark
 - **键盘快捷键：** `Cmd+Alt+V`（Mac）/ `Ctrl+Alt+V`（Windows/Linux）— 相同快捷键，根据文件类型自动选择
 - **右键菜单：** 在资源管理器或编辑器中右键对应文件 → **预览 PlantUML 文件** / **预览 Mermaid 文件** / **预览 D2 文件**
 - **命令面板：** `PlantUML Markdown Preview: Preview PlantUML File`、`Preview Mermaid File` 或 `Preview D2 File`
+
+### 打开 Git 版本预览
+
+在当前版本预览的旁边，渲染并显示 Markdown 文件在某个 Git 版本时的内容。
+
+- **右键菜单:** 在资源管理器或编辑器中右键点击 `.md` 文件 → **PlantUML Markdown Preview** → **在侧边打开 HEAD 版本预览** / **在侧边打开暂存版本预览**
+- **命令面板:** `PlantUML Markdown Preview: 在侧边打开 HEAD 版本预览` / `在侧边打开暂存版本预览`
+
+先打开普通预览，再打开版本预览，两个面板会并排显示。版本面板是固定快照，编辑时不会更新。
 
 ### 导出为 HTML
 

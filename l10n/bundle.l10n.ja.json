@@ -106,5 +106,9 @@
   "Exported {0} diagrams ({1} failed): {2}": "{0} 個のダイアグラムをエクスポートしました（{1} 個失敗）: {2}",
   "Exported {0} diagrams: {1}": "{0} 個のダイアグラムをエクスポートしました: {1}",
   "Open Folder": "フォルダを開く",
-  "No preview is open. Open a preview first.": "プレビューが開いていません。先にプレビューを開いてください。"
+  "No preview is open. Open a preview first.": "プレビューが開いていません。先にプレビューを開いてください。",
+  "Read-only snapshot of {0} at {1}. It does not follow your edits.": "{0} の {1} 時点のスナップショットです（読み取り専用）。編集には追従しません。",
+  "{0} is not inside a Git repository.": "{0} は Git リポジトリ内にありません。",
+  "{0} does not exist at {1}.": "{0} は {1} には存在しません。",
+  "Git was not found. Install Git or make sure it is on your PATH.": "Git が見つかりません。Git をインストールするか、PATH が通っているか確認してください。"
 }

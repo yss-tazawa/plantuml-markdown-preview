@@ -48,6 +48,7 @@ Cambia entre modos en cualquier momento con un solo ajuste: sin migración, sin 
 - **Navegación y TOC**: botones para ir al principio/final y una barra lateral de Tabla de contenidos en el panel de vista previa.
 - **Visor de diagramas (Diagram Viewer)**: haz clic derecho en cualquier diagrama para abrir un panel de desplazamiento y zoom con sincronización en vivo y fondo adaptado al tema.
 - **Vista previa de diagramas independiente**: abre archivos `.puml`, `.plantuml`, `.mmd`, `.mermaid` y `.d2` directamente con zoom, actualizaciones en vivo y soporte de temas, sin necesidad de un envoltorio Markdown.
+- **Vista previa de revisiones de Git** — renderiza un archivo Markdown tal como estaba en HEAD o en la versión preparada, junto a tu vista previa actual, para comparar los diagramas modificados ya renderizados
 - **Guardar o copiar diagramas como PNG / SVG**: haz clic derecho en cualquier diagrama en la vista previa o en el Visor de diagramas para guardarlo o copiarlo al portapapeles.
 - **14 temas de vista previa**: 8 temas claros + 6 oscuros, incluyendo GitHub, Atom, Solarized, Dracula, Monokai y más.
 - **Asistencia al editor**: autocompletado de palabras clave, selector de color y fragmentos de código para PlantUML, Mermaid y D2.
@@ -236,6 +237,16 @@ Abre archivos `.puml`, `.plantuml`, `.mmd`, `.mermaid` o `.d2` directamente, sin
 - PlantUML: soporta los tres modos de renderizado (Fast / Secure / Easy).
 - Mermaid: renderizado en el lado del cliente usando mermaid.js.
 - D2: renderizado usando @terrastruct/d2 (Wasm) con tema y motor de diseño configurables.
+
+### Vista previa de revisiones de Git
+
+Renderiza un archivo Markdown tal como estaba en una revisión de Git, en un panel lateral, para comparar un diagrama modificado en paralelo en lugar de leerlo como diferencia de texto.
+
+- **HEAD** — la última versión confirmada
+- **Preparada** — la versión actualmente preparada para confirmar
+- Se abre junto a tu vista previa existente, de modo que los diagramas antiguo y nuevo quedan visibles a la vez
+- Instantánea de solo lectura: se renderiza una vez y no sigue las ediciones posteriores, y un aviso en la parte superior lo indica
+- Requiere que el archivo esté versionado en un repositorio Git
 
 ### Sincronización de desplazamiento bidireccional
 
@@ -455,6 +466,15 @@ Abre archivos `.puml` / `.plantuml`, `.mmd` / `.mermaid` o `.d2` directamente en
 - **Atajo de teclado:** `Cmd+Alt+V` (Mac) / `Ctrl+Alt+V` (Windows / Linux): el mismo atajo selecciona automáticamente según el tipo de archivo.
 - **Menú contextual:** Haz clic derecho en un archivo `.puml` / `.plantuml`, `.mmd` / `.mermaid` o `.d2` en el Explorador o en el editor → **Preview PlantUML File** / **Preview Mermaid File** / **Preview D2 File**.
 - **Paleta de comandos:** `PlantUML Markdown Preview: Preview PlantUML File`, `Preview Mermaid File` o `Preview D2 File`.
+
+### Abrir la vista previa de una revisión de Git
+
+Renderiza un archivo Markdown tal como estaba en una revisión de Git, junto a la vista previa de tu versión actual.
+
+- **Menú contextual:** Haz clic derecho en un archivo `.md` en el Explorador o el editor → **PlantUML Markdown Preview** → **Abrir vista previa de la revisión HEAD al lado** / **Abrir vista previa de la revisión preparada al lado**
+- **Paleta de comandos:** `PlantUML Markdown Preview: Abrir vista previa de la revisión HEAD al lado` / `Abrir vista previa de la revisión preparada al lado`
+
+Abre primero tu vista previa normal y luego la de la revisión: los dos paneles quedan uno al lado del otro. El panel de revisión es una instantánea fija y no se actualiza mientras editas.
 
 ### Exportar a HTML
 

@@ -29,6 +29,8 @@ import { openPumlPreview, updatePumlConfig, getCurrentPumlFilePath, disposePumlP
 import { openMermaidPreview, updateMermaidConfig, getCurrentMermaidFilePath, disposeMermaidPreview, getMermaidPreviewPanel, changeMermaidTheme } from './src/mermaid-preview.js';
 import { openD2Preview, updateD2Config, getCurrentD2FilePath, disposeD2Preview, getD2PreviewPanel, changeD2Theme } from './src/d2-preview.js';
 import { initD2, disposeD2 } from './src/d2-renderer.js';
+import { openRevisionPreview, disposeRevisionPreviews, getOpenRevisionPreviews } from './src/revision-preview.js';
+import { HEAD_REVISION, STAGED_REVISION, type Revision } from './src/git.js';
 import { CONFIG_SECTION, MODE_PRESETS, OUTPUT_CHANNEL_NAME, isLazyDeferralActive, resolveStartMode, type Config, type Mode } from './src/config.js';
 import { registerCompletionProviders } from './src/completion/register.js';
 import { registerColorProviders } from './src/color/register.js';
@@ -428,13 +430,49 @@ function parseJavaMajorVersion(versionOutput: string): number | null {
 }
 
 /**
+ * Handles exposed on the activation result purely so integration tests running in
+ * a real extension host can observe preview state. VS Code offers no API to
+ * enumerate webview panels, so a test cannot reach the preview any other way.
+ * Nothing in the extension itself reads these.
+ */
+export interface TestHooks {
+    /** The live preview webview panel, or null when no preview is open. */
+    getPreviewPanel(): vscode.WebviewPanel | null;
+    /** Absolute path of the file the preview is currently showing. */
+    getPreviewFilePath(): string | null;
+    /** Whether the most recent render ended in an error. */
+    getLastRenderFailed(): boolean;
+    /** Source text the preview most recently rendered. */
+    getLastRenderedText(): string | null;
+    /** Markup produced by the most recent completed render. */
+    getLastRenderedHtml(): string | null;
+    /** Theme CSS most recently sent to the preview webview. */
+    getLastPostedThemeCss(): string | null;
+    /** Last scroll instruction the preview sent to its webview. */
+    getLastPostedScroll(): { line: number; maxTopLine: number; atBottom: boolean; force: boolean } | null;
+    /** Which side currently owns the scroll: 'none' | 'editor' | 'preview'. */
+    getSyncMaster(): string;
+    /** Deliver a message as if the preview webview had posted it. */
+    dispatchWebviewMessage(message: unknown): void;
+    /** Title and markup of every open revision preview panel. */
+    getRevisionPreviews(): { title: string; html: string }[];
+}
+
+/** Shape returned by {@link activate}. `extendMarkdownIt` is the contract VS Code's
+ *  built-in Markdown preview consumes; `__test` exists only for integration tests. */
+export interface ExtensionApi {
+    extendMarkdownIt: (md: MarkdownIt) => MarkdownIt;
+    __test: TestHooks;
+}
+
+/**
  * Called by VS Code when the extension is activated.
  *
  * Registers all commands, the active editor tracker, and the configuration watcher.
  *
  * @param context - Extension context for managing subscriptions and storage.
  */
-export function activate(context: vscode.ExtensionContext): { extendMarkdownIt: (md: MarkdownIt) => MarkdownIt } {
+export function activate(context: vscode.ExtensionContext): ExtensionApi {
     extensionPath = context.extensionPath;
 
     // Create and register the shared output channel so its lifecycle is managed
@@ -558,6 +596,32 @@ export function activate(context: vscode.ExtensionContext): { extendMarkdownIt: 
     );
     const exportPdfLandscapeAndOpenCmd = registerExportCommand(
         'plantuml-markdown-preview.exportPdfLandscapeAndOpen', { pdf: true, landscape: true }, true
+    );
+
+    /** Build a command that previews the active Markdown file at a fixed Git revision. */
+    function registerRevisionPreviewCommand(id: string, revision: Revision): vscode.Disposable {
+        return vscode.commands.registerCommand(id, async (uri?: vscode.Uri) => {
+            const filePath = resolveMarkdownPath(uri);
+            if (!filePath) {
+                vscode.window.showErrorMessage(vscode.l10n.t('No Markdown file (.md) is selected.'));
+                return;
+            }
+            const config = getConfig();
+            void vscode.window.withProgress(
+                { location: vscode.ProgressLocation.Notification, title: vscode.l10n.t('Opening preview...') },
+                async () => {
+                    await openRevisionPreview(filePath, revision, config);
+                    checkJavaAvailability(config).catch(() => {});
+                }
+            );
+        });
+    }
+
+    const revisionHeadCmd = registerRevisionPreviewCommand(
+        'plantuml-markdown-preview.openHeadRevisionPreview', HEAD_REVISION
+    );
+    const revisionStagedCmd = registerRevisionPreviewCommand(
+        'plantuml-markdown-preview.openStagedRevisionPreview', STAGED_REVISION
     );
 
     const previewCmd = vscode.commands.registerCommand(
@@ -877,7 +941,7 @@ export function activate(context: vscode.ExtensionContext): { extendMarkdownIt: 
         }
     );
 
-    context.subscriptions.push(exportCmd, exportAndOpenCmd, exportCurrentCmd, exportCurrentAndOpenCmd, ...exportHtmlWidthCmds, exportHtmlFitLeftCmd, exportHtmlFitLeftAndOpenCmd, ...exportHtmlWidthLeftCmds, exportPdfCmd, exportPdfAndOpenCmd, exportPdfLandscapeCmd, exportPdfLandscapeAndOpenCmd, previewCmd, pumlPreviewCmd, mermaidPreviewCmd, d2PreviewCmd, changeThemeCmd, openViewerCmd, savePngCmd, saveSvgCmd, copyPngCmd, exportAllSvgCmd, exportAllPngCmd, goToIncludeCmd, openIncludeSourceCmd, includeContextTracker, editorTracker, configWatcher);
+    context.subscriptions.push(exportCmd, exportAndOpenCmd, exportCurrentCmd, exportCurrentAndOpenCmd, ...exportHtmlWidthCmds, exportHtmlFitLeftCmd, exportHtmlFitLeftAndOpenCmd, ...exportHtmlWidthLeftCmds, exportPdfCmd, exportPdfAndOpenCmd, exportPdfLandscapeCmd, exportPdfLandscapeAndOpenCmd, previewCmd, revisionHeadCmd, revisionStagedCmd, pumlPreviewCmd, mermaidPreviewCmd, d2PreviewCmd, changeThemeCmd, openViewerCmd, savePngCmd, saveSvgCmd, copyPngCmd, exportAllSvgCmd, exportAllPngCmd, goToIncludeCmd, openIncludeSourceCmd, includeContextTracker, editorTracker, configWatcher);
 
     // Start the local PlantUML server if local-server mode is selected.
     // prepareLocalServer() pre-creates the readyPromise so that any preview
@@ -904,7 +968,21 @@ export function activate(context: vscode.ExtensionContext): { extendMarkdownIt: 
         }).catch(() => { /* checkJavaAvailability handles the error dialog */ });
     }
 
-    return { extendMarkdownIt };
+    return {
+        extendMarkdownIt,
+        __test: {
+            getPreviewPanel: () => previewManager.getPanel(),
+            getPreviewFilePath: () => previewManager.getCurrentFilePath(),
+            getLastRenderFailed: () => previewManager.getLastRenderFailed(),
+            getLastRenderedText: () => previewManager.getLastRenderedText(),
+            getLastRenderedHtml: () => previewManager.getLastRenderedHtml(),
+            getLastPostedThemeCss: () => previewManager.getLastPostedThemeCss(),
+            getLastPostedScroll: () => previewManager.getLastPostedScroll(),
+            getSyncMaster: () => previewManager.getSyncMaster(),
+            dispatchWebviewMessage: (message) => previewManager.dispatchWebviewMessageForTest(message),
+            getRevisionPreviews: () => getOpenRevisionPreviews(),
+        },
+    };
 }
 
 /** Keys that affect the local-server process and require a restart when changed. */
@@ -993,6 +1071,7 @@ export function deactivate(): void {
     clearServerCache();
     clearMdCache();
     clearBrowserCache();
+    disposeRevisionPreviews();
     disposeAllViewers();
     disposePumlPreview();
     disposeMermaidPreview();

@@ -3,6 +3,8 @@
   "description": "3 种模式适配你的工作流。内联渲染 PlantUML、Mermaid 和 D2 — 快速、安全或零配置。",
   "submenu.label": "PlantUML Markdown Preview",
   "command.openPreview.title": "在侧边打开预览",
+  "command.openHeadRevisionPreview.title": "在侧边打开 HEAD 版本预览",
+  "command.openStagedRevisionPreview.title": "在侧边打开暂存版本预览",
   "command.openPumlPreview.title": "预览 PlantUML 文件",
   "command.openMermaidPreview.title": "预览 Mermaid 文件",
   "command.openD2Preview.title": "预览 D2 文件",

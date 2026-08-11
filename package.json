@@ -2,7 +2,7 @@
   "name": "plantuml-markdown-preview",
   "displayName": "%displayName%",
   "description": "%description%",
-  "version": "0.7.13",
+  "version": "0.7.14",
   "license": "MIT",
   "publisher": "yss-tazawa",
   "icon": "images/icon.png",
@@ -145,6 +145,16 @@
       {
         "command": "plantuml-markdown-preview.openPreview",
         "title": "%command.openPreview.title%",
+        "category": "%command.category%"
+      },
+      {
+        "command": "plantuml-markdown-preview.openHeadRevisionPreview",
+        "title": "%command.openHeadRevisionPreview.title%",
+        "category": "%command.category%"
+      },
+      {
+        "command": "plantuml-markdown-preview.openStagedRevisionPreview",
+        "title": "%command.openStagedRevisionPreview.title%",
         "category": "%command.category%"
       },
       {
@@ -604,6 +614,14 @@
         {
           "command": "plantuml-markdown-preview.openPreview",
           "group": "a_preview@1"
+        },
+        {
+          "command": "plantuml-markdown-preview.openHeadRevisionPreview",
+          "group": "a_preview@2"
+        },
+        {
+          "command": "plantuml-markdown-preview.openStagedRevisionPreview",
+          "group": "a_preview@3"
         },
         {
           "submenu": "plantuml-markdown-preview.exportHtmlWidthSubmenu",
@@ -1240,9 +1258,13 @@
   },
   "devDependencies": {
     "@types/markdown-it": "^14.1.2",
+    "@types/mocha": "^10.0.10",
     "@types/node": "^20.17.0",
     "@types/vscode": "^1.83.0",
+    "@vscode/test-cli": "^0.0.15",
+    "@vscode/test-electron": "^3.1.0",
     "esbuild": "^0.27.3",
+    "mocha": "^11.8.0",
     "typescript": "^5.9.3",
     "vitest": "^4.1.10"
   },
@@ -1258,6 +1280,8 @@
     "build": "node esbuild.js",
     "test": "vitest run",
     "test:watch": "vitest",
+    "pretest:integration": "npm run build && tsc -p private/integration/tsconfig.integration.json",
+    "test:integration": "vscode-test",
     "typecheck": "tsc --noEmit && tsc --noEmit -p src/webview/tsconfig.webview.json",
     "typecheck:tests": "tsc --noEmit -p private/tests/tsconfig.tests.json",
     "package": "npm run typecheck && npm run build && npx @vscode/vsce package --baseContentUrl https://github.com/yss-tazawa/plantuml-markdown-preview/blob/main --baseImagesUrl https://raw.githubusercontent.com/yss-tazawa/plantuml-markdown-preview/main"
