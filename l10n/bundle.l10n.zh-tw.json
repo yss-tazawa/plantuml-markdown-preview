@@ -109,5 +109,6 @@
   "No preview is open. Open a preview first.": "沒有開啟的預覽。請先開啟預覽。",
   "Read-only snapshot of {0} at {1}. It does not follow your edits.": "{0} 在 {1} 時的唯讀快照，不會跟隨你的編輯。",
   "{0} is not inside a Git repository.": "{0} 不在 Git 儲存庫中。",
-  "{0} does not exist at {1}.": "{0} 在 {1} 中不存在。"
+  "{0} does not exist at {1}.": "{0} 在 {1} 中不存在。",
+  "Git was not found. Install Git or make sure it is on your PATH.": "找不到 Git。請安裝 Git，或確認它已加入 PATH。"
 }

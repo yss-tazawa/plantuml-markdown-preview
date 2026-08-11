@@ -9,6 +9,7 @@
  */
 import { execFile } from 'child_process';
 import fs from 'fs';
+import os from 'os';
 import path from 'path';
 
 /** How long a single git invocation may take before it is abandoned. */
@@ -46,6 +47,24 @@ function git(args: string[], cwd: string, maxBuffer = 1024 * 1024): Promise<stri
 }
 
 /**
+ * Check whether the `git` executable can be run at all.
+ *
+ * Every other call here reports failure as "no repository", which would blame the
+ * workspace for a machine without git installed. This separates the two cases so the
+ * user is told something actionable.
+ *
+ * @returns True when git is on PATH and runnable.
+ */
+export async function isGitAvailable(): Promise<boolean> {
+    try {
+        await git(['--version'], os.tmpdir());
+        return true;
+    } catch {
+        return false;
+    }
+}
+
+/**
  * Find the repository root containing a file.
  *
  * @param filePath - Absolute path to a file.
@@ -55,7 +74,11 @@ export async function findRepositoryRoot(filePath: string): Promise<string | nul
     try {
         const out = await git(['rev-parse', '--show-toplevel'], path.dirname(filePath));
         const root = out.trim();
-        return root.length > 0 ? root : null;
+        if (root.length === 0) return null;
+        // Resolve here as well as on the file side. git reports a resolved path on some
+        // platforms and not on others (Windows junctions), and the two must be resolved
+        // the same way before one can be subtracted from the other.
+        return await fs.promises.realpath(root).catch(() => root);
     } catch {
         return null;
     }

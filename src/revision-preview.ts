@@ -14,8 +14,8 @@ import * as vscode from 'vscode';
 import path from 'path';
 import fs from 'fs';
 import { renderHtmlAsync } from './exporter.js';
-import { getNonce, escapeHtml, errorHtml } from './utils.js';
-import { readFileAtRevision, findRepositoryRoot, type Revision } from './git.js';
+import { getNonce, escapeHtml, errorHtml, resolveLocalImagePaths } from './utils.js';
+import { readFileAtRevision, findRepositoryRoot, isGitAvailable, type Revision } from './git.js';
 import type { Config } from './config.js';
 
 /** View type for the revision preview panels. */
@@ -32,6 +32,17 @@ function panelKey(filePath: string, revision: Revision): string {
 /** Build the panel title, e.g. `design.md (HEAD)`. */
 function makeTitle(filePath: string, revision: Revision): string {
     return `${path.basename(filePath)} (${revision.label})`;
+}
+
+/** Roots the webview may load local files from. Mirrors the live preview: the workspace
+ *  folder when the file is inside one, otherwise the file's own directory. Without this
+ *  the webview blocks every local image the document references. */
+function buildLocalResourceRoots(filePath: string, config: Config): vscode.Uri[] {
+    const roots = [vscode.Uri.file(__dirname)];
+    if (!config.allowLocalImages) return roots;
+    const workspaceFolder = vscode.workspace.getWorkspaceFolder(vscode.Uri.file(filePath));
+    roots.push(workspaceFolder ? workspaceFolder.uri : vscode.Uri.file(path.dirname(filePath)));
+    return roots;
 }
 
 /** Assemble the render options a webview needs (CSP, Mermaid, KaTeX). */
@@ -87,19 +98,20 @@ function revisionBanner(filePath: string, revision: Revision): string {
 export async function openRevisionPreview(
     filePath: string, revision: Revision, config: Config,
 ): Promise<void> {
-    const key = panelKey(filePath, revision);
-    const existing = panels.get(key);
-    if (existing) {
-        existing.reveal(existing.viewColumn, true);
-        return;
-    }
-
     if (!await findRepositoryRoot(filePath)) {
-        vscode.window.showErrorMessage(
-            vscode.l10n.t('{0} is not inside a Git repository.', path.basename(filePath)));
+        // Distinguish "no git on this machine" from "this file is not in a repository":
+        // both fail the same way, and blaming the workspace for a missing git is a dead end.
+        const message = await isGitAvailable()
+            ? vscode.l10n.t('{0} is not inside a Git repository.', path.basename(filePath))
+            : vscode.l10n.t('Git was not found. Install Git or make sure it is on your PATH.');
+        vscode.window.showErrorMessage(message);
         return;
     }
 
+    // Read before touching the panel. A ref is not fixed over time — HEAD moves on every
+    // commit and the index changes on every `git add` — so re-running the command on an
+    // already-open panel must show the ref's current content, not what it held when the
+    // panel was first opened.
     const content = await readFileAtRevision(filePath, revision);
     if (content === null) {
         vscode.window.showErrorMessage(vscode.l10n.t(
@@ -107,26 +119,61 @@ export async function openRevisionPreview(
         return;
     }
 
-    const panel = vscode.window.createWebviewPanel(
-        VIEW_TYPE,
-        makeTitle(filePath, revision),
-        { viewColumn: vscode.ViewColumn.Beside, preserveFocus: true },
-        {
-            enableScripts: true,
-            localResourceRoots: [vscode.Uri.file(__dirname)],
-            // The snapshot never re-renders, so keeping it alive while hidden costs
-            // nothing and avoids a blank panel when the tab is revisited.
-            retainContextWhenHidden: true,
-        },
-    );
-    panels.set(key, panel);
-    panel.onDidDispose(() => panels.delete(key));
+    // Everything that can yield has happened by now. Looking the panel up and registering
+    // it must stay a single synchronous run: introduce an `await` between the two and
+    // concurrent invocations of the command would each create a panel, the later one
+    // orphaning the earlier.
+    const key = panelKey(filePath, revision);
+    let panel = panels.get(key);
+    if (panel) {
+        panel.reveal(panel.viewColumn, true);
+    } else {
+        panel = vscode.window.createWebviewPanel(
+            VIEW_TYPE,
+            makeTitle(filePath, revision),
+            { viewColumn: vscode.ViewColumn.Beside, preserveFocus: true },
+            {
+                enableScripts: true,
+                localResourceRoots: buildLocalResourceRoots(filePath, config),
+                // The snapshot only re-renders when the command runs again, so keeping it
+                // alive while hidden costs little and avoids a blank panel on revisit.
+                retainContextWhenHidden: true,
+            },
+        );
+        panels.set(key, panel);
+        const created = panel;
+        // Only clear the entry if it still points at this panel, so a disposal can never
+        // evict a newer panel that has since taken the key.
+        created.onDidDispose(() => {
+            if (panels.get(key) === created) panels.delete(key);
+        });
+    }
+
+    // Settings may have changed since the panel was created.
+    panel.webview.options = {
+        enableScripts: true,
+        localResourceRoots: buildLocalResourceRoots(filePath, config),
+    };
 
     try {
         const nonce = getNonce();
         const options = await buildRenderOptions(panel, config, nonce);
-        const html = await renderHtmlAsync(content, makeTitle(filePath, revision), config, options);
-        // The banner belongs inside <body>, ahead of the rendered document.
+        const title = makeTitle(filePath, revision);
+        let html = await renderHtmlAsync(content, title, config, options);
+        if (config.allowLocalImages) {
+            // Images are taken from the working tree, not from the revision: extracting
+            // every referenced blob would mean a git call per image, and a stale-looking
+            // picture beats a broken one. Diagrams — the point of this panel — are
+            // rendered from the revision's own source either way.
+            const webview = panel.webview;
+            html = resolveLocalImagePaths(
+                html,
+                path.dirname(filePath),
+                (absPath) => webview.asWebviewUri(vscode.Uri.file(absPath)).toString(),
+            );
+        }
+        // Safe as a plain replace: the template's own <body> precedes any rendered
+        // content, and replace() without /g substitutes only that first match.
         panel.webview.html = html.replace(/<body([^>]*)>/, `<body$1>${revisionBanner(filePath, revision)}`);
     } catch (err) {
         panel.webview.html = `<!DOCTYPE html><html><body>${errorHtml(escapeHtml((err as Error).message))}</body></html>`;

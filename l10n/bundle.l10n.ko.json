@@ -109,5 +109,6 @@
   "No preview is open. Open a preview first.": "열린 미리보기가 없습니다. 먼저 미리보기를 여세요.",
   "Read-only snapshot of {0} at {1}. It does not follow your edits.": "{1} 시점의 {0} 스냅샷입니다(읽기 전용). 편집을 따라가지 않습니다.",
   "{0} is not inside a Git repository.": "{0} 은(는) Git 저장소 안에 없습니다.",
-  "{0} does not exist at {1}.": "{0} 은(는) {1} 에 존재하지 않습니다."
+  "{0} does not exist at {1}.": "{0} 은(는) {1} 에 존재하지 않습니다.",
+  "Git was not found. Install Git or make sure it is on your PATH.": "Git을 찾을 수 없습니다. Git을 설치하거나 PATH에 포함되어 있는지 확인하세요."
 }
