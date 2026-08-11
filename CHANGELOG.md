@@ -6,6 +6,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## 0.7.15 - 2026-08-11
+
+### Fixed
+
+- The preview no longer scrolls into place after rendering — opening it, switching files, or returning to its tab now shows the content already at the right position instead of sliding there; following the editor as you scroll still animates
+
+### Changed
+
+- Opening a preview now reports progress in the status bar instead of a notification popup
+
 ## 0.7.14 - 2026-08-11
 
 ### Added
