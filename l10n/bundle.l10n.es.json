@@ -106,5 +106,8 @@
   "Exported {0} diagrams ({1} failed): {2}": "Se exportaron {0} diagramas ({1} fallidos): {2}",
   "Exported {0} diagrams: {1}": "Se exportaron {0} diagramas: {1}",
   "Open Folder": "Abrir carpeta",
-  "No preview is open. Open a preview first.": "No hay ninguna vista previa abierta. Abre una primero."
+  "No preview is open. Open a preview first.": "No hay ninguna vista previa abierta. Abre una primero.",
+  "Read-only snapshot of {0} at {1}. It does not follow your edits.": "Instantánea de solo lectura de {0} en {1}. No sigue tus ediciones.",
+  "{0} is not inside a Git repository.": "{0} no está dentro de un repositorio Git.",
+  "{0} does not exist at {1}.": "{0} no existe en {1}."
 }

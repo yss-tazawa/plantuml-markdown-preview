@@ -148,6 +148,16 @@
         "category": "%command.category%"
       },
       {
+        "command": "plantuml-markdown-preview.openHeadRevisionPreview",
+        "title": "%command.openHeadRevisionPreview.title%",
+        "category": "%command.category%"
+      },
+      {
+        "command": "plantuml-markdown-preview.openStagedRevisionPreview",
+        "title": "%command.openStagedRevisionPreview.title%",
+        "category": "%command.category%"
+      },
+      {
         "command": "plantuml-markdown-preview.openPumlPreview",
         "title": "%command.openPumlPreview.title%",
         "category": "%command.category%"
@@ -604,6 +614,14 @@
         {
           "command": "plantuml-markdown-preview.openPreview",
           "group": "a_preview@1"
+        },
+        {
+          "command": "plantuml-markdown-preview.openHeadRevisionPreview",
+          "group": "a_preview@2"
+        },
+        {
+          "command": "plantuml-markdown-preview.openStagedRevisionPreview",
+          "group": "a_preview@3"
         },
         {
           "submenu": "plantuml-markdown-preview.exportHtmlWidthSubmenu",

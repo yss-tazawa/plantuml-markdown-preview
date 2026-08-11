@@ -3,6 +3,8 @@
   "description": "3 modos para tu flujo de trabajo. Renderiza PlantUML, Mermaid y D2 en línea — rápido, seguro o sin configuración.",
   "submenu.label": "PlantUML Markdown Preview",
   "command.openPreview.title": "Abrir vista previa al lado",
+  "command.openHeadRevisionPreview.title": "Abrir vista previa de la revisión HEAD al lado",
+  "command.openStagedRevisionPreview.title": "Abrir vista previa de la revisión preparada al lado",
   "command.openPumlPreview.title": "Vista previa de archivo PlantUML",
   "command.openMermaidPreview.title": "Vista previa de archivo Mermaid",
   "command.openD2Preview.title": "Vista previa de archivo D2",
