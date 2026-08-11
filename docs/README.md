@@ -48,6 +48,7 @@ Switch between modes anytime with a single setting — no migration, no restart.
 - **Navigation & TOC** — go-to-top / go-to-bottom buttons and a Table of Contents sidebar in the preview panel
 - **Diagram Viewer** — right-click any diagram to open a pan & zoom panel with live sync and theme-matched background
 - **Standalone diagram preview** — open `.puml`, `.plantuml`, `.mmd`, `.mermaid`, and `.d2` files directly with pan & zoom, live updates, and theme support — no Markdown wrapper needed
+- **Git revision preview** — render a Markdown file as it was at HEAD or the staged version, side by side with your current preview, so changed diagrams can be compared rendered
 - **Save or copy diagrams as PNG / SVG** — right-click any diagram in the preview or Diagram Viewer to save or copy to clipboard
 - **14 preview themes** — 8 light + 6 dark themes including GitHub, Atom, Solarized, Dracula, Monokai, and more
 - **Editor assistance** — keyword completion, color picker, and code snippets for PlantUML, Mermaid, and D2
@@ -236,6 +237,16 @@ Open `.puml`, `.plantuml`, `.mmd`, `.mermaid`, or `.d2` files directly — no Ma
 - PlantUML: supports all three rendering modes (Fast / Secure / Easy)
 - Mermaid: rendered client-side using mermaid.js
 - D2: rendered using @terrastruct/d2 (Wasm) with configurable theme and layout engine
+
+### Git Revision Preview
+
+Preview a Markdown file as it was at a Git revision, rendered, in a side panel — so a changed diagram can be compared side by side instead of read as a text diff.
+
+- **HEAD** — the last committed version
+- **Staged** — the version currently staged for commit
+- Opens beside your existing preview, so the old and new diagrams are visible at once
+- Read-only snapshot: it renders once and never follows later edits, and a banner at the top says so
+- Requires the file to be tracked in a Git repository
 
 ### Bidirectional Scroll Sync
 
@@ -469,6 +480,15 @@ Open `.puml` / `.plantuml`, `.mmd` / `.mermaid`, or `.d2` files directly in a pa
 - **Keyboard shortcut:** `Cmd+Alt+V` (Mac) / `Ctrl+Alt+V` (Windows / Linux) — same shortcut, auto-selects based on file type
 - **Context menu:** Right-click a `.puml` / `.plantuml`, `.mmd` / `.mermaid`, or `.d2` file in the Explorer or editor → **Preview PlantUML File** / **Preview Mermaid File** / **Preview D2 File**
 - **Command Palette:** `PlantUML Markdown Preview: Preview PlantUML File`, `Preview Mermaid File`, or `Preview D2 File`
+
+### Open Preview of a Git Revision
+
+Render a Markdown file as it was at a Git revision, beside the preview of your current version.
+
+- **Context menu:** Right-click a `.md` file in the Explorer or editor → **PlantUML Markdown Preview** → **Open Preview of HEAD Revision to Side** / **Open Preview of Staged Revision to Side**
+- **Command Palette:** `PlantUML Markdown Preview: Open Preview of HEAD Revision to Side` / `Open Preview of Staged Revision to Side`
+
+Open your normal preview first, then the revision preview: the two panels sit side by side. The revision panel is a fixed snapshot — it does not update as you edit.
 
 ### Export to HTML
 
