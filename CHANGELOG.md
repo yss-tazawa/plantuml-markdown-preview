@@ -6,6 +6,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## 0.7.14 - 2026-08-11
+
+### Added
+
+- Preview a Markdown file as it was at a Git revision — **Open Preview of HEAD Revision to Side** and **Open Preview of Staged Revision to Side** render the committed or staged version in a read-only side panel, so a changed diagram can be compared rendered instead of read as a text diff
+
 ## 0.7.13 - 2026-08-11
 
 ### Fixed
