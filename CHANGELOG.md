@@ -6,6 +6,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## 0.7.16 - 2026-10-07
+
+### Fixed
+
+- Syntax highlighting in `plantuml` / `mermaid` / `d2` code blocks and in standalone `.puml`, `.plantuml`, `.mmd`, `.mermaid` and `.d2` files (#3)
+- Comment toggling and bracket matching in those files
+
+### Changed
+
+- PlantUML color customizations need updating: the scope is now `source.wsd` instead of `source.plantuml`
+
 ## 0.7.15 - 2026-08-11
 
 ### Fixed

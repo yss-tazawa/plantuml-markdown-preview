@@ -2,7 +2,7 @@
   "name": "plantuml-markdown-preview",
   "displayName": "%displayName%",
   "description": "%description%",
-  "version": "0.7.15",
+  "version": "0.7.16",
   "license": "MIT",
   "publisher": "yss-tazawa",
   "icon": "images/icon.png",
@@ -45,7 +45,8 @@
         "extensions": [
           ".puml",
           ".plantuml"
-        ]
+        ],
+        "configuration": "./syntaxes/vendor/plantuml.language-configuration.json"
       },
       {
         "id": "mermaid",
@@ -55,7 +56,8 @@
         "extensions": [
           ".mmd",
           ".mermaid"
-        ]
+        ],
+        "configuration": "./syntaxes/vendor/mermaid.language-configuration.json"
       },
       {
         "id": "d2",
@@ -64,22 +66,36 @@
         ],
         "extensions": [
           ".d2"
-        ]
+        ],
+        "configuration": "./syntaxes/vendor/d2.language-configuration.json"
       }
     ],
     "grammars": [
       {
         "language": "plantuml",
-        "scopeName": "source.plantuml",
-        "path": "./syntaxes/plantuml.tmLanguage.json"
+        "scopeName": "source.wsd",
+        "path": "./syntaxes/vendor/plantuml.tmLanguage"
       },
       {
         "language": "mermaid",
         "scopeName": "source.mermaid",
-        "path": "./syntaxes/mermaid.tmLanguage.json"
+        "path": "./syntaxes/vendor/mermaid.tmLanguage.json"
       },
       {
-        "scopeName": "markdown.plantuml.codeblock",
+        "language": "d2",
+        "scopeName": "source.d2",
+        "path": "./syntaxes/vendor/d2.tmLanguage.json",
+        "embeddedLanguages": {
+          "meta.embedded.block.markdown": "markdown",
+          "meta.embedded.block.latex": "latex"
+        }
+      },
+      {
+        "scopeName": "text.html.markdown.d2",
+        "path": "./syntaxes/vendor/markdown.tmLanguage.json"
+      },
+      {
+        "scopeName": "markdown.plantuml.codeblock.plantuml-markdown-preview",
         "path": "./syntaxes/plantuml.injection.tmLanguage.json",
         "injectTo": [
           "text.html.markdown"
@@ -89,7 +105,7 @@
         }
       },
       {
-        "scopeName": "markdown.mermaid.codeblock",
+        "scopeName": "markdown.mermaid.codeblock.plantuml-markdown-preview",
         "path": "./syntaxes/mermaid.injection.tmLanguage.json",
         "injectTo": [
           "text.html.markdown"
@@ -99,12 +115,7 @@
         }
       },
       {
-        "language": "d2",
-        "scopeName": "source.d2",
-        "path": "./syntaxes/d2.tmLanguage.json"
-      },
-      {
-        "scopeName": "markdown.d2.codeblock",
+        "scopeName": "markdown.d2.codeblock.plantuml-markdown-preview",
         "path": "./syntaxes/d2.injection.tmLanguage.json",
         "injectTo": [
           "text.html.markdown"
@@ -1268,7 +1279,9 @@
     "jsdom": "^30.0.1",
     "mocha": "^11.8.0",
     "typescript": "^5.9.3",
-    "vitest": "^4.1.10"
+    "vitest": "^4.1.10",
+    "vscode-oniguruma": "^2.0.1",
+    "vscode-textmate": "^9.3.2"
   },
   "repository": {
     "type": "git",

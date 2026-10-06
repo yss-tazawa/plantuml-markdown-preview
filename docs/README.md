@@ -87,6 +87,12 @@ Switch between modes anytime with a single setting — no migration, no restart.
 - Mermaid: rendered client-side using [mermaid.js](https://mermaid.js.org/) — no Java or external tools required
 - D2: rendered client-side using [@terrastruct/d2](https://d2lang.com/) (Wasm) — no external tools required
 
+### Diagram Source Highlighting
+
+Diagram source is syntax highlighted in the editor — both inside ```` ```plantuml ````,
+```` ```mermaid ````, and ```` ```d2 ```` blocks in Markdown, and in standalone `.puml`,
+`.plantuml`, `.mmd`, `.mermaid`, and `.d2` files. Colors follow your current theme.
+
 ### Math Support
 
 Render mathematical expressions using [KaTeX](https://katex.org/).
@@ -448,7 +454,7 @@ follow the steps for your platform below.
    ```sh
    # Debian / Ubuntu
    sudo apt install default-jdk graphviz
-
+   
    # Fedora
    sudo dnf install java-21-openjdk graphviz
    ```

@@ -1,8 +1,0 @@
-{
-  "scopeName": "source.mermaid",
-  "patterns": [
-    {
-      "match": ".+"
-    }
-  ]
-}

@@ -87,6 +87,12 @@
 - Mermaid: [mermaid.js](https://mermaid.js.org/) を使用してクライアントサイドでレンダリング — Java や外部ツール不要
 - D2: [@terrastruct/d2](https://d2lang.com/)（Wasm）を使用してクライアントサイドでレンダリング — 外部ツール不要
 
+### 図のソースのハイライト
+
+Markdown 内の ```` ```plantuml ````、```` ```mermaid ````、```` ```d2 ```` ブロックと、
+単体の `.puml`、`.plantuml`、`.mmd`、`.mermaid`、`.d2` ファイルで、図のソースが
+シンタックスハイライトされます。色は現在のテーマに従います。
+
 ### 数式サポート
 
 [KaTeX](https://katex.org/) を使用して数式をレンダリング。

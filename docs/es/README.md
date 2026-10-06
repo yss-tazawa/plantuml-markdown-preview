@@ -87,6 +87,12 @@ Los bloques de código ```` ```plantuml ````, ```` ```mermaid ```` y ```` ```d2 
 - Mermaid: renderizado en el lado del cliente usando [mermaid.js](https://mermaid.js.org/), sin necesidad de Java ni herramientas externas.
 - D2: renderizado en el lado del cliente usando [@terrastruct/d2](https://d2lang.com/) (Wasm), sin necesidad de herramientas externas.
 
+### Resaltado del código fuente de diagramas
+
+El código fuente de los diagramas se resalta en el editor, tanto dentro de los bloques
+```` ```plantuml ````, ```` ```mermaid ```` y ```` ```d2 ```` en Markdown como en archivos
+`.puml`, `.plantuml`, `.mmd`, `.mermaid` y `.d2` independientes. Los colores siguen tu tema actual.
+
 ### Soporte para matemáticas
 
 Renderiza expresiones matemáticas usando [KaTeX](https://katex.org/).
