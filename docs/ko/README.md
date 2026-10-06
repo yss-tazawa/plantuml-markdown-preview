@@ -87,6 +87,12 @@
 - Mermaid: [mermaid.js](https://mermaid.js.org/)를 사용하여 클라이언트 측에서 렌더링 — Java나 외부 도구 필요 없음
 - D2: [@terrastruct/d2](https://d2lang.com/) (Wasm)를 사용하여 클라이언트 측에서 렌더링 — 외부 도구 필요 없음
 
+### 다이어그램 소스 하이라이팅
+
+Markdown 안의 ```` ```plantuml ````, ```` ```mermaid ````, ```` ```d2 ```` 블록과
+단독 `.puml`, `.plantuml`, `.mmd`, `.mermaid`, `.d2` 파일에서 다이어그램 소스가
+구문 강조됩니다. 색상은 현재 테마를 따릅니다.
+
 ### 수학 공식 지원
 
 [KaTeX](https://katex.org/)를 사용하여 수학 표현식을 렌더링합니다.

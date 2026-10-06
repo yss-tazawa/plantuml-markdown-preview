@@ -87,6 +87,12 @@
 - Mermaid：使用 [mermaid.js](https://mermaid.js.org/) 在用戶端渲染 — 無需 Java 或外部工具
 - D2：使用 [@terrastruct/d2](https://d2lang.com/)（Wasm）在用戶端渲染 — 無需外部工具
 
+### 圖表原始碼高亮
+
+Markdown 中的 ```` ```plantuml ````、```` ```mermaid ````、```` ```d2 ```` 程式碼區塊，
+以及獨立的 `.puml`、`.plantuml`、`.mmd`、`.mermaid`、`.d2` 檔案，圖表原始碼都會進行
+語法高亮。顏色遵循目前主題。
+
 ### 數學公式支援
 
 使用 [KaTeX](https://katex.org/) 渲染數學公式。
