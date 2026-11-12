@@ -5,6 +5,9 @@
  * Each theme file defines only a color palette object and passes it to buildThemeCss(),
  * which generates a complete CSS string covering body, headings, links, code blocks,
  * tables, blockquotes, PlantUML diagrams, and highlight.js syntax colors.
+ * Optional palette fields let a theme depart from the shared layout (table headers,
+ * title weight, link underline, comment and diff tokens, per-token syntax colors);
+ * unset fields leave the output unchanged.
  */
 
 /**
@@ -25,7 +28,7 @@ export interface ThemePalette {
     link: string;
     /** Visited hyperlink color. */
     linkVisited: string;
-    /** Inline code and table header background color. */
+    /** Inline code background color; also the table header unless `thBg` is set. */
     codeBg: string;
     /** Even table row background color. */
     trEvenBg: string;
@@ -35,9 +38,9 @@ export interface ThemePalette {
     blockquoteColor: string;
     /** Blockquote background color. */
     blockquoteBg: string;
-    /** highlight.js code block background color. */
+    /** Code block (`.hljs`) background color; the renderer puts every code block in `pre.hljs`. */
     hljsBg: string;
-    /** highlight.js comment / prolog / doctype token color. */
+    /** highlight.js comment token color (see `hljsCommentTokens`). */
     hljsComment: string;
     /** highlight.js keyword / selector-tag token color. */
     hljsKeyword: string;
@@ -67,14 +70,50 @@ export interface ThemePalette {
     hljsDeletionColor: string;
     /** Heading text color override (defaults to body text color). */
     headingColor?: string;
-    /** Inline code text color override (defaults to body text color). */
+    /** Inline code text color override (defaults to body text color); code blocks use `hljsText`. */
     codeText?: string;
     /** Pre/code block border color override (defaults to general border). */
     preBorder?: string;
     /** Table border color override (defaults to general border). */
     tableBorder?: string;
-    /** highlight.js base text color override (defaults to body text color). */
+    /** Code block (`.hljs`) text color (defaults to body text color). */
     hljsText?: string;
+    /** Table header background override (defaults to `codeBg`). */
+    thBg?: string;
+    /**
+     * Color of the line under the table header row, i.e. the header cells' bottom
+     * border (defaults to the table border).
+     */
+    thBorder?: string;
+    /** Font weight of title / section / function tokens (defaults to `bold`). */
+    hljsTitleWeight?: string;
+    /** Underline link tokens (defaults to false). */
+    hljsLinkUnderline?: boolean;
+    /**
+     * Token classes, without the `hljs-` prefix, that take `hljsComment` in italics
+     * (defaults to `comment`, `prolog`, `doctype` and `cdata`).
+     */
+    hljsCommentTokens?: readonly string[];
+    /** Stretch addition / deletion tokens over the whole line (defaults to false). */
+    hljsDiffFullLine?: boolean;
+    /**
+     * Per-token color overrides, keyed by the highlight.js class without its
+     * `hljs-` prefix (e.g. `literal` for `.hljs-literal`). Emitted after the grouped
+     * token rules above, so they win over them; tokens not listed keep those colors.
+     */
+    hljsTokens?: Readonly<Record<string, string>>;
+}
+
+/**
+ * Build the rules for {@link ThemePalette.hljsTokens}.
+ *
+ * @param tokens - Token class suffix to color.
+ * @param [scope] - Selector prefix (e.g. `body.vscode-dark `) limiting where the rules apply.
+ * @returns CSS string with one color rule per token, each on its own line.
+ */
+export function buildHljsTokenCss(tokens: Readonly<Record<string, string>>, scope = ''): string {
+    return Object.entries(tokens)
+        .map(([token, color]) => `\n    ${scope}.hljs-${token} { color: ${color}; }`).join('');
 }
 
 /**
@@ -107,6 +146,20 @@ function isDarkBg(bg: string): boolean {
 }
 
 /**
+ * Build the per-type accent rules for GitHub-style alerts.
+ *
+ * @param dark - True for the dark accent set, false for the light one.
+ * @param [scope] - Selector prefix (e.g. `body.vscode-dark `) limiting where the rules apply.
+ * @returns CSS string with a border and title color rule per alert type.
+ */
+export function buildAlertAccentCss(dark: boolean, scope = ''): string {
+    const c = dark ? ALERT_COLORS.dark : ALERT_COLORS.light;
+    return (Object.keys(c) as (keyof typeof c)[]).map(type => `
+    ${scope}.markdown-alert-${type} { border-left-color: ${c[type]}; }
+    ${scope}.markdown-alert-${type} > .markdown-alert-title { color: ${c[type]}; }`).join('');
+}
+
+/**
  * Build the CSS for GitHub-style alerts (`> [!NOTE]` etc.), theme-aware.
  * Structure matches markdown-it-github-alerts' output; colors come from
  * {@link ALERT_COLORS} based on the theme background.
@@ -115,10 +168,9 @@ function isDarkBg(bg: string): boolean {
  * @returns CSS string for the `.markdown-alert*` classes.
  */
 function buildAlertCss(bg: string): string {
-    const c = isDarkBg(bg) ? ALERT_COLORS.dark : ALERT_COLORS.light;
-    const perType = (Object.keys(c) as (keyof typeof c)[]).map(type => `
-    .markdown-alert-${type} { border-left-color: ${c[type]}; }
-    .markdown-alert-${type} > .markdown-alert-title { color: ${c[type]}; }`).join('');
+    const dark = isDarkBg(bg);
+    const c = dark ? ALERT_COLORS.dark : ALERT_COLORS.light;
+    const perType = buildAlertAccentCss(dark);
     return `
     .markdown-alert {
       padding: 0.5em 1em;
@@ -160,6 +212,14 @@ export function buildThemeCss(p: ThemePalette): string {
     const preBorder = p.preBorder || p.border;
     const tableBorder = p.tableBorder || p.border;
     const hljsText = p.hljsText || p.text;
+    const thBg = p.thBg || p.codeBg;
+    const thBorder = p.thBorder ? ` border-bottom-color: ${p.thBorder};` : '';
+    const hljsTitleWeight = p.hljsTitleWeight || 'bold';
+    const hljsCommentSelector = (p.hljsCommentTokens ?? ['comment', 'prolog', 'doctype', 'cdata'])
+        .map(token => `.hljs-${token}`).join(', ');
+    const hljsOverrides = (p.hljsLinkUnderline ? '\n    .hljs-link { text-decoration: underline; }' : '')
+        + (p.hljsDiffFullLine ? '\n    .hljs-addition, .hljs-deletion { display: inline-block; width: 100%; }' : '')
+        + buildHljsTokenCss(p.hljsTokens ?? {});
 
     return `
     *, *::before, *::after { box-sizing: border-box; }
@@ -197,10 +257,10 @@ export function buildThemeCss(p: ThemePalette): string {
       padding: 1em 1.2em;
       overflow-x: auto;
     }
-    pre code { background: none; padding: 0; font-size: 0.875em; }
+    pre code { background: none; padding: 0; font-size: 0.875em; color: inherit; }
     table { border-collapse: collapse; display: block; width: 100%; overflow: auto; margin: 1em 0; word-break: keep-all; }
     th, td { border: 1px solid ${tableBorder}; padding: 0.5em 1em; text-align: left; }
-    th { background: ${p.codeBg}; font-weight: 600; }
+    th { background: ${thBg}; font-weight: 600;${thBorder} }
     tr:nth-child(even) { background: ${p.trEvenBg}; }
     blockquote {
       border-left: 4px solid ${p.blockquoteBorder};
@@ -227,18 +287,18 @@ export function buildThemeCss(p: ThemePalette): string {
     .katex-display { margin: 1em 0; overflow-x: auto; overflow-y: hidden; }
     body.preview { margin: 0; max-width: none; padding: 1em 26px; }
     .hljs { background: ${p.hljsBg}; color: ${hljsText}; }
-    .hljs-comment, .hljs-prolog, .hljs-doctype, .hljs-cdata { color: ${p.hljsComment}; font-style: italic; }
+    ${hljsCommentSelector} { color: ${p.hljsComment}; font-style: italic; }
     .hljs-keyword, .hljs-selector-tag { color: ${p.hljsKeyword}; }
     .hljs-string, .hljs-doctag { color: ${p.hljsString}; }
     .hljs-number, .hljs-literal { color: ${p.hljsNumber}; }
     .hljs-attr, .hljs-attribute { color: ${p.hljsAttr}; }
     .hljs-name, .hljs-tag, .hljs-selector-id, .hljs-selector-class { color: ${p.hljsName}; }
-    .hljs-title, .hljs-section, .hljs-function { color: ${p.hljsTitle}; font-weight: bold; }
+    .hljs-title, .hljs-section, .hljs-function { color: ${p.hljsTitle}; font-weight: ${hljsTitleWeight}; }
     .hljs-built_in, .hljs-type { color: ${p.hljsBuiltIn}; }
     .hljs-symbol, .hljs-bullet, .hljs-link { color: ${p.hljsSymbol}; }
     .hljs-meta { color: ${p.hljsMeta}; }
     .hljs-addition { background: ${p.hljsAdditionBg}; color: ${p.hljsAdditionColor}; }
-    .hljs-deletion { background: ${p.hljsDeletionBg}; color: ${p.hljsDeletionColor}; }
+    .hljs-deletion { background: ${p.hljsDeletionBg}; color: ${p.hljsDeletionColor}; }${hljsOverrides}
     .hljs-strong { font-weight: bold; }
     .hljs-emphasis { font-style: italic; }
     #toc-sidebar { background-color: ${p.bg}; color: ${p.text}; }

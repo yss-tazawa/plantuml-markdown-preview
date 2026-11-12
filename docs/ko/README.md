@@ -50,7 +50,7 @@
 - **단독 다이어그램 미리보기** — Markdown 래퍼 없이 `.puml`, `.plantuml`, `.mmd`, `.mermaid`, `.d2` 파일을 직접 열어 이동 및 확대/축소, 실시간 업데이트, 테마 지원을 제공합니다.
 - **Git 리비전 미리보기** — Markdown 파일을 HEAD 또는 스테이징된 시점의 내용으로 렌더링하여 현재 미리보기와 나란히 표시합니다. 변경된 다이어그램을 렌더링된 상태로 비교할 수 있습니다.
 - **다이어그램을 PNG / SVG로 저장 또는 복사** — 미리보기 또는 다이어그램 뷰어에서 다이어그램을 우클릭하여 파일로 저장하거나 클립보드에 복사합니다.
-- **14가지 미리보기 테마** — GitHub, Atom, Solarized, Dracula, Monokai 등을 포함한 8가지 밝은 테마 + 6가지 어두운 테마를 제공합니다.
+- **17가지 미리보기 테마** — 색 테마를 따르는 VS Code 테마와 GitHub, Atom, Solarized, Dracula, Monokai 등을 포함한 9가지 밝은 테마 + 7가지 어두운 테마를 제공합니다.
 - **에디터 지원** — PlantUML, Mermaid 및 D2를 위한 키워드 완성, 컬러 피커 및 코드 스니펫을 제공합니다.
 - **국제화** — 영어, 중국어(간체/번체), 스페인어, 브라질 포르투갈어, 일본어 및 한국어 UI를 지원합니다.
 - **수학 공식 지원** — [KaTeX](https://katex.org/)를 사용하여 `$ ... $` 인라인 및 `$$ ... $$` 블록 수학 공식을 렌더링합니다.
@@ -265,6 +265,12 @@ Markdown 파일을 Git 리비전 시점의 내용으로 렌더링하여 옆 패�
 
 **미리보기 테마**는 문서의 전체적인 외관을 제어합니다.
 
+**VS Code 테마:**
+
+| 테마 | 스타일 |
+|-------|-------|
+| Follow VS Code Color Theme | 내장 Markdown 미리보기처럼 현재 VS Code 색 테마를 따름. HTML/PDF 내보내기는 색 테마에 맞춰 VS Code Light 2026 또는 Dark 2026 사용 |
+
 **밝은 테마:**
 
 | 테마 | 스타일 |
@@ -277,6 +283,7 @@ Markdown 파일을 Git 리비전 시점의 내용으로 렌더링하여 옆 패�
 | Pen Paper Coffee | 따뜻한 종이, 손글씨 감성 |
 | Coy | 흰색에 가까움, 깔끔한 디자인 |
 | VS | 클래식 Visual Studio 색상 |
+| VS Code Light 2026 | VS Code 색 테마 Light 2026에서 표시한 내장 Markdown 미리보기 |
 
 **어두운 테마:**
 
@@ -288,6 +295,7 @@ Markdown 파일을 Git 리비전 시점의 내용으로 렌더링하여 옆 패�
 | Dracula | 활기찬 다크 |
 | Solarized Dark | 짙은 청록색, 눈이 편안함 |
 | Monokai | 선명한 구문, Sublime Text 영감 |
+| VS Code Dark 2026 | VS Code 색 테마 Dark 2026에서 표시한 내장 Markdown 미리보기 |
 
 제목 표시줄 아이콘에서 미리보기 테마를 즉시 전환할 수 있습니다 — 재렌더링 없이 CSS만 교체됩니다. PlantUML 테마 변경 시에는 재렌더링이 트리거됩니다.
 
@@ -315,7 +323,7 @@ PlantUML, Mermaid 및 D2 다이어그램은 VS Code의 내장 Markdown 미리보
 
 > **참고:** 내장 미리보기는 이 확장 프로그램의 미리보기 테마, 양방향 스크롤 동기화 또는 HTML 내보내기를 지원하지 않습니다. 모든 기능을 사용하려면 확장 프로그램 자체의 미리보기 패널(`Cmd+Alt+V` / `Ctrl+Alt+V`)을 사용하십시오.
 >
-> **참고:** 내장 미리보기는 다이어그램을 동기적으로 렌더링합니��. 크거나 복잡한 PlantUML 다이어그램은 에디터를 일시적으로 멈추게 할 수 있습니다. 무거운 다이어��램의 경우 확장 프로그램 자체의 미리보기 패널을 사용하십시오.
+> **참고:** 내장 미리보기는 다이어그램을 동기적으로 렌더링합니다. 크거나 복잡한 PlantUML 다이어그램은 에디터를 일시적으로 멈추게 할 수 있습니다. 무거운 다이어그램의 경우 확장 프로그램 자체의 미리보기 패널을 사용하십시오.
 
 ### GitHub 스타일 경고문
 
@@ -463,16 +471,20 @@ PlantUML, Mermaid 및 D2 다이어그램은 VS Code의 내장 Markdown 미리보
 ### 미리보기 열기
 
 - **키보드 단축키:** `Cmd+Alt+V` (Mac) / `Ctrl+Alt+V` (Windows / Linux)
+- **편집기 제목 표시줄:** 편집기 오른쪽 위의 미리보기 버튼(Plotdown 아이콘)을 클릭
+- **표준 미리보기 단축키:** `useAsDefaultPreview`를 켜면 `Cmd+Shift+V` / `Cmd+K V` (Mac) 또는 `Ctrl+Shift+V` / `Ctrl+K V` (Windows / Linux)로도 편집기 옆에 미리보기가 열립니다
 - **컨텍스트 메뉴:** 탐색기 또는 에디터 내부에서 `.md` 파일 우클릭 → **PlantUML Markdown Preview** → **Open Preview to Side**
 - **커맨드 팔레트:** `PlantUML Markdown Preview: Open Preview to Side`
 
-미리보기는 VS Code와 독립적인 고유 테마를 사용합니다 — 기본값은 흰색 배경(GitHub Light)입니다.
+미리보기는 자체 테마를 사용합니다 — 기본값은 흰색 배경(GitHub Light)입니다. `follow-vscode`를 선택하면 현재 VS Code 색 테마의 색을 사용합니다.
 
 ### 다이어그램 미리보기 열기
 
 Markdown 래퍼 없이 `.puml` / `.plantuml`, `.mmd` / `.mermaid`, 또는 `.d2` 파일을 이동 및 확대/축소 미리보기로 직접 엽니다.
 
 - **키보드 단축키:** `Cmd+Alt+V` (Mac) / `Ctrl+Alt+V` (Windows / Linux) — 동일한 단축키이며 파일 유형에 따라 자동 선택됩니다.
+- **편집기 제목 표시줄:** 편집기 오른쪽 위의 미리보기 버튼(Plotdown 아이콘)을 클릭
+- **표준 미리보기 단축키:** `useAsDefaultPreview`를 켜면 `Cmd+Shift+V` / `Cmd+K V` (Mac) 또는 `Ctrl+Shift+V` / `Ctrl+K V` (Windows / Linux)로도 편집기 옆에 미리보기가 열립니다
 - **컨텍스트 메뉴:** 탐색기 또는 에디터에서 `.puml` / `.plantuml`, `.mmd` / `.mermaid`, 또는 `.d2` 파일 우클릭 → **Preview PlantUML File** / **Preview Mermaid File** / **Preview D2 File**
 - **커맨드 팔레트:** `PlantUML Markdown Preview: Preview PlantUML File`, `Preview Mermaid File`, 또는 `Preview D2 File`
 
@@ -786,6 +798,7 @@ PlantUML, Mermaid 및 D2를 위한 컨텍스트 인식 키워드 제안을 제�
 | `plantumlServerUrl` | `"https://www.plantuml.com/plantuml"` | Easy 모드용 PlantUML 서버 URL. 개인정보 보호를 위해 직접 호스팅한 서버 URL로 설정하십시오. |
 | `enableDiagramViewer` | `true` | 다이어그램 우클릭 시 "Open in Diagram Viewer" 컨텍스트 메뉴 항목을 활성화합니다. 적용하려면 미리보기를 다시 열어야 합니다. |
 | `retainPreviewContext` | `true` | 탭이 숨겨졌을 때 미리보기 콘텐츠를 유지합니다. 탭 전환 시 재렌더링을 방지하지만 메모리를 더 사용합니다. 적용하려면 미리보기를 다시 열어야 합니다. |
+| `useAsDefaultPreview` | `false` | VS Code 표준 Markdown 미리보기 단축키(`Ctrl+Shift+V` / `Ctrl+K V`, Mac은 `Cmd`)로 Markdown, PlantUML, Mermaid, D2 파일에 이 확장의 미리보기를 엽니다. 두 단축키 모두 편집기 옆에 미리보기를 엽니다(VS Code의 `Ctrl+Shift+V`는 현재 탭에서 엽니다). 탐색기의 우클릭 메뉴 **미리 보기 열기**와 편집기 제목 표시줄의 VS Code 자체 미리보기 버튼은 대체되지 않습니다. |
 
 > **참고:** `allowLocalImages` 및 `allowHttpImages`는 미리보기 패널에만 적용됩니다. HTML 내보내기는 항상 CSP 제한 없이 원본 이미지 경로를 출력합니다.
 
@@ -794,6 +807,7 @@ PlantUML, Mermaid 및 D2를 위한 컨텍스트 인식 키워드 제안을 제�
 
 | 값 | 설명 |
 |-------|-------------|
+| `follow-vscode` | Follow VS Code Color Theme — 현재 VS Code 색 테마를 따름 (내보내기: 색 테마에 맞춰 Light 2026 / Dark 2026) |
 | `github-light` | GitHub Light — 흰색 배경 (기본값) |
 | `atom-light` | Atom Light — 부드러운 회색 텍스트, Atom 영감 |
 | `one-light` | One Light — 미색, 균형 잡힌 팔레트 |
@@ -802,12 +816,14 @@ PlantUML, Mermaid 및 D2를 위한 컨텍스트 인식 키워드 제안을 제�
 | `pen-paper-coffee` | Pen Paper Coffee — 따뜻한 종이, 손글씨 감성 |
 | `coy` | Coy — 흰색에 가까움, 깔끔한 디자인 |
 | `vs` | VS — 클래식 Visual Studio 색상 |
+| `vscode-light-2026` | VS Code Light 2026 — 내장 Markdown 미리보기 색상, 인라인 코드와 인용문이 잘 보임 |
 | `github-dark` | GitHub Dark — 어두운 배경 |
 | `atom-dark` | Atom Dark — Tomorrow Night 팔레트 |
 | `one-dark` | One Dark — Atom 영감 다크 |
 | `dracula` | Dracula — 활기찬 다크 팔레트 |
 | `solarized-dark` | Solarized Dark — 짙은 청록색, 눈이 편안함 |
 | `monokai` | Monokai — 선명한 구문, Sublime Text 영감 |
+| `vscode-dark-2026` | VS Code Dark 2026 — 내장 Markdown 미리보기 색상, 인라인 코드와 인용문이 잘 보임 |
 
 </details>
 
@@ -819,6 +835,7 @@ PlantUML, Mermaid 및 D2를 위한 컨텍스트 인식 키워드 제안을 제�
 | Preview PlantUML File | `Cmd+Alt+V` | `Ctrl+Alt+V` |
 | Preview Mermaid File | `Cmd+Alt+V` | `Ctrl+Alt+V` |
 | Preview D2 File | `Cmd+Alt+V` | `Ctrl+Alt+V` |
+| Open Preview (`useAsDefaultPreview`가 켜져 있을 때; Markdown, PlantUML, Mermaid, D2) | `Cmd+Shift+V` / `Cmd+K V` | `Ctrl+Shift+V` / `Ctrl+K V` |
 | Select Rendering Mode | — | — |
 
 ## 자주 묻는 질문(FAQ)

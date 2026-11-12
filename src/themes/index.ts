@@ -16,3 +16,6 @@ export * as oneDark from './one-dark.js';
 export * as dracula from './dracula.js';
 export * as solarizedDark from './solarized-dark.js';
 export * as monokai from './monokai.js';
+export * as vscodeLight2026 from './vscode-light-2026.js';
+export * as vscodeDark2026 from './vscode-dark-2026.js';
+export * as followVscode from './follow-vscode.js';

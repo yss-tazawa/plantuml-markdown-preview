@@ -18,13 +18,13 @@ import path from 'path';
 import url from 'url';
 import { spawn } from 'child_process';
 import http from 'http';
-import MarkdownIt from 'markdown-it';
+import MarkdownIt, { type Options as MarkdownItOptions } from 'markdown-it';
 import hljs from 'highlight.js';
 import { plantumlPlugin, type RenderEnv } from './renderer.js';
 import * as vscode from 'vscode';
 import { renderAllLocal } from './plantuml.js';
 import { renderAllServer, MAX_LOCAL_SERVER_CONCURRENCY } from './plantuml-server.js';
-import { getLocalServerUrl, waitForLocalServer, ensureLocalServerStarted, localServerUnavailableMessage } from './local-server.js';
+import { getLocalServerUrl, waitForLocalServer, ensureLocalServerStarted, localServerUnavailableMessage, handleServerEvent } from './local-server.js';
 import { escapeHtml, extractPlantUmlBlocks, extractD2Blocks, errorHtml } from './utils.js';
 import { renderAllD2 } from './d2-renderer.js';
 import { findBrowser } from './browser-finder.js';
@@ -46,44 +46,70 @@ import {
     githubLight, atomLight, oneLight, solarizedLight,
     vue, penPaperCoffee, coy, vs,
     githubDark, atomDark, oneDark, dracula, solarizedDark, monokai,
+    vscodeLight2026, vscodeDark2026, followVscode,
 } from './themes/index.js';
 
 // -----------------------------------------------------------------------
 // Preview theme definitions (each theme is in a separate src/themes/ file)
 // -----------------------------------------------------------------------
 
+/** Preview theme keys that follow the current VS Code color theme. */
+export const VSCODE_THEME_KEYS = ['follow-vscode'] as const;
+
 /** Light preview theme keys, ordered for display. */
 export const LIGHT_THEME_KEYS = [
     'github-light', 'atom-light', 'one-light', 'solarized-light',
-    'vue', 'pen-paper-coffee', 'coy', 'vs',
+    'vue', 'pen-paper-coffee', 'coy', 'vs', 'vscode-light-2026',
 ] as const;
 
 /** Dark preview theme keys, ordered for display. */
 export const DARK_THEME_KEYS = [
     'github-dark', 'atom-dark', 'one-dark', 'dracula',
-    'solarized-dark', 'monokai',
+    'solarized-dark', 'monokai', 'vscode-dark-2026',
 ] as const;
 
 /** Registry mapping theme key to its CSS string and background color. */
 const PREVIEW_THEMES: Record<string, { css: string; bg: string }> = {
-    'github-light':    githubLight,
-    'atom-light':      atomLight,
-    'one-light':       oneLight,
-    'solarized-light': solarizedLight,
-    'vue':             vue,
-    'pen-paper-coffee': penPaperCoffee,
-    'coy':             coy,
-    'vs':              vs,
-    'github-dark':     githubDark,
-    'atom-dark':       atomDark,
-    'one-dark':        oneDark,
-    'dracula':         dracula,
-    'solarized-dark':  solarizedDark,
-    'monokai':         monokai,
+    'follow-vscode':     followVscode,
+    'github-light':      githubLight,
+    'atom-light':        atomLight,
+    'one-light':         oneLight,
+    'solarized-light':   solarizedLight,
+    'vue':               vue,
+    'pen-paper-coffee':  penPaperCoffee,
+    'coy':               coy,
+    'vs':                vs,
+    'github-dark':       githubDark,
+    'atom-dark':         atomDark,
+    'one-dark':          oneDark,
+    'dracula':           dracula,
+    'solarized-dark':    solarizedDark,
+    'monokai':           monokai,
+    'vscode-light-2026': vscodeLight2026,
+    'vscode-dark-2026':  vscodeDark2026,
 };
 
 /** Default theme used when the user's setting is invalid or missing. */
 const DEFAULT_PREVIEW_THEME = 'github-light';
+
+/**
+ * Resolve the theme used when writing HTML or PDF outside VS Code.
+ *
+ * The `follow-vscode` theme reads VS Code's CSS variables, which an exported file does not
+ * have, so it is replaced by the fixed VS Code 2026 theme matching the color theme
+ * kind at export time (high contrast counts as its light or dark side).
+ *
+ * @param themeName - Configured preview theme key.
+ * @param [kind] - Color theme kind; defaults to the active VS Code color theme.
+ * @returns Theme key to export with.
+ */
+export function resolveExportTheme(themeName: string, kind?: vscode.ColorThemeKind): string {
+    if (themeName !== 'follow-vscode') return themeName;
+    const k = kind ?? vscode.window.activeColorTheme.kind;
+    return k === vscode.ColorThemeKind.Light || k === vscode.ColorThemeKind.HighContrastLight
+        ? 'vscode-light-2026'
+        : 'vscode-dark-2026';
+}
 
 // -----------------------------------------------------------------------
 // markdown-it instance cache (reused as long as jarPath + javaPath + dotPath stay the same)
@@ -103,7 +129,7 @@ let cachedMdSourceMap: MarkdownIt | null = null;
  * - linkify: Auto-detect URLs and convert to links
  * - highlight: Syntax highlight via highlight.js (190+ languages)
  */
-const MD_OPTIONS: MarkdownIt.Options = {
+const MD_OPTIONS: MarkdownItOptions = {
     html: true,
     linkify: true,
     typographer: false,
@@ -111,23 +137,26 @@ const MD_OPTIONS: MarkdownIt.Options = {
      * Syntax-highlight a fenced code block using highlight.js.
      *
      * Returns highlighted HTML when the language is recognized by highlight.js,
-     * or an empty string to let markdown-it apply its default escaping.
+     * and otherwise (no language, an unknown one, or a highlight.js failure) the
+     * escaped code in the same wrapper, so every code block gets the `.hljs`
+     * background and text color of the theme.
      *
      * @param str - Raw code block content to highlight.
      * @param lang - Language identifier from the fence info string (e.g. 'typescript', 'python').
-     * @returns Highlighted HTML wrapped in `<pre class="hljs"><code>`, or empty string for fallback.
+     * @returns HTML wrapped in `<pre class="hljs"><code>`.
      */
     highlight(str, lang) {
         if (lang && hljs.getLanguage(lang)) {
             try {
-                return `<pre class="hljs"><code class="language-${lang}">` +
+                return `<pre class="hljs"><code class="language-${escapeHtml(lang)}">` +
                     hljs.highlight(str, { language: lang, ignoreIllegals: true }).value +
                     '</code></pre>';
             } catch {
-                // Fall back to markdown-it's default escaping on highlight.js failure
+                // Fall through to the plain wrapper on highlight.js failure
             }
         }
-        return ''; // Fall back to markdown-it's default escaping
+        const langClass = lang ? ` class="language-${escapeHtml(lang)}"` : '';
+        return `<pre class="hljs"><code${langClass}>${escapeHtml(str)}</code></pre>`;
     }
 };
 
@@ -264,6 +293,18 @@ function getOrCreateMd(config: Config, withSourceMap?: boolean): MarkdownIt {
     // lowercase [!note] stays a plain blockquote.
     if (githubAlertsPlugin) md.use(githubAlertsPlugin, { matchCaseSensitive: true });
 
+    /**
+     * Indented code block renderer: the same `<pre class="hljs"><code>` wrapper the
+     * highlight option gives fenced blocks, so both take the theme's code block colors.
+     *
+     * @param tokens - Full token array from the markdown-it parse.
+     * @param idx - Index of the current code_block token.
+     * @returns HTML string for the code block.
+     */
+    md.renderer.rules.code_block = function (tokens, idx) {
+        return `<pre class="hljs"><code>${escapeHtml(tokens[idx].content)}</code></pre>\n`;
+    };
+
     // Add id attributes to headings so that anchor links (#section-name) work
     // in both the preview panel and HTML export.
     /**
@@ -397,6 +438,18 @@ export async function renderBodyAsync(
 }
 
 /**
+ * Report an export of a document with PlantUML diagrams to the local server as an
+ * event ({@link handleServerEvent}), before its render: a server that stopped
+ * retrying starts again, and the render waits for that start.
+ *
+ * @param source - Markdown text being exported.
+ * @param config - Current extension settings.
+ */
+export function handleExportEvent(source: string, config: Config): void {
+    if (extractPlantUmlBlocks(source).length > 0) handleServerEvent(config, { checkJava: true });
+}
+
+/**
  * Render Markdown source to a complete HTML document.
  *
  * Combines {@link renderBodyAsync} and {@link buildHtml} to produce a
@@ -430,6 +483,7 @@ export async function renderHtmlAsync(source: string, title: string, config: Con
  */
 export async function exportToHtml(mdFilePath: string, config: Config, signal?: AbortSignal, fitToWidth?: boolean | number, fitToWidthAlign?: 'center' | 'left'): Promise<string> {
     const source = await fs.promises.readFile(mdFilePath, 'utf8');
+    handleExportEvent(source, config);
     const exportOptions: RenderOptions = {
         mermaidTheme: config.mermaidTheme,
         mermaidScale: config.mermaidScale,
@@ -440,7 +494,8 @@ export async function exportToHtml(mdFilePath: string, config: Config, signal?: 
         katexCssHtml: config.enableMath ? await buildKatexCdnCssHtml() : '',
         enableMath: config.enableMath,
     };
-    const fullHtml = await renderHtmlAsync(source, path.basename(mdFilePath, '.md'), config, exportOptions, signal);
+    const exportConfig = { ...config, previewTheme: resolveExportTheme(config.previewTheme) };
+    const fullHtml = await renderHtmlAsync(source, path.basename(mdFilePath, '.md'), exportConfig, exportOptions, signal);
     if (signal?.aborted || !fullHtml) throw new Error('Aborted');
     const outputPath = mdFilePath.replace(/\.md$/, '.html');
     await fs.promises.writeFile(outputPath, fullHtml, 'utf8');
@@ -603,6 +658,7 @@ export async function exportToPdf(mdFilePath: string, config: Config, signal?: A
 
     // Generate fit-to-width HTML to a temporary file
     const source = await fs.promises.readFile(mdFilePath, 'utf8');
+    handleExportEvent(source, config);
     const exportOptions: RenderOptions = {
         mermaidTheme: config.mermaidTheme,
         mermaidScale: config.mermaidScale,
@@ -612,7 +668,8 @@ export async function exportToPdf(mdFilePath: string, config: Config, signal?: A
         katexCssHtml: config.enableMath ? await buildKatexCdnCssHtml() : '',
         enableMath: config.enableMath,
     };
-    const fullHtml = await renderHtmlAsync(source, path.basename(mdFilePath, '.md'), config, exportOptions, signal);
+    const exportConfig = { ...config, previewTheme: resolveExportTheme(config.previewTheme) };
+    const fullHtml = await renderHtmlAsync(source, path.basename(mdFilePath, '.md'), exportConfig, exportOptions, signal);
     if (signal?.aborted || !fullHtml) throw new Error('Aborted');
 
     const printHtml = fullHtml.replace('</head>', '<style>@page{margin:15mm}</style>\n</head>');

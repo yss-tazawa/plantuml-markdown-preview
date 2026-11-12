@@ -138,6 +138,7 @@
   "configuration.mode.easy": "Easy — No setup required (diagram source sent to PlantUML server).",
   "configuration.plantumlServerUrl.description": "PlantUML server URL for Easy mode. Default: https://www.plantuml.com/plantuml. Set to a self-hosted server URL for privacy.",
   "configuration.previewTheme.description": "Preview theme. Controls the overall document style and code block syntax highlight together. Default: github-light",
+  "configuration.previewTheme.follow-vscode": "Follow VS Code Color Theme — follows the current VS Code color theme, like VS Code's built-in Markdown preview. HTML/PDF export uses VS Code Light 2026 or Dark 2026 to match the color theme at export time.",
   "configuration.previewTheme.github-light": "GitHub Light (Default) — white background, dark text. Code blocks: github-dark-dimmed",
   "configuration.previewTheme.atom-light": "Atom Light — white background, soft gray text. Atom editor inspired.",
   "configuration.previewTheme.one-light": "One Light — off-white background, balanced palette. Atom One Light inspired.",
@@ -146,11 +147,14 @@
   "configuration.previewTheme.pen-paper-coffee": "Pen Paper Coffee — warm paper background, brown-tinted text. Cozy handwritten aesthetic.",
   "configuration.previewTheme.coy": "Coy — near-white background, clean design. Prism.js Coy inspired.",
   "configuration.previewTheme.vs": "Visual Studio Light — white background, classic VS color scheme. Blue keywords, green comments.",
+  "configuration.previewTheme.vscode-light-2026": "VS Code Light 2026 — the colors of VS Code's built-in Markdown preview under the Light 2026 color theme. Clear inline code and blockquote backgrounds.",
   "configuration.previewTheme.github-dark": "GitHub Dark — dark background, light text. Code blocks: github-dark",
   "configuration.previewTheme.atom-dark": "Atom Dark — dark background, muted text. Tomorrow Night palette.",
   "configuration.previewTheme.one-dark": "One Dark — dark background, muted text. Atom/VS Code inspired.",
   "configuration.previewTheme.dracula": "Dracula — dark background, vibrant colors.",
   "configuration.previewTheme.solarized-dark": "Solarized Dark — deep teal background, eye-friendly colors.",
+  "configuration.previewTheme.monokai": "Monokai — dark background, vivid syntax colors. Sublime Text inspired.",
+  "configuration.previewTheme.vscode-dark-2026": "VS Code Dark 2026 — the colors of VS Code's built-in Markdown preview under the Dark 2026 color theme. Clear inline code and blockquote backgrounds.",
   "configuration.plantumlLocalServerStartMode.description": "How the local PlantUML server is started. Only applies when mode is \"fast\" (local server rendering). Default: lazy",
   "configuration.plantumlLocalServerStartMode.on": "Start the local PlantUML server when the extension activates (fast mode only).",
   "configuration.plantumlLocalServerStartMode.lazy": "Start the local server at the first diagram render (default). Saves memory while PlantUML is unused; the first render takes a few seconds longer.",
@@ -166,7 +170,7 @@
   "configuration.plantumlLocalServerJvmHeapPreset.custom": "Custom — use the Initial heap and Max heap values set below.",
   "configuration.plantumlLocalServerJvmInitialHeapMb.description": "Initial JVM heap size (-Xms) in MB for the managed local PlantUML server. Only used when the heap preset is 'custom'. Only applies when the local PlantUML server is used (mode: fast). Default: 16",
   "configuration.plantumlLocalServerJvmMaxHeapMb.description": "Maximum JVM heap size (-Xmx) in MB for the managed local PlantUML server. Only used when the heap preset is 'custom'. Only applies when the local PlantUML server is used (mode: fast). Default: 512",
-  "configuration.previewTheme.monokai": "Monokai — dark background, vivid syntax colors. Sublime Text inspired.",
   "configuration.enableDiagramViewer.description": "Enable right-clicking a diagram in the preview to open it in a pan & zoom viewer. (Requires reopening the preview)",
-  "configuration.retainPreviewContext.description": "Retain preview content when the tab is hidden. Prevents re-rendering on tab switch but uses more memory. (Requires reopening the preview)"
+  "configuration.retainPreviewContext.description": "Retain preview content when the tab is hidden. Prevents re-rendering on tab switch but uses more memory. (Requires reopening the preview)",
+  "configuration.useAsDefaultPreview.description": "Open this extension's preview with VS Code's standard Markdown preview shortcuts (Ctrl+Shift+V / Ctrl+K V; Cmd on macOS) for Markdown, PlantUML, Mermaid and D2 files. Both shortcuts open the preview beside the editor, unlike VS Code's Ctrl+Shift+V, which opens the preview in the current tab. The Explorer's \"Open Preview\" context menu and VS Code's own preview button in the editor title are not replaced. Default: false"
 }

@@ -15,14 +15,14 @@ import {
  * Regex for validating CSS color values before injecting into HTML templates.
  *
  * Accepts hex (#rgb / #rrggbb / #rrggbbaa), rgb()/rgba() functions,
- * CSS keywords (transparent, inherit, currentColor, named colors).
+ * CSS keywords (transparent, inherit, currentColor, named colors), and a
+ * `var(--name)` reference with an optional hex fallback (theme-following backgrounds).
  *
  * DUPLICATION NOTE: This pattern is duplicated as an inline string in
- * pan-zoom-script.ts (cssColorRe) and scroll-sync-webview.ts because
- * those run in separate webview contexts and cannot import this module.
- * Keep all copies in sync when updating.
+ * pan-zoom-script.ts (cssColorRe) because it runs in a separate webview
+ * context and cannot import this module. Keep both copies in sync when updating.
  */
-export const CSS_COLOR_RE = /^(#[\da-fA-F]{3,8}|rgba?\(\s*[\d.%,\s/]+\)|transparent|inherit|currentColor|[\w-]+)$/;
+export const CSS_COLOR_RE = /^(#[\da-fA-F]{3,8}|rgba?\(\s*[\d.%,\s/]+\)|var\(--[\w-]+(?:,\s*#[\da-fA-F]{3,8})?\)|transparent|inherit|currentColor|[\w-]+)$/;
 
 /** Lookup table mapping HTML special characters to their entity references. */
 const HTML_ESCAPE_MAP: Readonly<Record<string, string>> = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
@@ -72,12 +72,14 @@ export function ensureStartEndTags(content: string): string {
 
 /**
  * Wrap an error message in a red-bordered styled HTML div.
+ * The `diagram-error` class carries no styling; it only marks the box as an
+ * error so it can be told apart from rendered output.
  *
  * @param message - HTML content (may include tags) to display inside the error box.
  * @returns Complete HTML div string with error styling.
  */
 export function errorHtml(message: string): string {
-    return `<div style="border:1px solid #f66;background:#fff0f0;padding:0.5em 1em;border-radius:4px;color:#c00;font-size:0.9em;text-align:left;">${message}</div>`;
+    return `<div class="diagram-error" style="border:1px solid #f66;background:#fff0f0;padding:0.5em 1em;border-radius:4px;color:#c00;font-size:0.9em;text-align:left;">${message}</div>`;
 }
 
 /**
@@ -403,14 +405,14 @@ export function spawnJavaSync(
  *
  * @param configJavaPath - The `javaPath` value from extension settings.
  * @param args - CLI arguments passed to the Java process.
- * @param options - Buffered execution options (timeout, maxBuffer, etc.).
+ * @param options - Buffered execution options (timeout, maxBuffer, cwd, etc.).
  * @param cb - Callback invoked when the process exits.
  * @returns The spawned child process.
  */
 export function execJava(
     configJavaPath: string,
     args: readonly string[],
-    options: { timeout?: number; encoding?: BufferEncoding; maxBuffer?: number },
+    options: { timeout?: number; encoding?: BufferEncoding; maxBuffer?: number; cwd?: string },
     cb: (err: Error | null, stdout: string, stderr: string) => void,
 ): ChildProcess {
     return nodeExecFile(
@@ -419,6 +421,14 @@ export function execJava(
         options, cb,
     );
 }
+
+/** Description shown next to a theme in the picker; the follow-VS-Code theme explains itself. */
+const themeDescription = (key: string, isCurrent: boolean): string => {
+    const current = isCurrent ? vscode.l10n.t('(current)') : '';
+    if (key !== 'follow-vscode') return current;
+    const note = vscode.l10n.t('follows your color theme');
+    return current ? `${current} - ${note}` : note;
+};
 
 /**
  * Build QuickPick items for a set of theme keys with a check mark on the current selection.
@@ -431,10 +441,46 @@ export function execJava(
 export const buildThemeItems = <C extends string>(keys: readonly string[], category: C, currentKey: string) =>
     keys.map(key => ({
         label: key === currentKey ? `$(check) ${key}` : `      ${key}`,
-        description: key === currentKey ? vscode.l10n.t('(current)') : '',
+        description: themeDescription(key, key === currentKey),
         category,
         themeKey: key
     }));
+
+/**
+ * Show a theme QuickPick with the keyboard cursor on the current theme of one category.
+ *
+ * `showQuickPick` always starts on the first item, which reads as if that theme were the
+ * current one, so the picker is built with `createQuickPick` to set the active item.
+ *
+ * @param items - Items to show, including separators.
+ * @param placeholder - Placeholder text of the input box.
+ * @param category - Category whose current theme receives the cursor.
+ * @param currentKey - The currently active theme key of that category.
+ * @returns The accepted item, or undefined when the picker is dismissed.
+ */
+export function showThemeQuickPick<T extends vscode.QuickPickItem & { category?: string; themeKey?: string }>(
+    items: readonly T[],
+    placeholder: string,
+    category: string,
+    currentKey: string,
+): Promise<T | undefined> {
+    const picker = vscode.window.createQuickPick<T>();
+    picker.items = items;
+    picker.placeholder = placeholder;
+    const current = items.find(item => item.category === category && item.themeKey === currentKey);
+    if (current) picker.activeItems = [current];
+    return new Promise<T | undefined>(resolve => {
+        picker.onDidAccept(() => {
+            resolve(picker.selectedItems[0]);
+            picker.hide();
+        });
+        picker.onDidHide(() => {
+            resolve(undefined);
+            picker.dispose();
+        });
+        picker.show();
+    });
+}
 
 /** Regex matching <img ...src="..." ...> or <img ...src='...' ...> tags. Captures prefix, quote, src value, and suffix. */
 const IMG_SRC_RE = /<img\s([^>]*?)src=(["'])(.*?)\2([^>]*?)>/gi;

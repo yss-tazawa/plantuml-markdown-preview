@@ -17,6 +17,7 @@ import { escapeHtml } from './utils.js';
  * @param renderingText - Localized "Rendering..." text for the loading overlay.
  * @param syncMasterTimeoutMs - Timeout in ms before syncMaster resets to 'none'.
  * @param scrollSyncUri - Webview URI for the bundled scroll-sync-webview.js.
+ * @param pageToken - Token identifying this page, posted back with its `webviewReady`.
  * @param [initialAtBottom=false] - If true, snap preview to bottom on initial render.
  * @param [enableDiagramViewer=true] - If true, diagrams are clickable to open in a viewer.
  * @returns HTML `<script>` tag string ready for insertion before `</body>`.
@@ -28,6 +29,7 @@ export function getScrollSyncScriptTag(
     renderingText: string,
     syncMasterTimeoutMs: number,
     scrollSyncUri: string,
+    pageToken: string,
     initialAtBottom = false,
     enableDiagramViewer = true
 ): string {
@@ -37,5 +39,6 @@ export function getScrollSyncScriptTag(
         ` data-initial-at-bottom="${initialAtBottom}"` +
         ` data-rendering-text="${escapeHtml(renderingText)}"` +
         ` data-sync-master-timeout-ms="${syncMasterTimeoutMs}"` +
+        ` data-page-token="${escapeHtml(pageToken)}"` +
         ` data-enable-diagram-viewer="${enableDiagramViewer}"></script>`;
 }

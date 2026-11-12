@@ -50,7 +50,7 @@ function resolveConfigPaths(config: Config): ResolvedPaths {
  * @param config - Extension configuration containing plantumlIncludePath.
  * @returns The include base directory, or undefined if no workspace is open.
  */
-export function resolveIncludePath(config: Config): string | undefined {
+export function resolveIncludePath(config: Pick<Config, 'plantumlIncludePath'>): string | undefined {
     if (config.plantumlIncludePath) {
         if (existsSync(config.plantumlIncludePath)) return config.plantumlIncludePath;
     }
@@ -784,10 +784,10 @@ export function listThemes(config: Pick<Config, 'plantumlJarPath' | 'javaPath'>)
  * Results are cached in memory. Concurrent calls with the same config are
  * deduplicated (returns the same in-flight Promise).
  *
- * @param config - Jar and Java paths.
+ * @param config - Jar and Java paths, and the include path Java runs in.
  * @returns Resolves to an array of theme names, or fallback list on error.
  */
-export function listThemesAsync(config: Pick<Config, 'plantumlJarPath' | 'javaPath'>): Promise<string[]> {
+export function listThemesAsync(config: Pick<Config, 'plantumlJarPath' | 'javaPath' | 'plantumlIncludePath'>): Promise<string[]> {
     const jarPath = config.plantumlJarPath || '';
     const javaPath = config.javaPath || 'java';
     if (!jarPath) return Promise.resolve(FALLBACK_PLANTUML_THEMES);
@@ -809,7 +809,8 @@ export function listThemesAsync(config: Pick<Config, 'plantumlJarPath' | 'javaPa
         const child = spawnJava(
             javaPath,
             ['-Djava.awt.headless=true', '-jar', jarPath, '-pipe', '-tutxt', '-charset', 'UTF-8'],
-            { stdio: ['pipe', 'pipe', 'pipe'] }
+            // Same folder as renders, so a relative javaPath names the same file.
+            { stdio: ['pipe', 'pipe', 'pipe'], cwd: resolveIncludePath(config) }
         );
         themePendingChild = child;
         const stdoutBufs: Buffer[] = [];
@@ -866,9 +867,9 @@ export function listThemesAsync(config: Pick<Config, 'plantumlJarPath' | 'javaPa
  * Call this at preview open time so the cache is warm when the user
  * opens the theme QuickPick menu. Errors are silently swallowed.
  *
- * @param config - Jar and Java paths.
+ * @param config - Jar and Java paths, and the include path Java runs in.
  */
-export function prefetchThemes(config: Pick<Config, 'plantumlJarPath' | 'javaPath'>): void {
+export function prefetchThemes(config: Pick<Config, 'plantumlJarPath' | 'javaPath' | 'plantumlIncludePath'>): void {
     listThemesAsync(config).catch((err) => {
         console.warn('[plantuml] Theme prefetch failed:', err);
     });

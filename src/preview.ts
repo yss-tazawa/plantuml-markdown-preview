@@ -13,14 +13,14 @@
 import * as vscode from 'vscode';
 import path from 'path';
 import fs from 'fs';
-import { renderHtmlAsync, renderBodyAsync, getThemeCss, LIGHT_THEME_KEYS, DARK_THEME_KEYS } from './exporter.js';
-import { listThemesAsync, prefetchThemes, clearCache, resolveIncludePath, collectIncludePaths, renderToSvgAsync, renderAllLocal } from './plantuml.js';
+import { renderHtmlAsync, renderBodyAsync, getThemeCss, VSCODE_THEME_KEYS, LIGHT_THEME_KEYS, DARK_THEME_KEYS } from './exporter.js';
+import { listThemesAsync, prefetchThemes, clearCache, resolveIncludePath, collectIncludePaths, renderAllLocal } from './plantuml.js';
 import { clearServerCache, renderToSvgServer } from './plantuml-server.js';
-import { getLocalServerUrl, waitForLocalServer, ensureLocalServerStarted } from './local-server.js';
+import { getLocalServerUrl, isLocalServerRunning, handleServerEvent } from './local-server.js';
 import { scalePlantUmlSvg, scaleD2Svg } from './renderer.js';
 import { renderD2ToSvg } from './d2-renderer.js';
 import { getScrollSyncScriptTag } from './scroll-sync.js';
-import { getNonce, resolveLocalImagePaths, extractPlantUmlBlocks, PLANTUML_FENCE_TEST_RE, extractMermaidBlocks, MERMAID_FENCE_TEST_RE, extractD2Blocks, D2_FENCE_TEST_RE, escapeHtml, errorHtml, buildThemeItems, isLiveSourceUri, findLiveSourceDocument } from './utils.js';
+import { getNonce, resolveLocalImagePaths, extractPlantUmlBlocks, PLANTUML_FENCE_TEST_RE, extractMermaidBlocks, MERMAID_FENCE_TEST_RE, extractD2Blocks, D2_FENCE_TEST_RE, escapeHtml, errorHtml, buildThemeItems, showThemeQuickPick, isLiveSourceUri, findLiveSourceDocument } from './utils.js';
 import { CONFIG_SECTION, MERMAID_THEME_KEYS, D2_THEME_KEYS, D2_THEME_MAP, type Config } from './config.js';
 import { updateDiagramViewer, closeStaleViewers, disposeAllViewers, setPendingSaveDiagram, handlePngFromPreview, handleCopyResult } from './diagram-viewer.js';
 
@@ -83,10 +83,16 @@ export class PreviewManager implements vscode.Disposable {
     private initialHtmlHadMermaid = false;
     private pendingScrollRestore = false;
     private lastRenderFailed = false;
-    private panelWasHidden = false;
+    /** Whether the page last assigned to `webview.html` has posted `webviewReady`.
+     *  A later `webviewReady` comes from a webview VS Code recreated from that HTML. */
+    private webviewLoaded = false;
+    /** Token embedded in the page last assigned to `webview.html` and posted back with
+     *  its `webviewReady`; null for a page without the preview script. A load reported
+     *  with another token comes from a page replaced since. */
+    private pageToken: string | null = null;
+    /** Source of page tokens; never reset, so a token is not reused by a later page. */
+    private pageSeq = 0;
     private enableDiagramViewer = true;
-    /** Cached retainContextWhenHidden value, set at panel creation time. */
-    private retainCtx = true;
 
     // -- include tracking ---------------------------------------------
     private includePaths = new Set<string>();
@@ -117,6 +123,8 @@ export class PreviewManager implements vscode.Disposable {
      *  hidden (especially a full reload from a document switch) would bake a stale
      *  scroll position into the HTML; instead we defer and re-render when shown. */
     private pendingShowRender = false;
+    /** Whether the panel was hidden since it was last shown. */
+    private hiddenSinceShown = false;
     /** Last scroll instruction handed to the webview. Observation point for tests. */
     private lastPostedScroll: { line: number; maxTopLine: number; atBottom: boolean; force: boolean; instant: boolean } | null = null;
     /** Theme CSS last handed to the webview. A theme change arrives by message, so it
@@ -319,11 +327,13 @@ export class PreviewManager implements vscode.Disposable {
         this.initialHtmlHadMermaid = false;
         this.pendingScrollRestore = false;
         this.lastRenderFailed = false;
-        this.panelWasHidden = false;
+        this.webviewLoaded = false;
+        this.pageToken = null;
         this.syncMaster = 'none';
         this.sourceWasVisible = false;
         this.scrollLineWhenHidden = -1;
         this.pendingShowRender = false;
+        this.hiddenSinceShown = false;
         this.lastPlantUmlBlocks = [];
         this.lastMermaidBlocks = [];
         this.lastD2Blocks = [];
@@ -435,9 +445,14 @@ export class PreviewManager implements vscode.Disposable {
                 void handlePngFromPreview(message.data);
             } else if (this.enableDiagramViewer && message.type === 'copyDiagramFromPreview') {
                 handleCopyResult(!!message.success);
+            } else if (message.type === 'webviewReady') {
+                this.handleWebviewReady(message.token);
             } else if (message.type === 'reload') {
                 clearCache();
                 clearServerCache();
+                // Before the render: a server that stopped retrying starts again,
+                // and this render waits for that start.
+                if (this.lastConfig) handleServerEvent(this.lastConfig, { checkJava: true });
                 if (this.currentFilePath) {
                     void this.readFileContent(this.currentFilePath).then((text) => {
                         if (text === null) return;
@@ -446,6 +461,54 @@ export class PreviewManager implements vscode.Disposable {
                 }
             }
         }
+    }
+
+    /**
+     * Handle a page load reported by the webview. The first load of the assigned HTML
+     * needs nothing. A later one is a webview VS Code recreated from that HTML (e.g. a
+     * hidden tab without retained context, a move to another window), which shows the
+     * content, scroll position and themes the HTML was built with: render the current
+     * file into it with the current scroll position and themes.
+     *
+     * @param token - Page token the loaded page posted.
+     */
+    private handleWebviewReady(token: unknown): void {
+        // A load of a page replaced since, e.g. the old page reloaded by a change of the
+        // webview options right before the new HTML was assigned.
+        if (this.pageToken === null || token !== this.pageToken) return;
+        if (!this.webviewLoaded) { this.webviewLoaded = true; return; }
+        // A full rebuild is in progress, or deferred until the panel is shown
+        // (pendingShowRender); the page it assigns brings the current state.
+        if (!this.initialHtmlSet) return;
+        if (!this.panel || !this.currentFilePath || !this.lastConfig) return;
+        this.pendingShowRender = false;
+        this.pendingScrollRestore = true;
+        this.scrollLineWhenHidden = -1;
+        // The page initialized Mermaid with the theme in its HTML; the next render uses this one.
+        void this.panel.webview.postMessage({ type: 'reinitMermaid', theme: this.lastConfig.mermaidTheme || 'default' });
+        void this.readFileContent(this.currentFilePath).then((text) => {
+            if (text === null || !this.panel || !this.lastConfig) return;
+            void this.renderPanel(text).catch(err =>
+                this.outputChannel.appendLine(`[re-render on webview ready] ${err}`)
+            );
+        });
+    }
+
+    /**
+     * Replace the webview's HTML; the next `webviewReady` is the first load of that page.
+     * HTML assigned while the panel is hidden may be stale by the time it is shown (and,
+     * without retained context, is not loaded until then), so the panel re-renders when
+     * shown (pendingShowRender); the first load of that page does nothing.
+     *
+     * @param html - Full HTML document to show in the webview.
+     * @param pageToken - Token embedded in the page's script, or null if it has none.
+     */
+    private setWebviewHtml(html: string, pageToken: string | null = null): void {
+        if (!this.panel) return;
+        if (!this.panel.visible) this.pendingShowRender = true;
+        this.panel.webview.html = html;
+        this.webviewLoaded = false;
+        this.pageToken = pageToken;
     }
 
     /** Wire up the document-change and scroll-sync handlers. */
@@ -593,12 +656,10 @@ export class PreviewManager implements vscode.Disposable {
             if (newPuml.some((b, i) => b.trim() !== this.lastPlantUmlBlocks[i]?.trim())) {
                 let serverConfig: Config | undefined;
                 if (this.lastConfig.renderMode === 'local-server') {
-                    // In lazy mode this render request is the first-start trigger (idempotent).
-                    ensureLocalServerStarted(this.lastConfig);
-                    await waitForLocalServer();
-                    const localUrl = getLocalServerUrl();
-                    if (signal.aborted) return true;
-                    if (!localUrl) return false; // fall back to full render (shows error)
+                    // Not running: the full render starts the server (once) and shows
+                    // the error if it cannot.
+                    const localUrl = isLocalServerRunning() ? getLocalServerUrl() : null;
+                    if (!localUrl) return false;
                     serverConfig = { ...this.lastConfig, plantumlServerUrl: localUrl };
                 } else if (this.lastConfig.renderMode === 'server') {
                     serverConfig = this.lastConfig;
@@ -645,7 +706,7 @@ export class PreviewManager implements vscode.Disposable {
                 if (newD2[i].trim() === this.lastD2Blocks[i].trim()) continue;
                 try {
                     const themeID = D2_THEME_MAP.get(this.lastConfig!.d2Theme) ?? 0;
-                    const rawSvg = await renderD2ToSvg(newD2[i].trim(), themeID, this.lastConfig!.d2Layout);
+                    const rawSvg = await renderD2ToSvg(newD2[i].trim(), themeID, this.lastConfig!.d2Layout, signal);
                     if (signal.aborted) return true;
                     d2Patches.push({ index: i, svg: scaleD2Svg(rawSvg, this.lastConfig!.d2Scale) });
                 } catch (err) {
@@ -732,6 +793,7 @@ export class PreviewManager implements vscode.Disposable {
         try {
             if (!this.initialHtmlSet) {
                 const nonce = getNonce();
+                const pageToken = String(++this.pageSeq);
                 const mermaidPath = path.join(__dirname, 'mermaid.min.js');
                 const mermaidUri = this.panel.webview.asWebviewUri(vscode.Uri.file(mermaidPath)).toString();
                 const scrollSyncPath = path.join(__dirname, 'scroll-sync-webview.js');
@@ -740,17 +802,19 @@ export class PreviewManager implements vscode.Disposable {
                 let katexCssHtml = '';
                 if (this.lastConfig.enableMath) {
                     const katexCssPath = path.join(__dirname, 'katex.min.css');
+                    const fontsBaseUri = this.panel.webview.asWebviewUri(vscode.Uri.file(path.join(__dirname, 'fonts'))).toString();
                     try {
                         let katexCss = await fs.promises.readFile(katexCssPath, 'utf-8');
-                        const fontsBaseUri = this.panel.webview.asWebviewUri(vscode.Uri.file(path.join(__dirname, 'fonts'))).toString();
                         katexCss = katexCss.replace(/url\(fonts\//g, `url(${fontsBaseUri}/`);
                         katexCssHtml = `\n  <style id="katex-css">${katexCss}</style>`;
                     } catch { /* KaTeX CSS not found — skip */ }
+                    // The panel may have been closed, or a newer render begun, while the CSS was read.
+                    if (!this.panel || !this.lastConfig || this.renderSeq !== mySeq || signal.aborted) return;
                 }
 
                 const renderOptions = {
                     sourceMap: true,
-                    scriptHtml: getScrollSyncScriptTag(this.lastScrollLine, this.lastMaxTopLine, nonce, vscode.l10n.t('Rendering...'), SYNC_MASTER_TIMEOUT_MS, scrollSyncUri, this.lastAtBottom, this.enableDiagramViewer),
+                    scriptHtml: getScrollSyncScriptTag(this.lastScrollLine, this.lastMaxTopLine, nonce, vscode.l10n.t('Rendering...'), SYNC_MASTER_TIMEOUT_MS, scrollSyncUri, pageToken, this.lastAtBottom, this.enableDiagramViewer),
                     cspNonce: nonce,
                     cspSource: this.panel.webview.cspSource,
                     lang: vscode.env.language,
@@ -779,7 +843,7 @@ export class PreviewManager implements vscode.Disposable {
                         (absPath) => webview.asWebviewUri(vscode.Uri.file(absPath)).toString()
                     );
                 }
-                this.panel.webview.html = finalHtml;
+                this.setWebviewHtml(finalHtml, pageToken);
                 this.lastRenderedHtml = finalHtml;
                 this.initialHtmlSet = true;
                 this.initialHtmlHadMermaid = finalHtml.includes('__renderMermaid');
@@ -987,7 +1051,6 @@ export class PreviewManager implements vscode.Disposable {
             }
         } else {
             const pmCfg = vscode.workspace.getConfiguration('plantumlMarkdownPreview');
-            this.retainCtx = pmCfg.get<boolean>('retainPreviewContext', true);
             this.enableDiagramViewer = pmCfg.get<boolean>('enableDiagramViewer', true);
             this.panel = vscode.window.createWebviewPanel(
                 'plantumlMarkdownPreview',
@@ -996,36 +1059,41 @@ export class PreviewManager implements vscode.Disposable {
                 {
                     enableFindWidget: true,
                     enableScripts: true,
-                    retainContextWhenHidden: this.retainCtx,
+                    retainContextWhenHidden: pmCfg.get<boolean>('retainPreviewContext', true),
                     localResourceRoots: config.allowLocalImages ? this.buildLocalResourceRoots(filePath) : [vscode.Uri.file(__dirname)],
                 }
             );
-            this.panel.webview.html = `<!DOCTYPE html>
+            this.setWebviewHtml(`<!DOCTYPE html>
 <html><head><meta charset="UTF-8"></head><body>
 <div id="loading-overlay" style="position:fixed;top:0;left:0;width:100%;height:100%;background:var(--vscode-editor-background,#fff);display:flex;align-items:center;justify-content:center;z-index:9999;">
 <div style="color:var(--vscode-editor-foreground,#333);font-size:14px;">${escapeHtml(vscode.l10n.t('Rendering...'))}</div>
-</div></body></html>`;
+</div></body></html>`);
 
             this.disposeDisposable = this.panel.onDidDispose(() => this.resetState());
             this.viewStateDisposable = this.panel.onDidChangeViewState(() => {
                 if (!this.panel) return;
                 if (!this.panel.visible) {
-                    if (!this.retainCtx) this.panelWasHidden = true;
                     // Snapshot the scroll line so a visible restore can detect whether
                     // the source scrolled while we were hidden (see the active block).
                     this.scrollLineWhenHidden = this.lastScrollLine;
+                    this.hiddenSinceShown = true;
                     return;
                 }
-                // Re-render on show when either:
-                //  - the webview was discarded (retainContextWhenHidden: false), or
-                //  - a render was deferred while hidden (pendingShowRender).
+                const shownAfterHide = this.hiddenSinceShown;
+                this.hiddenSinceShown = false;
+                // Re-render on show when a render was deferred while hidden
+                // (pendingShowRender). A webview recreated on show re-renders when it
+                // reports its load (handleWebviewReady). A page without the preview
+                // script (the "Rendering..." placeholder left by a failed full render)
+                // never reports one, so it re-renders on show unless a render is under way.
                 // This must run regardless of active state. The render pipeline's
                 // pendingScrollRestore path restores to the source's current
                 // position (lastScrollLine is kept up to date even while hidden).
-                const willReRender =
-                    (this.panelWasHidden || this.pendingShowRender) && !!this.currentFilePath && !!this.lastConfig;
+                const placeholderShown = shownAfterHide && this.pageToken === null
+                    && !this.renderAbortController && !this.loadingRenderTimer;
+                const willReRender = (this.pendingShowRender || placeholderShown)
+                    && !!this.currentFilePath && !!this.lastConfig;
                 if (willReRender) {
-                    this.panelWasHidden = false;
                     this.pendingShowRender = false;
                     this.pendingScrollRestore = true;
                     this.scrollLineWhenHidden = -1;
@@ -1129,11 +1197,11 @@ export class PreviewManager implements vscode.Disposable {
                 clearCache();
                 clearServerCache();
                 this.initialHtmlSet = false;
-                this.panel.webview.html = `<!DOCTYPE html>
+                this.setWebviewHtml(`<!DOCTYPE html>
 <html><head><meta charset="UTF-8"></head><body>
 <div style="position:fixed;top:0;left:0;width:100%;height:100%;background:var(--vscode-editor-background,#fff);display:flex;align-items:center;justify-content:center;">
 <div style="color:var(--vscode-editor-foreground,#333);font-size:14px;">${escapeHtml(vscode.l10n.t('Rendering...'))}</div>
-</div></body></html>`;
+</div></body></html>`);
             }
 
             if (changed.has('plantumlIncludePath')) {
@@ -1174,11 +1242,13 @@ export class PreviewManager implements vscode.Disposable {
 
         const plantumlThemes = await vscode.window.withProgress(
             { location: vscode.ProgressLocation.Notification, title: vscode.l10n.t('Fetching PlantUML theme list...') },
-            () => listThemesAsync(this.lastConfig || { plantumlJarPath: '', javaPath: 'java' })
+            () => listThemesAsync(this.lastConfig || { plantumlJarPath: '', javaPath: 'java', plantumlIncludePath: '' })
         );
         if (!this.panel) return;
 
         const items = [
+            { label: vscode.l10n.t('Preview Theme (VS Code)'), kind: vscode.QuickPickItemKind.Separator },
+            ...buildThemeItems(VSCODE_THEME_KEYS, 'preview' as const, currentPreviewTheme),
             { label: vscode.l10n.t('Preview Theme (Light)'), kind: vscode.QuickPickItemKind.Separator },
             ...buildThemeItems(LIGHT_THEME_KEYS, 'preview' as const, currentPreviewTheme),
             { label: vscode.l10n.t('Preview Theme (Dark)'), kind: vscode.QuickPickItemKind.Separator },
@@ -1191,9 +1261,7 @@ export class PreviewManager implements vscode.Disposable {
             ...buildThemeItems([...D2_THEME_KEYS], 'd2' as const, currentD2Theme),
         ];
 
-        const selected = await vscode.window.showQuickPick(items, {
-            placeHolder: vscode.l10n.t('Select theme')
-        });
+        const selected = await showThemeQuickPick(items, vscode.l10n.t('Select theme'), 'preview', currentPreviewTheme);
         if (!this.panel) return;
 
         if (!selected || !('category' in selected)) return;

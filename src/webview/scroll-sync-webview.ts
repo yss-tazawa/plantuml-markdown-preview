@@ -44,6 +44,8 @@ interface Anchor {
     const RENDERING_TEXT = script.dataset.renderingText!;
     const SYNC_MASTER_TIMEOUT_MS = Number(script.dataset.syncMasterTimeoutMs);
     const ENABLE_DIAGRAM_VIEWER = script.dataset.enableDiagramViewer !== 'false';
+    /** Identifies this page to the extension, which ignores loads of pages it replaced. */
+    const PAGE_TOKEN = script.dataset.pageToken ?? '';
     /** Offset (px) for TOC active-heading detection: clears the fixed nav-toolbar. */
     const TOC_SCROLL_OFFSET = 60;
 
@@ -669,6 +671,29 @@ interface Anchor {
     observer.observe(document.body, { childList: true, subtree: true });
     window.addEventListener('unload', function () { observer.disconnect(); });
 
+    /** On a color theme change VS Code swaps the body's theme class and theme name and
+     *  rewrites the `--vscode-*` variables on <html>; between two light or two dark
+     *  themes only the latter change. A theme built on those variables then changes
+     *  background, so pass the new color on to open diagram viewers. */
+    const themeKeyOf = () => [
+        Array.from(document.body.classList).filter(c => /^vscode-(light|dark|high-contrast)/.test(c)).join(' '),
+        document.body.getAttribute('data-vscode-theme-id') || '',
+        document.body.getAttribute('data-vscode-theme-name') || '',
+        getComputedStyle(document.body).backgroundColor,
+    ].join('|');
+    let lastThemeKey = themeKeyOf();
+    const colorThemeObserver = new MutationObserver(function () {
+        const current = themeKeyOf();
+        if (current === lastThemeKey) return; // e.g. the context-menu class
+        lastThemeKey = current;
+        requestAnimationFrame(notifyDiagramViewers);
+    });
+    colorThemeObserver.observe(document.body, {
+        attributes: true, attributeFilter: ['class', 'data-vscode-theme-id', 'data-vscode-theme-name'],
+    });
+    colorThemeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['style'] });
+    window.addEventListener('unload', function () { colorThemeObserver.disconnect(); });
+
     /** Delegated contextmenu handler: store diagram context for Save as PNG/SVG commands. */
     if (ENABLE_DIAGRAM_VIEWER) {
         document.body.addEventListener('contextmenu', function (event) {
@@ -1012,4 +1037,10 @@ interface Anchor {
             notifyDiagramViewers();
         }
     });
+
+    // Report each page load now that the message listener is installed. VS Code
+    // recreates the webview from its HTML in some cases (e.g. a hidden tab without
+    // retained context, a move to another window); the extension then sends the
+    // current state.
+    vscode.postMessage({ type: 'webviewReady', token: PAGE_TOKEN });
 })();

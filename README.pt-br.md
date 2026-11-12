@@ -50,7 +50,7 @@ Alterne entre modos a qualquer momento com uma única configuração — sem mig
 - **Prévia de diagrama independente** — abra arquivos `.puml`, `.plantuml`, `.mmd`, `.mermaid` e `.d2` diretamente com pan & zoom, atualizações em tempo real e suporte a temas — sem necessidade de Markdown
 - **Prévia de revisões do Git** — renderiza um arquivo Markdown como ele estava em HEAD ou na versão preparada, lado a lado com sua prévia atual, para comparar diagramas alterados já renderizados
 - **Salvar ou copiar diagramas como PNG / SVG** — clique com o botão direito em qualquer diagrama na prévia ou no Visualizador de Diagramas para salvar ou copiar para a área de transferência
-- **14 temas de prévia** — 8 temas claros + 6 escuros, incluindo GitHub, Atom, Solarized, Dracula, Monokai e mais
+- **17 temas de prévia** — um tema VS Code que acompanha seu tema de cores, mais 9 temas claros + 7 escuros, incluindo GitHub, Atom, Solarized, Dracula, Monokai e mais
 - **Assistência ao editor** — completamento de palavras-chave, seletor de cores e trechos de código (snippets) para PlantUML, Mermaid e D2
 - **Internacionalização** — interface em Inglês, Chinês (Simplificado / Tradicional), Espanhol, Português Brasileiro, Japonês e Coreano
 - **Suporte a matemática** — fórmulas inline `$...$` e em bloco `$$...$$` renderizadas com [KaTeX](https://katex.org/)
@@ -265,6 +265,12 @@ O editor e a prévia permanecem sincronizados enquanto você rola qualquer um de
 
 **Temas de prévia** controlam a aparência geral do documento:
 
+**Tema VS Code:**
+
+| Tema | Estilo |
+|-------|-------|
+| Follow VS Code Color Theme | Acompanha o tema de cores atual do VS Code, como a pré-visualização de Markdown integrada. A exportação para HTML/PDF usa VS Code Light 2026 ou Dark 2026 conforme o tema |
+
 **Temas claros:**
 
 | Tema | Estilo |
@@ -277,6 +283,7 @@ O editor e a prévia permanecem sincronizados enquanto você rola qualquer um de
 | Pen Paper Coffee | Papel quente, estética manuscrita |
 | Coy | Quase branco, design limpo |
 | VS | Cores clássicas do Visual Studio |
+| VS Code Light 2026 | Pré-visualização de Markdown integrada do VS Code com o tema de cores Light 2026 |
 
 **Temas escuros:**
 
@@ -288,6 +295,7 @@ O editor e a prévia permanecem sincronizados enquanto você rola qualquer um de
 | Dracula | Escuro vibrante |
 | Solarized Dark | Teal profundo, amigável aos olhos |
 | Monokai | Sintaxe vívida, inspirado no Sublime Text |
+| VS Code Dark 2026 | Pré-visualização de Markdown integrada do VS Code com o tema de cores Dark 2026 |
 
 Alterne os temas de prévia instantaneamente a partir do ícone na barra de título — não é necessária re-renderização (troca apenas via CSS). Mudanças no tema do PlantUML disparam uma re-renderização.
 
@@ -460,16 +468,20 @@ O que funciona depende da sua configuração:
 ### Abrir Prévia
 
 - **Atalho de teclado:** `Cmd+Alt+V` (Mac) / `Ctrl+Alt+V` (Windows / Linux)
+- **Barra de título do editor:** Clique no botão de prévia (ícone do Plotdown) no canto superior direito do editor
+- **Atalhos padrão de prévia:** Com `useAsDefaultPreview` ativado, `Cmd+Shift+V` / `Cmd+K V` (Mac) ou `Ctrl+Shift+V` / `Ctrl+K V` (Windows / Linux) também abrem a prévia ao lado do editor
 - **Menu de contexto:** Clique com o botão direito em um arquivo `.md` no Explorer ou dentro do editor → **PlantUML Markdown Preview** → **Open Preview to Side**
 - **Command Palette:** `PlantUML Markdown Preview: Open Preview to Side`
 
-A prévia usa seu próprio tema independente do VS Code — o padrão é fundo branco (GitHub Light).
+A prévia usa seus próprios temas — o padrão é fundo branco (GitHub Light). Escolha `follow-vscode` para usar as cores do tema de cores atual do VS Code.
 
 ### Abrir Prévia de Diagrama
 
 Abra arquivos `.puml` / `.plantuml`, `.mmd` / `.mermaid` ou `.d2` diretamente em uma prévia com pan & zoom — sem necessidade de Markdown.
 
 - **Atalho de teclado:** `Cmd+Alt+V` (Mac) / `Ctrl+Alt+V` (Windows / Linux) — o mesmo atalho, seleciona automaticamente com base no tipo de arquivo
+- **Barra de título do editor:** Clique no botão de prévia (ícone do Plotdown) no canto superior direito do editor
+- **Atalhos padrão de prévia:** Com `useAsDefaultPreview` ativado, `Cmd+Shift+V` / `Cmd+K V` (Mac) ou `Ctrl+Shift+V` / `Ctrl+K V` (Windows / Linux) também abrem a prévia ao lado do editor
 - **Menu de contexto:** Clique com o botão direito em um arquivo `.puml` / `.plantuml`, `.mmd` / `.mermaid` ou `.d2` no Explorer ou editor → **Preview PlantUML File** / **Preview Mermaid File** / **Preview D2 File**
 - **Command Palette:** `PlantUML Markdown Preview: Preview PlantUML File`, `Preview Mermaid File` ou `Preview D2 File`
 
@@ -784,6 +796,7 @@ Todas as configurações usam o prefixo `plantumlMarkdownPreview.`.
 | `plantumlServerUrl` | `"https://www.plantuml.com/plantuml"` | URL do servidor PlantUML para o modo Easy. Configure para um URL de servidor auto-hospedado para maior privacidade. |
 | `enableDiagramViewer` | `true` | Habilita o item de menu de contexto "Open in Diagram Viewer" ao clicar com o botão direito em um diagrama. Requer reabrir a prévia para fazer efeito. |
 | `retainPreviewContext` | `true` | Retém o conteúdo da prévia quando a aba é ocultada. Evita re-renderização ao trocar de aba, mas usa mais memória. Requer reabrir a prévia para fazer efeito. |
+| `useAsDefaultPreview` | `false` | Abre a prévia desta extensão com os atalhos padrão de pré-visualização de Markdown do VS Code (`Ctrl+Shift+V` / `Ctrl+K V`; `Cmd` no Mac) para arquivos Markdown, PlantUML, Mermaid e D2. Os dois atalhos abrem a prévia ao lado do editor, ao contrário do `Ctrl+Shift+V` do VS Code, que a abre na aba atual. O menu de contexto **Abrir Visualização** do Explorador e o botão de pré-visualização do próprio VS Code na barra de título do editor não são substituídos. |
 
 > **Nota:** `allowLocalImages` e `allowHttpImages` aplicam-se apenas ao painel de prévia. A exportação para HTML sempre gera caminhos de imagem originais sem restrições de CSP.
 
@@ -792,6 +805,7 @@ Todas as configurações usam o prefixo `plantumlMarkdownPreview.`.
 
 | Valor | Descrição |
 |-------|-------------|
+| `follow-vscode` | Follow VS Code Color Theme — acompanha o tema de cores atual do VS Code (exportação: Light 2026 / Dark 2026 conforme o tema) |
 | `github-light` | GitHub Light — fundo branco (padrão) |
 | `atom-light` | Atom Light — texto cinza suave, inspirado no Atom |
 | `one-light` | One Light — branco gelo, paleta equilibrada |
@@ -800,12 +814,14 @@ Todas as configurações usam o prefixo `plantumlMarkdownPreview.`.
 | `pen-paper-coffee` | Pen Paper Coffee — papel quente, estética manuscrita |
 | `coy` | Coy — quase branco, design limpo |
 | `vs` | VS — cores clássicas do Visual Studio |
+| `vscode-light-2026` | VS Code Light 2026 — cores da pré-visualização de Markdown integrada, código em linha e citações bem visíveis |
 | `github-dark` | GitHub Dark — fundo escuro |
 | `atom-dark` | Atom Dark — paleta Tomorrow Night |
 | `one-dark` | One Dark — escuro inspirado no Atom |
 | `dracula` | Dracula — paleta escura vibrante |
 | `solarized-dark` | Solarized Dark — teal profundo, amigável aos olhos |
 | `monokai` | Monokai — sintaxe vívida, inspirado no Sublime Text |
+| `vscode-dark-2026` | VS Code Dark 2026 — cores da pré-visualização de Markdown integrada, código em linha e citações bem visíveis |
 
 </details>
 
@@ -817,6 +833,7 @@ Todas as configurações usam o prefixo `plantumlMarkdownPreview.`.
 | Preview PlantUML File | `Cmd+Alt+V` | `Ctrl+Alt+V` |
 | Preview Mermaid File | `Cmd+Alt+V` | `Ctrl+Alt+V` |
 | Preview D2 File | `Cmd+Alt+V` | `Ctrl+Alt+V` |
+| Open Preview (com `useAsDefaultPreview` ativado; Markdown, PlantUML, Mermaid, D2) | `Cmd+Shift+V` / `Cmd+K V` | `Ctrl+Shift+V` / `Ctrl+K V` |
 | Select Rendering Mode | — | — |
 
 ## FAQ

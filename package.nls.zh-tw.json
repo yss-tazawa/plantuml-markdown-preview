@@ -138,6 +138,7 @@
   "configuration.mode.easy": "Easy — 無需設定（圖表原始碼將傳送至 PlantUML 伺服器）。",
   "configuration.plantumlServerUrl.description": "Easy 模式使用的 PlantUML 伺服器 URL。預設: https://www.plantuml.com/plantuml。可設定為自架伺服器 URL 以保護隱私。",
   "configuration.previewTheme.description": "預覽主題。同時控制文件整體樣式和程式碼區塊語法高亮。預設: github-light",
+  "configuration.previewTheme.follow-vscode": "Follow VS Code Color Theme — 與 VS Code 內建 Markdown 預覽一樣，跟隨目前的 VS Code 色彩佈景主題。HTML/PDF 匯出時依匯出當下的色彩佈景主題使用 VS Code Light 2026 或 Dark 2026。",
   "configuration.previewTheme.github-light": "GitHub Light（預設） — 白色背景、深色文字。程式碼區塊: github-dark-dimmed",
   "configuration.previewTheme.atom-light": "Atom Light — 白色背景、柔和灰色文字。Atom 編輯器風格。",
   "configuration.previewTheme.one-light": "One Light — 米白色背景、均衡配色。Atom One Light 風格。",
@@ -146,11 +147,14 @@
   "configuration.previewTheme.pen-paper-coffee": "Pen Paper Coffee — 暖紙色背景、棕色系文字。手寫筆記風格。",
   "configuration.previewTheme.coy": "Coy — 近白色背景、簡潔設計。Prism.js Coy 風格。",
   "configuration.previewTheme.vs": "Visual Studio Light — 白色背景、經典 VS 配色。藍色關鍵字、綠色注解。",
+  "configuration.previewTheme.vscode-light-2026": "VS Code Light 2026 — 在 VS Code 色彩佈景主題 Light 2026 下內建 Markdown 預覽的配色。行內程式碼和引用的背景清晰可見。",
   "configuration.previewTheme.github-dark": "GitHub Dark — 深色背景、淺色文字。程式碼區塊: github-dark",
   "configuration.previewTheme.atom-dark": "Atom Dark — 深色背景、柔和文字。Tomorrow Night 配色。",
   "configuration.previewTheme.one-dark": "One Dark — 深色背景、柔和色調。Atom / VS Code 風格。",
   "configuration.previewTheme.dracula": "Dracula — 深色背景、鮮豔配色。",
   "configuration.previewTheme.solarized-dark": "Solarized Dark — 深青色背景、護眼配色。",
+  "configuration.previewTheme.monokai": "Monokai — 深色背景、鮮明語法高亮色。Sublime Text 風格。",
+  "configuration.previewTheme.vscode-dark-2026": "VS Code Dark 2026 — 在 VS Code 色彩佈景主題 Dark 2026 下內建 Markdown 預覽的配色。行內程式碼和引用的背景清晰可見。",
   "configuration.plantumlLocalServerStartMode.description": "本機 PlantUML 伺服器的啟動方式。僅當 mode 為 \"fast\"（本機伺服器渲染）時適用。預設: lazy",
   "configuration.plantumlLocalServerStartMode.on": "擴充功能啟用時啟動本機 PlantUML 伺服器（僅限 fast 模式）。",
   "configuration.plantumlLocalServerStartMode.lazy": "在第一次渲染圖表時啟動本機伺服器（預設）。PlantUML 未使用時可節省記憶體；第一次渲染會多花幾秒鐘。",
@@ -166,7 +170,7 @@
   "configuration.plantumlLocalServerJvmHeapPreset.custom": "Custom — 使用下方設定的 Initial heap 與 Max heap 值。",
   "configuration.plantumlLocalServerJvmInitialHeapMb.description": "受管理的本機 PlantUML 伺服器的初始 JVM 堆積大小（-Xms，單位: MB）。僅當堆積預設為 'custom' 時使用。僅當使用本機 PlantUML 伺服器時適用（mode: fast）。預設: 16",
   "configuration.plantumlLocalServerJvmMaxHeapMb.description": "受管理的本機 PlantUML 伺服器的最大 JVM 堆積大小（-Xmx，單位: MB）。僅當堆積預設為 'custom' 時使用。僅當使用本機 PlantUML 伺服器時適用（mode: fast）。預設: 512",
-  "configuration.previewTheme.monokai": "Monokai — 深色背景、鮮明語法高亮色。Sublime Text 風格。",
   "configuration.enableDiagramViewer.description": "在預覽中右鍵點擊圖表即可在平移和縮放檢視器中開啟。（需要重新開啟預覽）",
-  "configuration.retainPreviewContext.description": "索引標籤隱藏時保留預覽內容。防止切換索引標籤時重新渲染，但會使用更多記憶體。（需要重新開啟預覽）"
+  "configuration.retainPreviewContext.description": "索引標籤隱藏時保留預覽內容。防止切換索引標籤時重新渲染，但會使用更多記憶體。（需要重新開啟預覽）",
+  "configuration.useAsDefaultPreview.description": "使用 VS Code 標準 Markdown 預覽快速鍵（Ctrl+Shift+V / Ctrl+K V；macOS 為 Cmd）為 Markdown、PlantUML、Mermaid 和 D2 檔案開啟本擴充功能的預覽。兩個快速鍵都會在編輯器旁邊開啟預覽（VS Code 本身的 Ctrl+Shift+V 則在目前的分頁中開啟預覽）。檔案總管右鍵選單中的「開啟預覽」和編輯器標題列中 VS Code 本身的預覽按鈕不會被取代。預設: false"
 }
