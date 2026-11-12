@@ -12,7 +12,7 @@
 import * as vscode from 'vscode';
 import { CONFIG_SECTION, type Config } from './config.js';
 import { VSCODE_THEME_KEYS, LIGHT_THEME_KEYS, DARK_THEME_KEYS, getThemeBgColor } from './exporter.js';
-import { getNonce, buildThemeItems, readSource, isLiveSourceUri } from './utils.js';
+import { getNonce, buildThemeItems, showThemeQuickPick, readSource, isLiveSourceUri } from './utils.js';
 import { handleViewerMessage } from './export-handler.js';
 
 // ---------------------------------------------------------------------------
@@ -480,9 +480,7 @@ export function createStandalonePreview(def: StandalonePreviewDef): StandalonePr
             );
         }
 
-        const selected = await vscode.window.showQuickPick(items, {
-            placeHolder: vscode.l10n.t('Select theme')
-        });
+        const selected = await showThemeQuickPick(items, vscode.l10n.t('Select theme'), 'preview', currentPreviewTheme);
         if (!panel || !selected || !('category' in selected)) return;
 
         const sel = selected as { category: string; themeKey: string };

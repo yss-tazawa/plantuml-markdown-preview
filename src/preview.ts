@@ -20,7 +20,7 @@ import { getLocalServerUrl, isLocalServerRunning, handleServerEvent } from './lo
 import { scalePlantUmlSvg, scaleD2Svg } from './renderer.js';
 import { renderD2ToSvg } from './d2-renderer.js';
 import { getScrollSyncScriptTag } from './scroll-sync.js';
-import { getNonce, resolveLocalImagePaths, extractPlantUmlBlocks, PLANTUML_FENCE_TEST_RE, extractMermaidBlocks, MERMAID_FENCE_TEST_RE, extractD2Blocks, D2_FENCE_TEST_RE, escapeHtml, errorHtml, buildThemeItems, isLiveSourceUri, findLiveSourceDocument } from './utils.js';
+import { getNonce, resolveLocalImagePaths, extractPlantUmlBlocks, PLANTUML_FENCE_TEST_RE, extractMermaidBlocks, MERMAID_FENCE_TEST_RE, extractD2Blocks, D2_FENCE_TEST_RE, escapeHtml, errorHtml, buildThemeItems, showThemeQuickPick, isLiveSourceUri, findLiveSourceDocument } from './utils.js';
 import { CONFIG_SECTION, MERMAID_THEME_KEYS, D2_THEME_KEYS, D2_THEME_MAP, type Config } from './config.js';
 import { updateDiagramViewer, closeStaleViewers, disposeAllViewers, setPendingSaveDiagram, handlePngFromPreview, handleCopyResult } from './diagram-viewer.js';
 
@@ -1261,9 +1261,7 @@ export class PreviewManager implements vscode.Disposable {
             ...buildThemeItems([...D2_THEME_KEYS], 'd2' as const, currentD2Theme),
         ];
 
-        const selected = await vscode.window.showQuickPick(items, {
-            placeHolder: vscode.l10n.t('Select theme')
-        });
+        const selected = await showThemeQuickPick(items, vscode.l10n.t('Select theme'), 'preview', currentPreviewTheme);
         if (!this.panel) return;
 
         if (!selected || !('category' in selected)) return;

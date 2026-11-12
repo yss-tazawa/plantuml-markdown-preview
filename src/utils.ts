@@ -446,6 +446,42 @@ export const buildThemeItems = <C extends string>(keys: readonly string[], categ
         themeKey: key
     }));
 
+/**
+ * Show a theme QuickPick with the keyboard cursor on the current theme of one category.
+ *
+ * `showQuickPick` always starts on the first item, which reads as if that theme were the
+ * current one, so the picker is built with `createQuickPick` to set the active item.
+ *
+ * @param items - Items to show, including separators.
+ * @param placeholder - Placeholder text of the input box.
+ * @param category - Category whose current theme receives the cursor.
+ * @param currentKey - The currently active theme key of that category.
+ * @returns The accepted item, or undefined when the picker is dismissed.
+ */
+export function showThemeQuickPick<T extends vscode.QuickPickItem & { category?: string; themeKey?: string }>(
+    items: readonly T[],
+    placeholder: string,
+    category: string,
+    currentKey: string,
+): Promise<T | undefined> {
+    const picker = vscode.window.createQuickPick<T>();
+    picker.items = items;
+    picker.placeholder = placeholder;
+    const current = items.find(item => item.category === category && item.themeKey === currentKey);
+    if (current) picker.activeItems = [current];
+    return new Promise<T | undefined>(resolve => {
+        picker.onDidAccept(() => {
+            resolve(picker.selectedItems[0]);
+            picker.hide();
+        });
+        picker.onDidHide(() => {
+            resolve(undefined);
+            picker.dispose();
+        });
+        picker.show();
+    });
+}
+
 /** Regex matching <img ...src="..." ...> or <img ...src='...' ...> tags. Captures prefix, quote, src value, and suffix. */
 const IMG_SRC_RE = /<img\s([^>]*?)src=(["'])(.*?)\2([^>]*?)>/gi;
 
