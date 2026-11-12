@@ -138,6 +138,7 @@
   "configuration.mode.easy": "Easy — セットアップ不要（ダイアグラムソースが PlantUML サーバーに送信されます）。",
   "configuration.plantumlServerUrl.description": "Easy モード用の PlantUML サーバー URL。デフォルト: https://www.plantuml.com/plantuml。プライバシーのためにセルフホストサーバーの URL を設定できます。",
   "configuration.previewTheme.description": "プレビューテーマ。ドキュメント全体スタイルとコードブロックのシンタックスハイライトをまとめて制御します。デフォルト: github-light",
+  "configuration.previewTheme.follow-vscode": "Follow VS Code Color Theme — 今の VS Code の配色テーマに合わせます（VS Code 標準の Markdown プレビューと同じ）。HTML・PDF の書き出しは、書き出すときの配色テーマに合わせて VS Code Light 2026 か Dark 2026 で書き出します。",
   "configuration.previewTheme.github-light": "GitHub Light（デフォルト） — 白背景・ダークテキスト。コードブロック: github-dark-dimmed",
   "configuration.previewTheme.atom-light": "Atom Light — 白背景・ソフトグレーテキスト。Atom エディタ由来。",
   "configuration.previewTheme.one-light": "One Light — オフホワイト背景・バランスの良い配色。Atom One Light 由来。",
@@ -146,11 +147,14 @@
   "configuration.previewTheme.pen-paper-coffee": "Pen Paper Coffee — 暖かい紙色の背景・ブラウン系テキスト。手書きノート風。",
   "configuration.previewTheme.coy": "Coy — ほぼ白背景・クリーンなデザイン。Prism.js Coy 由来。",
   "configuration.previewTheme.vs": "Visual Studio Light — 白背景・クラシック VS 配色。青キーワード・緑コメント。",
+  "configuration.previewTheme.vscode-light-2026": "VS Code Light 2026 — VS Code の配色テーマ Light 2026 で表示した標準の Markdown プレビューの配色。インラインコードと引用の背景がはっきり見えます。",
   "configuration.previewTheme.github-dark": "GitHub Dark — ダーク背景・白文字。コードブロック: github-dark",
   "configuration.previewTheme.atom-dark": "Atom Dark — ダーク背景・落ち着いたテキスト。Tomorrow Night パレット。",
   "configuration.previewTheme.one-dark": "One Dark — ダーク背景・落ち着いたテキスト。Atom / VS Code 由来。",
   "configuration.previewTheme.dracula": "Dracula — ダーク背景・鮮やかなカラーパレット。",
   "configuration.previewTheme.solarized-dark": "Solarized Dark — ディープティール背景・目に優しい配色。",
+  "configuration.previewTheme.monokai": "Monokai — ダーク背景・鮮やかなシンタックスカラー。Sublime Text 由来。",
+  "configuration.previewTheme.vscode-dark-2026": "VS Code Dark 2026 — VS Code の配色テーマ Dark 2026 で表示した標準の Markdown プレビューの配色。インラインコードと引用の背景がはっきり見えます。",
   "configuration.plantumlLocalServerStartMode.description": "ローカル PlantUML サーバーの起動方法。mode が \"fast\"（ローカルサーバーレンダリング）の場合にのみ適用されます。デフォルト: lazy",
   "configuration.plantumlLocalServerStartMode.on": "拡張機能の有効化時にローカル PlantUML サーバーを起動します（fast モードのみ）。",
   "configuration.plantumlLocalServerStartMode.lazy": "最初のダイアグラムレンダリング時にローカルサーバーを起動します（デフォルト）。PlantUML が未使用の間はメモリを節約しますが、最初のレンダリングは数秒余分にかかります。",
@@ -166,7 +170,7 @@
   "configuration.plantumlLocalServerJvmHeapPreset.custom": "Custom — 下記で設定する Initial heap と Max heap の値を使用します。",
   "configuration.plantumlLocalServerJvmInitialHeapMb.description": "管理対象のローカル PlantUML サーバーの初期 JVM ヒープサイズ（-Xms、単位: MB）。ヒーププリセットが 'custom' の場合にのみ使用されます。ローカル PlantUML サーバーが使用される場合（mode: fast）にのみ適用されます。デフォルト: 16",
   "configuration.plantumlLocalServerJvmMaxHeapMb.description": "管理対象のローカル PlantUML サーバーの最大 JVM ヒープサイズ（-Xmx、単位: MB）。ヒーププリセットが 'custom' の場合にのみ使用されます。ローカル PlantUML サーバーが使用される場合（mode: fast）にのみ適用されます。デフォルト: 512",
-  "configuration.previewTheme.monokai": "Monokai — ダーク背景・鮮やかなシンタックスカラー。Sublime Text 由来。",
   "configuration.enableDiagramViewer.description": "プレビュー内のダイアグラムを右クリックしてパン＆ズームビューワーで開く機能を有効にします。（プレビューを開き直す必要があります）",
-  "configuration.retainPreviewContext.description": "タブが非表示のときプレビュー内容を保持します。タブ切替時の再描画を防ぎますが、メモリ使用量が増えます。（プレビューを開き直す必要があります）"
+  "configuration.retainPreviewContext.description": "タブが非表示のときプレビュー内容を保持します。タブ切替時の再描画を防ぎますが、メモリ使用量が増えます。（プレビューを開き直す必要があります）",
+  "configuration.useAsDefaultPreview.description": "VS Code 標準の Markdown プレビューのショートカット（Ctrl+Shift+V・Ctrl+K V。macOS は Cmd）で、Markdown・PlantUML・Mermaid・D2 のファイルに本拡張のプレビューを開きます。どちらのショートカットも、プレビューをエディタの横に開きます（VS Code 標準の Ctrl+Shift+V は今のタブに開きます）。エクスプローラーの右クリックの「プレビューを開く」と、エディタ右上の VS Code 標準のプレビューのボタンは置き換わりません。デフォルト: false"
 }

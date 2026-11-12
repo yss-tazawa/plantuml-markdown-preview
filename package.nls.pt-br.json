@@ -138,6 +138,7 @@
   "configuration.mode.easy": "Easy — Sem configuração necessária (o código-fonte do diagrama é enviado ao servidor PlantUML).",
   "configuration.plantumlServerUrl.description": "URL do servidor PlantUML para o modo Easy. Padrão: https://www.plantuml.com/plantuml. Configure uma URL de servidor próprio para maior privacidade.",
   "configuration.previewTheme.description": "Tema de pré-visualização. Controla o estilo geral do documento e o realce de sintaxe do bloco de código. Padrão: github-light",
+  "configuration.previewTheme.follow-vscode": "Follow VS Code Color Theme — acompanha o tema de cores atual do VS Code, como a pré-visualização de Markdown integrada do VS Code. A exportação para HTML/PDF usa VS Code Light 2026 ou Dark 2026 conforme o tema de cores no momento da exportação.",
   "configuration.previewTheme.github-light": "GitHub Light (padrão) — fundo branco, texto escuro. Blocos de código: github-dark-dimmed",
   "configuration.previewTheme.atom-light": "Atom Light — fundo branco, texto cinza suave. Inspirado no editor Atom.",
   "configuration.previewTheme.one-light": "One Light — fundo quase branco, paleta equilibrada. Inspirado no Atom One Light.",
@@ -146,11 +147,14 @@
   "configuration.previewTheme.pen-paper-coffee": "Pen Paper Coffee — fundo cor de papel quente, texto em tons marrons. Estética de caderno manuscrito.",
   "configuration.previewTheme.coy": "Coy — fundo quase branco, design limpo. Inspirado no Prism.js Coy.",
   "configuration.previewTheme.vs": "Visual Studio Light — fundo branco, esquema de cores VS clássico. Palavras-chave azuis, comentários verdes.",
+  "configuration.previewTheme.vscode-light-2026": "VS Code Light 2026 — as cores da pré-visualização de Markdown integrada do VS Code com o tema de cores Light 2026. Fundos de código em linha e citações bem visíveis.",
   "configuration.previewTheme.github-dark": "GitHub Dark — fundo escuro, texto claro. Blocos de código: github-dark",
   "configuration.previewTheme.atom-dark": "Atom Dark — fundo escuro, texto suave. Paleta Tomorrow Night.",
   "configuration.previewTheme.one-dark": "One Dark — fundo escuro, texto suave. Inspirado no Atom/VS Code.",
   "configuration.previewTheme.dracula": "Dracula — fundo escuro, cores vibrantes.",
   "configuration.previewTheme.solarized-dark": "Solarized Dark — fundo verde-azulado profundo, cores amigáveis para os olhos.",
+  "configuration.previewTheme.monokai": "Monokai — fundo escuro, cores de sintaxe vívidas. Inspirado no Sublime Text.",
+  "configuration.previewTheme.vscode-dark-2026": "VS Code Dark 2026 — as cores da pré-visualização de Markdown integrada do VS Code com o tema de cores Dark 2026. Fundos de código em linha e citações bem visíveis.",
   "configuration.plantumlLocalServerStartMode.description": "Como o servidor PlantUML local é iniciado. Aplica-se somente quando o modo é \"fast\" (renderização com servidor local). Padrão: lazy",
   "configuration.plantumlLocalServerStartMode.on": "Inicia o servidor PlantUML local quando a extensão é ativada (somente modo fast).",
   "configuration.plantumlLocalServerStartMode.lazy": "Inicia o servidor local na primeira renderização de diagrama (padrão). Economiza memória enquanto o PlantUML não é usado; a primeira renderização leva alguns segundos a mais.",
@@ -166,7 +170,7 @@
   "configuration.plantumlLocalServerJvmHeapPreset.custom": "Custom — usa os valores de Initial heap e Max heap definidos abaixo.",
   "configuration.plantumlLocalServerJvmInitialHeapMb.description": "Tamanho inicial do heap da JVM (-Xms) em MB para o servidor PlantUML local gerenciado. Usado somente quando o preset de heap é 'custom'. Aplica-se somente quando o servidor PlantUML local é usado (modo: fast). Padrão: 16",
   "configuration.plantumlLocalServerJvmMaxHeapMb.description": "Tamanho máximo do heap da JVM (-Xmx) em MB para o servidor PlantUML local gerenciado. Usado somente quando o preset de heap é 'custom'. Aplica-se somente quando o servidor PlantUML local é usado (modo: fast). Padrão: 512",
-  "configuration.previewTheme.monokai": "Monokai — fundo escuro, cores de sintaxe vívidas. Inspirado no Sublime Text.",
   "configuration.enableDiagramViewer.description": "Ativar clique com botão direito em um diagrama na pré-visualização para abri-lo em um visualizador de pan e zoom. (Requer reabrir a pré-visualização)",
-  "configuration.retainPreviewContext.description": "Reter o conteúdo da pré-visualização quando a aba está oculta. Evita re-renderização ao trocar de aba, mas usa mais memória. (Requer reabrir a pré-visualização)"
+  "configuration.retainPreviewContext.description": "Reter o conteúdo da pré-visualização quando a aba está oculta. Evita re-renderização ao trocar de aba, mas usa mais memória. (Requer reabrir a pré-visualização)",
+  "configuration.useAsDefaultPreview.description": "Abrir a pré-visualização desta extensão com os atalhos padrão de pré-visualização de Markdown do VS Code (Ctrl+Shift+V / Ctrl+K V; Cmd no macOS) para arquivos Markdown, PlantUML, Mermaid e D2. Os dois atalhos abrem a pré-visualização ao lado do editor, ao contrário do Ctrl+Shift+V do VS Code, que a abre na aba atual. O menu de contexto \"Abrir Visualização\" do Explorador e o botão de pré-visualização do próprio VS Code no título do editor não são substituídos. Padrão: false"
 }

@@ -13,7 +13,7 @@
 import * as vscode from 'vscode';
 import path from 'path';
 import fs from 'fs';
-import { renderHtmlAsync, renderBodyAsync, getThemeCss, LIGHT_THEME_KEYS, DARK_THEME_KEYS } from './exporter.js';
+import { renderHtmlAsync, renderBodyAsync, getThemeCss, VSCODE_THEME_KEYS, LIGHT_THEME_KEYS, DARK_THEME_KEYS } from './exporter.js';
 import { listThemesAsync, prefetchThemes, clearCache, resolveIncludePath, collectIncludePaths, renderAllLocal } from './plantuml.js';
 import { clearServerCache, renderToSvgServer } from './plantuml-server.js';
 import { getLocalServerUrl, isLocalServerRunning, handleServerEvent } from './local-server.js';
@@ -706,7 +706,7 @@ export class PreviewManager implements vscode.Disposable {
                 if (newD2[i].trim() === this.lastD2Blocks[i].trim()) continue;
                 try {
                     const themeID = D2_THEME_MAP.get(this.lastConfig!.d2Theme) ?? 0;
-                    const rawSvg = await renderD2ToSvg(newD2[i].trim(), themeID, this.lastConfig!.d2Layout);
+                    const rawSvg = await renderD2ToSvg(newD2[i].trim(), themeID, this.lastConfig!.d2Layout, signal);
                     if (signal.aborted) return true;
                     d2Patches.push({ index: i, svg: scaleD2Svg(rawSvg, this.lastConfig!.d2Scale) });
                 } catch (err) {
@@ -1247,6 +1247,8 @@ export class PreviewManager implements vscode.Disposable {
         if (!this.panel) return;
 
         const items = [
+            { label: vscode.l10n.t('Preview Theme (VS Code)'), kind: vscode.QuickPickItemKind.Separator },
+            ...buildThemeItems(VSCODE_THEME_KEYS, 'preview' as const, currentPreviewTheme),
             { label: vscode.l10n.t('Preview Theme (Light)'), kind: vscode.QuickPickItemKind.Separator },
             ...buildThemeItems(LIGHT_THEME_KEYS, 'preview' as const, currentPreviewTheme),
             { label: vscode.l10n.t('Preview Theme (Dark)'), kind: vscode.QuickPickItemKind.Separator },

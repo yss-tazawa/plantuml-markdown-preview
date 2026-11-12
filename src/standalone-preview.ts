@@ -11,7 +11,7 @@
  */
 import * as vscode from 'vscode';
 import { CONFIG_SECTION, type Config } from './config.js';
-import { LIGHT_THEME_KEYS, DARK_THEME_KEYS, getThemeBgColor } from './exporter.js';
+import { VSCODE_THEME_KEYS, LIGHT_THEME_KEYS, DARK_THEME_KEYS, getThemeBgColor } from './exporter.js';
 import { getNonce, buildThemeItems, readSource, isLiveSourceUri } from './utils.js';
 import { handleViewerMessage } from './export-handler.js';
 
@@ -424,7 +424,8 @@ export function createStandalonePreview(def: StandalonePreviewDef): StandalonePr
         }
     }
 
-    /** Apply updated configuration; triggers re-render if diagram keys changed. */
+    /** Apply updated configuration; triggers re-render if diagram keys changed, and
+     *  applies a changed preview theme unless this panel picked its own. */
     function updateConfig(config: Config): void {
         // The open in progress (via latestConfig) and the queued one take it, panel or not.
         latestConfig = config;
@@ -434,9 +435,16 @@ export function createStandalonePreview(def: StandalonePreviewDef): StandalonePr
         lastConfig = config;
         if (!prevConfig) return;
 
-        if (def.shouldReRenderOnConfigChange?.(prevConfig, config)) {
-            scheduleRender();
+        const reRender = def.shouldReRenderOnConfigChange?.(prevConfig, config) ?? false;
+        if (!localPreviewTheme && prevConfig.previewTheme !== config.previewTheme) {
+            if (def.onPreviewThemeChanged) {
+                def.onPreviewThemeChanged(panel, getCurrentBgColor());
+            } else {
+                scheduleRender();
+                return;
+            }
         }
+        if (reRender) scheduleRender();
     }
 
     /** Dispose the panel and release all resources. */
@@ -456,6 +464,8 @@ export function createStandalonePreview(def: StandalonePreviewDef): StandalonePr
         const currentPreviewTheme = getPreviewTheme();
 
         const items: (vscode.QuickPickItem & { category?: string; themeKey?: string })[] = [
+            { label: vscode.l10n.t('Preview Theme (VS Code)'), kind: vscode.QuickPickItemKind.Separator },
+            ...buildThemeItems(VSCODE_THEME_KEYS, 'preview' as const, currentPreviewTheme),
             { label: vscode.l10n.t('Preview Theme (Light)'), kind: vscode.QuickPickItemKind.Separator },
             ...buildThemeItems(LIGHT_THEME_KEYS, 'preview' as const, currentPreviewTheme),
             { label: vscode.l10n.t('Preview Theme (Dark)'), kind: vscode.QuickPickItemKind.Separator },
@@ -478,8 +488,12 @@ export function createStandalonePreview(def: StandalonePreviewDef): StandalonePr
         const sel = selected as { category: string; themeKey: string };
 
         if (sel.category === 'preview') {
-            if (sel.themeKey === currentPreviewTheme) return;
+            // The setting may have switched the panel while the picker was open, so compare
+            // against the theme shown now. Pin the pick even when it is already shown, so a
+            // later setting change does not move it.
+            const shownPreviewTheme = getPreviewTheme();
             localPreviewTheme = sel.themeKey;
+            if (sel.themeKey === shownPreviewTheme) return;
             if (def.onPreviewThemeChanged) {
                 def.onPreviewThemeChanged(panel, getCurrentBgColor());
             } else {

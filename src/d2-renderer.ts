@@ -13,6 +13,13 @@ import { computeHash, escapeHtml, LruCache } from './utils.js';
 const D2_CACHE_SIZE = 200;
 const d2Cache = new LruCache<string>(D2_CACHE_SIZE);
 
+/**
+ * Longest wait for one compile and render. The worker does not report its own
+ * death or a hang, so without a limit a stuck request would hold up every render
+ * queued behind it. Generous, as large diagrams with the ELK layout are slow.
+ */
+const D2_RENDER_TIMEOUT_MS = 60_000;
+
 /** Lazily resolved D2 class constructor. */
 let D2Ctor: (new () => D2Instance) | null = null;
 
@@ -21,6 +28,13 @@ let d2Instance: D2Instance | null = null;
 
 /** In-flight initD2() promise for deduplication of parallel calls. */
 let initPromise: Promise<void> | null = null;
+
+/**
+ * Tail of the queue of D2 renders. The D2 instance answers one request at a
+ * time: it keeps a single pending callback, so a second request sent before the
+ * first is answered takes over that callback and the first never settles.
+ */
+let d2Queue: Promise<unknown> = Promise.resolve();
 
 /** D2 instance interface matching @terrastruct/d2 API. */
 interface D2Instance {
@@ -44,6 +58,9 @@ const D2_FATAL_ERROR_PATTERNS = [
     /channel closed/i,
     /transport.*(closed|race)/i,
 ];
+
+/** A compile and render that took longer than {@link D2_RENDER_TIMEOUT_MS}. */
+class D2TimeoutError extends Error {}
 
 /**
  * Detect whether an error indicates the D2 Wasm instance itself is broken.
@@ -176,17 +193,57 @@ function getRenderOptions(result: Record<string, unknown>): Record<string, unkno
 /**
  * Render a D2 source string to SVG.
  *
- * Results are cached by (themeID, layout, source) hash. On fatal Wasm errors
- * (Go runtime OOM, dead worker, transport race) the singleton instance is
- * recycled and the render is retried once.
+ * Results are cached by (themeID, layout, source) hash. Renders run one at a
+ * time on the shared instance, also when several previews render at once. A
+ * render that takes longer than {@link D2_RENDER_TIMEOUT_MS} discards the worker
+ * and fails at once; the next render starts on a new instance. On other fatal
+ * Wasm errors (Go runtime OOM, dead worker) the singleton instance is recycled
+ * and the render is retried once.
  *
  * @param source - D2 diagram source code.
  * @param themeID - D2 theme number.
  * @param layout - Layout engine ('dagre' or 'elk').
+ * @param signal - Cancels the render while it waits in the queue (AbortError).
  * @returns SVG markup string.
  */
-export async function renderD2ToSvg(source: string, themeID: number, layout: string): Promise<string> {
+export async function renderD2ToSvg(source: string, themeID: number, layout: string, signal?: AbortSignal): Promise<string> {
     const cacheKey = computeHash(String(themeID), layout, source);
+    const cached = d2Cache.get(cacheKey);
+    if (cached !== undefined) return cached;
+    return inD2Queue(() => renderUncached(source, themeID, layout, cacheKey, signal));
+}
+
+/**
+ * Run a task after every task queued before it has settled.
+ *
+ * @param task - Work that uses the D2 instance.
+ * @returns The task's result.
+ */
+function inD2Queue<T>(task: () => Promise<T>): Promise<T> {
+    const run = d2Queue.then(task, task);
+    d2Queue = run.catch(() => { /* the caller receives the failure */ });
+    return run;
+}
+
+/**
+ * Body of {@link renderD2ToSvg}, run from the queue.
+ *
+ * @param source - D2 diagram source code.
+ * @param themeID - D2 theme number.
+ * @param layout - Layout engine ('dagre' or 'elk').
+ * @param cacheKey - Cache key of the render.
+ * @param signal - Cancels the render before it starts (AbortError).
+ * @returns SVG markup string.
+ */
+async function renderUncached(
+    source: string,
+    themeID: number,
+    layout: string,
+    cacheKey: string,
+    signal?: AbortSignal,
+): Promise<string> {
+    signal?.throwIfAborted();
+    // A render queued before this one may have produced the same SVG.
     const cached = d2Cache.get(cacheKey);
     if (cached !== undefined) return cached;
 
@@ -197,22 +254,9 @@ export async function renderD2ToSvg(source: string, themeID: number, layout: str
         if (!d2Instance) throw new Error('D2 instance failed to initialize');
 
         try {
-            await d2Instance.ready;
-            const result = await d2Instance.compile(source, { layout, themeID });
-            if (!result || !result.diagram) {
-                throw new Error('D2 compile returned no diagram');
-            }
-            const renderResult = await d2Instance.render(
-                result.diagram, getRenderOptions(result),
-            );
-            if (typeof renderResult === 'string') {
-                const svg = fixupD2Svg(renderResult);
-                d2Cache.set(cacheKey, svg);
-                return svg;
-            }
-            // Non-string result indicates a Wasm transport race; treat as fatal
-            // so the catch block recycles the instance.
-            throw new Error('D2 render: transport race (non-string result)');
+            const svg = fixupD2Svg(await withD2Timeout(renderOnce(d2Instance, source, themeID, layout)));
+            d2Cache.set(cacheKey, svg);
+            return svg;
         } catch (err) {
             const msg = err instanceof Error ? err.message : String(err);
             // Syntax errors and incomplete-input markers must surface to the
@@ -220,6 +264,9 @@ export async function renderD2ToSvg(source: string, themeID: number, layout: str
             if (msg.startsWith('[{') || msg.includes('returned no diagram')) {
                 throw err;
             }
+            // The worker is already discarded; a retry would hold up the queue for
+            // another full timeout, so the next render starts on a new instance instead.
+            if (err instanceof D2TimeoutError) throw err;
             if (isD2InstanceFatalError(err) && attempt === 0) {
                 console.warn(`[d2] recycling instance after fatal error: ${msg}`);
                 try {
@@ -237,6 +284,50 @@ export async function renderD2ToSvg(source: string, themeID: number, layout: str
     // Unreachable: every iteration above either returns, throws, or continues
     // (and continue only happens on attempt 0). Required for the type checker.
     throw new Error('D2 render: unreachable');
+}
+
+/**
+ * One compile and render on an instance.
+ *
+ * @param instance - The D2 instance.
+ * @param source - D2 diagram source code.
+ * @param themeID - D2 theme number.
+ * @param layout - Layout engine ('dagre' or 'elk').
+ * @returns The raw SVG.
+ */
+async function renderOnce(instance: D2Instance, source: string, themeID: number, layout: string): Promise<string> {
+    await instance.ready;
+    const result = await instance.compile(source, { layout, themeID });
+    if (!result || !result.diagram) {
+        throw new Error('D2 compile returned no diagram');
+    }
+    const renderResult = await instance.render(result.diagram, getRenderOptions(result));
+    if (typeof renderResult === 'string') return renderResult;
+    // Renders run one at a time, so a reply of the wrong kind can only be a late
+    // reply to an earlier request; treat it as fatal so the instance is recycled.
+    throw new Error('D2 render: transport race (non-string result)');
+}
+
+/**
+ * Fail one compile and render that takes longer than {@link D2_RENDER_TIMEOUT_MS}.
+ * The worker is discarded before failing, so its late reply cannot reach the next
+ * request.
+ *
+ * @param work - The compile and render.
+ * @returns Its result.
+ */
+async function withD2Timeout<T>(work: Promise<T>): Promise<T> {
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const timedOut = new Promise<never>((_, reject) => {
+        timer = setTimeout(() => {
+            void forceDisposeD2().then(() => reject(new D2TimeoutError(`D2 worker timed out after ${D2_RENDER_TIMEOUT_MS}ms`)));
+        }, D2_RENDER_TIMEOUT_MS);
+    });
+    try {
+        return await Promise.race([work, timedOut]);
+    } finally {
+        clearTimeout(timer);
+    }
 }
 
 /**
@@ -292,7 +383,7 @@ export async function renderAllD2(
     for (const trimmed of unique) {
         if (signal?.aborted) break;
         try {
-            const svg = await renderD2ToSvg(trimmed, themeID, config.d2Layout);
+            const svg = await renderD2ToSvg(trimmed, themeID, config.d2Layout, signal);
             result.set(trimmed, svg);
         } catch (err) {
             const msg = extractD2ErrorMessage(err);

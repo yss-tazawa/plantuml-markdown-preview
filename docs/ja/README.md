@@ -50,7 +50,7 @@
 - **スタンドアロンダイアグラムプレビュー** — `.puml`、`.plantuml`、`.mmd`、`.mermaid`、`.d2` ファイルをパン＆ズーム、ライブ更新、テーマ対応で直接プレビュー — Markdown ラッパー不要
 - **Git リビジョンプレビュー** — Markdown ファイルを HEAD やステージ済みの時点の内容で描画し、現在のプレビューと並べて表示。変更された図を描画した状態で比較できます
 - **PNG / SVG としてダイアグラムを保存・コピー** — プレビューまたはダイアグラムビューアでダイアグラムを右クリックして保存またはクリップボードにコピー
-- **14 のプレビューテーマ** — ライト 8 + ダーク 6 テーマ（GitHub、Atom、Solarized、Dracula、Monokai など）
+- **17 のプレビューテーマ** — VS Code の配色テーマに合わせる VS Code テーマ + ライト 9 + ダーク 7 テーマ（GitHub、Atom、Solarized、Dracula、Monokai など）
 - **エディタ支援** — PlantUML、Mermaid、D2 のキーワード補完、カラーピッカー、コードスニペット
 - **国際化対応** — 英語、中国語（簡体字 / 繁体字）、スペイン語、ブラジルポルトガル語、日本語、韓国語の UI
 - **数式サポート** — `$...$` インライン・`$$...$$` ブロック数式を [KaTeX](https://katex.org/) でレンダリング
@@ -265,6 +265,12 @@ Markdown ファイルを Git のリビジョン時点の内容で描画し、サ
 
 **プレビューテーマ**はドキュメント全体の外観を制御：
 
+**VS Code テーマ:**
+
+| テーマ | スタイル |
+| ------- | ------- |
+| Follow VS Code Color Theme | 今の VS Code の配色テーマに合わせる（標準の Markdown プレビューと同じ）。HTML・PDF の書き出しは配色に合わせて VS Code Light 2026 か Dark 2026 |
+
 **ライトテーマ:**
 
 | テーマ | スタイル |
@@ -277,6 +283,7 @@ Markdown ファイルを Git のリビジョン時点の内容で描画し、サ
 | Pen Paper Coffee | 温かい紙の質感、手書き風 |
 | Coy | ほぼ白、クリーンなデザイン |
 | VS | クラシックな Visual Studio カラー |
+| VS Code Light 2026 | VS Code の配色テーマ Light 2026 で表示した標準の Markdown プレビュー |
 
 **ダークテーマ:**
 
@@ -288,6 +295,7 @@ Markdown ファイルを Git のリビジョン時点の内容で描画し、サ
 | Dracula | 鮮やかなダーク |
 | Solarized Dark | 深いティール、目に優しい |
 | Monokai | 鮮やかなシンタックス、Sublime Text 風 |
+| VS Code Dark 2026 | VS Code の配色テーマ Dark 2026 で表示した標準の Markdown プレビュー |
 
 タイトルバーのアイコンからプレビューテーマを即切替 — 再レンダリング不要（CSS のみの切替）。PlantUML テーマ変更時は再レンダリングが走る。
 
@@ -472,16 +480,20 @@ PlantUML・Mermaid・D2 ダイアグラムは VS Code 組み込みの Markdown �
 ### プレビューを開く
 
 - **キーボードショートカット：** `Cmd+Alt+V`（Mac）/ `Ctrl+Alt+V`（Windows / Linux）
+- **エディタのタイトルバー：** エディタ右上のプレビューボタン（Plotdown のアイコン）をクリック
+- **標準のプレビューのショートカット：** `useAsDefaultPreview` をオンにすると、`Cmd+Shift+V` / `Cmd+K V`（Mac）、`Ctrl+Shift+V` / `Ctrl+K V`（Windows / Linux）でもプレビューが横に開きます
 - **コンテキストメニュー：** エクスプローラーまたはエディタ内で `.md` ファイルを右クリック → **PlantUML Markdown Preview** → **プレビューを横に開く**
 - **コマンドパレット：** `PlantUML Markdown Preview: Open Preview to Side`
 
-プレビューは VS Code とは独立した独自テーマを使用 — デフォルトは白背景（GitHub Light）。
+プレビューは独自のテーマを使用 — デフォルトは白背景（GitHub Light）。`follow-vscode` を選ぶと、今の VS Code の配色テーマの色に合わせる。
 
 ### ダイアグラムプレビューを開く
 
 `.puml` / `.plantuml`、`.mmd` / `.mermaid`、`.d2` ファイルをパン＆ズームプレビューで直接開く — Markdown ラッパー不要。
 
 - **キーボードショートカット：** `Cmd+Alt+V`（Mac）/ `Ctrl+Alt+V`（Windows / Linux）— 同じショートカット、ファイル種別に応じて自動選択
+- **エディタのタイトルバー：** エディタ右上のプレビューボタン（Plotdown のアイコン）をクリック
+- **標準のプレビューのショートカット：** `useAsDefaultPreview` をオンにすると、`Cmd+Shift+V` / `Cmd+K V`（Mac）、`Ctrl+Shift+V` / `Ctrl+K V`（Windows / Linux）でもプレビューが横に開きます
 - **コンテキストメニュー：** エクスプローラーまたはエディタで `.puml` / `.plantuml`、`.mmd` / `.mermaid`、`.d2` ファイルを右クリック → **PlantUML ファイルをプレビュー** / **Mermaid ファイルをプレビュー** / **D2 ファイルをプレビュー**
 - **コマンドパレット：** `PlantUML Markdown Preview: Preview PlantUML File`、`Preview Mermaid File`、または `Preview D2 File`
 
@@ -795,6 +807,7 @@ PlantUML、Mermaid、D2 のコンテキスト対応キーワード補完。ス�
 | `plantumlServerUrl` | `"https://www.plantuml.com/plantuml"` | Easy モードの PlantUML サーバー URL。プライバシーのためにセルフホストサーバー URL に設定可能。 |
 | `enableDiagramViewer` | `true` | ダイアグラムを右クリックしたときの「ダイアグラムビューアで開く」コンテキストメニュー項目を有効化。有効にするにはプレビューの再起動が必要。 |
 | `retainPreviewContext` | `true` | タブが非表示のときにプレビューコンテンツを保持。タブ切替時の再レンダリングを防ぐがメモリ使用量が増加。有効にするにはプレビューの再起動が必要。 |
+| `useAsDefaultPreview` | `false` | VS Code 標準の Markdown プレビューのショートカット（`Ctrl+Shift+V` / `Ctrl+K V`。Mac は `Cmd`）で、Markdown・PlantUML・Mermaid・D2 のファイルに本拡張のプレビューを開く。どちらのショートカットも、プレビューをエディタの横に開く（VS Code 標準の `Ctrl+Shift+V` は今のタブに開く）。エクスプローラーの右クリックの **プレビューを開く** と、エディタ右上の VS Code 標準のプレビューのボタンは置き換わらない。 |
 
 > **注意：** `allowLocalImages` と `allowHttpImages` はプレビューパネルにのみ適用される。HTML エクスポートは CSP 制限なしに元の画像パスをそのまま出力する。
 
@@ -803,6 +816,7 @@ PlantUML、Mermaid、D2 のコンテキスト対応キーワード補完。ス�
 
 | 値 | 説明 |
 | ------- | ----------- |
+| `follow-vscode` | Follow VS Code Color Theme — 今の VS Code の配色テーマに合わせる（書き出しは配色に合わせて Light 2026 / Dark 2026） |
 | `github-light` | GitHub Light — 白背景（デフォルト） |
 | `atom-light` | Atom Light — ソフトグレーテキスト、Atom インスパイア |
 | `one-light` | One Light — オフホワイト、バランスの取れたパレット |
@@ -811,12 +825,14 @@ PlantUML、Mermaid、D2 のコンテキスト対応キーワード補完。ス�
 | `pen-paper-coffee` | Pen Paper Coffee — 温かい紙の質感、手書き風 |
 | `coy` | Coy — ほぼ白、クリーンなデザイン |
 | `vs` | VS — クラシックな Visual Studio カラー |
+| `vscode-light-2026` | VS Code Light 2026 — 標準の Markdown プレビューの配色、インラインコードと引用がはっきり |
 | `github-dark` | GitHub Dark — ダーク背景 |
 | `atom-dark` | Atom Dark — Tomorrow Night パレット |
 | `one-dark` | One Dark — Atom インスパイアのダーク |
 | `dracula` | Dracula — 鮮やかなダークパレット |
 | `solarized-dark` | Solarized Dark — 深いティール、目に優しい |
 | `monokai` | Monokai — 鮮やかなシンタックス、Sublime Text 風 |
+| `vscode-dark-2026` | VS Code Dark 2026 — 標準の Markdown プレビューの配色、インラインコードと引用がはっきり |
 
 </details>
 
@@ -828,6 +844,7 @@ PlantUML、Mermaid、D2 のコンテキスト対応キーワード補完。ス�
 | PlantUML ファイルをプレビュー | `Cmd+Alt+V` | `Ctrl+Alt+V` |
 | Mermaid ファイルをプレビュー | `Cmd+Alt+V` | `Ctrl+Alt+V` |
 | D2 ファイルをプレビュー | `Cmd+Alt+V` | `Ctrl+Alt+V` |
+| プレビューを開く（`useAsDefaultPreview` がオンのとき。Markdown・PlantUML・Mermaid・D2） | `Cmd+Shift+V` / `Cmd+K V` | `Ctrl+Shift+V` / `Ctrl+K V` |
 | レンダリングモードを選択 | — | — |
 
 ## FAQ

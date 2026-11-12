@@ -46,44 +46,70 @@ import {
     githubLight, atomLight, oneLight, solarizedLight,
     vue, penPaperCoffee, coy, vs,
     githubDark, atomDark, oneDark, dracula, solarizedDark, monokai,
+    vscodeLight2026, vscodeDark2026, followVscode,
 } from './themes/index.js';
 
 // -----------------------------------------------------------------------
 // Preview theme definitions (each theme is in a separate src/themes/ file)
 // -----------------------------------------------------------------------
 
+/** Preview theme keys that follow the current VS Code color theme. */
+export const VSCODE_THEME_KEYS = ['follow-vscode'] as const;
+
 /** Light preview theme keys, ordered for display. */
 export const LIGHT_THEME_KEYS = [
     'github-light', 'atom-light', 'one-light', 'solarized-light',
-    'vue', 'pen-paper-coffee', 'coy', 'vs',
+    'vue', 'pen-paper-coffee', 'coy', 'vs', 'vscode-light-2026',
 ] as const;
 
 /** Dark preview theme keys, ordered for display. */
 export const DARK_THEME_KEYS = [
     'github-dark', 'atom-dark', 'one-dark', 'dracula',
-    'solarized-dark', 'monokai',
+    'solarized-dark', 'monokai', 'vscode-dark-2026',
 ] as const;
 
 /** Registry mapping theme key to its CSS string and background color. */
 const PREVIEW_THEMES: Record<string, { css: string; bg: string }> = {
-    'github-light':    githubLight,
-    'atom-light':      atomLight,
-    'one-light':       oneLight,
-    'solarized-light': solarizedLight,
-    'vue':             vue,
-    'pen-paper-coffee': penPaperCoffee,
-    'coy':             coy,
-    'vs':              vs,
-    'github-dark':     githubDark,
-    'atom-dark':       atomDark,
-    'one-dark':        oneDark,
-    'dracula':         dracula,
-    'solarized-dark':  solarizedDark,
-    'monokai':         monokai,
+    'follow-vscode':     followVscode,
+    'github-light':      githubLight,
+    'atom-light':        atomLight,
+    'one-light':         oneLight,
+    'solarized-light':   solarizedLight,
+    'vue':               vue,
+    'pen-paper-coffee':  penPaperCoffee,
+    'coy':               coy,
+    'vs':                vs,
+    'github-dark':       githubDark,
+    'atom-dark':         atomDark,
+    'one-dark':          oneDark,
+    'dracula':           dracula,
+    'solarized-dark':    solarizedDark,
+    'monokai':           monokai,
+    'vscode-light-2026': vscodeLight2026,
+    'vscode-dark-2026':  vscodeDark2026,
 };
 
 /** Default theme used when the user's setting is invalid or missing. */
 const DEFAULT_PREVIEW_THEME = 'github-light';
+
+/**
+ * Resolve the theme used when writing HTML or PDF outside VS Code.
+ *
+ * The `follow-vscode` theme reads VS Code's CSS variables, which an exported file does not
+ * have, so it is replaced by the fixed VS Code 2026 theme matching the color theme
+ * kind at export time (high contrast counts as its light or dark side).
+ *
+ * @param themeName - Configured preview theme key.
+ * @param [kind] - Color theme kind; defaults to the active VS Code color theme.
+ * @returns Theme key to export with.
+ */
+export function resolveExportTheme(themeName: string, kind?: vscode.ColorThemeKind): string {
+    if (themeName !== 'follow-vscode') return themeName;
+    const k = kind ?? vscode.window.activeColorTheme.kind;
+    return k === vscode.ColorThemeKind.Light || k === vscode.ColorThemeKind.HighContrastLight
+        ? 'vscode-light-2026'
+        : 'vscode-dark-2026';
+}
 
 // -----------------------------------------------------------------------
 // markdown-it instance cache (reused as long as jarPath + javaPath + dotPath stay the same)
@@ -111,23 +137,26 @@ const MD_OPTIONS: MarkdownItOptions = {
      * Syntax-highlight a fenced code block using highlight.js.
      *
      * Returns highlighted HTML when the language is recognized by highlight.js,
-     * or an empty string to let markdown-it apply its default escaping.
+     * and otherwise (no language, an unknown one, or a highlight.js failure) the
+     * escaped code in the same wrapper, so every code block gets the `.hljs`
+     * background and text color of the theme.
      *
      * @param str - Raw code block content to highlight.
      * @param lang - Language identifier from the fence info string (e.g. 'typescript', 'python').
-     * @returns Highlighted HTML wrapped in `<pre class="hljs"><code>`, or empty string for fallback.
+     * @returns HTML wrapped in `<pre class="hljs"><code>`.
      */
     highlight(str, lang) {
         if (lang && hljs.getLanguage(lang)) {
             try {
-                return `<pre class="hljs"><code class="language-${lang}">` +
+                return `<pre class="hljs"><code class="language-${escapeHtml(lang)}">` +
                     hljs.highlight(str, { language: lang, ignoreIllegals: true }).value +
                     '</code></pre>';
             } catch {
-                // Fall back to markdown-it's default escaping on highlight.js failure
+                // Fall through to the plain wrapper on highlight.js failure
             }
         }
-        return ''; // Fall back to markdown-it's default escaping
+        const langClass = lang ? ` class="language-${escapeHtml(lang)}"` : '';
+        return `<pre class="hljs"><code${langClass}>${escapeHtml(str)}</code></pre>`;
     }
 };
 
@@ -263,6 +292,18 @@ function getOrCreateMd(config: Config, withSourceMap?: boolean): MarkdownIt {
     // matchCaseSensitive: GitHub only recognizes uppercase markers ([!NOTE]);
     // lowercase [!note] stays a plain blockquote.
     if (githubAlertsPlugin) md.use(githubAlertsPlugin, { matchCaseSensitive: true });
+
+    /**
+     * Indented code block renderer: the same `<pre class="hljs"><code>` wrapper the
+     * highlight option gives fenced blocks, so both take the theme's code block colors.
+     *
+     * @param tokens - Full token array from the markdown-it parse.
+     * @param idx - Index of the current code_block token.
+     * @returns HTML string for the code block.
+     */
+    md.renderer.rules.code_block = function (tokens, idx) {
+        return `<pre class="hljs"><code>${escapeHtml(tokens[idx].content)}</code></pre>\n`;
+    };
 
     // Add id attributes to headings so that anchor links (#section-name) work
     // in both the preview panel and HTML export.
@@ -453,7 +494,8 @@ export async function exportToHtml(mdFilePath: string, config: Config, signal?: 
         katexCssHtml: config.enableMath ? await buildKatexCdnCssHtml() : '',
         enableMath: config.enableMath,
     };
-    const fullHtml = await renderHtmlAsync(source, path.basename(mdFilePath, '.md'), config, exportOptions, signal);
+    const exportConfig = { ...config, previewTheme: resolveExportTheme(config.previewTheme) };
+    const fullHtml = await renderHtmlAsync(source, path.basename(mdFilePath, '.md'), exportConfig, exportOptions, signal);
     if (signal?.aborted || !fullHtml) throw new Error('Aborted');
     const outputPath = mdFilePath.replace(/\.md$/, '.html');
     await fs.promises.writeFile(outputPath, fullHtml, 'utf8');
@@ -626,7 +668,8 @@ export async function exportToPdf(mdFilePath: string, config: Config, signal?: A
         katexCssHtml: config.enableMath ? await buildKatexCdnCssHtml() : '',
         enableMath: config.enableMath,
     };
-    const fullHtml = await renderHtmlAsync(source, path.basename(mdFilePath, '.md'), config, exportOptions, signal);
+    const exportConfig = { ...config, previewTheme: resolveExportTheme(config.previewTheme) };
+    const fullHtml = await renderHtmlAsync(source, path.basename(mdFilePath, '.md'), exportConfig, exportOptions, signal);
     if (signal?.aborted || !fullHtml) throw new Error('Aborted');
 
     const printHtml = fullHtml.replace('</head>', '<style>@page{margin:15mm}</style>\n</head>');

@@ -134,7 +134,7 @@ export function getPanZoomScript(): string {
     document.getElementById('btn-zoom-out').addEventListener('click', function() { zoomAtCenter(-ZOOM_STEP); });
 
     // Keep in sync with CSS_COLOR_RE in src/utils.ts.
-    var cssColorRe = /^(#[\\da-fA-F]{3,8}|rgba?\\(\\s*[\\d.%,\\s\\/]+\\)|transparent|inherit|currentColor|[\\w-]+)$/;
+    var cssColorRe = /^(#[\\da-fA-F]{3,8}|rgba?\\(\\s*[\\d.%,\\s\\/]+\\)|var\\(--[\\w-]+(?:,\\s*#[\\da-fA-F]{3,8})?\\)|transparent|inherit|currentColor|[\\w-]+)$/;
 
     // NOTE: This SVG-to-PNG canvas conversion logic is duplicated in
     // scroll-sync-webview.ts (handleSvgAsPng). The two run in separate

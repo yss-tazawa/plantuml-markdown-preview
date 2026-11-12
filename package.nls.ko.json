@@ -138,6 +138,7 @@
   "configuration.mode.easy": "Easy — 설정 불필요 (다이어그램 소스가 PlantUML 서버로 전송됩니다).",
   "configuration.plantumlServerUrl.description": "Easy 모드용 PlantUML 서버 URL. 기본값: https://www.plantuml.com/plantuml. 개인정보 보호를 위해 자체 호스팅 서버 URL로 설정할 수 있습니다.",
   "configuration.previewTheme.description": "미리보기 테마. 문서 전체 스타일과 코드 블록 구문 강조를 함께 제어합니다. 기본값: github-light",
+  "configuration.previewTheme.follow-vscode": "Follow VS Code Color Theme — VS Code 내장 Markdown 미리보기처럼 현재 VS Code 색 테마를 따릅니다. HTML/PDF 내보내기는 내보낼 때의 색 테마에 맞춰 VS Code Light 2026 또는 Dark 2026을 사용합니다.",
   "configuration.previewTheme.github-light": "GitHub Light (기본값) — 흰색 배경, 어두운 텍스트. 코드 블록: github-dark-dimmed",
   "configuration.previewTheme.atom-light": "Atom Light — 흰색 배경, 부드러운 회색 텍스트. Atom 에디터 스타일.",
   "configuration.previewTheme.one-light": "One Light — 오프화이트 배경, 균형 잡힌 팔레트. Atom One Light 스타일.",
@@ -146,11 +147,14 @@
   "configuration.previewTheme.pen-paper-coffee": "Pen Paper Coffee — 따뜻한 종이색 배경, 갈색 계열 텍스트. 손글씨 노트 느낌.",
   "configuration.previewTheme.coy": "Coy — 거의 흰색 배경, 깔끔한 디자인. Prism.js Coy 스타일.",
   "configuration.previewTheme.vs": "Visual Studio Light — 흰색 배경, 클래식 VS 색상. 파란 키워드, 초록 주석.",
+  "configuration.previewTheme.vscode-light-2026": "VS Code Light 2026 — VS Code 색 테마 Light 2026에서 표시한 내장 Markdown 미리보기의 색상. 인라인 코드와 인용문의 배경이 잘 보입니다.",
   "configuration.previewTheme.github-dark": "GitHub Dark — 어두운 배경, 밝은 텍스트. 코드 블록: github-dark",
   "configuration.previewTheme.atom-dark": "Atom Dark — 어두운 배경, 부드러운 텍스트. Tomorrow Night 팔레트.",
   "configuration.previewTheme.one-dark": "One Dark — 어두운 배경, 부드러운 텍스트. Atom / VS Code 스타일.",
   "configuration.previewTheme.dracula": "Dracula — 어두운 배경, 선명한 색상.",
   "configuration.previewTheme.solarized-dark": "Solarized Dark — 짙은 청록색 배경, 눈에 편안한 색상.",
+  "configuration.previewTheme.monokai": "Monokai — 어두운 배경, 선명한 구문 색상. Sublime Text 스타일.",
+  "configuration.previewTheme.vscode-dark-2026": "VS Code Dark 2026 — VS Code 색 테마 Dark 2026에서 표시한 내장 Markdown 미리보기의 색상. 인라인 코드와 인용문의 배경이 잘 보입니다.",
   "configuration.plantumlLocalServerStartMode.description": "로컬 PlantUML 서버가 시작되는 방식. mode가 \"fast\"(로컬 서버 렌더링)일 때만 적용됩니다. 기본값: lazy",
   "configuration.plantumlLocalServerStartMode.on": "확장 프로그램이 활성화될 때 로컬 PlantUML 서버를 시작합니다(fast 모드 전용).",
   "configuration.plantumlLocalServerStartMode.lazy": "첫 다이어그램 렌더링 시 로컬 서버를 시작합니다(기본값). PlantUML을 사용하지 않는 동안 메모리를 절약하지만, 첫 렌더링은 몇 초 더 걸립니다.",
@@ -166,7 +170,7 @@
   "configuration.plantumlLocalServerJvmHeapPreset.custom": "Custom — 아래에 설정된 Initial heap 및 Max heap 값을 사용합니다.",
   "configuration.plantumlLocalServerJvmInitialHeapMb.description": "관리되는 로컬 PlantUML 서버의 초기 JVM 힙 크기(-Xms, 단위: MB). 힙 프리셋이 'custom'일 때만 사용됩니다. 로컬 PlantUML 서버가 사용될 때만 적용됩니다(mode: fast). 기본값: 16",
   "configuration.plantumlLocalServerJvmMaxHeapMb.description": "관리되는 로컬 PlantUML 서버의 최대 JVM 힙 크기(-Xmx, 단위: MB). 힙 프리셋이 'custom'일 때만 사용됩니다. 로컬 PlantUML 서버가 사용될 때만 적용됩니다(mode: fast). 기본값: 512",
-  "configuration.previewTheme.monokai": "Monokai — 어두운 배경, 선명한 구문 색상. Sublime Text 스타일.",
   "configuration.enableDiagramViewer.description": "미리보기에서 다이어그램을 우클릭하여 팬 & 줌 뷰어에서 열기. (미리보기를 다시 열어야 적용됩니다)",
-  "configuration.retainPreviewContext.description": "탭이 숨겨질 때 미리보기 내용을 유지합니다. 탭 전환 시 재렌더링을 방지하지만 메모리를 더 사용합니다. (미리보기를 다시 열어야 적용됩니다)"
+  "configuration.retainPreviewContext.description": "탭이 숨겨질 때 미리보기 내용을 유지합니다. 탭 전환 시 재렌더링을 방지하지만 메모리를 더 사용합니다. (미리보기를 다시 열어야 적용됩니다)",
+  "configuration.useAsDefaultPreview.description": "VS Code 표준 Markdown 미리보기 단축키(Ctrl+Shift+V / Ctrl+K V, macOS는 Cmd)로 Markdown, PlantUML, Mermaid, D2 파일에 이 확장의 미리보기를 엽니다. 두 단축키 모두 편집기 옆에 미리보기를 엽니다(VS Code의 Ctrl+Shift+V는 현재 탭에서 엽니다). 탐색기의 우클릭 메뉴 \"미리 보기 열기\"와 편집기 제목의 VS Code 자체 미리보기 버튼은 대체되지 않습니다. 기본값: false"
 }

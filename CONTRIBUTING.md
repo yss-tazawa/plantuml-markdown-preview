@@ -80,7 +80,7 @@ src/
   browser-finder.ts Detect Chrome/Edge/Chromium for headless PDF export
   utils.ts          Shared utilities (escapeHtml, getNonce, errorHtml, fence regex, Java process helpers, LRU cache)
   webview/          Webview-side TypeScript (bundled separately for the browser context)
-  themes/           CSS theme definitions (14 themes: 8 light + 6 dark)
+  themes/           CSS theme definitions (17 themes: 1 that follows VS Code + 9 light + 7 dark)
 snippets/           Markdown & diagram snippet definitions (PlantUML, Mermaid, D2)
 syntaxes/           TextMate grammars for Markdown fenced code blocks
 l10n/               Localization bundles (7 languages: en, ja, zh-cn, zh-tw, ko, es, pt-br)

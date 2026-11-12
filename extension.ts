@@ -41,6 +41,7 @@ import { HEAD_REVISION, STAGED_REVISION, type Revision } from './src/git.js';
 import { CONFIG_SECTION, MODE_PRESETS, OUTPUT_CHANNEL_NAME, isLazyDeferralActive, resolveStartMode, type Config, type Mode } from './src/config.js';
 import { registerCompletionProviders } from './src/completion/register.js';
 import { registerColorProviders } from './src/color/register.js';
+import { recordPreviewThemeIfUnset, PREVIEW_THEME_RECORDED_KEY } from './src/preview-theme-default.js';
 import type MarkdownIt from 'markdown-it';
 
 /** Module-level reference set in activate(). Used by resolveMarkdownPath(). */
@@ -443,6 +444,12 @@ export interface TestHooks {
     getOutputLog(): string;
     /** Snapshot of the local PlantUML server state (status, URL, counters, last error). */
     getLocalServerState(): LocalServerDiagnostics;
+    /** Run the activation step that records the preview theme when no scope sets it.
+     *  `state` replaces the extension's global state (which holds the run-once marker). */
+    recordPreviewThemeIfUnset(state?: vscode.Memento): Promise<boolean>;
+    /** Wait for the recording step activation started; returns whether it wrote the
+     *  setting and the run-once marker now held by the extension's global state. */
+    getActivationThemeRecording(): Promise<{ written: boolean; marker: unknown }>;
 }
 
 /** Shape returned by {@link activate}. `extendMarkdownIt` is the contract VS Code's
@@ -532,6 +539,11 @@ export function activate(context: vscode.ExtensionContext): ExtensionApi {
     lastKnownConfig = initialConfig;
     syncBuiltInPreviewConfig(initialConfig);
     updateStatusBar(statusBarItem, initialConfig, currentServerState);
+
+    // Record the default theme for users who never chose one, so a change to the
+    // package.json default leaves their preview as it is. Runs once per installation
+    // (non-blocking; failures are only logged).
+    const themeRecording = recordPreviewThemeIfUnset(context.globalState, line => channel.appendLine(line));
 
     // Start D2 Wasm worker (non-blocking; first render awaits readiness)
     initD2().catch(err => channel.appendLine(`[d2] init error: ${err}`));
@@ -1032,6 +1044,10 @@ export function activate(context: vscode.ExtensionContext): ExtensionApi {
             getShownGuidance: () => getShownGuidance(),
             getOutputLog: () => outputLog.read(),
             getLocalServerState: () => getLocalServerDiagnostics(),
+            recordPreviewThemeIfUnset: (state) =>
+                recordPreviewThemeIfUnset(state ?? context.globalState, line => channel.appendLine(line)),
+            getActivationThemeRecording: () => themeRecording.then(written =>
+                ({ written, marker: context.globalState.get(PREVIEW_THEME_RECORDED_KEY) })),
         },
     };
 }

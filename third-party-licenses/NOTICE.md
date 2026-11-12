@@ -1,6 +1,7 @@
 # Third-Party Licenses
 
-This extension ships the TextMate grammars listed below. Each keeps its own license;
+This extension ships the TextMate grammars listed below and reuses the VS Code color values
+listed at the end. Each keeps its own license;
 the full texts are in this folder. The extension's own code is not covered by them.
 
 The grammars are taken **unmodified** from the VS Code extensions published on Open VSX
@@ -43,3 +44,13 @@ a8545b220dc2cb109835571ba3458ff138e97361, as stated at the top of the file).
 The D2 grammar includes it for the contents of `|md` block strings.
 
 - License: MIT — see `vscode-markdown-tm-grammar-LICENSE.txt` (Copyright (c) Microsoft 2018)
+
+## VS Code color values (microsoft/vscode)
+
+The preview themes `vscode-light-2026` and `vscode-dark-2026` reproduce color values taken
+from VS Code 1.146.0 (https://github.com/microsoft/vscode): the Light 2026 / Dark 2026
+color themes and the built-in Markdown preview's stylesheets (including its highlight.js
+styles). No VS Code files are shipped; only the color values are used, in
+`src/themes/vscode-light-2026.ts` and `src/themes/vscode-dark-2026.ts`.
+
+- License: MIT — see `vscode-LICENSE.txt` (Copyright (c) 2015 - present Microsoft Corporation)

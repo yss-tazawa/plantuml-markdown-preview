@@ -156,7 +156,11 @@
       {
         "command": "plantuml-markdown-preview.openPreview",
         "title": "%command.openPreview.title%",
-        "category": "%command.category%"
+        "category": "%command.category%",
+        "icon": {
+          "light": "images/plotdown-preview-icon.png",
+          "dark": "images/plotdown-preview-icon.png"
+        }
       },
       {
         "command": "plantuml-markdown-preview.openHeadRevisionPreview",
@@ -171,17 +175,29 @@
       {
         "command": "plantuml-markdown-preview.openPumlPreview",
         "title": "%command.openPumlPreview.title%",
-        "category": "%command.category%"
+        "category": "%command.category%",
+        "icon": {
+          "light": "images/plotdown-preview-icon.png",
+          "dark": "images/plotdown-preview-icon.png"
+        }
       },
       {
         "command": "plantuml-markdown-preview.openMermaidPreview",
         "title": "%command.openMermaidPreview.title%",
-        "category": "%command.category%"
+        "category": "%command.category%",
+        "icon": {
+          "light": "images/plotdown-preview-icon.png",
+          "dark": "images/plotdown-preview-icon.png"
+        }
       },
       {
         "command": "plantuml-markdown-preview.openD2Preview",
         "title": "%command.openD2Preview.title%",
-        "category": "%command.category%"
+        "category": "%command.category%",
+        "icon": {
+          "light": "images/plotdown-preview-icon.png",
+          "dark": "images/plotdown-preview-icon.png"
+        }
       },
       {
         "command": "plantuml-markdown-preview.exportHtml",
@@ -496,6 +512,26 @@
         {
           "command": "plantuml-markdown-preview.changeTheme",
           "when": "activeWebviewPanelId == 'plantumlD2Preview'",
+          "group": "navigation"
+        },
+        {
+          "command": "plantuml-markdown-preview.openPreview",
+          "when": "editorLangId == markdown",
+          "group": "navigation"
+        },
+        {
+          "command": "plantuml-markdown-preview.openPumlPreview",
+          "when": "editorLangId == plantuml",
+          "group": "navigation"
+        },
+        {
+          "command": "plantuml-markdown-preview.openMermaidPreview",
+          "when": "editorLangId == mermaid",
+          "group": "navigation"
+        },
+        {
+          "command": "plantuml-markdown-preview.openD2Preview",
+          "when": "editorLangId == d2",
           "group": "navigation"
         }
       ],
@@ -820,6 +856,54 @@
         "key": "ctrl+alt+v",
         "mac": "cmd+alt+v",
         "when": "editorLangId == d2"
+      },
+      {
+        "command": "plantuml-markdown-preview.openPreview",
+        "key": "ctrl+shift+v",
+        "mac": "cmd+shift+v",
+        "when": "config.plantumlMarkdownPreview.useAsDefaultPreview && editorLangId == markdown && !notebookEditorFocused"
+      },
+      {
+        "command": "plantuml-markdown-preview.openPumlPreview",
+        "key": "ctrl+shift+v",
+        "mac": "cmd+shift+v",
+        "when": "config.plantumlMarkdownPreview.useAsDefaultPreview && editorLangId == plantuml && !notebookEditorFocused"
+      },
+      {
+        "command": "plantuml-markdown-preview.openMermaidPreview",
+        "key": "ctrl+shift+v",
+        "mac": "cmd+shift+v",
+        "when": "config.plantumlMarkdownPreview.useAsDefaultPreview && editorLangId == mermaid && !notebookEditorFocused"
+      },
+      {
+        "command": "plantuml-markdown-preview.openD2Preview",
+        "key": "ctrl+shift+v",
+        "mac": "cmd+shift+v",
+        "when": "config.plantumlMarkdownPreview.useAsDefaultPreview && editorLangId == d2 && !notebookEditorFocused"
+      },
+      {
+        "command": "plantuml-markdown-preview.openPreview",
+        "key": "ctrl+k v",
+        "mac": "cmd+k v",
+        "when": "config.plantumlMarkdownPreview.useAsDefaultPreview && editorLangId == markdown && !notebookEditorFocused"
+      },
+      {
+        "command": "plantuml-markdown-preview.openPumlPreview",
+        "key": "ctrl+k v",
+        "mac": "cmd+k v",
+        "when": "config.plantumlMarkdownPreview.useAsDefaultPreview && editorLangId == plantuml && !notebookEditorFocused"
+      },
+      {
+        "command": "plantuml-markdown-preview.openMermaidPreview",
+        "key": "ctrl+k v",
+        "mac": "cmd+k v",
+        "when": "config.plantumlMarkdownPreview.useAsDefaultPreview && editorLangId == mermaid && !notebookEditorFocused"
+      },
+      {
+        "command": "plantuml-markdown-preview.openD2Preview",
+        "key": "ctrl+k v",
+        "mac": "cmd+k v",
+        "when": "config.plantumlMarkdownPreview.useAsDefaultPreview && editorLangId == d2 && !notebookEditorFocused"
       }
     ],
     "configuration": {
@@ -892,6 +976,7 @@
           "type": "string",
           "default": "github-light",
           "enum": [
+            "follow-vscode",
             "github-light",
             "atom-light",
             "one-light",
@@ -900,14 +985,17 @@
             "pen-paper-coffee",
             "coy",
             "vs",
+            "vscode-light-2026",
             "github-dark",
             "atom-dark",
             "one-dark",
             "dracula",
             "solarized-dark",
-            "monokai"
+            "monokai",
+            "vscode-dark-2026"
           ],
           "enumDescriptions": [
+            "%configuration.previewTheme.follow-vscode%",
             "%configuration.previewTheme.github-light%",
             "%configuration.previewTheme.atom-light%",
             "%configuration.previewTheme.one-light%",
@@ -916,12 +1004,14 @@
             "%configuration.previewTheme.pen-paper-coffee%",
             "%configuration.previewTheme.coy%",
             "%configuration.previewTheme.vs%",
+            "%configuration.previewTheme.vscode-light-2026%",
             "%configuration.previewTheme.github-dark%",
             "%configuration.previewTheme.atom-dark%",
             "%configuration.previewTheme.one-dark%",
             "%configuration.previewTheme.dracula%",
             "%configuration.previewTheme.solarized-dark%",
-            "%configuration.previewTheme.monokai%"
+            "%configuration.previewTheme.monokai%",
+            "%configuration.previewTheme.vscode-dark-2026%"
           ],
           "description": "%configuration.previewTheme.description%"
         },
@@ -1254,6 +1344,12 @@
           "type": "boolean",
           "default": true,
           "description": "%configuration.retainPreviewContext.description%"
+        },
+        "plantumlMarkdownPreview.useAsDefaultPreview": {
+          "order": 32,
+          "type": "boolean",
+          "default": false,
+          "description": "%configuration.useAsDefaultPreview.description%"
         }
       }
     }

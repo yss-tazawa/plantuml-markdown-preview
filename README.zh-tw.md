@@ -50,7 +50,7 @@
 - **獨立圖表預覽** — 直接預覽 `.puml`、`.plantuml`、`.mmd`、`.mermaid`、`.d2` 檔案，支援平移縮放、即時更新和主題 — 無需 Markdown 包裝
 - **Git 版本預覽** — 將 Markdown 檔案依 HEAD 或暫存版本時的內容算繪，與目前預覽並排顯示，讓變更過的圖表可以算繪後比較
 - **儲存/複製圖表為 PNG/SVG** — 在預覽或圖表檢視器中右鍵圖表儲存或複製到剪貼簿
-- **14 種預覽主題** — 淺色 8 種 + 深色 6 種（GitHub、Atom、Solarized、Dracula、Monokai 等）
+- **17 種預覽主題** — 跟隨色彩佈景主題的 VS Code 主題 + 淺色 9 種 + 深色 7 種（GitHub、Atom、Solarized、Dracula、Monokai 等）
 - **編輯器輔助** — PlantUML、Mermaid、D2 的關鍵字補全、顏色選擇器和程式碼片段
 - **國際化** — 支援英語、簡體中文 / 繁體中文、西班牙語、巴西葡萄牙語、日語和韓語介面
 - **數學公式支援** — 使用 [KaTeX](https://katex.org/) 渲染 `$...$` 行內公式和 `$$...$$` 區塊公式
@@ -263,6 +263,12 @@ Markdown 中的 ```` ```plantuml ````、```` ```mermaid ````、```` ```d2 ```` �
 
 **預覽主題**控制文件整體外觀：
 
+**VS Code 主題：**
+
+| 主題 | 風格 |
+| --- | --- |
+| Follow VS Code Color Theme | 與內建 Markdown 預覽一樣跟隨目前的 VS Code 色彩佈景主題。HTML/PDF 匯出時依色彩佈景主題使用 VS Code Light 2026 或 Dark 2026 |
+
 **淺色主題：**
 
 | 主題 | 風格 |
@@ -275,6 +281,7 @@ Markdown 中的 ```` ```plantuml ````、```` ```mermaid ````、```` ```d2 ```` �
 | Pen Paper Coffee | 溫暖紙張感，手寫風格 |
 | Coy | 近白色，簡潔設計 |
 | VS | 經典 Visual Studio 配色 |
+| VS Code Light 2026 | VS Code 色彩佈景主題 Light 2026 下的內建 Markdown 預覽 |
 
 **深色主題：**
 
@@ -286,6 +293,7 @@ Markdown 中的 ```` ```plantuml ````、```` ```mermaid ````、```` ```d2 ```` �
 | Dracula | 鮮豔暗色 |
 | Solarized Dark | 深青色，護眼 |
 | Monokai | 鮮豔語法，Sublime Text 風格 |
+| VS Code Dark 2026 | VS Code 色彩佈景主題 Dark 2026 下的內建 Markdown 預覽 |
 
 透過標題列圖示即時切換預覽主題 — 無需重新渲染（僅 CSS 切換）。PlantUML 主題變更會觸發重新渲染。
 
@@ -471,16 +479,20 @@ PlantUML、Mermaid 和 D2 圖表也可在 VS Code 內建 Markdown 預覽（`Mark
 ### 開啟預覽
 
 - **鍵盤快捷鍵：** `Cmd+Alt+V`（Mac）/ `Ctrl+Alt+V`（Windows/Linux）
+- **編輯器標題列：** 點擊編輯器右上角的預覽按鈕（Plotdown 圖示）
+- **標準預覽快捷鍵：** 開啟 `useAsDefaultPreview` 後，`Cmd+Shift+V` / `Cmd+K V`（Mac）或 `Ctrl+Shift+V` / `Ctrl+K V`（Windows/Linux）也會在編輯器旁開啟預覽
 - **右鍵選單：** 在檔案總管或編輯器中右鍵 `.md` 檔案 → **PlantUML Markdown Preview** → **在側邊開啟預覽**
 - **命令面板：** `PlantUML Markdown Preview: Open Preview to Side`
 
-預覽使用獨立於 VS Code 的主題 — 預設為白色背景（GitHub Light）。
+預覽使用自己的主題 — 預設為白色背景（GitHub Light）。選擇 `follow-vscode` 即可使用目前 VS Code 色彩佈景主題的顏色。
 
 ### 開啟圖表預覽
 
 直接在平移縮放預覽中開啟 `.puml`/`.plantuml`、`.mmd`/`.mermaid`、`.d2` 檔案 — 無需 Markdown 包裝。
 
 - **鍵盤快捷鍵：** `Cmd+Alt+V`（Mac）/ `Ctrl+Alt+V`（Windows/Linux）— 相同快捷鍵，根據檔案類型自動選擇
+- **編輯器標題列：** 點擊編輯器右上角的預覽按鈕（Plotdown 圖示）
+- **標準預覽快捷鍵：** 開啟 `useAsDefaultPreview` 後，`Cmd+Shift+V` / `Cmd+K V`（Mac）或 `Ctrl+Shift+V` / `Ctrl+K V`（Windows/Linux）也會在編輯器旁開啟預覽
 - **右鍵選單：** 在檔案總管或編輯器中右鍵對應檔案 → **預覽 PlantUML 檔案** / **預覽 Mermaid 檔案** / **預覽 D2 檔案**
 - **命令面板：** `PlantUML Markdown Preview: Preview PlantUML File`、`Preview Mermaid File` 或 `Preview D2 File`
 
@@ -791,6 +803,7 @@ PlantUML、Mermaid 和 D2 的上下文感知關鍵字建議。適用於獨立檔
 | `plantumlServerUrl` | `"https://www.plantuml.com/plantuml"` | Easy 模式的 PlantUML 伺服器 URL。 |
 | `enableDiagramViewer` | `true` | 啟用右鍵選單中的「在圖表檢視器中開啟」項目。 |
 | `retainPreviewContext` | `true` | 索引標籤隱藏時保留預覽內容。防止切換時重新渲染，但使用更多記憶體（需要重新開啟預覽才會生效）。 |
+| `useAsDefaultPreview` | `false` | 使用 VS Code 標準 Markdown 預覽快速鍵（`Ctrl+Shift+V` / `Ctrl+K V`；Mac 為 `Cmd`）為 Markdown、PlantUML、Mermaid 和 D2 檔案開啟本擴充功能的預覽。兩個快速鍵都會在編輯器旁邊開啟預覽（VS Code 本身的 `Ctrl+Shift+V` 則在目前的分頁中開啟預覽）。檔案總管右鍵選單中的 **開啟預覽** 和編輯器標題列中 VS Code 本身的預覽按鈕不會被取代。 |
 
 > **注意：** `allowLocalImages` 和 `allowHttpImages` 僅適用於預覽面板。HTML 匯出始終輸出原始圖片路徑，不受 CSP 限制。
 
@@ -799,6 +812,7 @@ PlantUML、Mermaid 和 D2 的上下文感知關鍵字建議。適用於獨立檔
 
 | 值 | 說明 |
 | --- | --- |
+| `follow-vscode` | Follow VS Code Color Theme — 跟隨目前的 VS Code 色彩佈景主題（匯出時依佈景主題使用 Light 2026 / Dark 2026） |
 | `github-light` | GitHub Light — 白色背景（預設） |
 | `atom-light` | Atom Light — 柔和灰色文字，Atom 風格 |
 | `one-light` | One Light — 淡白色，均衡色調 |
@@ -807,12 +821,14 @@ PlantUML、Mermaid 和 D2 的上下文感知關鍵字建議。適用於獨立檔
 | `pen-paper-coffee` | Pen Paper Coffee — 暖紙色，手寫風格 |
 | `coy` | Coy — 近白色，簡潔設計 |
 | `vs` | VS — 經典 Visual Studio 配色 |
+| `vscode-light-2026` | VS Code Light 2026 — 內建 Markdown 預覽配色，行內程式碼和引用清晰 |
 | `github-dark` | GitHub Dark — 深色背景 |
 | `atom-dark` | Atom Dark — Tomorrow Night 色調 |
 | `one-dark` | One Dark — Atom 風格深色 |
 | `dracula` | Dracula — 鮮豔深色 |
 | `solarized-dark` | Solarized Dark — 深青色，護眼 |
 | `monokai` | Monokai — 鮮明語法，Sublime Text 風格 |
+| `vscode-dark-2026` | VS Code Dark 2026 — 內建 Markdown 預覽配色，行內程式碼和引用清晰 |
 
 </details>
 
@@ -824,6 +840,7 @@ PlantUML、Mermaid 和 D2 的上下文感知關鍵字建議。適用於獨立檔
 | 預覽 PlantUML 檔案 | `Cmd+Alt+V` | `Ctrl+Alt+V` |
 | 預覽 Mermaid 檔案 | `Cmd+Alt+V` | `Ctrl+Alt+V` |
 | 預覽 D2 檔案 | `Cmd+Alt+V` | `Ctrl+Alt+V` |
+| 開啟預覽（開啟 `useAsDefaultPreview` 時；Markdown、PlantUML、Mermaid、D2） | `Cmd+Shift+V` / `Cmd+K V` | `Ctrl+Shift+V` / `Ctrl+K V` |
 | 選擇渲染模式 | — | — |
 
 ## 常見問題
