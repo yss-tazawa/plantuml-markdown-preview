@@ -18,7 +18,7 @@ import path from 'path';
 import url from 'url';
 import { spawn } from 'child_process';
 import http from 'http';
-import MarkdownIt from 'markdown-it';
+import MarkdownIt, { type Options as MarkdownItOptions } from 'markdown-it';
 import hljs from 'highlight.js';
 import { plantumlPlugin, type RenderEnv } from './renderer.js';
 import * as vscode from 'vscode';
@@ -103,7 +103,7 @@ let cachedMdSourceMap: MarkdownIt | null = null;
  * - linkify: Auto-detect URLs and convert to links
  * - highlight: Syntax highlight via highlight.js (190+ languages)
  */
-const MD_OPTIONS: MarkdownIt.Options = {
+const MD_OPTIONS: MarkdownItOptions = {
     html: true,
     linkify: true,
     typographer: false,

@@ -7,6 +7,7 @@
  * (when the source_map core rule in exporter.ts sets token.meta.sourceLine).
  */
 import type MarkdownIt from 'markdown-it';
+import type { Options as MarkdownItOptions } from 'markdown-it';
 import type Token from 'markdown-it/lib/token.mjs' with { "resolution-mode": "import" };
 import { renderToSvg } from './plantuml.js';
 import type { Config } from './config.js';
@@ -118,7 +119,7 @@ export function scaleD2Svg(svg: string, scale: string | undefined): string {
 export function plantumlPlugin(md: MarkdownIt, config: Config): MarkdownIt {
 
     /** Original fence renderer rule, used as fallback for non-PlantUML blocks. */
-    const defaultFence = md.renderer.rules.fence || function (tokens: Token[], idx: number, opts: MarkdownIt.Options, _env: unknown, self: { renderToken: (tokens: Token[], idx: number, opts: MarkdownIt.Options) => string }) {
+    const defaultFence = md.renderer.rules.fence || function (tokens: Token[], idx: number, opts: MarkdownItOptions, _env: unknown, self: { renderToken: (tokens: Token[], idx: number, opts: MarkdownItOptions) => string }) {
         return self.renderToken(tokens, idx, opts);
     };
 
@@ -136,7 +137,7 @@ export function plantumlPlugin(md: MarkdownIt, config: Config): MarkdownIt {
      * @param self - Renderer instance with renderToken helper.
      * @returns HTML string for the fence block.
      */
-    md.renderer.rules.fence = function (tokens: Token[], idx: number, opts: MarkdownIt.Options, env: unknown, self) {
+    md.renderer.rules.fence = function (tokens: Token[], idx: number, opts: MarkdownItOptions, env: unknown, self) {
         const token = tokens[idx];
         const lang = (token.info || '').trim().toLowerCase();
         const sourceLine = token.meta && token.meta.sourceLine != null

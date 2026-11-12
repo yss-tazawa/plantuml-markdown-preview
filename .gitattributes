@@ -1,0 +1,5 @@
+# Shipped as-is: keep the exact upstream bytes, whatever core.autocrlf says.
+syntaxes/vendor/** -text
+third-party-licenses/** -text
+# The bundled PlantUML jar is a binary file: never convert or diff it as text.
+vendor/plantuml.jar binary
