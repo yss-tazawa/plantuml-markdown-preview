@@ -422,14 +422,6 @@ export function execJava(
     );
 }
 
-/** Description shown next to a theme in the picker; the follow-VS-Code theme explains itself. */
-const themeDescription = (key: string, isCurrent: boolean): string => {
-    const current = isCurrent ? vscode.l10n.t('(current)') : '';
-    if (key !== 'follow-vscode') return current;
-    const note = vscode.l10n.t('follows your color theme');
-    return current ? `${current} - ${note}` : note;
-};
-
 /**
  * Build QuickPick items for a set of theme keys with a check mark on the current selection.
  *
@@ -441,7 +433,7 @@ const themeDescription = (key: string, isCurrent: boolean): string => {
 export const buildThemeItems = <C extends string>(keys: readonly string[], category: C, currentKey: string) =>
     keys.map(key => ({
         label: key === currentKey ? `$(check) ${key}` : `      ${key}`,
-        description: themeDescription(key, key === currentKey),
+        description: key === currentKey ? vscode.l10n.t('(current)') : '',
         category,
         themeKey: key
     }));

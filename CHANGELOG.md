@@ -6,6 +6,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## Unreleased
+
+### Changed
+
+- The theme picker labels the follow-vscode group "Follow VS Code Color Theme" instead of showing a description next to the theme
+
 ## 0.7.17 - 2026-11-12
 
 ### Added

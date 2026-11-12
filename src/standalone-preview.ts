@@ -464,7 +464,7 @@ export function createStandalonePreview(def: StandalonePreviewDef): StandalonePr
         const currentPreviewTheme = getPreviewTheme();
 
         const items: (vscode.QuickPickItem & { category?: string; themeKey?: string })[] = [
-            { label: vscode.l10n.t('Preview Theme (VS Code)'), kind: vscode.QuickPickItemKind.Separator },
+            { label: vscode.l10n.t('Preview Theme (Follow VS Code Color Theme)'), kind: vscode.QuickPickItemKind.Separator },
             ...buildThemeItems(VSCODE_THEME_KEYS, 'preview' as const, currentPreviewTheme),
             { label: vscode.l10n.t('Preview Theme (Light)'), kind: vscode.QuickPickItemKind.Separator },
             ...buildThemeItems(LIGHT_THEME_KEYS, 'preview' as const, currentPreviewTheme),
