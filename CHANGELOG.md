@@ -6,39 +6,39 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
-## Unreleased
+## 0.7.17 - 2026-11-12
 
 ### Added
 
-- **Use as Default Preview** setting (`plantumlMarkdownPreview.useAsDefaultPreview`, off by default) — when on, VS Code's standard preview shortcuts (`Ctrl+Shift+V` / `Ctrl+K V`, `Cmd` on macOS) open this extension's preview for Markdown, PlantUML, Mermaid and D2 files
-- A button in the editor title bar opens this extension's preview while editing a Markdown, PlantUML, Mermaid or D2 file
-- Preview themes **VS Code Light 2026** (`vscode-light-2026`) and **VS Code Dark 2026** (`vscode-dark-2026`) — the colors of VS Code's built-in Markdown preview under its default color themes, with clearly visible inline code and blockquotes
-- Preview theme **Follow VS Code Color Theme** (`follow-vscode`) — follows the current VS Code color theme like VS Code's built-in Markdown preview; HTML/PDF export uses VS Code Light 2026 or Dark 2026 to match the color theme at export time
+- **Use as Default Preview** setting (`useAsDefaultPreview`, off by default): VS Code's standard preview shortcuts (`Ctrl+Shift+V` / `Ctrl+K V`) open this extension's preview (#5)
+- A title bar button opens this extension's preview while editing a Markdown, PlantUML, Mermaid or D2 file (#5)
+- Preview themes **VS Code Light 2026** and **VS Code Dark 2026**, with clearly visible inline code and blockquotes (#4)
+- Preview theme **Follow VS Code Color Theme** (`follow-vscode`): uses the colors of your current VS Code color theme, like VS Code's built-in Markdown preview (#4)
 
 ### Changed
 
-- When no preview theme is set, the extension now records the current default (`github-light`) in user settings, so a future change of the default theme does not change the look of existing previews
-- Code blocks without a language, with an unknown language, or indented now get the theme's code block background, like highlighted ones; text inside code blocks now uses the code block text color instead of the inline code color (visible in the `vue`, `solarized-light` and `github-dark` themes)
+- When no preview theme is set, `github-light` is now written to user settings, so a future change of the default theme keeps existing previews as they are
+- Code blocks without a known language now get the code block background, and text in code blocks uses the code block color instead of the inline code color
+- The theme picker now opens with the cursor on the current preview theme
 
 ### Fixed
 
-- "Java is not found" could appear although Java is installed when a preview was opened while Java was still being checked, such as while the local server checked Java before starting; the server then stayed starting until the warning was closed, and PlantUML diagrams failed with "The local PlantUML server failed to start"
-- When the local server cannot be used (Java not found or too old, `javaPath` pointing to no file, the port in use, the server exiting, or no server at the configured address with Start Mode `off`), the reason and how to fix it are shown in one notification after each action (opening or reloading a preview, exporting a document with PlantUML diagrams, changing the local server settings, Retry) and in place of the diagrams, instead of a crash dialog or "failed to start" without a reason
-- After Java is reinstalled in the same place or `javaPath` is fixed, the local server starts again on the next render, reopening the preview, Reload, Retry or a settings change, without restarting VS Code; renders retry silently and stop after repeated failed starts, with a notification offering Retry
-- Changing `javaPath` to a path that does not exist no longer discards the whole settings change, so a following switch to Easy mode (or "Use Easy Mode" in the notification) takes effect
-- Opening a preview no longer warns that Java is not found when the local server Start Mode is `off` (connecting to an already running server), where Java is not needed, or when it reuses a local server already running on the configured port
-- Switching to Secure (`local`) mode or changing `javaPath` in it now checks Java right away and shows guidance when it is missing, instead of only an error inside the preview
-- A `javaPath` that is a command name on `PATH` (e.g. `javaw`), or on Windows a path without `.exe`, is no longer reported as a path that does not exist
-- A relative `javaPath` with a folder (e.g. `jdk/bin/java`) is now looked up in the folder Java runs in (the include path, or else the first workspace folder), the same as when rendering, instead of being reported as a path that does not exist
-- A diagram still waiting for the local server now says the server is still starting instead of reporting that it failed to start
-- A fixed local server port held by another program is now reported right away, before Java is started, instead of the server failing to start after a wait
-- While the local server cannot be used because Java is missing or too old, the status bar now shows the server error instead of "Server stopped"
-- Opening a second diagram file while the standalone preview was still rendering the first no longer drops the second; it used to appear only after yet another file was opened
-- The Mermaid file preview now uses the configured Mermaid theme when it is first opened or reopened, instead of starting with the default theme
-- Changing the Mermaid theme setting now also applies to an open Mermaid file preview, unless a theme was picked in the preview itself
-- A Mermaid file saved with Windows line endings (CRLF) is no longer rendered twice when its preview opens
-- D2 diagrams no longer get stuck rendering when D2 is rendered again before the previous render has finished (e.g. changing the preview theme or editing while a D2 preview is still rendering, or two previews or an export rendering D2 at the same time)
-- Previews now keep their current diagram or content, theme and background when VS Code recreates them (e.g. returning to a hidden tab with `retainPreviewContext` off, or moving the preview to another window), instead of showing what they were first opened with
+- "Java is not found" no longer appears while Java is still being checked, which also left the local server stuck starting
+- When the local server cannot be used, a notification and the diagram area now say why and how to fix it, instead of a crash dialog or a bare "failed to start"
+- The local server starts again after Java is reinstalled or `javaPath` is fixed, without restarting VS Code
+- Changing `javaPath` to a missing path no longer discards the rest of the settings change
+- No Java warning when the local server Start Mode is `off` or an already running local server is reused
+- Switching to Secure mode or changing `javaPath` now checks Java right away
+- A `javaPath` given as a command name (e.g. `javaw`), or without `.exe` on Windows, is no longer reported as missing
+- A relative `javaPath` such as `jdk/bin/java` is now found the same way as when rendering
+- Diagrams waiting for the local server now say it is still starting
+- A local server port already in use by another program is now reported right away
+- The status bar shows the server error instead of "Server stopped" when Java is missing or too old
+- Opening a second diagram file while the first is still rendering no longer drops the second
+- The Mermaid file preview now uses the configured Mermaid theme and follows changes to that setting
+- Mermaid files with Windows line endings are no longer rendered twice
+- D2 diagrams no longer get stuck when rendered again before the previous render finishes
+- Previews keep their content, theme and background when VS Code recreates them (e.g. after moving to another window)
 
 ## 0.7.16 - 2026-10-07
 
