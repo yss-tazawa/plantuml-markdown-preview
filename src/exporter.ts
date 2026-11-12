@@ -24,7 +24,7 @@ import { plantumlPlugin, type RenderEnv } from './renderer.js';
 import * as vscode from 'vscode';
 import { renderAllLocal } from './plantuml.js';
 import { renderAllServer, MAX_LOCAL_SERVER_CONCURRENCY } from './plantuml-server.js';
-import { getLocalServerUrl, waitForLocalServer, ensureLocalServerStarted, localServerUnavailableMessage } from './local-server.js';
+import { getLocalServerUrl, waitForLocalServer, ensureLocalServerStarted, localServerUnavailableMessage, handleServerEvent } from './local-server.js';
 import { escapeHtml, extractPlantUmlBlocks, extractD2Blocks, errorHtml } from './utils.js';
 import { renderAllD2 } from './d2-renderer.js';
 import { findBrowser } from './browser-finder.js';
@@ -397,6 +397,18 @@ export async function renderBodyAsync(
 }
 
 /**
+ * Report an export of a document with PlantUML diagrams to the local server as an
+ * event ({@link handleServerEvent}), before its render: a server that stopped
+ * retrying starts again, and the render waits for that start.
+ *
+ * @param source - Markdown text being exported.
+ * @param config - Current extension settings.
+ */
+export function handleExportEvent(source: string, config: Config): void {
+    if (extractPlantUmlBlocks(source).length > 0) handleServerEvent(config, { checkJava: true });
+}
+
+/**
  * Render Markdown source to a complete HTML document.
  *
  * Combines {@link renderBodyAsync} and {@link buildHtml} to produce a
@@ -430,6 +442,7 @@ export async function renderHtmlAsync(source: string, title: string, config: Con
  */
 export async function exportToHtml(mdFilePath: string, config: Config, signal?: AbortSignal, fitToWidth?: boolean | number, fitToWidthAlign?: 'center' | 'left'): Promise<string> {
     const source = await fs.promises.readFile(mdFilePath, 'utf8');
+    handleExportEvent(source, config);
     const exportOptions: RenderOptions = {
         mermaidTheme: config.mermaidTheme,
         mermaidScale: config.mermaidScale,
@@ -603,6 +616,7 @@ export async function exportToPdf(mdFilePath: string, config: Config, signal?: A
 
     // Generate fit-to-width HTML to a temporary file
     const source = await fs.promises.readFile(mdFilePath, 'utf8');
+    handleExportEvent(source, config);
     const exportOptions: RenderOptions = {
         mermaidTheme: config.mermaidTheme,
         mermaidScale: config.mermaidScale,

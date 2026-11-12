@@ -13,21 +13,28 @@ import * as vscode from 'vscode';
 import path from 'path';
 import { existsSync } from 'fs';
 import { execFile } from 'child_process';
-import { exportToHtml, exportToPdf, clearMdCache } from './src/exporter.js';
+import { exportToHtml, exportToPdf, clearMdCache, handleExportEvent } from './src/exporter.js';
 import { plantumlPlugin } from './src/renderer.js';
 import { clearCache, resolveIncludePath, extractIncludeFromLine, extractIncludePaths } from './src/plantuml.js';
 import { clearServerCache } from './src/plantuml-server.js';
-import { prepareLocalServer, startLocalServer, stopLocalServer, restartLocalServer, setLocalServerOutputChannel, setOnServerStateChange, setConfigGetter, setLocalServerPidStore, cleanupStaleLocalServer, setJavaAvailabilityChecker } from './src/local-server.js';
-import type { LocalServerState } from './src/local-server.js';
+import { checkJavaAvailability, checksJavaOnSettingsChange, announcesJavaPathChange, cancelRunningJavaChecks, javaCheckKeyChanged, notifyJavaUnavailable, setJavaCheckHandlers } from './src/java-check.js';
+import type { JavaCheckResult } from './src/java-check.js';
+import { getShownGuidance } from './src/notify-once.js';
+import type { ShownGuidance } from './src/notify-once.js';
+import { prepareLocalServer, startLocalServer, stopLocalServer, restartLocalServer, setLocalServerOutputChannel, setOnServerStateChange, setConfigGetter, setLocalServerPidStore, cleanupStaleLocalServer, setJavaAvailabilityChecker, getLocalServerDiagnostics, handleServerEvent } from './src/local-server.js';
+import type { LocalServerState, LocalServerDiagnostics } from './src/local-server.js';
 import { createStatusBarItem, updateStatusBar, showModeQuickPick, SELECT_MODE_COMMAND } from './src/status-bar.js';
 import { PreviewManager } from './src/preview.js';
 import { execJava, extractPlantUmlBlocks, findLiveSourceDocument } from './src/utils.js';
 import { clearBrowserCache } from './src/browser-finder.js';
 import { exportAllDiagrams } from './src/bulk-export.js';
 import { disposeAllViewers, diagramAction, openPendingDiagramViewer, getPendingDiagramContext } from './src/diagram-viewer.js';
-import { openPumlPreview, updatePumlConfig, getCurrentPumlFilePath, disposePumlPreview, getPumlPreviewPanel, changePumlTheme } from './src/puml-preview.js';
-import { openMermaidPreview, updateMermaidConfig, getCurrentMermaidFilePath, disposeMermaidPreview, getMermaidPreviewPanel, changeMermaidTheme } from './src/mermaid-preview.js';
-import { openD2Preview, updateD2Config, getCurrentD2FilePath, disposeD2Preview, getD2PreviewPanel, changeD2Theme } from './src/d2-preview.js';
+import { openPumlPreview, updatePumlConfig, getCurrentPumlFilePath, disposePumlPreview, getPumlPreviewPanel, changePumlTheme, getLastPumlRender } from './src/puml-preview.js';
+import type { PumlRender } from './src/puml-preview.js';
+import { openMermaidPreview, updateMermaidConfig, getCurrentMermaidFilePath, disposeMermaidPreview, getMermaidPreviewPanel, changeMermaidTheme, getLastMermaidThemePost, getLastMermaidSourcePost } from './src/mermaid-preview.js';
+import type { MermaidThemePost, MermaidSourcePost } from './src/mermaid-preview.js';
+import { openD2Preview, updateD2Config, getCurrentD2FilePath, disposeD2Preview, getD2PreviewPanel, changeD2Theme, getLastD2Render } from './src/d2-preview.js';
+import type { D2Render } from './src/d2-preview.js';
 import { initD2, disposeD2 } from './src/d2-renderer.js';
 import { openRevisionPreview, disposeRevisionPreviews, getOpenRevisionPreviews } from './src/revision-preview.js';
 import { HEAD_REVISION, STAGED_REVISION, type Revision } from './src/git.js';
@@ -305,87 +312,24 @@ function openInDefaultApp(filePath: string): void {
     child.unref();
 }
 
-/** Reference to the in-flight Java check child process for cleanup on deactivate. */
-let javaCheckChild: ReturnType<typeof execJava> | null = null;
 /** Reference to the in-flight JVM warmup child process for cleanup on deactivate. */
 let warmupChild: ReturnType<typeof execJava> | null = null;
 
 /** Last known config for detecting local-server relevant changes. */
 let lastKnownConfig: Config | null = null;
-/** Tracks an invalid javaPath that was rejected, so fixing it later triggers a change notification. */
-let lastRejectedJavaPath: string | null = null;
 
 /**
- * Check if Java is available. When not found (or debugSimulateNoJava is true),
- * show a notification with options to switch to server mode or install Java.
+ * Check Java for 'local' rendering, which has no server to report a missing Java,
+ * and show the guidance when Java is unusable. The guidance is not awaited, so
+ * callers can await this safely.
  *
- * @param config - Current extension settings (javaPath, renderMode, serverUrl).
- * @returns `true` if Java was found, `false` otherwise.
+ * @param config - Current extension settings.
+ * @returns The check outcome ('unknown' when the probe gave no verdict).
  */
-async function checkJavaAvailability(config: Config): Promise<boolean> {
-    if (config.renderMode === 'server') return true;
-
-    // Pre-check: if user specified an explicit path, verify it exists on disk
-    const resolvedJava = config.javaPath;
-    if (resolvedJava !== 'java' && !existsSync(resolvedJava)) {
-        const openSettings = vscode.l10n.t('Open Settings');
-        const useEasy = vscode.l10n.t('Use Easy Mode');
-        const action = await vscode.window.showErrorMessage(
-            vscode.l10n.t('Java path "{0}" does not exist. Check the plantumlMarkdownPreview.javaPath setting.', resolvedJava),
-            openSettings, useEasy
-        );
-        if (action === openSettings) {
-            void vscode.commands.executeCommand('workbench.action.openSettings', 'plantumlMarkdownPreview.javaPath');
-        } else if (action === useEasy) {
-            await promptSwitchToEasy(config);
-        }
-        return false;
-    }
-
-    const javaResult = await new Promise<{ found: boolean; versionOutput: string }>((resolve) => {
-        if (config.debugSimulateNoJava) { resolve({ found: false, versionOutput: '' }); return; }
-        if (javaCheckChild) { javaCheckChild.kill(); javaCheckChild = null; }
-        javaCheckChild = execJava(config.javaPath, ['-version'], { timeout: 5000 }, (err, _stdout, stderr) => {
-            javaCheckChild = null;
-            resolve({ found: !err, versionOutput: stderr || '' });
-        });
-    });
-
-    if (javaResult.found) {
-        const major = parseJavaMajorVersion(javaResult.versionOutput);
-        if (major !== null && major < 11) {
-            const useEasy = vscode.l10n.t('Use Easy Mode');
-            const installJava = vscode.l10n.t('Install Java');
-            const dismiss = vscode.l10n.t('Dismiss');
-            const action = await vscode.window.showWarningMessage(
-                vscode.l10n.t('Java {0} is installed, but the bundled PlantUML requires Java 11 or later. Please upgrade Java.', String(major)),
-                useEasy, installJava, dismiss
-            );
-            if (action === useEasy) {
-                await promptSwitchToEasy(config);
-            } else if (action === installJava) {
-                void vscode.env.openExternal(vscode.Uri.parse('https://www.java.com/en/download/'));
-            }
-            return false;
-        }
-        return true;
-    }
-
-    const useEasy = vscode.l10n.t('Use Easy Mode');
-    const installJava = vscode.l10n.t('Install Java');
-    const dismiss = vscode.l10n.t('Dismiss');
-
-    const action = await vscode.window.showWarningMessage(
-        vscode.l10n.t('Java is not found. PlantUML requires Java 11 or later for local rendering.'),
-        useEasy, installJava, dismiss
-    );
-
-    if (action === useEasy) {
-        await promptSwitchToEasy(config);
-    } else if (action === installJava) {
-        void vscode.env.openExternal(vscode.Uri.parse('https://www.java.com/en/download/'));
-    }
-    return false;
+async function checkLocalJava(config: Config): Promise<JavaCheckResult> {
+    const result = await checkJavaAvailability(config);
+    notifyJavaUnavailable(result, config.javaPath);
+    return result;
 }
 
 /**
@@ -410,23 +354,40 @@ async function promptSwitchToEasy(config: Config): Promise<void> {
     }
 }
 
+/** Maximum number of entries {@link recordOutputChannel} keeps. */
+const OUTPUT_LOG_LIMIT = 2000;
+
 /**
- * Parse the major version number from `java -version` stderr output.
+ * Wrap an output channel so every `append`/`appendLine` is also kept in a bounded
+ * in-memory log, each entry prefixed with a sequence number (`#<n>`, counting
+ * from 1 since activation, never reused) and an ISO timestamp. The channel itself
+ * receives exactly the original text, so what users see is unchanged.
  *
- * Handles formats like:
- *   java version "1.8.0_392"   -> 8
- *   java version "11.0.24"     -> 11
- *   openjdk version "21.0.6"   -> 21
+ * VS Code hands out a frozen channel object, so the methods cannot be patched in
+ * place; the returned proxy forwards every other member to the real channel.
  *
- * @param versionOutput - Stderr output from `java -version`.
- * @returns Major version number, or null if parsing fails.
+ * @param channel - The channel the extension created.
+ * @returns The recording channel and a reader for the recorded log.
  */
-function parseJavaMajorVersion(versionOutput: string): number | null {
-    const match = versionOutput.match(/version\s+"(\d+)(?:\.(\d+))?/);
-    if (!match) return null;
-    const major = parseInt(match[1], 10);
-    if (major === 1 && match[2]) return parseInt(match[2], 10);
-    return major;
+function recordOutputChannel(channel: vscode.OutputChannel): { channel: vscode.OutputChannel; read: () => string } {
+    const entries: string[] = [];
+    let seq = 0;
+    const record = (value: unknown): void => {
+        const text = String(value);
+        const stamp = new Date().toISOString();
+        for (const line of text.split(/\r?\n/)) entries.push(`#${++seq} ${stamp} ${line}`);
+        if (entries.length > OUTPUT_LOG_LIMIT) entries.splice(0, entries.length - OUTPUT_LOG_LIMIT);
+    };
+    const recording = new Proxy({} as vscode.OutputChannel, {
+        get(_target, prop) {
+            if (prop === 'appendLine' || prop === 'append') {
+                return (value: string) => { record(value); channel[prop](value); };
+            }
+            const member: unknown = Reflect.get(channel, prop);
+            return typeof member === 'function' ? member.bind(channel) : member;
+        },
+    });
+    return { channel: recording, read: () => entries.join('\n') };
 }
 
 /**
@@ -456,6 +417,32 @@ export interface TestHooks {
     dispatchWebviewMessage(message: unknown): void;
     /** Title and markup of every open revision preview panel. */
     getRevisionPreviews(): { title: string; html: string }[];
+    /** Whether a standalone preview panel is visible and its column, or null when none is open. */
+    getStandalonePreviewView(kind: 'puml' | 'mermaid' | 'd2'): { visible: boolean; viewColumn: vscode.ViewColumn | undefined } | null;
+    /** Markup of the standalone PlantUML preview panel, or null when none is open. */
+    getPumlPreviewHtml(): string | null;
+    /** File, SVG markup (or error HTML) and background of the standalone PlantUML preview's latest render. */
+    getLastPumlRender(): PumlRender | null;
+    /** Markup of the standalone Mermaid preview panel, or null when none is open. */
+    getMermaidPreviewHtml(): string | null;
+    /** File and theme of the latest `updateMermaidTheme` sent to the standalone Mermaid preview. */
+    getLastMermaidThemePost(): MermaidThemePost | null;
+    /** File and source of the latest `updateSource` sent to the standalone Mermaid preview. */
+    getLastMermaidSourcePost(): MermaidSourcePost | null;
+    /** Markup of the standalone D2 preview panel, or null when none is open. */
+    getD2PreviewHtml(): string | null;
+    /** File, SVG markup (or error HTML) and background of the standalone D2 preview's latest render. */
+    getLastD2Render(): D2Render | null;
+    /** Guidance notifications (Java and the local server) shown since activation (most recent entries only). */
+    getShownGuidance(): ShownGuidance[];
+    /**
+     * Everything written to the extension's output channel since activation (most
+     * recent entries only), one entry per line as `#<sequence number> <ISO time> <text>`.
+     * Empty in production.
+     */
+    getOutputLog(): string;
+    /** Snapshot of the local PlantUML server state (status, URL, counters, last error). */
+    getLocalServerState(): LocalServerDiagnostics;
 }
 
 /** Shape returned by {@link activate}. `extendMarkdownIt` is the contract VS Code's
@@ -477,14 +464,26 @@ export function activate(context: vscode.ExtensionContext): ExtensionApi {
 
     // Create and register the shared output channel so its lifecycle is managed
     // by context.subscriptions regardless of preview panel state.
-    const channel = vscode.window.createOutputChannel(OUTPUT_CHANNEL_NAME);
-    context.subscriptions.push(channel);
+    const rawChannel = vscode.window.createOutputChannel(OUTPUT_CHANNEL_NAME);
+    context.subscriptions.push(rawChannel);
+    // Outside production (tests, development) everything below logs through the
+    // recording wrapper so the test hooks can read it; production uses the channel as is.
+    const outputLog = context.extensionMode !== vscode.ExtensionMode.Production
+        ? recordOutputChannel(rawChannel)
+        : { channel: rawChannel, read: () => '' };
+    const channel = outputLog.channel;
     previewManager = new PreviewManager(channel);
     context.subscriptions.push(previewManager);
     setLocalServerOutputChannel(channel);
     setConfigGetter(getConfig);
+    // "Use Easy Mode" reads the settings when chosen, not when the guidance was shown.
+    setJavaCheckHandlers({
+        switchToEasy: () => promptSwitchToEasy(getConfig()),
+        log: (line) => channel.appendLine(line),
+    });
     // Java is only required when spawning a managed server; adoption and
-    // external-connect start without it. The checker shows its own dialogs.
+    // external-connect start without it. The check shows nothing itself: the
+    // server decides when to show the guidance.
     setJavaAvailabilityChecker(checkJavaAvailability);
     // Persist the spawned server PID so a crashed/force-closed session can be
     // recovered next launch (VS Code may skip deactivate on hard exit).
@@ -502,6 +501,20 @@ export function activate(context: vscode.ExtensionContext): ExtensionApi {
         currentServerState = state;
         updateStatusBar(statusBarItem, lastKnownConfig ?? getConfig(), state);
     });
+    /**
+     * Report the opening of a PlantUML-capable preview (Markdown, a revision, a
+     * PlantUML file) before it renders: an event for the local server, which
+     * checks Java while it is not running, and a Java check for 'local'. Nothing
+     * waits on the checks, so the open is never delayed.
+     *
+     * @param config - Current extension settings.
+     */
+    const handleOpenEvent = (config: Config): void => {
+        handleServerEvent(config, { checkJava: true });
+        if (config.renderMode === 'local') {
+            checkLocalJava(config).catch(() => { /* checkLocalJava shows its own guidance */ });
+        }
+    };
     const selectModeCmd = vscode.commands.registerCommand(SELECT_MODE_COMMAND, () => showModeQuickPick());
     context.subscriptions.push(selectModeCmd);
 
@@ -614,8 +627,9 @@ export function activate(context: vscode.ExtensionContext): ExtensionApi {
                 // at once and clears itself when the first render lands.
                 { location: vscode.ProgressLocation.Window, title: vscode.l10n.t('Opening preview...') },
                 async () => {
+                    // Before the render, which then waits for a start the event began.
+                    handleOpenEvent(config);
                     await openRevisionPreview(filePath, revision, config);
-                    checkJavaAvailability(config).catch(() => {});
                 }
             );
         });
@@ -645,8 +659,9 @@ export function activate(context: vscode.ExtensionContext): ExtensionApi {
                 // at once and clears itself when the first render lands.
                 { location: vscode.ProgressLocation.Window, title: vscode.l10n.t('Opening preview...') },
                 async () => {
+                    // Before the render, which then waits for a start the event began.
+                    handleOpenEvent(config);
                     await previewManager.open(filePath, config, true, true);
-                    checkJavaAvailability(config).catch(() => {});
                 }
             );
         }
@@ -668,8 +683,9 @@ export function activate(context: vscode.ExtensionContext): ExtensionApi {
                 // at once and clears itself when the first render lands.
                 { location: vscode.ProgressLocation.Window, title: vscode.l10n.t('Opening preview...') },
                 async () => {
+                    // Before the render, which then waits for a start the event began.
+                    handleOpenEvent(config);
                     await openPumlPreview(filePath, config);
-                    checkJavaAvailability(config).catch(() => {});
                 }
             );
         }
@@ -776,6 +792,8 @@ export function activate(context: vscode.ExtensionContext): ExtensionApi {
             vscode.window.showErrorMessage(vscode.l10n.t('No preview is open. Open a preview first.'));
             return;
         }
+        const renderedText = previewManager.getLastRenderedText();
+        if (renderedText !== null) handleExportEvent(renderedText, getConfig());
         try {
             const result = await vscode.window.withProgress(
                 { location: vscode.ProgressLocation.Notification, title: vscode.l10n.t('Exporting diagrams...'), cancellable: false },
@@ -838,23 +856,6 @@ export function activate(context: vscode.ExtensionContext): ExtensionApi {
         if (event.affectsConfiguration(CONFIG_SECTION)) {
             const config = getConfig();
 
-            // Reject invalid javaPath: keep using the previous config
-            if (config.javaPath !== 'java'
-                && !existsSync(config.javaPath)) {
-                const openSettings = vscode.l10n.t('Open Settings');
-                void Promise.resolve(vscode.window.showErrorMessage(
-                    vscode.l10n.t('Java path "{0}" does not exist. Check the plantumlMarkdownPreview.javaPath setting.', config.javaPath),
-                    openSettings
-                )).then((action) => {
-                    if (action === openSettings) {
-                        void vscode.commands.executeCommand('workbench.action.openSettings', 'plantumlMarkdownPreview.javaPath');
-                    }
-                }).catch(() => {});
-                // Remember the rejected javaPath so that fixing it later triggers a change notification
-                lastRejectedJavaPath = config.javaPath;
-                return;  // don't update lastKnownConfig — keep old valid config
-            }
-
             // Notify if user-specified plantumlJarPath fell back to bundled jar
             const userJarPath = vscode.workspace.getConfiguration(CONFIG_SECTION).get<string>('plantumlJarPath', '');
             const jarFellBackToBundled = !!userJarPath && !existsSync(userJarPath);
@@ -864,10 +865,8 @@ export function activate(context: vscode.ExtensionContext): ExtensionApi {
                 );
             }
 
-            // Notify when javaPath or plantumlJarPath changed successfully
-            const prevJavaPath = lastRejectedJavaPath ?? lastKnownConfig?.javaPath;
-            lastRejectedJavaPath = null;
-            if (prevJavaPath && prevJavaPath !== config.javaPath) {
+            // Notify when javaPath or plantumlJarPath changed
+            if (lastKnownConfig && announcesJavaPathChange(lastKnownConfig, config)) {
                 void vscode.window.showInformationMessage(
                     vscode.l10n.t('Java path changed to: {0}', config.javaPath)
                 );
@@ -878,8 +877,19 @@ export function activate(context: vscode.ExtensionContext): ExtensionApi {
                 );
             }
 
+            // Probes of the previous javaPath or folder no longer answer for these
+            // settings (their starts are superseded below).
+            if (lastKnownConfig && javaCheckKeyChanged(lastKnownConfig, config)) cancelRunningJavaChecks();
+
             // Manage local-server lifecycle on config change
             handleLocalServerConfigChange(lastKnownConfig, config);
+            // A change that restarts or stops the server, or switches the render
+            // mode, is an event for it: its next failure is shown again.
+            if (lastKnownConfig && changesLocalServer(lastKnownConfig, config)) handleServerEvent(config);
+            // 'local' has no server start to check Java, so a change into it checks here.
+            if (lastKnownConfig && checksJavaOnSettingsChange(lastKnownConfig, config)) {
+                checkLocalJava(config).catch(() => { /* checkLocalJava shows its own guidance */ });
+            }
             lastKnownConfig = config;
 
             previewManager.updateConfig(config);
@@ -985,12 +995,13 @@ export function activate(context: vscode.ExtensionContext): ExtensionApi {
 
     // For 'local' (secure) mode, check Java availability at startup and warm up JVM cache.
     if (initialConfig.renderMode === 'local') {
-        checkJavaAvailability(initialConfig).then(javaFound => {
-            if (javaFound && initialConfig.plantumlJarPath) {
+        checkLocalJava(initialConfig).then(result => {
+            if (result.status === 'ok' && initialConfig.plantumlJarPath) {
+                // Same folder as renders, so a relative javaPath names the same file.
                 warmupChild = execJava(initialConfig.javaPath, ['-jar', initialConfig.plantumlJarPath, '-version'],
-                    { timeout: 30000 }, (_err) => { warmupChild = null; });
+                    { timeout: 30000, cwd: resolveIncludePath(initialConfig) }, (_err) => { warmupChild = null; });
             }
-        }).catch(() => { /* checkJavaAvailability handles the error dialog */ });
+        }).catch(() => { /* checkLocalJava shows its own guidance */ });
     }
 
     return {
@@ -1006,12 +1017,40 @@ export function activate(context: vscode.ExtensionContext): ExtensionApi {
             getSyncMaster: () => previewManager.getSyncMaster(),
             dispatchWebviewMessage: (message) => previewManager.dispatchWebviewMessageForTest(message),
             getRevisionPreviews: () => getOpenRevisionPreviews(),
+            getStandalonePreviewView: (kind) => {
+                const panel = kind === 'puml' ? getPumlPreviewPanel()
+                    : kind === 'mermaid' ? getMermaidPreviewPanel() : getD2PreviewPanel();
+                return panel ? { visible: panel.visible, viewColumn: panel.viewColumn } : null;
+            },
+            getPumlPreviewHtml: () => getPumlPreviewPanel()?.webview.html ?? null,
+            getLastPumlRender: () => getLastPumlRender(),
+            getMermaidPreviewHtml: () => getMermaidPreviewPanel()?.webview.html ?? null,
+            getLastMermaidThemePost: () => getLastMermaidThemePost(),
+            getLastMermaidSourcePost: () => getLastMermaidSourcePost(),
+            getD2PreviewHtml: () => getD2PreviewPanel()?.webview.html ?? null,
+            getLastD2Render: () => getLastD2Render(),
+            getShownGuidance: () => getShownGuidance(),
+            getOutputLog: () => outputLog.read(),
+            getLocalServerState: () => getLocalServerDiagnostics(),
         },
     };
 }
 
 /** Keys that affect the local-server process and require a restart when changed. */
 const LOCAL_SERVER_KEYS = ['plantumlJarPath', 'javaPath', 'dotPath', 'plantumlLocalServerPort', 'plantumlLocalServerStartMode', 'plantumlLocalServerHost', 'plantumlIncludePath', 'plantumlLocalServerJvmHeapPreset', 'plantumlLocalServerJvmInitialHeapMb', 'plantumlLocalServerJvmMaxHeapMb'] as const;
+
+/**
+ * Whether a settings change restarts or stops the local server, or switches the
+ * render mode: an event for the server ({@link handleServerEvent}).
+ *
+ * @param oldConfig - Settings before the change.
+ * @param newConfig - Settings after the change.
+ * @returns True when the change is an event for the server.
+ */
+function changesLocalServer(oldConfig: Config, newConfig: Config): boolean {
+    return oldConfig.renderMode !== newConfig.renderMode
+        || LOCAL_SERVER_KEYS.some(key => oldConfig[key] !== newConfig[key]);
+}
 
 /**
  * Start the local server while honoring the start mode.
@@ -1083,10 +1122,7 @@ function handleLocalServerConfigChange(oldConfig: Config | null, newConfig: Conf
  * Clears all caches (SVG render cache, theme cache, markdown-it cache).
  */
 export function deactivate(): void {
-    if (javaCheckChild) {
-        javaCheckChild.kill();
-        javaCheckChild = null;
-    }
+    cancelRunningJavaChecks();
     if (warmupChild) {
         warmupChild.kill();
         warmupChild = null;

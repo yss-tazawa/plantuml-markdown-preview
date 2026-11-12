@@ -25,6 +25,30 @@ let localPlantumlTheme: string | null = null;
 /** Last known config for PlantUML-specific rendering. */
 let lastPumlConfig: Config | null = null;
 
+/** A render handed to the standalone PlantUML preview's webview. */
+export interface PumlRender {
+    /** The previewed file. */
+    filePath: string;
+    /** SVG markup, or error HTML when the render failed. */
+    svg: string;
+    /** Background color sent with the render. */
+    bgColor: string;
+}
+
+/** The render most recently handed to the webview (cleared with the panel). */
+let lastRender: PumlRender | null = null;
+
+/**
+ * Remember a render that is about to reach the webview.
+ *
+ * @param svg - SVG markup or error HTML of the render.
+ * @param bgColor - Background color sent with it.
+ */
+function recordRender(svg: string, bgColor: string): void {
+    const filePath = preview.getCurrentFilePath();
+    lastRender = filePath ? { filePath, svg, bgColor } : null;
+}
+
 /** Return the effective PlantUML theme, falling back to config default. */
 function getPlantumlTheme(): string {
     return localPlantumlTheme ?? (lastPumlConfig ? lastPumlConfig.plantumlTheme : 'default');
@@ -72,10 +96,12 @@ const preview: StandalonePreview = createStandalonePreview({
     viewType: 'plantumlPumlPreview',
     defaultTitle: 'PlantUML',
 
-    async buildHtml(content, nonce, bgColor) {
+    async buildHtml(content, nonce, bgColor, panel) {
         const config = getEffectiveConfig();
         if (!config) return generateViewerHtml(errorHtml('Configuration not available'), nonce, bgColor);
         const svg = await renderSvg(content, config);
+        // Once this panel is closed, the current file may already belong to a newer panel.
+        if (preview.getPanel() === panel) recordRender(svg, bgColor);
         return generateViewerHtml(svg, nonce, bgColor);
     },
 
@@ -84,15 +110,17 @@ const preview: StandalonePreview = createStandalonePreview({
         if (!config) return;
         const svg = await renderSvg(content, config, signal);
         if (signal?.aborted) return;
+        recordRender(svg, bgColor);
         void panel.webview.postMessage({ type: 'updateSvg', svg, bgColor });
     },
 
     showError(panel, message, nonce) {
         panel.webview.html = generateViewerHtml(errorHtml(message), nonce);
+        return true;
     },
 
     async buildDiagramThemeItems() {
-        const plantumlThemes = await listThemesAsync(lastPumlConfig || { plantumlJarPath: '', javaPath: 'java' });
+        const plantumlThemes = await listThemesAsync(lastPumlConfig || { plantumlJarPath: '', javaPath: 'java', plantumlIncludePath: '' });
         return {
             label: vscode.l10n.t('PlantUML Theme'),
             items: buildThemeItems(['default', ...plantumlThemes], 'plantuml' as const, getPlantumlTheme()),
@@ -131,6 +159,7 @@ const preview: StandalonePreview = createStandalonePreview({
 
     resetDiagramState() {
         localPlantumlTheme = null;
+        lastRender = null;
     },
 });
 
@@ -175,6 +204,15 @@ export function getCurrentPumlFilePath(): string | null {
  */
 export function getPumlPreviewPanel(): vscode.WebviewPanel | null {
     return preview.getPanel();
+}
+
+/**
+ * Get the render most recently handed to the preview webview (for test hooks).
+ *
+ * @returns The previewed file, the SVG markup (or error HTML) and its background, or null when none.
+ */
+export function getLastPumlRender(): PumlRender | null {
+    return lastRender;
 }
 
 /** Dispose the preview panel and clean up. */

@@ -6,6 +6,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## Unreleased
+
+### Fixed
+
+- "Java is not found" could appear although Java is installed when a preview was opened while Java was still being checked, such as while the local server checked Java before starting; the server then stayed starting until the warning was closed, and PlantUML diagrams failed with "The local PlantUML server failed to start"
+- When the local server cannot be used (Java not found or too old, `javaPath` pointing to no file, the port in use, the server exiting, or no server at the configured address with Start Mode `off`), the reason and how to fix it are shown in one notification after each action (opening or reloading a preview, exporting a document with PlantUML diagrams, changing the local server settings, Retry) and in place of the diagrams, instead of a crash dialog or "failed to start" without a reason
+- After Java is reinstalled in the same place or `javaPath` is fixed, the local server starts again on the next render, reopening the preview, Reload, Retry or a settings change, without restarting VS Code; renders retry silently and stop after 5 failed starts in a row, with a notification offering Retry
+- Changing `javaPath` to a path that does not exist no longer discards the whole settings change, so a following switch to Easy mode (or "Use Easy Mode" in the notification) takes effect
+- Opening a preview no longer warns that Java is not found when the local server Start Mode is `off` (connecting to an already running server), where Java is not needed, or when it reuses a local server already running on the configured port
+- Switching to Secure (`local`) mode or changing `javaPath` in it now checks Java right away and shows guidance when it is missing, instead of only an error inside the preview
+- A `javaPath` that is a command name on `PATH` (e.g. `javaw`), or on Windows a path without `.exe`, is no longer reported as a path that does not exist
+- A relative `javaPath` with a folder (e.g. `jdk/bin/java`) is now looked up in the folder Java runs in (the include path, or else the first workspace folder), the same as when rendering, instead of being reported as a path that does not exist
+- A diagram still waiting for the local server now says the server is still starting instead of reporting that it failed to start
+- A fixed local server port held by another program is now reported right away, before Java is started; on macOS it used to end as "failed to start" after 15 seconds
+- While the local server cannot be used because Java is missing or too old, the status bar now shows the server error instead of "Server stopped"
+- Opening a second diagram file while the standalone preview was still rendering the first no longer drops the second; it used to appear only after yet another file was opened
+- The Mermaid file preview now uses the configured Mermaid theme when it is first opened or reopened, instead of starting with the default theme
+- Changing the Mermaid theme setting now also applies to an open Mermaid file preview, unless a theme was picked in the preview itself
+- A Mermaid file saved with Windows line endings (CRLF) is no longer rendered twice when its preview opens
+- Previews now keep their current diagram or content, theme and background when VS Code recreates them (e.g. returning to a hidden tab with `retainPreviewContext` off, or moving the preview to another window), instead of showing what they were first opened with
+
 ## 0.7.16 - 2026-10-07
 
 ### Fixed

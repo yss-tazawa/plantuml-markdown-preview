@@ -72,12 +72,14 @@ export function ensureStartEndTags(content: string): string {
 
 /**
  * Wrap an error message in a red-bordered styled HTML div.
+ * The `diagram-error` class carries no styling; it only marks the box as an
+ * error so it can be told apart from rendered output.
  *
  * @param message - HTML content (may include tags) to display inside the error box.
  * @returns Complete HTML div string with error styling.
  */
 export function errorHtml(message: string): string {
-    return `<div style="border:1px solid #f66;background:#fff0f0;padding:0.5em 1em;border-radius:4px;color:#c00;font-size:0.9em;text-align:left;">${message}</div>`;
+    return `<div class="diagram-error" style="border:1px solid #f66;background:#fff0f0;padding:0.5em 1em;border-radius:4px;color:#c00;font-size:0.9em;text-align:left;">${message}</div>`;
 }
 
 /**
@@ -403,14 +405,14 @@ export function spawnJavaSync(
  *
  * @param configJavaPath - The `javaPath` value from extension settings.
  * @param args - CLI arguments passed to the Java process.
- * @param options - Buffered execution options (timeout, maxBuffer, etc.).
+ * @param options - Buffered execution options (timeout, maxBuffer, cwd, etc.).
  * @param cb - Callback invoked when the process exits.
  * @returns The spawned child process.
  */
 export function execJava(
     configJavaPath: string,
     args: readonly string[],
-    options: { timeout?: number; encoding?: BufferEncoding; maxBuffer?: number },
+    options: { timeout?: number; encoding?: BufferEncoding; maxBuffer?: number; cwd?: string },
     cb: (err: Error | null, stdout: string, stderr: string) => void,
 ): ChildProcess {
     return nodeExecFile(

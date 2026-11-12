@@ -53,15 +53,10 @@ export function openDiagramViewer(svg: string, diagramIndex: number, bgColor?: s
     // Disposed explicitly in onDidDispose below (not added to a shared disposable array).
     const viewStateDisposable = panel.onDidChangeViewState((e) => {
         if (e.webviewPanel.active) activeViewerIndex = diagramIndex;
-        // Re-send latest SVG after potential webview reload (e.g. panel move)
-        if (e.webviewPanel.visible) {
-            const latest = latestState.get(diagramIndex);
-            if (latest) {
-                void e.webviewPanel.webview.postMessage({ type: 'updateSvg', svg: latest.svg, bgColor: latest.bgColor });
-            }
-        }
     });
-    const messageDisposable = panel.webview.onDidReceiveMessage((msg) => { void handleViewerMessage(msg).catch(err => console.error('[diagram-viewer] message handler error:', err)); });
+    const messageDisposable = panel.webview.onDidReceiveMessage((msg) => {
+        void handleViewerMessage(msg, panel, diagramIndex).catch(err => console.error('[diagram-viewer] message handler error:', err));
+    });
     const disposeDisposable = panel.onDidDispose(() => {
         viewStateDisposable.dispose();
         messageDisposable.dispose();
@@ -233,8 +228,26 @@ export function handleCopyResult(success: boolean): void {
     pendingSave = null;
 }
 
-/** Handle messages sent from the viewer webview (runtime-validated by type guard). */
-async function handleViewerMessage(msg: { type: string; format?: string; data?: string; success?: boolean }): Promise<void> {
+/**
+ * Handle a message posted by the viewer webview. The message is not validated as a
+ * whole: each branch checks its type and the fields it uses.
+ *
+ * @param msg - Message posted by the webview.
+ * @param panel - Viewer panel whose webview posted the message.
+ * @param diagramIndex - 1-based diagram index the panel shows.
+ */
+async function handleViewerMessage(
+    msg: { type: string; format?: string; data?: string; success?: boolean },
+    panel: vscode.WebviewPanel,
+    diagramIndex: number
+): Promise<void> {
+    if (msg.type === 'webviewReady') {
+        // A page load: a webview recreated from its initial HTML (e.g. after a
+        // move to another window) shows the first SVG, so re-send the latest one.
+        const latest = latestState.get(diagramIndex);
+        if (latest) void panel.webview.postMessage({ type: 'updateSvg', svg: latest.svg, bgColor: latest.bgColor });
+        return;
+    }
     if (msg.type === 'copyDiagramResult') {
         handleCopyResult(!!msg.success);
         return;
@@ -352,6 +365,9 @@ ${getPanZoomScript()}
 
     // Initial fit
     fitToWindow();
+
+    // Report each page load; a webview recreated from this HTML gets the current state.
+    vscodeApi.postMessage({ type: 'webviewReady' });
 })();
 </script>
 </body>

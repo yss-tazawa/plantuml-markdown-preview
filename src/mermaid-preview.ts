@@ -24,9 +24,58 @@ let localMermaidTheme: string | null = null;
 /** Last known config for Mermaid-specific getters. */
 let lastMermaidConfig: Config | null = null;
 
-/** Return the effective Mermaid theme, falling back to config default. */
+/** Mermaid theme the webview currently renders with; null while it has no HTML. */
+let webviewMermaidTheme: string | null = null;
+
+/** A Mermaid theme handed to the standalone Mermaid preview's webview. */
+export interface MermaidThemePost {
+    /** The previewed file when the theme was sent. */
+    filePath: string | null;
+    /** Mermaid theme name sent with `updateMermaidTheme`. */
+    theme: string;
+}
+
+/** A diagram source handed to the standalone Mermaid preview's webview. */
+export interface MermaidSourcePost {
+    /** The previewed file. */
+    filePath: string | null;
+    /** Diagram source sent with `updateSource`. */
+    source: string;
+}
+
+/** The theme most recently posted to the webview (cleared with the panel). */
+let lastThemePost: MermaidThemePost | null = null;
+/** The source most recently posted to the webview (cleared with the panel). */
+let lastSourcePost: MermaidSourcePost | null = null;
+
+/**
+ * Post a theme to the webview, remembering it for the test hooks.
+ *
+ * @param panel - Panel whose webview receives the theme.
+ * @param theme - Mermaid theme name.
+ */
+function postTheme(panel: vscode.WebviewPanel, theme: string): void {
+    lastThemePost = { filePath: preview.getCurrentFilePath(), theme };
+    void panel.webview.postMessage({ type: 'updateMermaidTheme', theme });
+}
+
+/** Return the effective Mermaid theme, falling back to 'default' for unknown names. */
 function getMermaidTheme(): string {
-    return localMermaidTheme ?? (lastMermaidConfig ? lastMermaidConfig.mermaidTheme : 'default');
+    const theme = localMermaidTheme ?? lastMermaidConfig?.mermaidTheme ?? 'default';
+    return MERMAID_THEME_SET.has(theme) ? theme : 'default';
+}
+
+/**
+ * Send the effective Mermaid theme to the webview if it renders with another one.
+ * The webview re-renders its current source with the new theme.
+ *
+ * @param panel - Panel whose webview receives the theme.
+ */
+function syncWebviewTheme(panel: vscode.WebviewPanel): void {
+    const theme = getMermaidTheme();
+    if (webviewMermaidTheme === null || theme === webviewMermaidTheme) return;
+    webviewMermaidTheme = theme;
+    postTheme(panel, theme);
 }
 
 // ---------------------------------------------------------------------------
@@ -52,6 +101,8 @@ function generateMermaidViewerHtml(
 ): string {
     const containerBg = bgColor && CSS_COLOR_RE.test(bgColor.trim()) ? bgColor.trim() : '#fff';
     const safeMermaidTheme = MERMAID_THEME_SET.has(mermaidTheme) ? mermaidTheme : 'default';
+    // The template writes this after a newline inside the <textarea>: the HTML parser
+    // drops one leading newline there, so the source's own leading newline survives.
     const escapedSource = escapeHtml(initialSource);
     const labels = {
         fit: escapeHtml(vscode.l10n.t('Fit')),
@@ -122,7 +173,7 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: ${containe
 <div id="viewport">
     <div id="svg-container"></div>
 </div>
-<textarea id="initial-source" style="display:none;">${escapedSource}</textarea>
+<textarea id="initial-source" style="display:none;">\n${escapedSource}</textarea>
 <script nonce="${nonce}" src="${mermaidScriptUri}"></script>
 <script nonce="${nonce}">
 (function() {
@@ -131,8 +182,16 @@ ${getPanZoomScript()}
     // Mermaid rendering
     var renderCounter = 0;
     var isFirstRender = true;
+    var currentTheme = '${safeMermaidTheme}';
     mermaid.initialize({ startOnLoad: false, theme: '${safeMermaidTheme}' });
-    var lastSource = '';
+    // Source of the latest render; null until the page renders anything.
+    var lastSource = null;
+
+    // The HTML parser turns CRLF and CR into LF in the initial source, so compare
+    // sources by content regardless of line endings.
+    function sameSource(a, b) {
+        return a !== null && b !== null && a.replace(/\\r\\n?/g, '\\n') === b.replace(/\\r\\n?/g, '\\n');
+    }
 
     function removeMermaidTempElements() {
         // mermaid.render() appends temp divs (id="d" + renderId) to document.body
@@ -178,6 +237,8 @@ ${getPanZoomScript()}
     // Message handler
     window.addEventListener('message', function(e) {
         if (e.data.type === 'updateSource') {
+            // Each page load is sent the current source, usually the one already rendered.
+            if (sameSource(e.data.source, lastSource)) return;
             renderMermaid(e.data.source);
         } else if (e.data.type === 'updateBgColor') {
             if (e.data.bgColor && cssColorRe.test(e.data.bgColor.trim())) {
@@ -186,7 +247,10 @@ ${getPanZoomScript()}
                 document.body.style.background = bg;
             }
         } else if (e.data.type === 'updateMermaidTheme') {
-            mermaid.initialize({ startOnLoad: false, theme: e.data.theme });
+            // Each page load is sent the current theme, usually the one already shown.
+            if (e.data.theme === currentTheme) return;
+            currentTheme = e.data.theme;
+            mermaid.initialize({ startOnLoad: false, theme: currentTheme });
             if (lastSource) renderMermaid(lastSource);
         } else if (e.data.type === 'exportDiagram') {
             handleDiagramAction('save', e.data.format);
@@ -202,6 +266,9 @@ ${getPanZoomScript()}
             console.error('Mermaid initial render failed:', err);
         });
     }
+
+    // Report each page load; a webview recreated from this HTML gets the current state.
+    vscodeApi.postMessage({ type: 'webviewReady' });
 })();
 </script>
 </body>
@@ -235,21 +302,35 @@ const preview: StandalonePreview = createStandalonePreview({
         ? [vscode.Uri.joinPath(cachedExtensionUri, 'dist')]
         : [],
 
+    // Side-effect: records the theme of the new webview in webviewMermaidTheme.
     buildHtml(content, nonce, bgColor, panel) {
         const scriptUri = getMermaidScriptUri(panel);
         if (!scriptUri) return '';
-        return generateMermaidViewerHtml(scriptUri, nonce, bgColor, getMermaidTheme(), content);
+        webviewMermaidTheme = getMermaidTheme();
+        return generateMermaidViewerHtml(scriptUri, nonce, bgColor, webviewMermaidTheme, content);
     },
 
     async updateWebview(panel, content, _bgColor, _signal) {
+        // An open with another config while the panel exists may have changed the theme.
+        syncWebviewTheme(panel);
+        lastSourcePost = { filePath: preview.getCurrentFilePath(), source: content };
         void panel.webview.postMessage({ type: 'updateSource', source: content });
     },
 
     showError() {
-        // Mermaid preview silently preserves previous state on missing files
+        // Mermaid preview silently preserves previous state on missing files;
+        // the HTML is not replaced.
+        return false;
     },
 
     onPreviewThemeChanged(panel, bgColor) {
+        void panel.webview.postMessage({ type: 'updateBgColor', bgColor });
+    },
+
+    onWebviewReady(panel, bgColor) {
+        // The page shows the theme and background of its HTML; send the current ones.
+        webviewMermaidTheme = getMermaidTheme();
+        postTheme(panel, webviewMermaidTheme);
         void panel.webview.postMessage({ type: 'updateBgColor', bgColor });
     },
 
@@ -263,23 +344,15 @@ const preview: StandalonePreview = createStandalonePreview({
     onDiagramThemeSelected(themeKey, panel) {
         if (themeKey === getMermaidTheme()) return 'done';
         localMermaidTheme = themeKey;
-        void panel.webview.postMessage({ type: 'updateMermaidTheme', theme: getMermaidTheme() });
+        syncWebviewTheme(panel);
         return 'done';
-    },
-
-    onPanelCreated(config) {
-        lastMermaidConfig = config;
-    },
-
-    // Side-effect: updates lastMermaidConfig so theme/config reads stay current.
-    shouldReRenderOnConfigChange(prev, next) {
-        lastMermaidConfig = next;
-        return !localMermaidTheme && prev.mermaidTheme !== next.mermaidTheme;
     },
 
     resetDiagramState() {
         localMermaidTheme = null;
-        lastMermaidConfig = null;
+        webviewMermaidTheme = null;
+        lastThemePost = null;
+        lastSourcePost = null;
     },
 });
 
@@ -296,17 +369,21 @@ const preview: StandalonePreview = createStandalonePreview({
  */
 export async function openMermaidPreview(filePath: string, config: Config, extensionUri: vscode.Uri): Promise<void> {
     cachedExtensionUri = extensionUri;
+    lastMermaidConfig = config;
     await preview.open(filePath, config);
 }
 
 /**
  * Update config reference. Called when settings change.
+ * An open panel takes a changed mermaidTheme unless a theme was picked in the panel.
  *
  * @param config - New extension configuration snapshot.
  */
 export function updateMermaidConfig(config: Config): void {
     lastMermaidConfig = config;
     preview.updateConfig(config);
+    const panel = preview.getPanel();
+    if (panel) syncWebviewTheme(panel);
 }
 
 /**
@@ -325,6 +402,24 @@ export function getCurrentMermaidFilePath(): string | null {
  */
 export function getMermaidPreviewPanel(): vscode.WebviewPanel | null {
     return preview.getPanel();
+}
+
+/**
+ * Get the theme most recently posted to the preview webview (for test hooks).
+ *
+ * @returns The previewed file and the theme, or null when none was posted.
+ */
+export function getLastMermaidThemePost(): MermaidThemePost | null {
+    return lastThemePost;
+}
+
+/**
+ * Get the source most recently posted to the preview webview (for test hooks).
+ *
+ * @returns The previewed file and the source, or null when none was posted.
+ */
+export function getLastMermaidSourcePost(): MermaidSourcePost | null {
+    return lastSourcePost;
 }
 
 /** Dispose the preview panel and clean up all associated resources. */

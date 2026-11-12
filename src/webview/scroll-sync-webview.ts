@@ -44,6 +44,8 @@ interface Anchor {
     const RENDERING_TEXT = script.dataset.renderingText!;
     const SYNC_MASTER_TIMEOUT_MS = Number(script.dataset.syncMasterTimeoutMs);
     const ENABLE_DIAGRAM_VIEWER = script.dataset.enableDiagramViewer !== 'false';
+    /** Identifies this page to the extension, which ignores loads of pages it replaced. */
+    const PAGE_TOKEN = script.dataset.pageToken ?? '';
     /** Offset (px) for TOC active-heading detection: clears the fixed nav-toolbar. */
     const TOC_SCROLL_OFFSET = 60;
 
@@ -1012,4 +1014,10 @@ interface Anchor {
             notifyDiagramViewers();
         }
     });
+
+    // Report each page load now that the message listener is installed. VS Code
+    // recreates the webview from its HTML in some cases (e.g. a hidden tab without
+    // retained context, a move to another window); the extension then sends the
+    // current state.
+    vscode.postMessage({ type: 'webviewReady', token: PAGE_TOKEN });
 })();

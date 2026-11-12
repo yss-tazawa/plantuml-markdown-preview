@@ -176,23 +176,6 @@ export function isLazyDeferralActive(config: Config): boolean {
 /** Display name of the extension's Output channel (vscode.window.createOutputChannel). */
 export const OUTPUT_CHANNEL_NAME = 'PlantUML Markdown Preview';
 
-/**
- * Why the local server URL is unavailable at render time, based on the start mode.
- * - 'external-not-found': start mode 'off' — no server was reachable at the configured host/port.
- * - 'managed-failed'    : start mode 'on'/'lazy' — our own spawned server failed to start.
- */
-export type ServerUnavailableReason = 'external-not-found' | 'managed-failed';
-
-/**
- * Classify why the local server is unavailable, so callers can show a cause-specific message.
- *
- * @param config - Current extension settings.
- * @returns The unavailability reason implied by the start mode.
- */
-export function serverUnavailableReason(config: Config): ServerUnavailableReason {
-    return config.plantumlLocalServerStartMode === 'off' ? 'external-not-found' : 'managed-failed';
-}
-
 /** Full extension configuration — single flat type used everywhere. */
 export interface Config {
     /** Preset mode: 'fast' (default), 'secure', or 'easy'. */

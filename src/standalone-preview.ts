@@ -60,8 +60,11 @@ export interface StandalonePreviewDef {
 
     /**
      * Display an error inside the webview (e.g. "file not found").
+     *
+     * @returns `true` if it replaced `panel.webview.html`; the factory then does not
+     *          replace it again with the same error when that page reports its load.
      */
-    showError(panel: vscode.WebviewPanel, message: string, nonce: string): void;
+    showError(panel: vscode.WebviewPanel, message: string, nonce: string): boolean;
 
     /**
      * Handle a preview-theme change.
@@ -71,6 +74,15 @@ export interface StandalonePreviewDef {
      * lightweight `updateBgColor` message instead.
      */
     onPreviewThemeChanged?(panel: vscode.WebviewPanel, bgColor: string): void;
+
+    /**
+     * Handle a page load (told by a `webviewReady`) by sending the current
+     * webview-side state. The page shows the state its HTML was built with, and VS Code
+     * recreates the webview from that HTML in some cases (e.g. shown again after being
+     * hidden with retainPreviewContext off, or moved to another window).
+     * The factory re-renders the current file right after this call.
+     */
+    onWebviewReady?(panel: vscode.WebviewPanel, bgColor: string): void;
 
     /**
      * Return the diagram-specific section for the theme QuickPick.
@@ -91,7 +103,8 @@ export interface StandalonePreviewDef {
     /**
      * Should a settings change trigger a re-render?
      *
-     * Only called when no local diagram-theme override is active.
+     * Called on every settings change while a panel exists; implementations
+     * ignore keys that a local diagram-theme override takes precedence over.
      */
     shouldReRenderOnConfigChange?(prevConfig: Config, newConfig: Config): boolean;
 
@@ -132,15 +145,32 @@ export function createStandalonePreview(def: StandalonePreviewDef): StandalonePr
     // -- shared state --------------------------------------------------------
     let panel: vscode.WebviewPanel | null = null;
     let currentFilePath: string | null = null;
+    /** Configuration the current panel uses; null while no panel exists. */
     let lastConfig: Config | null = null;
+    /**
+     * Newest requested configuration, from open() or updateConfig(), panel or not.
+     * A panel built by an open in progress takes it, not the config of that open.
+     */
+    let latestConfig: Config | null = null;
     let localPreviewTheme: string | null = null;
     let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+    /**
+     * Message of the error page `showError` last assigned to `webview.html`, until a
+     * render updates the page. A render that finds the same error leaves that page as
+     * it is, so the load the page reports does not replace it again, endlessly.
+     */
+    let shownError: string | null = null;
     const panelDisposables: vscode.Disposable[] = [];
     let renderSeq = 0;
     let renderAbort: AbortController | null = null;
-    /** Guard against double panel creation during async readSource. */
-    let isOpening = false;
-    /** File path queued while isOpening is true; processed after current open() finishes. */
+    /**
+     * Generation of the latest open. Every open and every panel disposal bumps it;
+     * an open whose generation is no longer current stops after its next await.
+     */
+    let openGeneration = 0;
+    /** Generation of the open in progress, or null; guards against concurrent opens. */
+    let activeOpen: number | null = null;
+    /** File requested while an open was in progress; opened after that open ends. */
     let pendingOpen: { filePath: string; config: Config } | null = null;
 
     // -- include tracking ----------------------------------------------------
@@ -196,17 +226,25 @@ export function createStandalonePreview(def: StandalonePreviewDef): StandalonePr
         panel.title = makePanelTitle(currentFilePath);
 
         const content = await readSource(currentFilePath);
-        if (content === null) {
-            def.showError(panel, vscode.l10n.t('File not found: {0}', currentFilePath), getNonce());
-            renderAbort = null;
+        if (signal.aborted || seq !== renderSeq) {
+            // A newer render owns renderAbort; only clear our own controller.
+            if (renderAbort?.signal === signal) renderAbort = null;
             return;
         }
 
-        if (signal.aborted || seq !== renderSeq) { renderAbort = null; return; }
+        if (content === null) {
+            const message = vscode.l10n.t('File not found: {0}', currentFilePath);
+            if (message !== shownError && def.showError(panel, message, getNonce())) {
+                shownError = message;
+            }
+            if (renderAbort?.signal === signal) renderAbort = null;
+            return;
+        }
 
         try {
             await def.updateWebview(panel, content, getCurrentBgColor(), signal);
             if (signal.aborted || seq !== renderSeq) return;
+            shownError = null;
             updateIncludePaths(content);
         } finally {
             if (renderAbort?.signal === signal) renderAbort = null;
@@ -215,11 +253,15 @@ export function createStandalonePreview(def: StandalonePreviewDef): StandalonePr
 
     /** Clean up all panel state and disposables. */
     function disposeState(): void {
-        isOpening = false;
+        // Supersede the open in progress and drop the queued one: the panel is gone.
+        openGeneration++;
+        activeOpen = null;
+        pendingOpen = null;
         panel = null;
         currentFilePath = null;
         lastConfig = null;
         localPreviewTheme = null;
+        shownError = null;
         includePaths = new Set<string>();
         def.resetDiagramState();
         for (const d of panelDisposables) d.dispose();
@@ -228,48 +270,48 @@ export function createStandalonePreview(def: StandalonePreviewDef): StandalonePr
         if (renderAbort) { renderAbort.abort(); renderAbort = null; }
     }
 
-    // -- public API ----------------------------------------------------------
+    /**
+     * Handle a page load reported by the webview of `from`: send the current state.
+     * Updates posted before the page could receive them, or while its webview was gone
+     * (hidden without retained context), were dropped, and a webview VS Code recreated
+     * from its HTML shows the diagram, theme and background that HTML was built with.
+     *
+     * @param from - Panel whose webview posted the message.
+     */
+    function handleWebviewReady(from: vscode.WebviewPanel): void {
+        if (panel !== from) return;
+        def.onWebviewReady?.(from, getCurrentBgColor());
+        void renderCurrentFile();
+    }
 
-    /** Open (or reveal) the standalone preview panel for the given diagram file. */
-    async function open(filePath: string, config: Config): Promise<void> {
-        // Guard against double panel creation if open() is called again during await.
-        // Check before updating state to avoid overwriting currentFilePath/lastConfig
-        // while a previous open() is still in progress.
-        if (isOpening) { pendingOpen = { filePath, config }; return; }
-
-        lastConfig = config;
-        currentFilePath = filePath;
-
+    /**
+     * Body of {@link open}: reveal or create the panel and render the file.
+     * Stops after any await once `generation` is superseded by a panel disposal.
+     *
+     * @param generation - Generation that {@link open} assigned to this open.
+     * @param filePath - Absolute path of the diagram file to show.
+     * @param config - Configuration to render with.
+     */
+    async function openFile(generation: number, filePath: string, config: Config): Promise<void> {
         if (panel) {
+            lastConfig = config;
+            currentFilePath = filePath;
             panel.reveal(vscode.ViewColumn.Two, true);
             panel.title = makePanelTitle(filePath);
-            isOpening = true;
-            try { await renderCurrentFile(); } finally { isOpening = false; }
+            await renderCurrentFile();
             return;
         }
-        isOpening = true;
 
         let content: string | null;
         try {
             content = await readSource(filePath);
         } catch {
-            isOpening = false;
             return;
         }
-        if (content === null) { currentFilePath = null; isOpening = false; return; }
+        if (generation !== openGeneration) return;
+        if (content === null) return;
 
-        // Re-check after await: another open() call may have created the panel.
-        // TypeScript narrows panel to null after the earlier if-return — cast to
-        // break the narrowing since the module-level variable may have changed.
-        const existingPanel = panel as vscode.WebviewPanel | null;
-        if (existingPanel) {
-            existingPanel.reveal(vscode.ViewColumn.Two, true);
-            existingPanel.title = makePanelTitle(filePath);
-            try { await renderCurrentFile(); } finally { isOpening = false; }
-            return;
-        }
-
-        panel = vscode.window.createWebviewPanel(
+        const created = vscode.window.createWebviewPanel(
             def.viewType,
             makePanelTitle(filePath),
             { viewColumn: vscode.ViewColumn.Two, preserveFocus: true },
@@ -283,38 +325,43 @@ export function createStandalonePreview(def: StandalonePreviewDef): StandalonePr
                     : def.localResourceRoots ?? [],
             }
         );
+        // Take the file only once a panel exists, so a failed creation leaves none behind.
+        panel = created;
+        // A settings change during the read is newer than the config of this open.
+        lastConfig = latestConfig ?? config;
+        currentFilePath = filePath;
+        // Listen before building the HTML: the panel can be closed while it is built.
+        panelDisposables.push(created.onDidDispose(() => { if (panel === created) disposeState(); }));
 
+        let html: string;
         try {
-            const html = await def.buildHtml(content, getNonce(), getCurrentBgColor(), panel);
-            if (!html) {
-                panel.dispose();
-                panel = null;
-                currentFilePath = null;
-                lastConfig = null;
-                isOpening = false;
-                return;
-            }
-            panel.webview.html = html;
-        } catch (err) {
-            panel?.dispose();
-            panel = null;
-            currentFilePath = null;
-            lastConfig = null;
-            isOpening = false;
-            // Process any file queued while we were opening.
-            if (pendingOpen) {
-                const queued = pendingOpen;
-                pendingOpen = null;
-                await open(queued.filePath, queued.config);
-            }
+            html = await def.buildHtml(content, getNonce(), getCurrentBgColor(), created);
+        } catch {
+            html = '';
+        }
+        // A disposal that superseded this open has already cleared the state.
+        if (generation !== openGeneration) { created.dispose(); return; }
+        if (!html) {
+            // Disposing runs disposeState(), which cancels renders scheduled during the
+            // build and resets panel-local state; keep the queued open, which it drops.
+            const queued = pendingOpen;
+            created.dispose();
+            // As in dispose(): reset here if the listener did not run.
+            if (panel === created) disposeState();
+            pendingOpen = queued;
+            // Hold the guard until open() releases it and opens the queued file, so a
+            // newer request replaces the queued one instead of running before it.
+            activeOpen = generation;
             return;
         }
-
-        panelDisposables.push(panel.onDidDispose(disposeState));
-
-        panelDisposables.push(panel.webview.onDidReceiveMessage((msg) => {
+        panelDisposables.push(created.webview.onDidReceiveMessage((msg) => {
+            if (msg?.type === 'webviewReady') {
+                handleWebviewReady(created);
+                return;
+            }
             void handleViewerMessage(msg, currentFilePath);
         }));
+        created.webview.html = html;
 
         panelDisposables.push(
             vscode.workspace.onDidChangeTextDocument((e) => {
@@ -342,21 +389,50 @@ export function createStandalonePreview(def: StandalonePreviewDef): StandalonePr
             })
         );
 
-        try { def.onPanelCreated?.(config); } finally { isOpening = false; }
+        def.onPanelCreated?.(lastConfig ?? config);
+    }
 
-        // If another file was requested while we were opening, process it now.
-        if (pendingOpen) {
-            const queued = pendingOpen;
-            pendingOpen = null;
-            await open(queued.filePath, queued.config);
+    // -- public API ----------------------------------------------------------
+
+    /** Open (or reveal) the standalone preview panel for the given diagram file. */
+    async function open(filePath: string, config: Config): Promise<void> {
+        // Guard against double panel creation if open() is called again during await.
+        // latestConfig is updated first, so an open in progress builds its panel with it;
+        // currentFilePath is only set by the open that owns the guard; lastConfig by it
+        // and by updateConfig while a panel exists.
+        latestConfig = config;
+        if (activeOpen !== null) { pendingOpen = { filePath, config }; return; }
+
+        const generation = ++openGeneration;
+        activeOpen = generation;
+        try {
+            await openFile(generation, filePath, config);
+        } finally {
+            // Only the current open owns the guard; a superseded one leaves it alone.
+            if (activeOpen === generation) activeOpen = null;
+            // Whichever way the open ended, show the file requested while it ran.
+            // Its caller has already returned, so its failure is logged, not thrown here.
+            if (activeOpen === null && pendingOpen) {
+                const queued = pendingOpen;
+                pendingOpen = null;
+                try {
+                    await open(queued.filePath, queued.config);
+                } catch (err) {
+                    console.error('[standalone-preview] queued open failed:', err);
+                }
+            }
         }
     }
 
     /** Apply updated configuration; triggers re-render if diagram keys changed. */
     function updateConfig(config: Config): void {
+        // The open in progress (via latestConfig) and the queued one take it, panel or not.
+        latestConfig = config;
+        if (pendingOpen) pendingOpen = { ...pendingOpen, config };
+        if (!panel) return;
         const prevConfig = lastConfig;
         lastConfig = config;
-        if (!panel || !prevConfig) return;
+        if (!prevConfig) return;
 
         if (def.shouldReRenderOnConfigChange?.(prevConfig, config)) {
             scheduleRender();
@@ -367,11 +443,10 @@ export function createStandalonePreview(def: StandalonePreviewDef): StandalonePr
     function dispose(): void {
         if (debounceTimer) { clearTimeout(debounceTimer); debounceTimer = null; }
         if (renderAbort) { renderAbort.abort(); renderAbort = null; }
-        if (panel) {
-            panel.dispose(); // triggers onDidDispose → disposeState()
-        } else {
-            disposeState(); // safety net if panel was already gone
-        }
+        const disposing = panel;
+        disposing?.dispose(); // triggers onDidDispose → disposeState()
+        // No listener ran: the panel was already gone.
+        if (panel === disposing) disposeState();
     }
 
     /** Show a theme QuickPick and apply the selected theme. */

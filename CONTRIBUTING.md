@@ -65,6 +65,8 @@ src/
   plantuml.ts       PlantUML local process invocation (sync + async), caching, theme discovery
   plantuml-server.ts PlantUML server rendering (HTTP fetch, encoding, LRU cache)
   local-server.ts   Local PlantUML picoweb server management
+  java-check.ts     Java availability check and missing/outdated Java guidance
+  notify-once.ts    Guidance notifications shown once while on screen
   status-bar.ts     Status bar indicator and mode quick-pick
   exporter.ts       HTML export with inline SVG and syntax highlighting
   diagram-viewer.ts Pan & zoom viewer for embedded diagrams

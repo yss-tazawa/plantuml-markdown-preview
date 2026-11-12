@@ -138,7 +138,8 @@ export function connectionErrorHtml(baseUrl: string, err: unknown): string {
  * - 'lost' + managed ('on'/'lazy'): hold THIS render, retry the server start
  *   (allowed from 'error'), and re-run the same fetch against the recovered URL
  *   (the port can change after an auto-port respawn). A failed start shows its
- *   reason in the diagram box, and the next render retries the start again.
+ *   reason in the diagram box, and later renders retry the start until it
+ *   failed MAX_FAILED_ATTEMPTS times in a row (see ensureLocalServerStarted).
  * - 'lost' + external ('off'): show the endpoint error. Every render keeps
  *   fetching the kept URL, so a revived server recovers the state via
  *   handleRenderSuccess without any manual action.

@@ -26,6 +26,30 @@ let localD2Layout: string | null = null;
 /** Last known config for D2-specific getters. */
 let lastD2Config: Config | null = null;
 
+/** A render handed to the standalone D2 preview's webview. */
+export interface D2Render {
+    /** The previewed file. */
+    filePath: string;
+    /** SVG markup, or error HTML when the render failed. */
+    svg: string;
+    /** Background color sent with the render. */
+    bgColor: string;
+}
+
+/** The render most recently handed to the webview (cleared with the panel). */
+let lastRender: D2Render | null = null;
+
+/**
+ * Remember a render that is about to reach the webview.
+ *
+ * @param svg - SVG markup or error HTML of the render.
+ * @param bgColor - Background color sent with it.
+ */
+function recordRender(svg: string, bgColor: string): void {
+    const filePath = preview.getCurrentFilePath();
+    lastRender = filePath ? { filePath, svg, bgColor } : null;
+}
+
 /** Return the effective D2 theme, falling back to config default. */
 function getD2Theme(): string {
     return localD2Theme ?? (lastD2Config ? lastD2Config.d2Theme : 'Neutral Default');
@@ -61,8 +85,10 @@ const preview: StandalonePreview = createStandalonePreview({
     viewType: 'plantumlD2Preview',
     defaultTitle: 'D2',
 
-    async buildHtml(content, nonce, bgColor) {
+    async buildHtml(content, nonce, bgColor, panel) {
         const svg = await renderSvg(content);
+        // Once this panel is closed, the current file may already belong to a newer panel.
+        if (preview.getPanel() === panel) recordRender(svg, bgColor);
         return generateViewerHtml(svg, nonce, bgColor);
     },
 
@@ -70,11 +96,13 @@ const preview: StandalonePreview = createStandalonePreview({
         if (signal?.aborted) return;
         const svg = await renderSvg(content);
         if (signal?.aborted) return;
+        recordRender(svg, bgColor);
         void panel.webview.postMessage({ type: 'updateSvg', svg, bgColor });
     },
 
     showError(panel, message, nonce) {
         panel.webview.html = generateViewerHtml(errorHtml(message), nonce);
+        return true;
     },
 
     buildDiagramThemeItems() {
@@ -100,6 +128,7 @@ const preview: StandalonePreview = createStandalonePreview({
     resetDiagramState() {
         localD2Theme = null;
         localD2Layout = null;
+        lastRender = null;
     },
 });
 
@@ -144,6 +173,15 @@ export function getCurrentD2FilePath(): string | null {
  */
 export function getD2PreviewPanel(): vscode.WebviewPanel | null {
     return preview.getPanel();
+}
+
+/**
+ * Get the render most recently handed to the preview webview (for test hooks).
+ *
+ * @returns The previewed file, the SVG markup (or error HTML) and its background, or null when none.
+ */
+export function getLastD2Render(): D2Render | null {
+    return lastRender;
 }
 
 /** Dispose the preview panel and clean up. */
