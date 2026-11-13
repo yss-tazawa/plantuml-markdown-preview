@@ -13,17 +13,8 @@ import { renderToSvgServer, clearServerCache } from './plantuml-server.js';
 import { getLocalServerUrl, waitForLocalServer, ensureLocalServerStarted, localServerUnavailableMessage } from './local-server.js';
 import { type Config } from './config.js';
 import { errorHtml, buildThemeItems } from './utils.js';
-import { createStandalonePreview, type StandalonePreview } from './standalone-preview.js';
-
-// ---------------------------------------------------------------------------
-// PlantUML-specific state
-// ---------------------------------------------------------------------------
-
-/** Local PlantUML theme (not synced to settings). */
-let localPlantumlTheme: string | null = null;
-
-/** Last known config for PlantUML-specific rendering. */
-let lastPumlConfig: Config | null = null;
+import { createStandalonePreview, createDiagramReadingView, type StandalonePreview } from './standalone-preview.js';
+import type { AdoptedPanel, ReadingView } from './reading-view.js';
 
 /** A render handed to the standalone PlantUML preview's webview. */
 export interface PumlRender {
@@ -35,31 +26,10 @@ export interface PumlRender {
     bgColor: string;
 }
 
-/** The render most recently handed to the webview (cleared with the panel). */
-let lastRender: PumlRender | null = null;
-
-/**
- * Remember a render that is about to reach the webview.
- *
- * @param svg - SVG markup or error HTML of the render.
- * @param bgColor - Background color sent with it.
- */
-function recordRender(svg: string, bgColor: string): void {
-    const filePath = preview.getCurrentFilePath();
-    lastRender = filePath ? { filePath, svg, bgColor } : null;
-}
-
-/** Return the effective PlantUML theme, falling back to config default. */
-function getPlantumlTheme(): string {
-    return localPlantumlTheme ?? (lastPumlConfig ? lastPumlConfig.plantumlTheme : 'default');
-}
-
-/** Build a config snapshot with local PlantUML theme override applied. */
-function getEffectiveConfig(): Config | null {
-    if (!lastPumlConfig) return null;
-    return localPlantumlTheme
-        ? { ...lastPumlConfig, plantumlTheme: localPlantumlTheme }
-        : lastPumlConfig;
+/** A PlantUML preview or Reading View with its PlantUML-specific state. */
+export interface PumlPreview extends StandalonePreview {
+    /** The render most recently handed to the webview (cleared with the panel). */
+    getLastRender(): PumlRender | null;
 }
 
 /**
@@ -89,79 +59,151 @@ async function renderSvg(content: string, config: Config, signal?: AbortSignal):
 }
 
 // ---------------------------------------------------------------------------
-// Factory instance
+// Instances
 // ---------------------------------------------------------------------------
 
-const preview: StandalonePreview = createStandalonePreview({
-    viewType: 'plantumlPumlPreview',
-    defaultTitle: 'PlantUML',
+/**
+ * Create a PlantUML preview, or a Reading View when given a panel, with its own
+ * theme override and config.
+ *
+ * @param initialConfig - Configuration to render with until a newer one arrives.
+ * @param adopted - Panel handed over by VS Code and the file it shows (Reading View).
+ * @returns The preview or Reading View.
+ */
+function createPumlPreview(initialConfig: Config | null, adopted?: AdoptedPanel): PumlPreview {
+    /** Local PlantUML theme (not synced to settings). */
+    let localPlantumlTheme: string | null = null;
+    /** Last known config for PlantUML-specific rendering. */
+    let lastPumlConfig: Config | null = initialConfig;
+    let lastRender: PumlRender | null = null;
 
-    async buildHtml(content, nonce, bgColor, panel) {
-        const config = getEffectiveConfig();
-        if (!config) return generateViewerHtml(errorHtml('Configuration not available'), nonce, bgColor);
-        const svg = await renderSvg(content, config);
-        // Once this panel is closed, the current file may already belong to a newer panel.
-        if (preview.getPanel() === panel) recordRender(svg, bgColor);
-        return generateViewerHtml(svg, nonce, bgColor);
-    },
+    /**
+     * Remember a render that is about to reach the webview.
+     *
+     * @param svg - SVG markup or error HTML of the render.
+     * @param bgColor - Background color sent with it.
+     */
+    function recordRender(svg: string, bgColor: string): void {
+        const filePath = base.getCurrentFilePath();
+        lastRender = filePath ? { filePath, svg, bgColor } : null;
+    }
 
-    async updateWebview(panel, content, bgColor, signal) {
-        const config = getEffectiveConfig();
-        if (!config) return;
-        const svg = await renderSvg(content, config, signal);
-        if (signal?.aborted) return;
-        recordRender(svg, bgColor);
-        void panel.webview.postMessage({ type: 'updateSvg', svg, bgColor });
-    },
+    /** Return the effective PlantUML theme, falling back to config default. */
+    function getPlantumlTheme(): string {
+        return localPlantumlTheme ?? (lastPumlConfig ? lastPumlConfig.plantumlTheme : 'default');
+    }
 
-    showError(panel, message, nonce) {
-        panel.webview.html = generateViewerHtml(errorHtml(message), nonce);
-        return true;
-    },
+    /** Build a config snapshot with local PlantUML theme override applied. */
+    function getEffectiveConfig(): Config | null {
+        if (!lastPumlConfig) return null;
+        return localPlantumlTheme
+            ? { ...lastPumlConfig, plantumlTheme: localPlantumlTheme }
+            : lastPumlConfig;
+    }
 
-    async buildDiagramThemeItems() {
-        const plantumlThemes = await listThemesAsync(lastPumlConfig || { plantumlJarPath: '', javaPath: 'java', plantumlIncludePath: '' });
-        return {
-            label: vscode.l10n.t('PlantUML Theme'),
-            items: buildThemeItems(['default', ...plantumlThemes], 'plantuml' as const, getPlantumlTheme()),
-        };
-    },
+    const base: StandalonePreview = createStandalonePreview({
+        viewType: 'plantumlPumlPreview',
+        defaultTitle: 'PlantUML',
 
-    onDiagramThemeSelected(themeKey) {
-        if (themeKey === getPlantumlTheme()) return 'done';
-        localPlantumlTheme = themeKey;
-        return 'render';
-    },
+        async buildHtml(content, nonce, bgColor, panel) {
+            const config = getEffectiveConfig();
+            if (!config) return generateViewerHtml(errorHtml('Configuration not available'), nonce, bgColor);
+            const svg = await renderSvg(content, config);
+            // Once this panel is closed, the current file may already belong to a newer panel.
+            if (base.getPanel() === panel) recordRender(svg, bgColor);
+            return generateViewerHtml(svg, nonce, bgColor);
+        },
 
-    // Side-effect: updates lastPumlConfig so theme/config reads stay current.
-    shouldReRenderOnConfigChange(prev, next) {
-        lastPumlConfig = next;
-        return !localPlantumlTheme && prev.plantumlTheme !== next.plantumlTheme;
-    },
+        async updateWebview(panel, content, bgColor, signal) {
+            const config = getEffectiveConfig();
+            if (!config) return;
+            const svg = await renderSvg(content, config, signal);
+            if (signal?.aborted) return;
+            recordRender(svg, bgColor);
+            void panel.webview.postMessage({ type: 'updateSvg', svg, bgColor });
+        },
 
-    onPanelCreated(config) {
-        // Pre-fetch PlantUML theme list so the QuickPick menu is instant
-        if (config.renderMode !== 'server') {
-            prefetchThemes(config);
-        }
-    },
+        showError(panel, message, nonce) {
+            panel.webview.html = generateViewerHtml(errorHtml(message), nonce);
+            return true;
+        },
 
-    collectIncludePaths(content, config) {
-        const basePath = resolveIncludePath(config);
-        if (!basePath) return new Set<string>();
-        return new Set(extractIncludePaths(content, basePath));
-    },
+        async buildDiagramThemeItems() {
+            const plantumlThemes = await listThemesAsync(lastPumlConfig || { plantumlJarPath: '', javaPath: 'java', plantumlIncludePath: '' });
+            return {
+                label: vscode.l10n.t('PlantUML Theme'),
+                items: buildThemeItems(['default', ...plantumlThemes], 'plantuml' as const, getPlantumlTheme()),
+            };
+        },
 
-    onIncludeFileSaved() {
-        clearCache();
-        clearServerCache();
-    },
+        onDiagramThemeSelected(themeKey) {
+            if (themeKey === getPlantumlTheme()) return 'done';
+            localPlantumlTheme = themeKey;
+            return 'render';
+        },
 
-    resetDiagramState() {
-        localPlantumlTheme = null;
-        lastRender = null;
-    },
-});
+        // Side-effect: updates lastPumlConfig so theme/config reads stay current.
+        shouldReRenderOnConfigChange(prev, next) {
+            lastPumlConfig = next;
+            return !localPlantumlTheme && prev.plantumlTheme !== next.plantumlTheme;
+        },
+
+        onPanelCreated(config) {
+            // Pre-fetch PlantUML theme list so the QuickPick menu is instant
+            if (config.renderMode !== 'server') {
+                prefetchThemes(config);
+            }
+        },
+
+        collectIncludePaths(content, config) {
+            const basePath = resolveIncludePath(config);
+            if (!basePath) return new Set<string>();
+            return new Set(extractIncludePaths(content, basePath));
+        },
+
+        onIncludeFileSaved() {
+            clearCache();
+            clearServerCache();
+        },
+
+        resetDiagramState() {
+            localPlantumlTheme = null;
+            lastRender = null;
+        },
+    }, adopted);
+
+    return {
+        ...base,
+        open(filePath, config) {
+            lastPumlConfig = config;
+            return base.open(filePath, config);
+        },
+        openAdopted(config) {
+            lastPumlConfig = config;
+            return base.openAdopted(config);
+        },
+        updateConfig(config) {
+            lastPumlConfig = config;
+            base.updateConfig(config);
+        },
+        getLastRender: () => lastRender,
+    };
+}
+
+/** The PlantUML preview (beside the source, following the active editor). */
+const preview: PumlPreview = createPumlPreview(null);
+
+/**
+ * Create a Reading View of a .puml file in a panel VS Code handed over, and start
+ * its first render.
+ *
+ * @param adopted - The panel and the file it shows.
+ * @param config - Current extension configuration snapshot.
+ * @returns The Reading View.
+ */
+export function createPumlReadingView(adopted: AdoptedPanel, config: Config): ReadingView {
+    return createDiagramReadingView('puml', createPumlPreview(config, adopted), adopted, config);
+}
 
 // ---------------------------------------------------------------------------
 // Public API (thin wrappers preserving the existing call signatures)
@@ -174,7 +216,6 @@ const preview: StandalonePreview = createStandalonePreview({
  * @param config - Current extension configuration snapshot.
  */
 export async function openPumlPreview(filePath: string, config: Config): Promise<void> {
-    lastPumlConfig = config;
     await preview.open(filePath, config);
 }
 
@@ -184,7 +225,6 @@ export async function openPumlPreview(filePath: string, config: Config): Promise
  * @param config - The new extension configuration.
  */
 export function updatePumlConfig(config: Config): void {
-    lastPumlConfig = config;
     preview.updateConfig(config);
 }
 
@@ -212,7 +252,7 @@ export function getPumlPreviewPanel(): vscode.WebviewPanel | null {
  * @returns The previewed file, the SVG markup (or error HTML) and its background, or null when none.
  */
 export function getLastPumlRender(): PumlRender | null {
-    return lastRender;
+    return preview.getLastRender();
 }
 
 /** Dispose the preview panel and clean up. */

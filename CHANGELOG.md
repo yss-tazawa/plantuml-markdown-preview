@@ -6,6 +6,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## 0.8.0 - 2026-11-13
+
+### Added
+
+- **Reading View**: view a Markdown, PlantUML, Mermaid or D2 file rendered in its own tab, and switch between it and the source in place with **Switch to Reading View** / **Switch to Source** or `Ctrl+Shift+V` (`Cmd+Shift+V` on Mac)
+- Reading View can be made the default editor for a file type with VS Code's **Configure default editor**, so clicking a file opens it rendered
+
+### Changed
+
+- `useAsDefaultPreview` is now on by default: VS Code's standard Markdown preview buttons, context menu items and shortcuts open this extension (VS Code 1.119 or later; earlier versions replace only the shortcuts). Turn it off to keep VS Code's own preview
+- With `useAsDefaultPreview` on, `Ctrl+Shift+V` switches between the source and Reading View in the same tab (VS Code 1.100 or later), and `Ctrl+K V` opens the preview beside the editor
+- The preview, export and shortcuts now open every Markdown file extension VS Code's preview handles (previously `.md` only), and files of the `prompt`, `instructions`, `chatagent` and `skill` languages such as `SKILL.md`, which also get completion, color picker and snippets
+- HTML and PDF export stops with an error instead of overwriting the source file when the output file would be the source itself
+- A change to `retainPreviewContext` applies to Reading View after VS Code restarts or the window reloads
+- The theme picker labels the follow-vscode group "Follow VS Code Color Theme"
+- The title bar button's icon is now a single-color outlined P that follows the light or dark color theme
+
+### Fixed
+
+- D2 diagrams now render on older VS Code versions such as 1.83
+
 ## 0.7.17 - 2026-11-12
 
 ### Added

@@ -47,6 +47,7 @@
 - **양방향 스크롤 동기화** — 에디터와 미리보기가 양방향으로 함께 스크롤됩니다.
 - **탐색 및 TOC** — 맨 위로/맨 아래로 가기 버튼과 미리보기 패널의 목차(TOC) 사이드바를 제공합니다.
 - **다이어그램 뷰어** — 다이어그램을 우클릭하여 실시간 동기화 및 테마 맞춤 배경을 지원하는 이동 및 확대/축소 패널을 엽니다.
+- **읽기용 보기(Reading View)** — Markdown, PlantUML, Mermaid, D2 파일을 전용 탭에 렌더링해 보여 주며, 소스와 그 자리에서 전환할 수 있습니다.
 - **단독 다이어그램 미리보기** — Markdown 래퍼 없이 `.puml`, `.plantuml`, `.mmd`, `.mermaid`, `.d2` 파일을 직접 열어 이동 및 확대/축소, 실시간 업데이트, 테마 지원을 제공합니다.
 - **Git 리비전 미리보기** — Markdown 파일을 HEAD 또는 스테이징된 시점의 내용으로 렌더링하여 현재 미리보기와 나란히 표시합니다. 변경된 다이어그램을 렌더링된 상태로 비교할 수 있습니다.
 - **다이어그램을 PNG / SVG로 저장 또는 복사** — 미리보기 또는 다이어그램 뷰어에서 다이어그램을 우클릭하여 파일로 저장하거나 클립보드에 복사합니다.
@@ -62,6 +63,7 @@
 - [기능](#기능)
 - [빠른 시작](#빠른-시작)
 - [사용법](#사용법)
+  - [읽기용 보기](#읽기용-보기)
 - [설정](#설정)
 - [스니펫](#스니펫)
 - [컬러 피커](#컬러-피커)
@@ -171,7 +173,7 @@ PlantUML 다이어그램이 렌더링되는 방식을 제어하는 프리셋 모
 상태 표시줄에는 현재 렌더링 모드 (Fast / Secure / Easy)가 표시되며, Fast 모드에서는 로컬 서버 상태 (실행 중, 시작 중, 오류, 중지됨)가 표시됩니다.
 
 - 상태 표시줄 항목을 클릭하여 Quick Pick을 통해 모드를 전환할 수 있습니다 — 설정창을 열 필요가 없습니다.
-- 커맨드 팔레트의 **Select Rendering Mode** 명령과 동일합니다.
+- 커맨드 팔레트의 **렌더링 모드 선택** 명령과 동일합니다.
 
 ### HTML 내보내기
 
@@ -207,7 +209,7 @@ Markdown 파일의 모든 다이어그램을 개별 PNG 또는 SVG 파일로 내
 
 ### 다이어그램 뷰어
 
-미리보기에서 PlantUML, Mermaid 또는 D2 다이어그램을 우클릭하고 **Open in Diagram Viewer**를 선택하면 별도의 이동 및 확대/축소 패널에서 다이어그램을 열 수 있습니다.
+미리보기에서 PlantUML, Mermaid 또는 D2 다이어그램을 우클릭하고 **다이어그램 뷰어에서 열기**를 선택하면 별도의 이동 및 확대/축소 패널에서 다이어그램을 열 수 있습니다.
 
 - 마우스 휠 확대/축소 (커서 중심) 및 드래그 이동을 지원합니다.
 - 툴바: 창에 맞춤, 1:1 초기화, 단계별 확대/축소 (+/-)를 제공합니다.
@@ -224,8 +226,8 @@ Markdown 파일의 모든 다이어그램을 개별 PNG 또는 SVG 파일로 내
 
 - 포함된 파일은 워크스페이스 루트(또는 `plantumlIncludePath`에 설정된 디렉토리)를 기준으로 해석됩니다.
 - 포함된 파일을 저장하면 미리보기가 자동으로 새로고침됩니다 (**Reload** 버튼 ↻을 클릭하여 수동으로 강제 새로고침할 수도 있습니다).
-- **Go to Include File** — `.puml` 또는 Markdown 파일의 `!include` 행에서 우클릭하여 참조된 파일을 엽니다 (메뉴 항목은 커서가 `!include` 행에 있을 때만 나타납니다).
-- **Open Include Source** — 미리보기에서 PlantUML 다이어그램을 우클릭하여 포함된 파일을 직접 엽니다.
+- **Include 파일로 이동** — `.puml` 또는 Markdown 파일의 `!include` 행에서 우클릭하여 참조된 파일을 엽니다 (메뉴 항목은 커서가 `!include` 행에 있을 때만 나타납니다).
+- **Include 소스 열기** — 미리보기에서 PlantUML 다이어그램을 우클릭하여 포함된 파일을 직접 엽니다.
 - Fast 및 Secure 모드에서 작동합니다. Easy 모드에서는 사용할 수 없습니다 (원격 서버가 로컬 파일에 액세스할 수 없음).
 
 > **참고:** `plantumlIncludePath`(및 워크스페이스 루트 기준 해석)는 확장 프로그램 자신이 PlantUML 프로세스를 시작한 경우에만 적용됩니다 — Secure 모드에서는 항상 적용되지만, Fast 모드에서는 확장 프로그램이 자체 로컬 서버를 시작한 경우에만 적용됩니다. Fast 모드가 이미 실행 중인 서버에 연결하는 경우(Start Mode `"off"`, 또는 고정 포트에서 기존 서버를 재사용하는 경우)에는 대신 그 서버 자체의 작업 디렉토리를 기준으로 include가 해석됩니다. Fast 모드에서 이 설정이 확실히 적용되도록 하려면 포트를 `0`(자동)으로 설정하십시오.
@@ -472,11 +474,44 @@ PlantUML, Mermaid 및 D2 다이어그램은 VS Code의 내장 Markdown 미리보
 
 - **키보드 단축키:** `Cmd+Alt+V` (Mac) / `Ctrl+Alt+V` (Windows / Linux)
 - **편집기 제목 표시줄:** 편집기 오른쪽 위의 미리보기 버튼(Plotdown 아이콘)을 클릭
-- **표준 미리보기 단축키:** `useAsDefaultPreview`를 켜면 `Cmd+Shift+V` / `Cmd+K V` (Mac) 또는 `Ctrl+Shift+V` / `Ctrl+K V` (Windows / Linux)로도 편집기 옆에 미리보기가 열립니다
-- **컨텍스트 메뉴:** 탐색기 또는 에디터 내부에서 `.md` 파일 우클릭 → **PlantUML Markdown Preview** → **Open Preview to Side**
-- **커맨드 팔레트:** `PlantUML Markdown Preview: Open Preview to Side`
+- **VS Code 표준 버튼과 단축키:** `useAsDefaultPreview`가 켜져 있으면(기본값) VS Code의 **측면에서 미리 보기 열기** 버튼, 우클릭 메뉴의 **미리 보기 열기**, `Cmd+K V` (Mac) / `Ctrl+K V` (Windows / Linux)가 이 확장의 미리보기를 엽니다. `Cmd+Shift+V` / `Ctrl+Shift+V`는 대신 [읽기용 보기](#읽기용-보기)로 전환합니다
+- **컨텍스트 메뉴:** 탐색기 또는 에디터 내부에서 Markdown 파일 우클릭 → **PlantUML Markdown Preview** → **미리보기를 옆에 열기**
+- **커맨드 팔레트:** `PlantUML Markdown Preview: 미리보기를 옆에 열기`
 
 미리보기는 자체 테마를 사용합니다 — 기본값은 흰색 배경(GitHub Light)입니다. `follow-vscode`를 선택하면 현재 VS Code 색 테마의 색을 사용합니다.
+
+### 읽기용 보기
+
+읽기용 보기(Reading View)는 파일을 텍스트 편집기 대신 그 파일의 탭 자체에 렌더링해서 보여 줍니다. 두 번째 패널은 열리지 않습니다. 활성 편집기를 따라가지 않고 그 파일에 고정되며, 미리보기와 동시에 열어 둘 수 있습니다.
+
+Markdown 파일(`.md`, `.markdown` 등 VS Code의 Markdown 미리보기가 다루는 확장자)과 `.puml` / `.plantuml`, `.mmd` / `.mermaid`, `.d2` 파일에서 사용할 수 있습니다. 사용하기 전에는 아무것도 바뀌지 않습니다.
+
+- **그 자리에서 전환:** 편집기에서 우클릭 → **PlantUML Markdown Preview** → **읽기용 보기로 전환** (PlantUML, Mermaid, D2 파일에서는 **읽기용 보기로 전환**이 메뉴에 바로 표시됩니다). 돌아가려면 읽기용 보기에서 우클릭 → **소스로 전환**, 또는 편집기 제목 표시줄의 **소스로 전환**을 클릭합니다. 탭 자체가 전환되며 새 탭은 열리지 않습니다.
+- **한 번만 열기:** 탐색기에서 파일을 우클릭 → **연결 프로그램...** → **PlantUML Markdown Preview (읽기용 보기)**. 이미 열려 있는 파일은 대신 탭을 우클릭하고 **편집기 다시 열기...**를 사용합니다.
+- **기본으로 열기:** **연결 프로그램...** 목록에서 **'\*.md'에 대한 기본 편집기 구성...** → **PlantUML Markdown Preview (읽기용 보기)**를 선택합니다. 이후 `.md` 파일을 클릭하면 읽기용 보기로 열립니다. 파일 확장자마다 한 번씩 설정합니다.
+- **되돌리기:** 같은 방법으로 **텍스트 편집기**를 선택하거나, 설정에서 그 줄을 지웁니다.
+
+`settings.json`에 직접 설정하려면:
+
+```json
+"workbench.editorAssociations": {
+  "*.md": "plantumlMarkdownPreviewEditor",
+  "*.puml": "plantumlPumlPreviewEditor",
+  "*.mmd": "plantumlMermaidPreviewEditor",
+  "*.d2": "plantumlD2PreviewEditor"
+}
+```
+
+| 파일 | 값 |
+| ---- | -- |
+| Markdown (`*.md`, `*.markdown` 등) | `plantumlMarkdownPreviewEditor` |
+| `*.puml`, `*.plantuml` | `plantumlPumlPreviewEditor` |
+| `*.mmd`, `*.mermaid` | `plantumlMermaidPreviewEditor` |
+| `*.d2` | `plantumlD2PreviewEditor` |
+
+- VS Code 1.100 이전에는 **읽기용 보기로 전환**과 **소스로 전환**이 표시되지 않습니다. 대신 **연결 프로그램...**으로 읽기용 보기를 여세요.
+- Git diff는 읽기용 보기로 열도록 설정한 파일이라도 텍스트 diff로 열립니다.
+- `useAsDefaultPreview`가 켜져 있으면(기본값) VS Code의 **미리 보기로 열기** 버튼(VS Code 1.119 이상)과 `Ctrl+Shift+V`(VS Code 1.100 이상)가 읽기용 보기로 전환합니다. [설정](#설정)을 참조하세요.
 
 ### 다이어그램 미리보기 열기
 
@@ -484,53 +519,53 @@ Markdown 래퍼 없이 `.puml` / `.plantuml`, `.mmd` / `.mermaid`, 또는 `.d2` 
 
 - **키보드 단축키:** `Cmd+Alt+V` (Mac) / `Ctrl+Alt+V` (Windows / Linux) — 동일한 단축키이며 파일 유형에 따라 자동 선택됩니다.
 - **편집기 제목 표시줄:** 편집기 오른쪽 위의 미리보기 버튼(Plotdown 아이콘)을 클릭
-- **표준 미리보기 단축키:** `useAsDefaultPreview`를 켜면 `Cmd+Shift+V` / `Cmd+K V` (Mac) 또는 `Ctrl+Shift+V` / `Ctrl+K V` (Windows / Linux)로도 편집기 옆에 미리보기가 열립니다
-- **컨텍스트 메뉴:** 탐색기 또는 에디터에서 `.puml` / `.plantuml`, `.mmd` / `.mermaid`, 또는 `.d2` 파일 우클릭 → **Preview PlantUML File** / **Preview Mermaid File** / **Preview D2 File**
-- **커맨드 팔레트:** `PlantUML Markdown Preview: Preview PlantUML File`, `Preview Mermaid File`, 또는 `Preview D2 File`
+- **표준 미리보기 단축키:** `useAsDefaultPreview`가 켜져 있으면(기본값) `Cmd+K V` (Mac) / `Ctrl+K V` (Windows / Linux)로도 편집기 옆에 미리보기가 열립니다. `Cmd+Shift+V` / `Ctrl+Shift+V`는 대신 [읽기용 보기](#읽기용-보기)로 전환합니다
+- **컨텍스트 메뉴:** 탐색기 또는 에디터에서 `.puml` / `.plantuml`, `.mmd` / `.mermaid`, 또는 `.d2` 파일 우클릭 → **PlantUML 파일 미리보기** / **Mermaid 파일 미리보기** / **D2 파일 미리보기**
+- **커맨드 팔레트:** `PlantUML Markdown Preview: PlantUML 파일 미리보기`, `Mermaid 파일 미리보기`, 또는 `D2 파일 미리보기`
 
 ### Git 리비전 미리보기 열기
 
 현재 버전의 미리보기 옆에 Git 리비전 시점의 내용을 렌더링하여 표시합니다.
 
-- **컨텍스트 메뉴:** 탐색기 또는 편집기에서 `.md` 파일을 마우스 오른쪽 버튼으로 클릭 → **PlantUML Markdown Preview** → **HEAD 리비전 미리보기를 옆에 열기** / **스테이징된 리비전 미리보기를 옆에 열기**
+- **컨텍스트 메뉴:** 탐색기 또는 편집기에서 Markdown 파일을 마우스 오른쪽 버튼으로 클릭 → **PlantUML Markdown Preview** → **HEAD 리비전 미리보기를 옆에 열기** / **스테이징된 리비전 미리보기를 옆에 열기**
 - **명령 팔레트:** `PlantUML Markdown Preview: HEAD 리비전 미리보기를 옆에 열기` / `스테이징된 리비전 미리보기를 옆에 열기`
 
 먼저 일반 미리보기를 연 다음 리비전 미리보기를 열면 두 패널이 나란히 배치됩니다. 리비전 패널은 고정된 스냅샷이며 편집해도 갱신되지 않습니다.
 
 ### HTML로 내보내기
 
-- **컨텍스트 메뉴:** `.md` 파일 우클릭 → **PlantUML Markdown Preview** → **Export as HTML** → 너비 옵션 선택
-- **미리보기 패널:** 미리보기 패널 내부 우클릭 → **Export as HTML** 또는 **Export as HTML & Open**
+- **컨텍스트 메뉴:** Markdown 파일 우클릭 → **PlantUML Markdown Preview** → **HTML로 내보내기** → 너비 옵션 선택
+- **미리보기 패널:** 미리보기 패널 내부 우클릭 → **HTML로 내보내기** 또는 **HTML로 내보내고 열기**
 
 서브메뉴에서 다음 너비 옵션을 선택할 수 있습니다:
 
 | 옵션 | 설명 |
 | ------ | ----------- |
-| Current Settings | 현재 설정으로 내보내기 (반응형 CSS 없음) |
+| 현재 설정 | 현재 설정으로 내보내기 (반응형 CSS 없음) |
 | 640px – 1440px | 픽셀 단위 고정 본문 너비, 가운데 정렬 |
-| Responsive (Left-Aligned) | 뷰포트 너비의 본문, 왼쪽 정렬; 다이어그램은 넘칠 때만 축소됨 |
-| 640px – 1440px (Left-Aligned) | 고정 너비, 왼쪽 정렬 |
+| 반응형 (왼쪽 정렬) | 뷰포트 너비의 본문, 왼쪽 정렬; 다이어그램은 넘칠 때만 축소됨 |
+| 640px – 1440px (왼쪽 정렬) | 고정 너비, 왼쪽 정렬 |
 
-HTML 파일은 소스 `.md` 파일과 같은 위치에 저장됩니다.
+HTML 파일은 소스 Markdown 파일과 같은 위치에 저장됩니다.
 
 ### PDF로 내보내기
 
-- **컨텍스트 메뉴:** `.md` 파일 우클릭 → **PlantUML Markdown Preview** → **Export as PDF** → **세로** (Portrait) 또는 **가로** (Landscape)
-- **미리보기 패널:** 미리보기 패널 내부 우클릭 → **Export as PDF** 또는 **Export as PDF & Open** → **세로** (Portrait) 또는 **가로** (Landscape)
+- **컨텍스트 메뉴:** Markdown 파일 우클릭 → **PlantUML Markdown Preview** → **PDF로 내보내기** → **세로** (Portrait) 또는 **가로** (Landscape)
+- **미리보기 패널:** 미리보기 패널 내부 우클릭 → **PDF로 내보내기** 또는 **PDF로 내보내고 열기** → **세로** 또는 **가로**
 
-PDF 파일은 소스 `.md` 파일과 같은 위치에 저장됩니다. Chrome, Edge 또는 Chromium이 필요합니다. `pdfScale` 설정 (기본값 0.625)으로 텍스트와 다이어그램의 전체 배율을 조정할 수 있습니다.
+PDF 파일은 소스 Markdown 파일과 같은 위치에 저장됩니다. Chrome, Edge 또는 Chromium이 필요합니다. `pdfScale` 설정 (기본값 0.625)으로 텍스트와 다이어그램의 전체 배율을 조정할 수 있습니다.
 
 ### 다이어그램을 PNG / SVG로 저장 또는 복사
 
-- **미리보기 패널:** 다이어그램 우클릭 → **Copy Diagram as PNG**, **Save Diagram as PNG**, 또는 **Save Diagram as SVG**
-- **다이어그램 뷰어:** 뷰어 내부 우클릭 → **Copy Diagram as PNG**, **Save Diagram as PNG**, 또는 **Save Diagram as SVG**
-- **단독 다이어그램 미리보기:** 미리보기 내부 우클릭 → **Copy Diagram as PNG**, **Save Diagram as PNG**, 또는 **Save Diagram as SVG**
+- **미리보기 패널:** 다이어그램 우클릭 → **다이어그램을 PNG로 복사**, **다이어그램을 PNG로 저장**, 또는 **다이어그램을 SVG로 저장**
+- **다이어그램 뷰어:** 뷰어 내부 우클릭 → **다이어그램을 PNG로 복사**, **다이어그램을 PNG로 저장**, 또는 **다이어그램을 SVG로 저장**
+- **단독 다이어그램 미리보기:** 미리보기 내부 우클릭 → **다이어그램을 PNG로 복사**, **다이어그램을 PNG로 저장**, 또는 **다이어그램을 SVG로 저장**
 
 ### 모든 다이어그램 내보내기
 
-- **컨텍스트 메뉴:** `.md` 파일 우클릭 → **PlantUML Markdown Preview** → **Export All Diagrams as PNG** 또는 **Export All Diagrams as SVG**
-- **미리보기 패널:** 미리보기 내부 우클릭 → **Export All Diagrams as PNG** 또는 **Export All Diagrams as SVG**
-- **명령 팔레트:** `PlantUML Markdown Preview: Export All Diagrams as PNG` / `Export All Diagrams as SVG`
+- **컨텍스트 메뉴:** Markdown 파일 우클릭 → **PlantUML Markdown Preview** → **모든 다이어그램을 PNG로 내보내기** 또는 **모든 다이어그램을 SVG로 내보내기**
+- **미리보기 패널:** 미리보기 내부 우클릭 → **모든 다이어그램을 PNG로 내보내기** 또는 **모든 다이어그램을 SVG로 내보내기**
+- **명령 팔레트:** `PlantUML Markdown Preview: 모든 다이어그램을 PNG로 내보내기` / `모든 다이어그램을 SVG로 내보내기`
 
 저장 대화 상자에서 출력 디렉토리 이름을 선택합니다 (기본값: `{파일명}_diagrams`). 각 다이어그램은 문서 순서대로 `diagram-1.png`, `diagram-2.png` 등으로 저장됩니다. 미리보기가 열려 있어야 합니다.
 
@@ -544,7 +579,7 @@ PDF 파일은 소스 `.md` 파일과 같은 위치에 저장됩니다. Chrome, E
 
 미리보기 패널 제목 표시줄의 테마 아이콘을 클릭하거나 커맨드 팔레트를 사용하십시오.
 
-- **커맨드 팔레트:** `PlantUML Markdown Preview: Change Preview Theme`
+- **커맨드 팔레트:** `PlantUML Markdown Preview: 미리보기 테마 변경`
 
 테마 선택기는 미리보기 테마, PlantUML 테마, Mermaid 테마, D2 테마의 네 가지 범주를 모두 하나의 목록에 표시하므로 한곳에서 모든 테마를 전환할 수 있습니다.
 
@@ -796,9 +831,9 @@ PlantUML, Mermaid 및 D2를 위한 컨텍스트 인식 키워드 제안을 제�
 | `plantumlLocalServerJvmInitialHeapMb` | `16` | `"custom"` 프리셋의 초기 힙(`-Xms`, MB). 다른 프리셋에서는 무시됩니다. 범위: 8–32768. |
 | `plantumlLocalServerJvmMaxHeapMb` | `512` | `"custom"` 프리셋의 최대 힙(`-Xmx`, MB). 다른 프리셋에서는 무시됩니다. 범위: 64–32768. |
 | `plantumlServerUrl` | `"https://www.plantuml.com/plantuml"` | Easy 모드용 PlantUML 서버 URL. 개인정보 보호를 위해 직접 호스팅한 서버 URL로 설정하십시오. |
-| `enableDiagramViewer` | `true` | 다이어그램 우클릭 시 "Open in Diagram Viewer" 컨텍스트 메뉴 항목을 활성화합니다. 적용하려면 미리보기를 다시 열어야 합니다. |
-| `retainPreviewContext` | `true` | 탭이 숨겨졌을 때 미리보기 콘텐츠를 유지합니다. 탭 전환 시 재렌더링을 방지하지만 메모리를 더 사용합니다. 적용하려면 미리보기를 다시 열어야 합니다. |
-| `useAsDefaultPreview` | `false` | VS Code 표준 Markdown 미리보기 단축키(`Ctrl+Shift+V` / `Ctrl+K V`, Mac은 `Cmd`)로 Markdown, PlantUML, Mermaid, D2 파일에 이 확장의 미리보기를 엽니다. 두 단축키 모두 편집기 옆에 미리보기를 엽니다(VS Code의 `Ctrl+Shift+V`는 현재 탭에서 엽니다). 탐색기의 우클릭 메뉴 **미리 보기 열기**와 편집기 제목 표시줄의 VS Code 자체 미리보기 버튼은 대체되지 않습니다. |
+| `enableDiagramViewer` | `true` | 다이어그램 우클릭 시 "다이어그램 뷰어에서 열기" 컨텍스트 메뉴 항목을 활성화합니다. 적용하려면 미리보기를 다시 열어야 합니다. |
+| `retainPreviewContext` | `true` | 탭이 숨겨질 때 미리보기 내용을 유지합니다. 탭 전환 시 재렌더링을 방지하지만 메모리를 더 사용합니다. 변경 사항을 적용하려면 미리보기를 닫았다가 다시 여세요. 읽기용 보기의 경우 VS Code를 다시 시작하거나 창을 다시 로드하세요. |
+| `useAsDefaultPreview` | `true` | VS Code 기본 제공 Markdown 미리보기 대신 이 확장을 사용합니다. VS Code 표준 Markdown 미리보기의 버튼, 우클릭 메뉴 항목, 단축키가 이 확장을 엽니다. `Ctrl+K V`(Mac은 `Cmd`)는 편집기 옆에 미리보기를 열고, `Ctrl+Shift+V`는 같은 탭에서 소스와 [읽기용 보기](#읽기용-보기)를 전환합니다(PlantUML, Mermaid, D2 파일도 마찬가지). VS Code 1.119 이전에는 단축키만 대체되며, 1.100 이전에는 두 단축키 모두 편집기 옆에 미리보기를 엽니다. **0.8.0에서 변경:** 이 설정은 이제 기본으로 켜져 있습니다. VS Code 자체의 Markdown 미리보기 버튼과 단축키를 그대로 쓰려면 끄세요. **Markdown Preview Enhanced와 함께 쓸 때:** 이쪽도 `Ctrl+Shift+V`와 `Ctrl+K V`를 사용합니다. 두 확장이 모두 설치되어 있으면 이 확장의 단축키가 적용됩니다. 대신 Markdown Preview Enhanced의 단축키를 쓰려면 이 설정을 끄세요. |
 
 > **참고:** `allowLocalImages` 및 `allowHttpImages`는 미리보기 패널에만 적용됩니다. HTML 내보내기는 항상 CSP 제한 없이 원본 이미지 경로를 출력합니다.
 
@@ -831,12 +866,14 @@ PlantUML, Mermaid 및 D2를 위한 컨텍스트 인식 키워드 제안을 제�
 
 | 명령 | Mac | Windows / Linux |
 |---------|-----|-----------------|
-| Open Preview to Side (Markdown) | `Cmd+Alt+V` | `Ctrl+Alt+V` |
-| Preview PlantUML File | `Cmd+Alt+V` | `Ctrl+Alt+V` |
-| Preview Mermaid File | `Cmd+Alt+V` | `Ctrl+Alt+V` |
-| Preview D2 File | `Cmd+Alt+V` | `Ctrl+Alt+V` |
-| Open Preview (`useAsDefaultPreview`가 켜져 있을 때; Markdown, PlantUML, Mermaid, D2) | `Cmd+Shift+V` / `Cmd+K V` | `Ctrl+Shift+V` / `Ctrl+K V` |
-| Select Rendering Mode | — | — |
+| 미리보기를 옆에 열기 (Markdown) | `Cmd+Alt+V` | `Ctrl+Alt+V` |
+| PlantUML 파일 미리보기 | `Cmd+Alt+V` | `Ctrl+Alt+V` |
+| Mermaid 파일 미리보기 | `Cmd+Alt+V` | `Ctrl+Alt+V` |
+| D2 파일 미리보기 | `Cmd+Alt+V` | `Ctrl+Alt+V` |
+| 측면에서 미리 보기 열기 (`useAsDefaultPreview`가 켜져 있을 때(기본값); Markdown, PlantUML, Mermaid, D2) | `Cmd+K V` | `Ctrl+K V` |
+| 읽기용 보기로 전환 (`useAsDefaultPreview`가 켜져 있을 때(기본값); Markdown, PlantUML, Mermaid, D2) | `Cmd+Shift+V` | `Ctrl+Shift+V` |
+| 소스로 전환 (읽기용 보기 안에서, `useAsDefaultPreview`와 무관) | `Cmd+Shift+V` | `Ctrl+Shift+V` |
+| 렌더링 모드 선택 | — | — |
 
 ## 자주 묻는 질문(FAQ)
 

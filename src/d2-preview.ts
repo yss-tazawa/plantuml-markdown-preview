@@ -11,20 +11,8 @@ import { generateViewerHtml } from './diagram-viewer.js';
 import { renderD2ToSvg } from './d2-renderer.js';
 import { D2_THEME_KEYS, D2_THEME_MAP, type Config } from './config.js';
 import { errorHtml, buildThemeItems } from './utils.js';
-import { createStandalonePreview, type StandalonePreview } from './standalone-preview.js';
-
-// ---------------------------------------------------------------------------
-// D2-specific state (managed outside the factory)
-// ---------------------------------------------------------------------------
-
-/** Local D2 theme (not synced to settings). */
-let localD2Theme: string | null = null;
-
-/** Local D2 layout (not synced to settings). */
-let localD2Layout: string | null = null;
-
-/** Last known config for D2-specific getters. */
-let lastD2Config: Config | null = null;
+import { createStandalonePreview, createDiagramReadingView, type StandalonePreview } from './standalone-preview.js';
+import type { AdoptedPanel, ReadingView } from './reading-view.js';
 
 /** A render handed to the standalone D2 preview's webview. */
 export interface D2Render {
@@ -36,101 +24,154 @@ export interface D2Render {
     bgColor: string;
 }
 
-/** The render most recently handed to the webview (cleared with the panel). */
-let lastRender: D2Render | null = null;
+/** A D2 preview or Reading View with its D2-specific state. */
+export interface D2Preview extends StandalonePreview {
+    /** The render most recently handed to the webview (cleared with the panel). */
+    getLastRender(): D2Render | null;
+}
+
+// ---------------------------------------------------------------------------
+// Instances
+// ---------------------------------------------------------------------------
 
 /**
- * Remember a render that is about to reach the webview.
+ * Create a D2 preview, or a Reading View when given a panel, with its own theme and
+ * layout overrides and config.
  *
- * @param svg - SVG markup or error HTML of the render.
- * @param bgColor - Background color sent with it.
+ * @param initialConfig - Configuration to render with until a newer one arrives.
+ * @param adopted - Panel handed over by VS Code and the file it shows (Reading View).
+ * @returns The preview or Reading View.
  */
-function recordRender(svg: string, bgColor: string): void {
-    const filePath = preview.getCurrentFilePath();
-    lastRender = filePath ? { filePath, svg, bgColor } : null;
-}
+function createD2Preview(initialConfig: Config | null, adopted?: AdoptedPanel): D2Preview {
+    /** Local D2 theme (not synced to settings). */
+    let localD2Theme: string | null = null;
+    /** Local D2 layout (not synced to settings). */
+    let localD2Layout: string | null = null;
+    /** Last known config for D2-specific getters. */
+    let lastD2Config: Config | null = initialConfig;
+    let lastRender: D2Render | null = null;
 
-/** Return the effective D2 theme, falling back to config default. */
-function getD2Theme(): string {
-    return localD2Theme ?? (lastD2Config ? lastD2Config.d2Theme : 'Neutral Default');
-}
-
-/** Return the effective D2 layout engine, falling back to config default. */
-function getD2Layout(): string {
-    return localD2Layout ?? (lastD2Config ? lastD2Config.d2Layout : 'dagre');
-}
-
-/**
- * Render D2 content to SVG.
- *
- * @param content - D2 diagram source text.
- * @returns SVG markup string, or error HTML on failure.
- */
-async function renderSvg(content: string): Promise<string> {
-    const themeID = D2_THEME_MAP.get(getD2Theme()) ?? 0;
-    const layout = getD2Layout();
-    try {
-        return await renderD2ToSvg(content, themeID, layout);
-    } catch (err) {
-        const msg = err instanceof Error ? err.message : String(err);
-        return errorHtml(msg);
+    /**
+     * Remember a render that is about to reach the webview.
+     *
+     * @param svg - SVG markup or error HTML of the render.
+     * @param bgColor - Background color sent with it.
+     */
+    function recordRender(svg: string, bgColor: string): void {
+        const filePath = base.getCurrentFilePath();
+        lastRender = filePath ? { filePath, svg, bgColor } : null;
     }
+
+    /** Return the effective D2 theme, falling back to config default. */
+    function getD2Theme(): string {
+        return localD2Theme ?? (lastD2Config ? lastD2Config.d2Theme : 'Neutral Default');
+    }
+
+    /** Return the effective D2 layout engine, falling back to config default. */
+    function getD2Layout(): string {
+        return localD2Layout ?? (lastD2Config ? lastD2Config.d2Layout : 'dagre');
+    }
+
+    /**
+     * Render D2 content to SVG.
+     *
+     * @param content - D2 diagram source text.
+     * @returns SVG markup string, or error HTML on failure.
+     */
+    async function renderSvg(content: string): Promise<string> {
+        const themeID = D2_THEME_MAP.get(getD2Theme()) ?? 0;
+        const layout = getD2Layout();
+        try {
+            return await renderD2ToSvg(content, themeID, layout);
+        } catch (err) {
+            const msg = err instanceof Error ? err.message : String(err);
+            return errorHtml(msg);
+        }
+    }
+
+    const base: StandalonePreview = createStandalonePreview({
+        viewType: 'plantumlD2Preview',
+        defaultTitle: 'D2',
+
+        async buildHtml(content, nonce, bgColor, panel) {
+            const svg = await renderSvg(content);
+            // Once this panel is closed, the current file may already belong to a newer panel.
+            if (base.getPanel() === panel) recordRender(svg, bgColor);
+            return generateViewerHtml(svg, nonce, bgColor);
+        },
+
+        async updateWebview(panel, content, bgColor, signal) {
+            if (signal?.aborted) return;
+            const svg = await renderSvg(content);
+            if (signal?.aborted) return;
+            recordRender(svg, bgColor);
+            void panel.webview.postMessage({ type: 'updateSvg', svg, bgColor });
+        },
+
+        showError(panel, message, nonce) {
+            panel.webview.html = generateViewerHtml(errorHtml(message), nonce);
+            return true;
+        },
+
+        buildDiagramThemeItems() {
+            return {
+                label: vscode.l10n.t('D2 Theme'),
+                items: buildThemeItems([...D2_THEME_KEYS], 'd2' as const, getD2Theme()),
+            };
+        },
+
+        onDiagramThemeSelected(themeKey) {
+            if (themeKey === getD2Theme()) return 'done';
+            localD2Theme = themeKey;
+            return 'render';
+        },
+
+        // Side-effect: updates lastD2Config so theme/layout reads stay current.
+        shouldReRenderOnConfigChange(prev, next) {
+            lastD2Config = next;
+            return (!localD2Theme && prev.d2Theme !== next.d2Theme)
+                || (!localD2Layout && prev.d2Layout !== next.d2Layout);
+        },
+
+        resetDiagramState() {
+            localD2Theme = null;
+            localD2Layout = null;
+            lastRender = null;
+        },
+    }, adopted);
+
+    return {
+        ...base,
+        open(filePath, config) {
+            lastD2Config = config;
+            return base.open(filePath, config);
+        },
+        openAdopted(config) {
+            lastD2Config = config;
+            return base.openAdopted(config);
+        },
+        updateConfig(config) {
+            lastD2Config = config;
+            base.updateConfig(config);
+        },
+        getLastRender: () => lastRender,
+    };
 }
 
-// ---------------------------------------------------------------------------
-// Factory instance
-// ---------------------------------------------------------------------------
+/** The D2 preview (beside the source, following the active editor). */
+const preview: D2Preview = createD2Preview(null);
 
-const preview: StandalonePreview = createStandalonePreview({
-    viewType: 'plantumlD2Preview',
-    defaultTitle: 'D2',
-
-    async buildHtml(content, nonce, bgColor, panel) {
-        const svg = await renderSvg(content);
-        // Once this panel is closed, the current file may already belong to a newer panel.
-        if (preview.getPanel() === panel) recordRender(svg, bgColor);
-        return generateViewerHtml(svg, nonce, bgColor);
-    },
-
-    async updateWebview(panel, content, bgColor, signal) {
-        if (signal?.aborted) return;
-        const svg = await renderSvg(content);
-        if (signal?.aborted) return;
-        recordRender(svg, bgColor);
-        void panel.webview.postMessage({ type: 'updateSvg', svg, bgColor });
-    },
-
-    showError(panel, message, nonce) {
-        panel.webview.html = generateViewerHtml(errorHtml(message), nonce);
-        return true;
-    },
-
-    buildDiagramThemeItems() {
-        return {
-            label: vscode.l10n.t('D2 Theme'),
-            items: buildThemeItems([...D2_THEME_KEYS], 'd2' as const, getD2Theme()),
-        };
-    },
-
-    onDiagramThemeSelected(themeKey) {
-        if (themeKey === getD2Theme()) return 'done';
-        localD2Theme = themeKey;
-        return 'render';
-    },
-
-    // Side-effect: updates lastD2Config so theme/layout reads stay current.
-    shouldReRenderOnConfigChange(prev, next) {
-        lastD2Config = next;
-        return (!localD2Theme && prev.d2Theme !== next.d2Theme)
-            || (!localD2Layout && prev.d2Layout !== next.d2Layout);
-    },
-
-    resetDiagramState() {
-        localD2Theme = null;
-        localD2Layout = null;
-        lastRender = null;
-    },
-});
+/**
+ * Create a Reading View of a .d2 file in a panel VS Code handed over, and start its
+ * first render.
+ *
+ * @param adopted - The panel and the file it shows.
+ * @param config - Current extension configuration snapshot.
+ * @returns The Reading View.
+ */
+export function createD2ReadingView(adopted: AdoptedPanel, config: Config): ReadingView {
+    return createDiagramReadingView('d2', createD2Preview(config, adopted), adopted, config);
+}
 
 // ---------------------------------------------------------------------------
 // Public API (thin wrappers preserving the existing call signatures)
@@ -143,7 +184,6 @@ const preview: StandalonePreview = createStandalonePreview({
  * @param config - Current extension configuration snapshot.
  */
 export async function openD2Preview(filePath: string, config: Config): Promise<void> {
-    lastD2Config = config;
     await preview.open(filePath, config);
 }
 
@@ -153,7 +193,6 @@ export async function openD2Preview(filePath: string, config: Config): Promise<v
  * @param config - New extension configuration snapshot.
  */
 export function updateD2Config(config: Config): void {
-    lastD2Config = config;
     preview.updateConfig(config);
 }
 
@@ -181,7 +220,7 @@ export function getD2PreviewPanel(): vscode.WebviewPanel | null {
  * @returns The previewed file, the SVG markup (or error HTML) and its background, or null when none.
  */
 export function getLastD2Render(): D2Render | null {
-    return lastRender;
+    return preview.getLastRender();
 }
 
 /** Dispose the preview panel and clean up. */

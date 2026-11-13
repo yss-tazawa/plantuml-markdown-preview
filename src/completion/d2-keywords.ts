@@ -11,6 +11,7 @@ import type { KeywordEntry } from './types.js';
 const K = vscode.CompletionItemKind.Keyword;
 const P = vscode.CompletionItemKind.Property;
 
+/** Completion entries for D2. */
 export const d2Keywords: readonly KeywordEntry[] = [
     // --- line-start (structural keywords) ---
     { label: 'direction', kind: K, context: 'line-start', detail: 'Layout direction' },

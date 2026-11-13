@@ -55,8 +55,15 @@
   "command.selectMode.title": "選擇渲染模式",
   "command.goToIncludeFile.title": "前往 Include 檔案",
   "command.openIncludeSource.title": "開啟 Include 來源檔案",
+  "command.reopenAsSource.title": "切換到原始碼",
+  "command.reopenAsReadingView.title": "切換到閱讀檢視",
+  "command.showPreviewToSide.title": "在一側開啟預覽",
+  "command.reopenAsPreview.title": "以預覽模式開啟",
+  "command.showPreview.title": "開啟預覽",
+  "command.toggleReadingView.title": "切換閱讀檢視",
   "command.changeTheme.title": "變更預覽主題",
   "command.category": "PlantUML Markdown Preview",
+  "customEditor.displayName": "PlantUML Markdown Preview（閱讀檢視）",
   "configuration.title": "PlantUML Markdown Preview",
   "configuration.plantumlJarPath.description": "PlantUML jar 檔案的路徑。留空則使用內建 jar（LGPL）。範例: /usr/local/lib/plantuml.jar",
   "configuration.javaPath.description": "Java 執行檔的路徑（需要 Java 11+）。設定後直接使用該路徑。未設定時優先嘗試 JAVA_HOME/bin/java，其次使用 PATH 中的 'java'。預設: java",
@@ -171,6 +178,6 @@
   "configuration.plantumlLocalServerJvmInitialHeapMb.description": "受管理的本機 PlantUML 伺服器的初始 JVM 堆積大小（-Xms，單位: MB）。僅當堆積預設為 'custom' 時使用。僅當使用本機 PlantUML 伺服器時適用（mode: fast）。預設: 16",
   "configuration.plantumlLocalServerJvmMaxHeapMb.description": "受管理的本機 PlantUML 伺服器的最大 JVM 堆積大小（-Xmx，單位: MB）。僅當堆積預設為 'custom' 時使用。僅當使用本機 PlantUML 伺服器時適用（mode: fast）。預設: 512",
   "configuration.enableDiagramViewer.description": "在預覽中右鍵點擊圖表即可在平移和縮放檢視器中開啟。（需要重新開啟預覽）",
-  "configuration.retainPreviewContext.description": "索引標籤隱藏時保留預覽內容。防止切換索引標籤時重新渲染，但會使用更多記憶體。（需要重新開啟預覽）",
-  "configuration.useAsDefaultPreview.description": "使用 VS Code 標準 Markdown 預覽快速鍵（Ctrl+Shift+V / Ctrl+K V；macOS 為 Cmd）為 Markdown、PlantUML、Mermaid 和 D2 檔案開啟本擴充功能的預覽。兩個快速鍵都會在編輯器旁邊開啟預覽（VS Code 本身的 Ctrl+Shift+V 則在目前的分頁中開啟預覽）。檔案總管右鍵選單中的「開啟預覽」和編輯器標題列中 VS Code 本身的預覽按鈕不會被取代。預設: false"
+  "configuration.retainPreviewContext.description": "索引標籤隱藏時保留預覽內容。防止切換索引標籤時重新渲染，但會使用更多記憶體。若要套用變更，請關閉並重新開啟預覽。若為閱讀檢視，請重新啟動 VS Code 或重新載入視窗。",
+  "configuration.useAsDefaultPreview.description": "使用 VS Code 標準 Markdown 預覽的按鈕、右鍵選單項目和快速鍵（Ctrl+Shift+V / Ctrl+K V）開啟本擴充功能。VS Code 1.119 之前僅限快速鍵。預設: true"
 }

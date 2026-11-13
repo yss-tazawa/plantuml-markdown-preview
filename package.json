@@ -2,7 +2,7 @@
   "name": "plantuml-markdown-preview",
   "displayName": "%displayName%",
   "description": "%description%",
-  "version": "0.7.17",
+  "version": "0.8.0",
   "license": "MIT",
   "publisher": "yss-tazawa",
   "icon": "images/icon.png",
@@ -98,7 +98,8 @@
         "scopeName": "markdown.plantuml.codeblock.plantuml-markdown-preview",
         "path": "./syntaxes/plantuml.injection.tmLanguage.json",
         "injectTo": [
-          "text.html.markdown"
+          "text.html.markdown",
+          "text.html.markdown.prompt"
         ],
         "embeddedLanguages": {
           "meta.embedded.block.plantuml": "plantuml"
@@ -108,7 +109,8 @@
         "scopeName": "markdown.mermaid.codeblock.plantuml-markdown-preview",
         "path": "./syntaxes/mermaid.injection.tmLanguage.json",
         "injectTo": [
-          "text.html.markdown"
+          "text.html.markdown",
+          "text.html.markdown.prompt"
         ],
         "embeddedLanguages": {
           "meta.embedded.block.mermaid": "mermaid"
@@ -118,7 +120,8 @@
         "scopeName": "markdown.d2.codeblock.plantuml-markdown-preview",
         "path": "./syntaxes/d2.injection.tmLanguage.json",
         "injectTo": [
-          "text.html.markdown"
+          "text.html.markdown",
+          "text.html.markdown.prompt"
         ],
         "embeddedLanguages": {
           "meta.embedded.block.d2": "d2"
@@ -127,24 +130,21 @@
     ],
     "snippets": [
       {
-        "language": "markdown",
-        "path": "./snippets/plantuml-markdown.json"
+        "path": "./snippets/plantuml-markdown.code-snippets"
       },
       {
         "language": "plantuml",
         "path": "./snippets/plantuml.json"
       },
       {
-        "language": "markdown",
-        "path": "./snippets/mermaid-markdown.json"
+        "path": "./snippets/mermaid-markdown.code-snippets"
       },
       {
         "language": "mermaid",
         "path": "./snippets/mermaid.json"
       },
       {
-        "language": "markdown",
-        "path": "./snippets/d2-markdown.json"
+        "path": "./snippets/d2-markdown.code-snippets"
       },
       {
         "language": "d2",
@@ -158,8 +158,8 @@
         "title": "%command.openPreview.title%",
         "category": "%command.category%",
         "icon": {
-          "light": "images/plotdown-preview-icon.png",
-          "dark": "images/plotdown-preview-icon.png"
+          "light": "images/plotdown-preview-icon-light.svg",
+          "dark": "images/plotdown-preview-icon-dark.svg"
         }
       },
       {
@@ -177,8 +177,8 @@
         "title": "%command.openPumlPreview.title%",
         "category": "%command.category%",
         "icon": {
-          "light": "images/plotdown-preview-icon.png",
-          "dark": "images/plotdown-preview-icon.png"
+          "light": "images/plotdown-preview-icon-light.svg",
+          "dark": "images/plotdown-preview-icon-dark.svg"
         }
       },
       {
@@ -186,8 +186,8 @@
         "title": "%command.openMermaidPreview.title%",
         "category": "%command.category%",
         "icon": {
-          "light": "images/plotdown-preview-icon.png",
-          "dark": "images/plotdown-preview-icon.png"
+          "light": "images/plotdown-preview-icon-light.svg",
+          "dark": "images/plotdown-preview-icon-dark.svg"
         }
       },
       {
@@ -195,9 +195,46 @@
         "title": "%command.openD2Preview.title%",
         "category": "%command.category%",
         "icon": {
-          "light": "images/plotdown-preview-icon.png",
-          "dark": "images/plotdown-preview-icon.png"
+          "light": "images/plotdown-preview-icon-light.svg",
+          "dark": "images/plotdown-preview-icon-dark.svg"
         }
+      },
+      {
+        "command": "plantuml-markdown-preview.reopenAsSource",
+        "title": "%command.reopenAsSource.title%",
+        "category": "%command.category%",
+        "icon": "$(file-code)"
+      },
+      {
+        "command": "plantuml-markdown-preview.reopenAsReadingView",
+        "title": "%command.reopenAsReadingView.title%",
+        "category": "%command.category%"
+      },
+      {
+        "command": "plantuml-markdown-preview.showPreviewToSide",
+        "title": "%command.showPreviewToSide.title%",
+        "category": "%command.category%",
+        "icon": "$(open-preview)"
+      },
+      {
+        "command": "plantuml-markdown-preview.reopenAsPreview",
+        "title": "%command.reopenAsPreview.title%",
+        "category": "%command.category%",
+        "icon": "$(preview)"
+      },
+      {
+        "command": "plantuml-markdown-preview.showPreview",
+        "title": "%command.showPreview.title%",
+        "category": "%command.category%",
+        "icon": {
+          "light": "images/vscode-preview-light.svg",
+          "dark": "images/vscode-preview-dark.svg"
+        }
+      },
+      {
+        "command": "plantuml-markdown-preview.toggleReadingView",
+        "title": "%command.toggleReadingView.title%",
+        "category": "%command.category%"
       },
       {
         "command": "plantuml-markdown-preview.exportHtml",
@@ -421,6 +458,54 @@
         "category": "%command.category%"
       }
     ],
+    "customEditors": [
+      {
+        "viewType": "plantumlMarkdownPreviewEditor",
+        "displayName": "%customEditor.displayName%",
+        "priority": "option",
+        "selector": [
+          {
+            "filenamePattern": "*.{md,mkd,mkdn,mdwn,mdown,markdown,markdn,mdtxt,mdtext,litcoffee,ron,ronn,workbook}"
+          }
+        ]
+      },
+      {
+        "viewType": "plantumlPumlPreviewEditor",
+        "displayName": "%customEditor.displayName%",
+        "priority": "option",
+        "selector": [
+          {
+            "filenamePattern": "*.puml"
+          },
+          {
+            "filenamePattern": "*.plantuml"
+          }
+        ]
+      },
+      {
+        "viewType": "plantumlMermaidPreviewEditor",
+        "displayName": "%customEditor.displayName%",
+        "priority": "option",
+        "selector": [
+          {
+            "filenamePattern": "*.mmd"
+          },
+          {
+            "filenamePattern": "*.mermaid"
+          }
+        ]
+      },
+      {
+        "viewType": "plantumlD2PreviewEditor",
+        "displayName": "%customEditor.displayName%",
+        "priority": "option",
+        "selector": [
+          {
+            "filenamePattern": "*.d2"
+          }
+        ]
+      }
+    ],
     "submenus": [
       {
         "id": "plantuml-markdown-preview.submenu",
@@ -444,10 +529,36 @@
       }
     ],
     "menus": {
+      "commandPalette": [
+        {
+          "command": "plantuml-markdown-preview.reopenAsSource",
+          "when": "plantumlMarkdownPreview.canSwitchInPlace && activeWebviewPanelId =~ /^plantuml(Markdown|Puml|Mermaid|D2)PreviewEditor$/"
+        },
+        {
+          "command": "plantuml-markdown-preview.reopenAsReadingView",
+          "when": "plantumlMarkdownPreview.canSwitchInPlace && activeEditor == workbench.editors.files.textFileEditor && resourceExtname =~ /^\\.(md|mkd|mkdn|mdwn|mdown|markdown|markdn|mdtxt|mdtext|litcoffee|ron|ronn|workbook|puml|plantuml|mmd|mermaid|d2)$/i"
+        },
+        {
+          "command": "plantuml-markdown-preview.showPreviewToSide",
+          "when": "false"
+        },
+        {
+          "command": "plantuml-markdown-preview.reopenAsPreview",
+          "when": "false"
+        },
+        {
+          "command": "plantuml-markdown-preview.showPreview",
+          "when": "false"
+        },
+        {
+          "command": "plantuml-markdown-preview.toggleReadingView",
+          "when": "false"
+        }
+      ],
       "explorer/context": [
         {
           "submenu": "plantuml-markdown-preview.submenu",
-          "when": "resourceExtname == .md",
+          "when": "resourceExtname =~ /^\\.(md|mkd|mkdn|mdwn|mdown|markdown|markdn|mdtxt|mdtext|litcoffee|ron|ronn|workbook)$/i",
           "group": "plantuml-markdown-preview"
         },
         {
@@ -464,12 +575,22 @@
           "command": "plantuml-markdown-preview.openD2Preview",
           "when": "resourceExtname == .d2",
           "group": "plantuml-markdown-preview"
+        },
+        {
+          "command": "plantuml-markdown-preview.showPreview",
+          "when": "resourceLangId =~ /^(markdown|prompt|instructions|chatagent|skill)$/ && plantumlMarkdownPreview.replacingBuiltin",
+          "group": "navigation"
         }
       ],
       "editor/context": [
         {
           "submenu": "plantuml-markdown-preview.submenu",
-          "when": "editorLangId == markdown",
+          "when": "editorLangId =~ /^(markdown|prompt|instructions|chatagent|skill)$/",
+          "group": "plantuml-markdown-preview"
+        },
+        {
+          "command": "plantuml-markdown-preview.reopenAsReadingView",
+          "when": "plantumlMarkdownPreview.canSwitchInPlace && activeEditor == workbench.editors.files.textFileEditor && resourceExtname =~ /^\\.(puml|plantuml|mmd|mermaid|d2)$/i",
           "group": "plantuml-markdown-preview"
         },
         {
@@ -496,27 +617,32 @@
       "editor/title": [
         {
           "command": "plantuml-markdown-preview.changeTheme",
-          "when": "activeWebviewPanelId == 'plantumlMarkdownPreview'",
+          "when": "activeWebviewPanelId =~ /^plantumlMarkdownPreview(Editor)?$/",
           "group": "navigation"
         },
         {
           "command": "plantuml-markdown-preview.changeTheme",
-          "when": "activeWebviewPanelId == 'plantumlPumlPreview'",
+          "when": "activeWebviewPanelId =~ /^plantumlPumlPreview(Editor)?$/",
           "group": "navigation"
         },
         {
           "command": "plantuml-markdown-preview.changeTheme",
-          "when": "activeWebviewPanelId == 'plantumlMermaidPreview'",
+          "when": "activeWebviewPanelId =~ /^plantumlMermaidPreview(Editor)?$/",
           "group": "navigation"
         },
         {
           "command": "plantuml-markdown-preview.changeTheme",
-          "when": "activeWebviewPanelId == 'plantumlD2Preview'",
+          "when": "activeWebviewPanelId =~ /^plantumlD2Preview(Editor)?$/",
           "group": "navigation"
+        },
+        {
+          "command": "plantuml-markdown-preview.reopenAsSource",
+          "when": "plantumlMarkdownPreview.canSwitchInPlace && activeCustomEditorId =~ /^plantuml(Markdown|Puml|Mermaid|D2)PreviewEditor$/ && !activeCustomEditorTextDiff",
+          "group": "navigation@3"
         },
         {
           "command": "plantuml-markdown-preview.openPreview",
-          "when": "editorLangId == markdown",
+          "when": "editorLangId =~ /^(markdown|prompt|instructions|chatagent|skill)$/",
           "group": "navigation"
         },
         {
@@ -533,62 +659,78 @@
           "command": "plantuml-markdown-preview.openD2Preview",
           "when": "editorLangId == d2",
           "group": "navigation"
+        },
+        {
+          "command": "plantuml-markdown-preview.showPreviewToSide",
+          "when": "editorLangId =~ /^(markdown|prompt|instructions|chatagent|skill)$/ && !notebookEditorFocused && plantumlMarkdownPreview.replacingBuiltin",
+          "alt": "plantuml-markdown-preview.showPreview",
+          "group": "navigation@1"
+        },
+        {
+          "command": "plantuml-markdown-preview.reopenAsPreview",
+          "when": "activeEditor == workbench.editors.files.textFileEditor && resourceLangId =~ /^(markdown|prompt|instructions|chatagent|skill)$/ && !notebookEditorFocused && plantumlMarkdownPreview.replacingBuiltin && !isSessionsWindow",
+          "group": "navigation@3"
         }
       ],
       "webview/context": [
         {
+          "command": "plantuml-markdown-preview.reopenAsSource",
+          "when": "plantumlMarkdownPreview.canSwitchInPlace && webviewId =~ /^plantuml(Markdown|Puml|Mermaid|D2)PreviewEditor$/ && !activeCustomEditorTextDiff",
+          "group": "0_source@1"
+        },
+        {
           "submenu": "plantuml-markdown-preview.exportHtmlWidthSubmenu",
-          "when": "webviewId == 'plantumlMarkdownPreview'",
+          "when": "webviewId =~ /^plantumlMarkdownPreview(Editor)?$/",
           "group": "c_export@1"
         },
         {
           "submenu": "plantuml-markdown-preview.exportHtmlWidthAndOpenSubmenu",
-          "when": "webviewId == 'plantumlMarkdownPreview'",
+          "when": "webviewId =~ /^plantumlMarkdownPreview(Editor)?$/",
           "group": "c_export@2"
         },
         {
           "submenu": "plantuml-markdown-preview.exportPdfSubmenu",
-          "when": "webviewId == 'plantumlMarkdownPreview'",
+          "when": "webviewId =~ /^plantumlMarkdownPreview(Editor)?$/",
           "group": "e_pdf@1"
         },
         {
           "submenu": "plantuml-markdown-preview.exportPdfAndOpenSubmenu",
-          "when": "webviewId == 'plantumlMarkdownPreview'",
+          "when": "webviewId =~ /^plantumlMarkdownPreview(Editor)?$/",
           "group": "e_pdf@2"
         },
         {
           "command": "plantuml-markdown-preview.openDiagramViewer",
-          "when": "webviewId == 'plantumlMarkdownPreview' && webviewSection == 'diagram'",
+          "when": "webviewId =~ /^plantumlMarkdownPreview(Editor)?$/ && webviewSection == 'diagram'",
           "group": "a_viewer@1"
         },
         {
           "command": "plantuml-markdown-preview.openIncludeSource",
-          "when": "webviewId == 'plantumlMarkdownPreview' && webviewSection == 'diagram' && hasInclude",
+          "when": "webviewId =~ /^plantumlMarkdownPreview(Editor)?$/ && webviewSection == 'diagram' && hasInclude",
           "group": "a_viewer@2"
         },
         {
           "command": "plantuml-markdown-preview.copyDiagramAsPng",
-          "when": "webviewId == 'plantumlMarkdownPreview' && webviewSection == 'diagram'",
+          "when": "webviewId =~ /^plantumlMarkdownPreview(Editor)?$/ && webviewSection == 'diagram'",
           "group": "b_diagram@1"
         },
         {
           "command": "plantuml-markdown-preview.saveDiagramAsPng",
-          "when": "webviewId == 'plantumlMarkdownPreview' && webviewSection == 'diagram'",
+          "when": "webviewId =~ /^plantumlMarkdownPreview(Editor)?$/ && webviewSection == 'diagram'",
           "group": "f_save@1"
         },
         {
           "command": "plantuml-markdown-preview.saveDiagramAsSvg",
-          "when": "webviewId == 'plantumlMarkdownPreview' && webviewSection == 'diagram'",
+          "when": "webviewId =~ /^plantumlMarkdownPreview(Editor)?$/ && webviewSection == 'diagram'",
           "group": "f_save@1"
         },
         {
           "command": "plantuml-markdown-preview.exportAllDiagramsAsPng",
-          "when": "webviewId == 'plantumlMarkdownPreview'",
+          "when": "webviewId =~ /^plantumlMarkdownPreview(Editor)?$/",
           "group": "g_bulk@1"
         },
         {
           "command": "plantuml-markdown-preview.exportAllDiagramsAsSvg",
-          "when": "webviewId == 'plantumlMarkdownPreview'",
+          "when": "webviewId =~ /^plantumlMarkdownPreview(Editor)?$/",
           "group": "g_bulk@2"
         },
         {
@@ -608,47 +750,47 @@
         },
         {
           "command": "plantuml-markdown-preview.copyDiagramAsPng",
-          "when": "webviewId == 'plantumlPumlPreview'",
+          "when": "webviewId =~ /^plantumlPumlPreview(Editor)?$/",
           "group": "b_diagram@1"
         },
         {
           "command": "plantuml-markdown-preview.saveDiagramAsPng",
-          "when": "webviewId == 'plantumlPumlPreview'",
+          "when": "webviewId =~ /^plantumlPumlPreview(Editor)?$/",
           "group": "b_diagram@2"
         },
         {
           "command": "plantuml-markdown-preview.saveDiagramAsSvg",
-          "when": "webviewId == 'plantumlPumlPreview'",
+          "when": "webviewId =~ /^plantumlPumlPreview(Editor)?$/",
           "group": "b_diagram@3"
         },
         {
           "command": "plantuml-markdown-preview.copyDiagramAsPng",
-          "when": "webviewId == 'plantumlMermaidPreview'",
+          "when": "webviewId =~ /^plantumlMermaidPreview(Editor)?$/",
           "group": "b_diagram@1"
         },
         {
           "command": "plantuml-markdown-preview.saveDiagramAsPng",
-          "when": "webviewId == 'plantumlMermaidPreview'",
+          "when": "webviewId =~ /^plantumlMermaidPreview(Editor)?$/",
           "group": "b_diagram@2"
         },
         {
           "command": "plantuml-markdown-preview.saveDiagramAsSvg",
-          "when": "webviewId == 'plantumlMermaidPreview'",
+          "when": "webviewId =~ /^plantumlMermaidPreview(Editor)?$/",
           "group": "b_diagram@3"
         },
         {
           "command": "plantuml-markdown-preview.copyDiagramAsPng",
-          "when": "webviewId == 'plantumlD2Preview'",
+          "when": "webviewId =~ /^plantumlD2Preview(Editor)?$/",
           "group": "b_diagram@1"
         },
         {
           "command": "plantuml-markdown-preview.saveDiagramAsPng",
-          "when": "webviewId == 'plantumlD2Preview'",
+          "when": "webviewId =~ /^plantumlD2Preview(Editor)?$/",
           "group": "b_diagram@2"
         },
         {
           "command": "plantuml-markdown-preview.saveDiagramAsSvg",
-          "when": "webviewId == 'plantumlD2Preview'",
+          "when": "webviewId =~ /^plantumlD2Preview(Editor)?$/",
           "group": "b_diagram@3"
         }
       ],
@@ -656,19 +798,24 @@
         {
           "command": "plantuml-markdown-preview.goToIncludeFile",
           "when": "plantuml-markdown-preview.cursorOnIncludeLine",
-          "group": "a_preview@0"
-        },
-        {
-          "command": "plantuml-markdown-preview.openPreview",
           "group": "a_preview@1"
         },
         {
-          "command": "plantuml-markdown-preview.openHeadRevisionPreview",
+          "command": "plantuml-markdown-preview.openPreview",
           "group": "a_preview@2"
         },
         {
-          "command": "plantuml-markdown-preview.openStagedRevisionPreview",
+          "command": "plantuml-markdown-preview.reopenAsReadingView",
+          "when": "plantumlMarkdownPreview.canSwitchInPlace && editorTextFocus && activeEditor == workbench.editors.files.textFileEditor && resourceExtname =~ /^\\.(md|mkd|mkdn|mdwn|mdown|markdown|markdn|mdtxt|mdtext|litcoffee|ron|ronn|workbook)$/i",
+          "group": "a_preview@0"
+        },
+        {
+          "command": "plantuml-markdown-preview.openHeadRevisionPreview",
           "group": "a_preview@3"
+        },
+        {
+          "command": "plantuml-markdown-preview.openStagedRevisionPreview",
+          "group": "a_preview@4"
         },
         {
           "submenu": "plantuml-markdown-preview.exportHtmlWidthSubmenu",
@@ -830,6 +977,31 @@
           "command": "plantuml-markdown-preview.exportPdfLandscapeAndOpen",
           "group": "1_orientation@2"
         }
+      ],
+      "modalEditor/editorTitle": [
+        {
+          "command": "plantuml-markdown-preview.showPreviewToSide",
+          "when": "editorLangId =~ /^(markdown|prompt|instructions|chatagent|skill)$/ && !notebookEditorFocused && plantumlMarkdownPreview.replacingBuiltin",
+          "alt": "plantuml-markdown-preview.showPreview",
+          "group": "navigation"
+        },
+        {
+          "command": "plantuml-markdown-preview.reopenAsPreview",
+          "when": "activeEditor == workbench.editors.files.textFileEditor && resourceLangId =~ /^(markdown|prompt|instructions|chatagent|skill)$/ && !notebookEditorFocused && plantumlMarkdownPreview.replacingBuiltin && !isSessionsWindow",
+          "group": "navigation"
+        },
+        {
+          "command": "plantuml-markdown-preview.reopenAsPreview",
+          "when": "activeEditor == workbench.editors.textDiffEditor && resourceLangId =~ /^(markdown|prompt|instructions|chatagent|skill)$/ && !notebookEditorFocused && plantumlMarkdownPreview.replacingBuiltin && !isSessionsWindow",
+          "group": "navigation"
+        }
+      ],
+      "editor/title/context": [
+        {
+          "command": "plantuml-markdown-preview.showPreview",
+          "when": "resourceLangId =~ /^(markdown|prompt|instructions|chatagent|skill)$/ && plantumlMarkdownPreview.replacingBuiltin",
+          "group": "1_open"
+        }
       ]
     },
     "keybindings": [
@@ -837,7 +1009,7 @@
         "command": "plantuml-markdown-preview.openPreview",
         "key": "ctrl+alt+v",
         "mac": "cmd+alt+v",
-        "when": "editorLangId == markdown"
+        "when": "editorLangId =~ /^(markdown|prompt|instructions|chatagent|skill)$/"
       },
       {
         "command": "plantuml-markdown-preview.openPumlPreview",
@@ -858,52 +1030,58 @@
         "when": "editorLangId == d2"
       },
       {
-        "command": "plantuml-markdown-preview.openPreview",
+        "command": "plantuml-markdown-preview.toggleReadingView",
         "key": "ctrl+shift+v",
         "mac": "cmd+shift+v",
-        "when": "config.plantumlMarkdownPreview.useAsDefaultPreview && editorLangId == markdown && !notebookEditorFocused"
+        "when": "config.plantumlMarkdownPreview.useAsDefaultPreview && !terminalFocus && editorFocus && resourceLangId =~ /^(markdown|prompt|instructions|chatagent|skill)$/ && !notebookEditorFocused"
+      },
+      {
+        "command": "plantuml-markdown-preview.toggleReadingView",
+        "key": "ctrl+shift+v",
+        "mac": "cmd+shift+v",
+        "when": "config.plantumlMarkdownPreview.useAsDefaultPreview && !terminalFocus && editorFocus && resourceLangId == plantuml && !notebookEditorFocused"
+      },
+      {
+        "command": "plantuml-markdown-preview.toggleReadingView",
+        "key": "ctrl+shift+v",
+        "mac": "cmd+shift+v",
+        "when": "config.plantumlMarkdownPreview.useAsDefaultPreview && !terminalFocus && editorFocus && resourceLangId == mermaid && !notebookEditorFocused"
+      },
+      {
+        "command": "plantuml-markdown-preview.toggleReadingView",
+        "key": "ctrl+shift+v",
+        "mac": "cmd+shift+v",
+        "when": "config.plantumlMarkdownPreview.useAsDefaultPreview && !terminalFocus && editorFocus && resourceLangId == d2 && !notebookEditorFocused"
+      },
+      {
+        "command": "plantuml-markdown-preview.showPreviewToSide",
+        "key": "ctrl+k v",
+        "mac": "cmd+k v",
+        "when": "config.plantumlMarkdownPreview.useAsDefaultPreview && editorFocus && editorLangId =~ /^(markdown|prompt|instructions|chatagent|skill)$/ && !notebookEditorFocused"
       },
       {
         "command": "plantuml-markdown-preview.openPumlPreview",
-        "key": "ctrl+shift+v",
-        "mac": "cmd+shift+v",
-        "when": "config.plantumlMarkdownPreview.useAsDefaultPreview && editorLangId == plantuml && !notebookEditorFocused"
-      },
-      {
-        "command": "plantuml-markdown-preview.openMermaidPreview",
-        "key": "ctrl+shift+v",
-        "mac": "cmd+shift+v",
-        "when": "config.plantumlMarkdownPreview.useAsDefaultPreview && editorLangId == mermaid && !notebookEditorFocused"
-      },
-      {
-        "command": "plantuml-markdown-preview.openD2Preview",
-        "key": "ctrl+shift+v",
-        "mac": "cmd+shift+v",
-        "when": "config.plantumlMarkdownPreview.useAsDefaultPreview && editorLangId == d2 && !notebookEditorFocused"
-      },
-      {
-        "command": "plantuml-markdown-preview.openPreview",
         "key": "ctrl+k v",
         "mac": "cmd+k v",
-        "when": "config.plantumlMarkdownPreview.useAsDefaultPreview && editorLangId == markdown && !notebookEditorFocused"
-      },
-      {
-        "command": "plantuml-markdown-preview.openPumlPreview",
-        "key": "ctrl+k v",
-        "mac": "cmd+k v",
-        "when": "config.plantumlMarkdownPreview.useAsDefaultPreview && editorLangId == plantuml && !notebookEditorFocused"
+        "when": "config.plantumlMarkdownPreview.useAsDefaultPreview && editorFocus && editorLangId == plantuml && !notebookEditorFocused"
       },
       {
         "command": "plantuml-markdown-preview.openMermaidPreview",
         "key": "ctrl+k v",
         "mac": "cmd+k v",
-        "when": "config.plantumlMarkdownPreview.useAsDefaultPreview && editorLangId == mermaid && !notebookEditorFocused"
+        "when": "config.plantumlMarkdownPreview.useAsDefaultPreview && editorFocus && editorLangId == mermaid && !notebookEditorFocused"
       },
       {
         "command": "plantuml-markdown-preview.openD2Preview",
         "key": "ctrl+k v",
         "mac": "cmd+k v",
-        "when": "config.plantumlMarkdownPreview.useAsDefaultPreview && editorLangId == d2 && !notebookEditorFocused"
+        "when": "config.plantumlMarkdownPreview.useAsDefaultPreview && editorFocus && editorLangId == d2 && !notebookEditorFocused"
+      },
+      {
+        "command": "plantuml-markdown-preview.reopenAsSource",
+        "key": "ctrl+shift+v",
+        "mac": "cmd+shift+v",
+        "when": "!terminalFocus && plantumlMarkdownPreview.canSwitchInPlace && activeCustomEditorId =~ /^plantuml(Markdown|Puml|Mermaid|D2)PreviewEditor$/"
       }
     ],
     "configuration": {
@@ -1348,7 +1526,7 @@
         "plantumlMarkdownPreview.useAsDefaultPreview": {
           "order": 32,
           "type": "boolean",
-          "default": false,
+          "default": true,
           "description": "%configuration.useAsDefaultPreview.description%"
         }
       }

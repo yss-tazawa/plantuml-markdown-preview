@@ -47,6 +47,7 @@
 - **双方向スクロール同期** — エディタとプレビューが連動してスクロール
 - **ナビゲーション & 目次** — トップ/ボトムへ移動ボタンとプレビューパネルの目次サイドバー
 - **ダイアグラムビューア** — ダイアグラムを右クリックでパン＆ズームパネルを開き、リアルタイム同期とテーマ適用背景を表示
+- **参照ビュー（Reading View）** — Markdown・PlantUML・Mermaid・D2 のファイルを専用のタブに描画して表示し、ソースとその場で切り替え
 - **スタンドアロンダイアグラムプレビュー** — `.puml`、`.plantuml`、`.mmd`、`.mermaid`、`.d2` ファイルをパン＆ズーム、ライブ更新、テーマ対応で直接プレビュー — Markdown ラッパー不要
 - **Git リビジョンプレビュー** — Markdown ファイルを HEAD やステージ済みの時点の内容で描画し、現在のプレビューと並べて表示。変更された図を描画した状態で比較できます
 - **PNG / SVG としてダイアグラムを保存・コピー** — プレビューまたはダイアグラムビューアでダイアグラムを右クリックして保存またはクリップボードにコピー
@@ -62,6 +63,7 @@
 - [機能](#機能)
 - [クイックスタート](#クイックスタート)
 - [使い方](#使い方)
+  - [参照ビュー](#参照ビュー)
 - [設定](#設定)
 - [スニペット](#スニペット)
 - [カラーピッカー](#カラーピッカー)
@@ -319,7 +321,7 @@ highlight.js により 190 以上の言語をサポート。コードブロッ�
 
 ### VS Code 組み込み Markdown プレビューとの統合
 
-PlantUML・Mermaid・D2 ダイアグラムは VS Code 組み込みの Markdown プレビュー（`Markdown: プレビューを横に開く`）でもレンダリングされる。追加設定不要。
+PlantUML・Mermaid・D2 ダイアグラムは VS Code 組み込みの Markdown プレビュー（`Markdown: プレビューを横に表示`）でもレンダリングされる。追加設定不要。
 
 > **注意：** 組み込みプレビューはこの拡張機能のプレビューテーマ、双方向スクロール同期、HTML エクスポートには対応していません。フル機能を使うには、拡張機能独自のプレビューパネル（`Cmd+Alt+V` / `Ctrl+Alt+V`）を使用してください。
 >
@@ -481,11 +483,44 @@ PlantUML・Mermaid・D2 ダイアグラムは VS Code 組み込みの Markdown �
 
 - **キーボードショートカット：** `Cmd+Alt+V`（Mac）/ `Ctrl+Alt+V`（Windows / Linux）
 - **エディタのタイトルバー：** エディタ右上のプレビューボタン（Plotdown のアイコン）をクリック
-- **標準のプレビューのショートカット：** `useAsDefaultPreview` をオンにすると、`Cmd+Shift+V` / `Cmd+K V`（Mac）、`Ctrl+Shift+V` / `Ctrl+K V`（Windows / Linux）でもプレビューが横に開きます
-- **コンテキストメニュー：** エクスプローラーまたはエディタ内で `.md` ファイルを右クリック → **PlantUML Markdown Preview** → **プレビューを横に開く**
-- **コマンドパレット：** `PlantUML Markdown Preview: Open Preview to Side`
+- **VS Code 標準のボタンとショートカット：** `useAsDefaultPreview` がオン（既定）のとき、VS Code の **プレビューを横に表示** ボタン・右クリックの **プレビューを開く**・`Cmd+K V`（Mac）/ `Ctrl+K V`（Windows / Linux）が本拡張のプレビューを開きます。`Cmd+Shift+V` / `Ctrl+Shift+V` は[参照ビュー](#参照ビュー)への切り替えになります
+- **コンテキストメニュー：** エクスプローラーまたはエディタ内で Markdown ファイルを右クリック → **PlantUML Markdown Preview** → **サイドにプレビューを開く**
+- **コマンドパレット：** `PlantUML Markdown Preview: サイドにプレビューを開く`
 
 プレビューは独自のテーマを使用 — デフォルトは白背景（GitHub Light）。`follow-vscode` を選ぶと、今の VS Code の配色テーマの色に合わせる。
+
+### 参照ビュー
+
+参照ビュー（Reading View）は、ファイルのタブそのものを、テキストエディタの代わりに描画した表示にします。2 つ目のパネルは開きません。そのファイルに固定で（前面のエディタには付いていきません）、プレビューと同時に開けます。
+
+対象は Markdown のファイル（`.md`・`.markdown` など、VS Code の Markdown プレビューと同じ拡張子）と、`.puml` / `.plantuml`・`.mmd` / `.mermaid`・`.d2` のファイルです。使わない限り、何も変わりません。
+
+- **その場で切り替える：** エディタを右クリック → **PlantUML Markdown Preview** → **参照ビューに切り替える**（PlantUML・Mermaid・D2 のファイルでは **参照ビューに切り替える** がメニューの直下にあります）。戻るには、参照ビューを右クリック → **ソースに切り替える**、またはエディタのタイトルバーの **ソースに切り替える** をクリック。タブそのものが切り替わり、新しいタブは開きません。
+- **1 回だけ開く：** エクスプローラーでファイルを右クリック → **ファイルを開くアプリケーションの選択...** → **PlantUML Markdown Preview（参照ビュー）**。開いているファイルなら、代わりにタブを右クリック → **エディターを再度開くアプリケーションの選択...** を使います。
+- **既定にする：** **ファイルを開くアプリケーションの選択...** の一覧で **'\*.md' の既定のエディターを構成する...** → **PlantUML Markdown Preview（参照ビュー）** を選びます。以後、`.md` のファイルをクリックすると参照ビューで開きます。拡張子ごとに 1 回ずつ行います。
+- **元に戻す：** 同じ手順で **テキスト エディター** を選ぶか、設定からその行を消します。
+
+`settings.json` に直接書く場合：
+
+```json
+"workbench.editorAssociations": {
+  "*.md": "plantumlMarkdownPreviewEditor",
+  "*.puml": "plantumlPumlPreviewEditor",
+  "*.mmd": "plantumlMermaidPreviewEditor",
+  "*.d2": "plantumlD2PreviewEditor"
+}
+```
+
+| ファイル | 値 |
+| -------- | -- |
+| Markdown（`*.md`、`*.markdown` など） | `plantumlMarkdownPreviewEditor` |
+| `*.puml`、`*.plantuml` | `plantumlPumlPreviewEditor` |
+| `*.mmd`、`*.mermaid` | `plantumlMermaidPreviewEditor` |
+| `*.d2` | `plantumlD2PreviewEditor` |
+
+- VS Code 1.100 より前では **参照ビューに切り替える**・**ソースに切り替える** は出ません。代わりに **ファイルを開くアプリケーションの選択...** で参照ビューを開いてください。
+- Git の差分は、参照ビューで開くように設定したファイルでも、テキストの差分で開きます。
+- `useAsDefaultPreview` がオン（既定）のとき、VS Code の **プレビューとして開く** ボタン（VS Code 1.119 以降）と `Ctrl+Shift+V`（VS Code 1.100 以降）が参照ビューへの切り替えになります（[設定](#設定)を参照）。
 
 ### ダイアグラムプレビューを開く
 
@@ -493,53 +528,53 @@ PlantUML・Mermaid・D2 ダイアグラムは VS Code 組み込みの Markdown �
 
 - **キーボードショートカット：** `Cmd+Alt+V`（Mac）/ `Ctrl+Alt+V`（Windows / Linux）— 同じショートカット、ファイル種別に応じて自動選択
 - **エディタのタイトルバー：** エディタ右上のプレビューボタン（Plotdown のアイコン）をクリック
-- **標準のプレビューのショートカット：** `useAsDefaultPreview` をオンにすると、`Cmd+Shift+V` / `Cmd+K V`（Mac）、`Ctrl+Shift+V` / `Ctrl+K V`（Windows / Linux）でもプレビューが横に開きます
+- **標準のプレビューのショートカット：** `useAsDefaultPreview` がオン（既定）のとき、`Cmd+K V`（Mac）/ `Ctrl+K V`（Windows / Linux）でもプレビューが横に開きます。`Cmd+Shift+V` / `Ctrl+Shift+V` は[参照ビュー](#参照ビュー)への切り替えになります
 - **コンテキストメニュー：** エクスプローラーまたはエディタで `.puml` / `.plantuml`、`.mmd` / `.mermaid`、`.d2` ファイルを右クリック → **PlantUML ファイルをプレビュー** / **Mermaid ファイルをプレビュー** / **D2 ファイルをプレビュー**
-- **コマンドパレット：** `PlantUML Markdown Preview: Preview PlantUML File`、`Preview Mermaid File`、または `Preview D2 File`
+- **コマンドパレット：** `PlantUML Markdown Preview: PlantUML ファイルをプレビュー`、`Mermaid ファイルをプレビュー`、または `D2 ファイルをプレビュー`
 
 ### Git リビジョンのプレビューを開く
 
 現在の版のプレビューの横に、Git のリビジョン時点の内容を描画して表示します。
 
-- **コンテキストメニュー:** エクスプローラーまたはエディタで `.md` ファイルを右クリック → **PlantUML Markdown Preview** → **HEAD 時点のプレビューをサイドに開く** / **ステージ済みのプレビューをサイドに開く**
+- **コンテキストメニュー:** エクスプローラーまたはエディタで Markdown ファイルを右クリック → **PlantUML Markdown Preview** → **HEAD 時点のプレビューをサイドに開く** / **ステージ済みのプレビューをサイドに開く**
 - **コマンドパレット:** `PlantUML Markdown Preview: HEAD 時点のプレビューをサイドに開く` / `ステージ済みのプレビューをサイドに開く`
 
 先に通常のプレビューを開いてからリビジョンプレビューを開くと、2つのパネルが横に並びます。リビジョンパネルは固定されたスナップショットで、編集しても更新されません。
 
 ### HTML にエクスポート
 
-- **コンテキストメニュー：** `.md` ファイルを右クリック → **PlantUML Markdown Preview** → **HTML としてエクスポート** → 幅オプションを選択
+- **コンテキストメニュー：** Markdown ファイルを右クリック → **PlantUML Markdown Preview** → **HTML としてエクスポート** → 幅オプションを選択
 - **プレビューパネル：** プレビュー内を右クリック → **HTML としてエクスポート** または **HTML としてエクスポートして開く**
 
 サブメニューで幅オプションを選択できます：
 
 | オプション | 説明 |
 | ------ | ----------- |
-| Current Settings | 現在の設定でエクスポート（レスポンシブ CSS なし） |
+| 現在の設定 | 現在の設定でエクスポート（レスポンシブ CSS なし） |
 | 640px – 1440px | ピクセル単位の固定ボディ幅、中央寄せ |
-| Responsive (Left-Aligned) | ボディをビューポート幅一杯に広げ左寄せ。はみ出したダイアグラムのみ縮小 |
-| 640px – 1440px (Left-Aligned) | 固定幅、左寄せ |
+| レスポンシブ (左寄せ) | ボディをビューポート幅一杯に広げ左寄せ。はみ出したダイアグラムのみ縮小 |
+| 640px – 1440px (左寄せ) | 固定幅、左寄せ |
 
-HTML ファイルはソースの `.md` ファイルと同じ場所に保存される。
+HTML ファイルはソースの Markdown ファイルと同じ場所に保存される。
 
 ### PDF にエクスポート
 
-- **コンテキストメニュー：** `.md` ファイルを右クリック → **PlantUML Markdown Preview** → **PDF としてエクスポート** → **縦向き** または **横向き**
-- **プレビューパネル：** プレビュー内を右クリック → **PDF としてエクスポート** または **PDF としてエクスポートして開く** → **縦向き** または **横向き**
+- **コンテキストメニュー：** Markdown ファイルを右クリック → **PlantUML Markdown Preview** → **PDF としてエクスポート** → **縦** または **横**
+- **プレビューパネル：** プレビュー内を右クリック → **PDF としてエクスポート** または **PDF としてエクスポートして開く** → **縦** または **横**
 
-PDF ファイルはソースの `.md` ファイルと同じ場所に保存される。Chrome、Edge、または Chromium が必要。`pdfScale` 設定（デフォルト 0.625）でテキストとダイアグラムの全体的なスケールを調整できます。
+PDF ファイルはソースの Markdown ファイルと同じ場所に保存される。Chrome、Edge、または Chromium が必要。`pdfScale` 設定（デフォルト 0.625）でテキストとダイアグラムの全体的なスケールを調整できます。
 
 ### ダイアグラムを PNG / SVG として保存・コピー
 
-- **プレビューパネル：** ダイアグラムを右クリック → **PNG としてコピー**、**PNG として保存**、または **SVG として保存**
-- **ダイアグラムビューア：** ビューア内を右クリック → **PNG としてコピー**、**PNG として保存**、または **SVG として保存**
-- **スタンドアロンダイアグラムプレビュー：** プレビュー内を右クリック → **PNG としてコピー**、**PNG として保存**、または **SVG として保存**
+- **プレビューパネル：** ダイアグラムを右クリック → **ダイアグラムを PNG でコピー**、**ダイアグラムを PNG で保存**、または **ダイアグラムを SVG で保存**
+- **ダイアグラムビューア：** ビューア内を右クリック → **ダイアグラムを PNG でコピー**、**ダイアグラムを PNG で保存**、または **ダイアグラムを SVG で保存**
+- **スタンドアロンダイアグラムプレビュー：** プレビュー内を右クリック → **ダイアグラムを PNG でコピー**、**ダイアグラムを PNG で保存**、または **ダイアグラムを SVG で保存**
 
 ### 全ダイアグラムをエクスポート
 
-- **コンテキストメニュー：** `.md` ファイルを右クリック → **PlantUML Markdown Preview** → **Export All Diagrams as PNG** または **Export All Diagrams as SVG**
-- **プレビューパネル：** プレビュー内を右クリック → **Export All Diagrams as PNG** または **Export All Diagrams as SVG**
-- **コマンドパレット：** `PlantUML Markdown Preview: Export All Diagrams as PNG` / `Export All Diagrams as SVG`
+- **コンテキストメニュー：** Markdown ファイルを右クリック → **PlantUML Markdown Preview** → **全ダイアグラムを PNG でエクスポート** または **全ダイアグラムを SVG でエクスポート**
+- **プレビューパネル：** プレビュー内を右クリック → **全ダイアグラムを PNG でエクスポート** または **全ダイアグラムを SVG でエクスポート**
+- **コマンドパレット：** `PlantUML Markdown Preview: 全ダイアグラムを PNG でエクスポート` / `全ダイアグラムを SVG でエクスポート`
 
 保存ダイアログで出力ディレクトリ名を選択（デフォルト: `{ファイル名}_diagrams`）。各ダイアグラムは `diagram-1.png`、`diagram-2.png` のようにドキュメント順で保存。プレビューが開いている必要あり。
 
@@ -553,7 +588,7 @@ PDF ファイルはソースの `.md` ファイルと同じ場所に保存され
 
 プレビューパネルのタイトルバーにあるテーマアイコンをクリック、またはコマンドパレットを使用：
 
-- **コマンドパレット：** `PlantUML Markdown Preview: Change Preview Theme`
+- **コマンドパレット：** `PlantUML Markdown Preview: プレビューテーマを変更`
 
 テーマピッカーは4つのカテゴリー（プレビューテーマ・PlantUML テーマ・Mermaid テーマ・D2 テーマ）を1つのリストに表示 — 一か所からすべてを切り替え可能。
 
@@ -806,8 +841,8 @@ PlantUML、Mermaid、D2 のコンテキスト対応キーワード補完。ス�
 | `plantumlLocalServerJvmMaxHeapMb` | `512` | `"custom"` プリセット用の最大ヒープ（`-Xmx`、MB）。他のプリセットでは無視されます。範囲: 64〜32768。 |
 | `plantumlServerUrl` | `"https://www.plantuml.com/plantuml"` | Easy モードの PlantUML サーバー URL。プライバシーのためにセルフホストサーバー URL に設定可能。 |
 | `enableDiagramViewer` | `true` | ダイアグラムを右クリックしたときの「ダイアグラムビューアで開く」コンテキストメニュー項目を有効化。有効にするにはプレビューの再起動が必要。 |
-| `retainPreviewContext` | `true` | タブが非表示のときにプレビューコンテンツを保持。タブ切替時の再レンダリングを防ぐがメモリ使用量が増加。有効にするにはプレビューの再起動が必要。 |
-| `useAsDefaultPreview` | `false` | VS Code 標準の Markdown プレビューのショートカット（`Ctrl+Shift+V` / `Ctrl+K V`。Mac は `Cmd`）で、Markdown・PlantUML・Mermaid・D2 のファイルに本拡張のプレビューを開く。どちらのショートカットも、プレビューをエディタの横に開く（VS Code 標準の `Ctrl+Shift+V` は今のタブに開く）。エクスプローラーの右クリックの **プレビューを開く** と、エディタ右上の VS Code 標準のプレビューのボタンは置き換わらない。 |
+| `retainPreviewContext` | `true` | タブが非表示のときプレビュー内容を保持。タブ切替時の再描画を防ぐが、メモリ使用量が増加。設定を反映させるには、プレビューの場合はプレビューを閉じて再度開く。参照ビューの場合は VS Code を再起動するか、ウィンドウを再読み込みする。 |
+| `useAsDefaultPreview` | `true` | VS Code 標準の Markdown プレビューの代わりに本拡張を使う。VS Code 標準の Markdown プレビューのボタン・右クリックの項目・ショートカットが本拡張を開くようになる。`Ctrl+K V`（Mac は `Cmd`）はプレビューを横に開き、`Ctrl+Shift+V` は同じタブでソースと[参照ビュー](#参照ビュー)を切り替える（PlantUML・Mermaid・D2 のファイルでも同じ）。VS Code 1.119 より前ではショートカットだけが置き換わり、1.100 より前ではどちらもプレビューを横に開く。**0.8.0 での変更：** この設定は既定でオンになりました。VS Code 標準の Markdown プレビューのボタンとショートカットをそのまま使いたい場合は、オフにしてください。**Markdown Preview Enhanced と併用する場合：** こちらも `Ctrl+Shift+V` と `Ctrl+K V` を使っています。両方を入れているときは、本拡張のショートカットが有効になります。Markdown Preview Enhanced のショートカットを使いたい場合は、本設定をオフにしてください。 |
 
 > **注意：** `allowLocalImages` と `allowHttpImages` はプレビューパネルにのみ適用される。HTML エクスポートは CSP 制限なしに元の画像パスをそのまま出力する。
 
@@ -844,7 +879,9 @@ PlantUML、Mermaid、D2 のコンテキスト対応キーワード補完。ス�
 | PlantUML ファイルをプレビュー | `Cmd+Alt+V` | `Ctrl+Alt+V` |
 | Mermaid ファイルをプレビュー | `Cmd+Alt+V` | `Ctrl+Alt+V` |
 | D2 ファイルをプレビュー | `Cmd+Alt+V` | `Ctrl+Alt+V` |
-| プレビューを開く（`useAsDefaultPreview` がオンのとき。Markdown・PlantUML・Mermaid・D2） | `Cmd+Shift+V` / `Cmd+K V` | `Ctrl+Shift+V` / `Ctrl+K V` |
+| プレビューを横に表示（`useAsDefaultPreview` がオン（既定）のとき。Markdown・PlantUML・Mermaid・D2） | `Cmd+K V` | `Ctrl+K V` |
+| 参照ビューに切り替える（`useAsDefaultPreview` がオン（既定）のとき。Markdown・PlantUML・Mermaid・D2） | `Cmd+Shift+V` | `Ctrl+Shift+V` |
+| ソースに切り替える（参照ビューの中で。`useAsDefaultPreview` に関係なく） | `Cmd+Shift+V` | `Ctrl+Shift+V` |
 | レンダリングモードを選択 | — | — |
 
 ## FAQ

@@ -83,6 +83,17 @@ export function errorHtml(message: string): string {
 }
 
 /**
+ * Build a full page showing an error, for a Reading View that has nothing else to show.
+ *
+ * @param message - Plain-text message.
+ * @returns Complete HTML document with the message in an error box.
+ */
+export function errorPage(message: string): string {
+    return `<!DOCTYPE html>
+<html><head><meta charset="UTF-8"></head><body style="padding:1em;">${errorHtml(escapeHtml(message))}</body></html>`;
+}
+
+/**
  * Regex to match ```plantuml fenced code blocks and capture their content.
  * Allows 0-3 spaces of indentation on opening/closing fences (CommonMark spec).
  * Closing fence must be followed only by optional spaces/tabs then end-of-line
@@ -422,14 +433,6 @@ export function execJava(
     );
 }
 
-/** Description shown next to a theme in the picker; the follow-VS-Code theme explains itself. */
-const themeDescription = (key: string, isCurrent: boolean): string => {
-    const current = isCurrent ? vscode.l10n.t('(current)') : '';
-    if (key !== 'follow-vscode') return current;
-    const note = vscode.l10n.t('follows your color theme');
-    return current ? `${current} - ${note}` : note;
-};
-
 /**
  * Build QuickPick items for a set of theme keys with a check mark on the current selection.
  *
@@ -441,7 +444,7 @@ const themeDescription = (key: string, isCurrent: boolean): string => {
 export const buildThemeItems = <C extends string>(keys: readonly string[], category: C, currentKey: string) =>
     keys.map(key => ({
         label: key === currentKey ? `$(check) ${key}` : `      ${key}`,
-        description: themeDescription(key, key === currentKey),
+        description: key === currentKey ? vscode.l10n.t('(current)') : '',
         category,
         themeKey: key
     }));

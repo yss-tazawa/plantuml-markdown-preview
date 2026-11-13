@@ -1,5 +1,6 @@
 {
   "Mermaid Empty Block": {
+    "scope": "markdown,prompt,instructions,chatagent,skill",
     "prefix": "mermaid",
     "body": [
       "```mermaid",
@@ -9,6 +10,7 @@
     "description": "Empty Mermaid code block"
   },
   "Mermaid Flowchart": {
+    "scope": "markdown,prompt,instructions,chatagent,skill",
     "prefix": "mermaid-flow",
     "body": [
       "```mermaid",
@@ -29,6 +31,7 @@
     "description": "Mermaid flowchart block"
   },
   "Mermaid Sequence Diagram": {
+    "scope": "markdown,prompt,instructions,chatagent,skill",
     "prefix": "mermaid-sequence",
     "body": [
       "```mermaid",
@@ -68,6 +71,7 @@
     "description": "Mermaid sequence diagram block"
   },
   "Mermaid Class Diagram": {
+    "scope": "markdown,prompt,instructions,chatagent,skill",
     "prefix": "mermaid-class",
     "body": [
       "```mermaid",
@@ -105,6 +109,7 @@
     "description": "Mermaid class diagram block"
   },
   "Mermaid State Diagram": {
+    "scope": "markdown,prompt,instructions,chatagent,skill",
     "prefix": "mermaid-state",
     "body": [
       "```mermaid",
@@ -128,6 +133,7 @@
     "description": "Mermaid state diagram block"
   },
   "Mermaid ER Diagram": {
+    "scope": "markdown,prompt,instructions,chatagent,skill",
     "prefix": "mermaid-er",
     "body": [
       "```mermaid",
@@ -161,6 +167,7 @@
     "description": "Mermaid ER diagram block"
   },
   "Mermaid Gantt Chart": {
+    "scope": "markdown,prompt,instructions,chatagent,skill",
     "prefix": "mermaid-gantt",
     "body": [
       "```mermaid",
@@ -181,6 +188,7 @@
     "description": "Mermaid Gantt chart block"
   },
   "Mermaid Pie Chart": {
+    "scope": "markdown,prompt,instructions,chatagent,skill",
     "prefix": "mermaid-pie",
     "body": [
       "```mermaid",
@@ -194,6 +202,7 @@
     "description": "Mermaid pie chart block"
   },
   "Mermaid Mindmap": {
+    "scope": "markdown,prompt,instructions,chatagent,skill",
     "prefix": "mermaid-mindmap",
     "body": [
       "```mermaid",
@@ -219,6 +228,7 @@
     "description": "Mermaid mindmap block"
   },
   "Mermaid Timeline": {
+    "scope": "markdown,prompt,instructions,chatagent,skill",
     "prefix": "mermaid-timeline",
     "body": [
       "```mermaid",
@@ -235,6 +245,7 @@
     "description": "Mermaid timeline block"
   },
   "Mermaid Git Graph": {
+    "scope": "markdown,prompt,instructions,chatagent,skill",
     "prefix": "mermaid-git",
     "body": [
       "```mermaid",

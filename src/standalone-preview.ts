@@ -12,8 +12,9 @@
 import * as vscode from 'vscode';
 import { CONFIG_SECTION, type Config } from './config.js';
 import { VSCODE_THEME_KEYS, LIGHT_THEME_KEYS, DARK_THEME_KEYS, getThemeBgColor } from './exporter.js';
-import { getNonce, buildThemeItems, showThemeQuickPick, readSource, isLiveSourceUri } from './utils.js';
+import { getNonce, buildThemeItems, showThemeQuickPick, readSource, isLiveSourceUri, errorPage } from './utils.js';
 import { handleViewerMessage } from './export-handler.js';
+import type { AdoptedPanel, DiagramReadingView } from './reading-view.js';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -47,6 +48,7 @@ export interface StandalonePreviewDef {
      *
      * Called once when the panel is first created.
      * For SVG-based previews this should render the diagram first.
+     * Throws when the page cannot be built.
      */
     buildHtml(content: string, nonce: string, bgColor: string, panel: vscode.WebviewPanel): Promise<string> | string;
 
@@ -124,9 +126,17 @@ export interface StandalonePreviewDef {
 /** Public API returned by {@link createStandalonePreview}. */
 export interface StandalonePreview {
     open(filePath: string, config: Config): Promise<void>;
+    /**
+     * Show the file in the panel handed over at creation (Reading View only).
+     * A file it cannot show leaves an error page, which tries the file again when it
+     * is saved or when the panel is shown again. Settles when the first render ends.
+     */
+    openAdopted(config: Config): Promise<void>;
     updateConfig(config: Config): void;
     getCurrentFilePath(): string | null;
     getPanel(): vscode.WebviewPanel | null;
+    /** Source text of the most recent render handed to the webview, or null. */
+    getLastRenderedText(): string | null;
     dispose(): void;
     changeTheme(): Promise<void>;
 }
@@ -140,11 +150,18 @@ export interface StandalonePreview {
  *
  * All mutable state lives inside the returned closure — callers keep a
  * reference to the {@link StandalonePreview} object and delegate to it.
+ *
+ * @param def - Diagram-specific behaviour.
+ * @param adopted - Panel handed over by VS Code and the file it shows, for a Reading
+ *                  View; omitted for the preview, which creates its own panel.
+ *                  A Reading View never disposes its panel.
  */
-export function createStandalonePreview(def: StandalonePreviewDef): StandalonePreview {
+export function createStandalonePreview(def: StandalonePreviewDef, adopted?: AdoptedPanel): StandalonePreview {
     // -- shared state --------------------------------------------------------
-    let panel: vscode.WebviewPanel | null = null;
-    let currentFilePath: string | null = null;
+    let panel: vscode.WebviewPanel | null = adopted?.panel ?? null;
+    let currentFilePath: string | null = adopted?.filePath ?? null;
+    /** Source of the most recent render handed to the webview. */
+    let lastRenderedText: string | null = null;
     /** Configuration the current panel uses; null while no panel exists. */
     let lastConfig: Config | null = null;
     /**
@@ -161,6 +178,8 @@ export function createStandalonePreview(def: StandalonePreviewDef): StandalonePr
      */
     let shownError: string | null = null;
     const panelDisposables: vscode.Disposable[] = [];
+    /** Listeners that try the file again while a Reading View shows an error page in its place. */
+    const retryListeners: vscode.Disposable[] = [];
     let renderSeq = 0;
     let renderAbort: AbortController | null = null;
     /**
@@ -198,10 +217,10 @@ export function createStandalonePreview(def: StandalonePreviewDef): StandalonePr
         return getThemeBgColor(getPreviewTheme());
     }
 
-    /** Build a panel title from the file name (e.g. "foo.puml (Preview)"). */
+    /** Build a panel title from the file name (e.g. "foo.puml (Preview)", "foo.puml [Reading View]"). */
     function makePanelTitle(filePath: string): string {
         const name = filePath.split(/[/\\]/).pop() ?? def.defaultTitle;
-        return `${name} ${vscode.l10n.t('(Preview)')}`;
+        return `${name} ${adopted ? vscode.l10n.t('[Reading View]') : vscode.l10n.t('(Preview)')}`;
     }
 
     /** Schedule a debounced re-render of the current file. */
@@ -244,6 +263,7 @@ export function createStandalonePreview(def: StandalonePreviewDef): StandalonePr
         try {
             await def.updateWebview(panel, content, getCurrentBgColor(), signal);
             if (signal.aborted || seq !== renderSeq) return;
+            lastRenderedText = content;
             shownError = null;
             updateIncludePaths(content);
         } finally {
@@ -262,10 +282,12 @@ export function createStandalonePreview(def: StandalonePreviewDef): StandalonePr
         lastConfig = null;
         localPreviewTheme = null;
         shownError = null;
+        lastRenderedText = null;
         includePaths = new Set<string>();
         def.resetDiagramState();
         for (const d of panelDisposables) d.dispose();
         panelDisposables.length = 0;
+        disposeRetryListeners();
         if (debounceTimer) { clearTimeout(debounceTimer); debounceTimer = null; }
         if (renderAbort) { renderAbort.abort(); renderAbort = null; }
     }
@@ -320,9 +342,7 @@ export function createStandalonePreview(def: StandalonePreviewDef): StandalonePr
                 enableFindWidget: true,
                 retainContextWhenHidden: vscode.workspace.getConfiguration(CONFIG_SECTION)
                     .get<boolean>('retainPreviewContext', true),
-                localResourceRoots: typeof def.localResourceRoots === 'function'
-                    ? def.localResourceRoots()
-                    : def.localResourceRoots ?? [],
+                localResourceRoots: resolveLocalResourceRoots(),
             }
         );
         // Take the file only once a panel exists, so a failed creation leaves none behind.
@@ -331,37 +351,74 @@ export function createStandalonePreview(def: StandalonePreviewDef): StandalonePr
         lastConfig = latestConfig ?? config;
         currentFilePath = filePath;
         // Listen before building the HTML: the panel can be closed while it is built.
-        panelDisposables.push(created.onDidDispose(() => { if (panel === created) disposeState(); }));
+        listenForDisposal(created);
+        await setUpPanel(generation, created, content, config);
+    }
 
-        let html: string;
+    /**
+     * Reset the state when the panel is closed.
+     * @param target - The panel taken as `panel`.
+     */
+    function listenForDisposal(target: vscode.WebviewPanel): void {
+        panelDisposables.push(target.onDidDispose(() => { if (panel === target) disposeState(); }));
+    }
+
+    /** Local resource roots the definition asks for. */
+    function resolveLocalResourceRoots(): vscode.Uri[] {
+        return typeof def.localResourceRoots === 'function'
+            ? def.localResourceRoots()
+            : def.localResourceRoots ?? [];
+    }
+
+    /**
+     * Show the file in a panel that has no content yet: build the HTML and listen to
+     * the panel, the webview and the documents. A preview's panel that cannot get its
+     * HTML is closed; a Reading View's panel shows the error instead (see
+     * {@link showAdoptedError}).
+     *
+     * @param generation - Generation of the open in progress.
+     * @param target - The panel, already taken as `panel` and listened to for disposal.
+     * @param content - Diagram source read for the first render.
+     * @param config - Configuration of the open, used when no newer one exists.
+     */
+    async function setUpPanel(generation: number, target: vscode.WebviewPanel, content: string, config: Config): Promise<void> {
+        let html: string | null;
+        let buildError = '';
         try {
-            html = await def.buildHtml(content, getNonce(), getCurrentBgColor(), created);
-        } catch {
-            html = '';
+            html = await def.buildHtml(content, getNonce(), getCurrentBgColor(), target);
+        } catch (err) {
+            html = null;
+            buildError = err instanceof Error ? err.message : String(err);
         }
-        // A disposal that superseded this open has already cleared the state.
-        if (generation !== openGeneration) { created.dispose(); return; }
-        if (!html) {
+        // A disposal that superseded this open has already cleared the state. A Reading
+        // View's open is superseded only by its disposal, which leaves the panel to VS Code.
+        if (generation !== openGeneration) { if (!adopted) target.dispose(); return; }
+        if (html === null && adopted) {
+            showAdoptedError(target, adopted.filePath, vscode.l10n.t('[PlantUML Markdown Preview] {0}', buildError));
+            return;
+        }
+        if (html === null) {
             // Disposing runs disposeState(), which cancels renders scheduled during the
             // build and resets panel-local state; keep the queued open, which it drops.
             const queued = pendingOpen;
-            created.dispose();
+            target.dispose();
             // As in dispose(): reset here if the listener did not run.
-            if (panel === created) disposeState();
+            if (panel === target) disposeState();
             pendingOpen = queued;
             // Hold the guard until open() releases it and opens the queued file, so a
             // newer request replaces the queued one instead of running before it.
             activeOpen = generation;
             return;
         }
-        panelDisposables.push(created.webview.onDidReceiveMessage((msg) => {
+        panelDisposables.push(target.webview.onDidReceiveMessage((msg) => {
             if (msg?.type === 'webviewReady') {
-                handleWebviewReady(created);
+                handleWebviewReady(target);
                 return;
             }
             void handleViewerMessage(msg, currentFilePath);
         }));
-        created.webview.html = html;
+        target.webview.html = html;
+        lastRenderedText = content;
 
         panelDisposables.push(
             vscode.workspace.onDidChangeTextDocument((e) => {
@@ -390,6 +447,79 @@ export function createStandalonePreview(def: StandalonePreviewDef): StandalonePr
         );
 
         def.onPanelCreated?.(lastConfig ?? config);
+    }
+
+    /**
+     * Read the file and show it in the handed-over panel. A file that cannot be read
+     * shows an error page.
+     *
+     * @param generation - Generation assigned to this open.
+     * @param target - The handed-over panel.
+     * @param filePath - Absolute path of the file it shows.
+     */
+    async function openAdoptedFile(generation: number, target: vscode.WebviewPanel, filePath: string): Promise<void> {
+        let content: string | null;
+        try {
+            content = await readSource(filePath);
+        } catch {
+            content = null;
+        }
+        if (generation !== openGeneration) return;
+        if (content === null) {
+            showAdoptedError(target, filePath, vscode.l10n.t('File not found: {0}', filePath));
+            return;
+        }
+        await setUpPanel(generation, target, content, latestConfig ?? lastConfig!);
+    }
+
+    /**
+     * Show an error page in the handed-over panel in place of the file, and try the
+     * file again when it is saved or when the panel is shown again after being hidden.
+     *
+     * @param target - The handed-over panel.
+     * @param filePath - Absolute path of the file it shows.
+     * @param message - Text of the error page.
+     */
+    function showAdoptedError(target: vscode.WebviewPanel, filePath: string, message: string): void {
+        target.webview.html = errorPage(message);
+        disposeRetryListeners();
+        let hidden = false;
+        retryListeners.push(
+            vscode.workspace.onDidSaveTextDocument((doc) => {
+                if (doc.uri.fsPath === filePath) retryAdopted();
+            }),
+            target.onDidChangeViewState(() => {
+                if (!target.visible) { hidden = true; return; }
+                if (hidden) retryAdopted();
+            }),
+        );
+    }
+
+    /** Stop the listeners {@link showAdoptedError} set. */
+    function disposeRetryListeners(): void {
+        for (const d of retryListeners) d.dispose();
+        retryListeners.length = 0;
+    }
+
+    /** Try again to show the file in the handed-over panel showing an error page. */
+    function retryAdopted(): void {
+        disposeRetryListeners();
+        void showAdopted();
+    }
+
+    /**
+     * Show the file in the handed-over panel, unless the view is disposed or an open
+     * is under way.
+     */
+    async function showAdopted(): Promise<void> {
+        if (!adopted || panel !== adopted.panel || activeOpen !== null) return;
+        const generation = ++openGeneration;
+        activeOpen = generation;
+        try {
+            await openAdoptedFile(generation, adopted.panel, adopted.filePath);
+        } finally {
+            if (activeOpen === generation) activeOpen = null;
+        }
     }
 
     // -- public API ----------------------------------------------------------
@@ -424,6 +554,19 @@ export function createStandalonePreview(def: StandalonePreviewDef): StandalonePr
         }
     }
 
+    /** Show the file in the handed-over panel; see {@link StandalonePreview.openAdopted}. */
+    async function openAdopted(config: Config): Promise<void> {
+        latestConfig = config;
+        lastConfig = config;
+        if (!adopted || panel !== adopted.panel || activeOpen !== null) return;
+        const target = adopted.panel;
+        listenForDisposal(target);
+        target.title = makePanelTitle(adopted.filePath);
+        // Before the first HTML: the panel comes without scripts or resource roots.
+        target.webview.options = { enableScripts: true, localResourceRoots: resolveLocalResourceRoots() };
+        await showAdopted();
+    }
+
     /** Apply updated configuration; triggers re-render if diagram keys changed, and
      *  applies a changed preview theme unless this panel picked its own. */
     function updateConfig(config: Config): void {
@@ -447,10 +590,14 @@ export function createStandalonePreview(def: StandalonePreviewDef): StandalonePr
         if (reRender) scheduleRender();
     }
 
-    /** Dispose the panel and release all resources. */
+    /** Dispose the panel and release all resources. A Reading View leaves its panel to VS Code. */
     function dispose(): void {
         if (debounceTimer) { clearTimeout(debounceTimer); debounceTimer = null; }
         if (renderAbort) { renderAbort.abort(); renderAbort = null; }
+        if (adopted) {
+            if (panel) disposeState();
+            return;
+        }
         const disposing = panel;
         disposing?.dispose(); // triggers onDidDispose → disposeState()
         // No listener ran: the panel was already gone.
@@ -464,7 +611,7 @@ export function createStandalonePreview(def: StandalonePreviewDef): StandalonePr
         const currentPreviewTheme = getPreviewTheme();
 
         const items: (vscode.QuickPickItem & { category?: string; themeKey?: string })[] = [
-            { label: vscode.l10n.t('Preview Theme (VS Code)'), kind: vscode.QuickPickItemKind.Separator },
+            { label: vscode.l10n.t('Preview Theme (Follow VS Code Color Theme)'), kind: vscode.QuickPickItemKind.Separator },
             ...buildThemeItems(VSCODE_THEME_KEYS, 'preview' as const, currentPreviewTheme),
             { label: vscode.l10n.t('Preview Theme (Light)'), kind: vscode.QuickPickItemKind.Separator },
             ...buildThemeItems(LIGHT_THEME_KEYS, 'preview' as const, currentPreviewTheme),
@@ -505,5 +652,34 @@ export function createStandalonePreview(def: StandalonePreviewDef): StandalonePr
         }
     }
 
-    return { open, updateConfig, getCurrentFilePath: () => currentFilePath, getPanel: () => panel, dispose, changeTheme };
+    return {
+        open, openAdopted, updateConfig, getCurrentFilePath: () => currentFilePath, getPanel: () => panel,
+        getLastRenderedText: () => lastRenderedText, dispose, changeTheme,
+    };
+}
+
+/**
+ * Make the Reading View of a diagram file from a preview created on the handed-over
+ * panel, and start its first render.
+ *
+ * @param kind - Kind of diagram file it shows.
+ * @param view - The preview, created with `adopted`.
+ * @param adopted - The panel and the file it shows.
+ * @param config - Current extension configuration snapshot.
+ * @returns The Reading View.
+ */
+export function createDiagramReadingView(
+    kind: DiagramReadingView['kind'], view: StandalonePreview, adopted: AdoptedPanel, config: Config,
+): DiagramReadingView {
+    const firstRender = view.openAdopted(config);
+    return {
+        kind,
+        filePath: () => adopted.filePath,
+        panel: () => adopted.panel,
+        firstRender,
+        updateConfig: (c) => view.updateConfig(c),
+        changeTheme: () => view.changeTheme(),
+        getLastRenderedText: () => view.getLastRenderedText(),
+        dispose: () => view.dispose(),
+    };
 }

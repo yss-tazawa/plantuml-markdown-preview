@@ -1,5 +1,6 @@
 {
   "D2 Empty Block": {
+    "scope": "markdown,prompt,instructions,chatagent,skill",
     "prefix": "d2",
     "body": [
       "```d2",
@@ -9,6 +10,7 @@
     "description": "Empty D2 code block"
   },
   "D2 Basic": {
+    "scope": "markdown,prompt,instructions,chatagent,skill",
     "prefix": "d2-basic",
     "body": [
       "```d2",
@@ -18,6 +20,7 @@
     "description": "D2 basic connection diagram"
   },
   "D2 Sequence": {
+    "scope": "markdown,prompt,instructions,chatagent,skill",
     "prefix": "d2-sequence",
     "body": [
       "```d2",
@@ -47,6 +50,7 @@
     "description": "D2 sequence diagram"
   },
   "D2 Class": {
+    "scope": "markdown,prompt,instructions,chatagent,skill",
     "prefix": "d2-class",
     "body": [
       "```d2",
@@ -91,6 +95,7 @@
     "description": "D2 class diagram"
   },
   "D2 Component": {
+    "scope": "markdown,prompt,instructions,chatagent,skill",
     "prefix": "d2-comp",
     "body": [
       "```d2",
@@ -124,6 +129,7 @@
     "description": "D2 component diagram"
   },
   "D2 Grid": {
+    "scope": "markdown,prompt,instructions,chatagent,skill",
     "prefix": "d2-grid",
     "body": [
       "```d2",
@@ -162,6 +168,7 @@
     "description": "D2 grid layout"
   },
   "D2 ER": {
+    "scope": "markdown,prompt,instructions,chatagent,skill",
     "prefix": "d2-er",
     "body": [
       "```d2",
@@ -199,6 +206,7 @@
     "description": "D2 ER diagram (SQL tables)"
   },
   "D2 Flow": {
+    "scope": "markdown,prompt,instructions,chatagent,skill",
     "prefix": "d2-flow",
     "body": [
       "```d2",
@@ -226,6 +234,7 @@
     "description": "D2 flowchart with branching"
   },
   "D2 Icon": {
+    "scope": "markdown,prompt,instructions,chatagent,skill",
     "prefix": "d2-icon",
     "body": [
       "```d2",
@@ -237,6 +246,7 @@
     "description": "D2 node with icon"
   },
   "D2 Markdown": {
+    "scope": "markdown,prompt,instructions,chatagent,skill",
     "prefix": "d2-markdown",
     "body": [
       "```d2",
@@ -249,6 +259,7 @@
     "description": "D2 Markdown text node"
   },
   "D2 Tooltip": {
+    "scope": "markdown,prompt,instructions,chatagent,skill",
     "prefix": "d2-tooltip",
     "body": [
       "```d2",
@@ -261,6 +272,7 @@
     "description": "D2 node with tooltip and link"
   },
   "D2 Layers": {
+    "scope": "markdown,prompt,instructions,chatagent,skill",
     "prefix": "d2-layers",
     "body": [
       "```d2",
@@ -279,6 +291,7 @@
     "description": "D2 layers/steps"
   },
   "D2 Style": {
+    "scope": "markdown,prompt,instructions,chatagent,skill",
     "prefix": "d2-style",
     "body": [
       "```d2",

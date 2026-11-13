@@ -11,6 +11,7 @@ import { PlantUMLCompletionProvider } from './plantuml-provider.js';
 import { MermaidCompletionProvider } from './mermaid-provider.js';
 import { D2CompletionProvider } from './d2-provider.js';
 import { DIAGRAM_FENCE_OPEN_RE, DIAGRAM_FENCE_CLOSE_RE } from '../utils.js';
+import { MARKDOWN_LANGUAGE_IDS } from '../markdown-files.js';
 
 /**
  * Register completion providers for all supported diagram languages.
@@ -40,7 +41,7 @@ export function registerCompletionProviders(context: vscode.ExtensionContext): v
         ),
         // Markdown embedded blocks
         vscode.languages.registerCompletionItemProvider(
-            { language: 'markdown' },
+            MARKDOWN_LANGUAGE_IDS.map(language => ({ language })),
             new MarkdownCompletionRouter(plantuml, mermaid, d2),
             '@', '!', '#', ':', '.',
         ),

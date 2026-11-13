@@ -9,6 +9,7 @@
 import * as vscode from 'vscode';
 import { DiagramColorProvider, type DiagramLanguage } from './plantuml-color-provider.js';
 import { DIAGRAM_FENCE_OPEN_RE, DIAGRAM_FENCE_CLOSE_RE } from '../utils.js';
+import { MARKDOWN_LANGUAGE_IDS } from '../markdown-files.js';
 
 /**
  * Register color providers for all supported diagram languages.
@@ -27,7 +28,7 @@ export function registerColorProviders(context: vscode.ExtensionContext): void {
         vscode.languages.registerColorProvider({ language: 'd2' }, d2),
         // Markdown embedded fenced blocks
         vscode.languages.registerColorProvider(
-            { language: 'markdown' },
+            MARKDOWN_LANGUAGE_IDS.map(language => ({ language })),
             new MarkdownColorRouter(plantuml, mermaid, d2),
         ),
     );

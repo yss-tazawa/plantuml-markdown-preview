@@ -59,6 +59,7 @@ interface StoredServerPid {
  */
 let staleCleanupPromise: Promise<void> | null = null;
 
+/** Lifecycle state of the local PlantUML server. */
 export type LocalServerState = 'stopped' | 'starting' | 'running' | 'error';
 let serverState: LocalServerState = 'stopped';
 
