@@ -6,7 +6,7 @@
  * Delegates rendering to the preview webview (same path as single diagram export),
  * then writes each diagram's data to a file.
  *
- * Output directory: {mdBaseName}_{format}/ (sibling to the .md file).
+ * Output directory: {mdBaseName}_{format}/ (sibling to the Markdown file).
  * If the directory already exists, all contents are deleted first.
  * File naming: diagram-{index}.{format} (0-based, document order).
  */
@@ -14,6 +14,7 @@ import fs from 'fs';
 import path from 'path';
 import * as vscode from 'vscode';
 import { sanitizeSvgEntities } from './export-handler.js';
+import { fileNameWithoutExtension } from './markdown-files.js';
 
 /** Result of a bulk export operation. */
 export interface BulkExportResult {
@@ -47,7 +48,7 @@ export async function exportAllDiagrams(
     format: 'svg' | 'png',
 ): Promise<BulkExportResult> {
     // Let user choose output directory
-    const mdBaseName = path.basename(mdFilePath, '.md');
+    const mdBaseName = fileNameWithoutExtension(mdFilePath);
     const parentDir = path.dirname(mdFilePath);
 
     // macOS save dialog navigates into existing directories instead of using

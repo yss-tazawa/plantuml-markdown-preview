@@ -55,8 +55,15 @@
   "command.selectMode.title": "レンダリングモードを選択",
   "command.goToIncludeFile.title": "インクルードファイルに移動",
   "command.openIncludeSource.title": "インクルードソースを開く",
+  "command.reopenAsSource.title": "ソースに切り替える",
+  "command.reopenAsReadingView.title": "参照ビューに切り替える",
+  "command.showPreviewToSide.title": "プレビューを横に表示",
+  "command.reopenAsPreview.title": "プレビューとして開く",
+  "command.showPreview.title": "プレビューを開く",
+  "command.toggleReadingView.title": "参照ビューの切り替え",
   "command.changeTheme.title": "プレビューテーマを変更",
   "command.category": "PlantUML Markdown Preview",
+  "customEditor.displayName": "PlantUML Markdown Preview（参照ビュー）",
   "configuration.title": "PlantUML Markdown Preview",
   "configuration.plantumlJarPath.description": "PlantUML jar ファイルへのパス。空欄の場合は同梱の jar（LGPL）を使用します。例: /usr/local/lib/plantuml.jar",
   "configuration.javaPath.description": "Java 実行ファイルへのパス（Java 11 以上が必要）。設定するとその値をそのまま使用します。未設定の場合は JAVA_HOME/bin/java を優先し、なければ PATH 上の 'java' を使用します。デフォルト: java",
@@ -171,6 +178,6 @@
   "configuration.plantumlLocalServerJvmInitialHeapMb.description": "管理対象のローカル PlantUML サーバーの初期 JVM ヒープサイズ（-Xms、単位: MB）。ヒーププリセットが 'custom' の場合にのみ使用されます。ローカル PlantUML サーバーが使用される場合（mode: fast）にのみ適用されます。デフォルト: 16",
   "configuration.plantumlLocalServerJvmMaxHeapMb.description": "管理対象のローカル PlantUML サーバーの最大 JVM ヒープサイズ（-Xmx、単位: MB）。ヒーププリセットが 'custom' の場合にのみ使用されます。ローカル PlantUML サーバーが使用される場合（mode: fast）にのみ適用されます。デフォルト: 512",
   "configuration.enableDiagramViewer.description": "プレビュー内のダイアグラムを右クリックしてパン＆ズームビューワーで開く機能を有効にします。（プレビューを開き直す必要があります）",
-  "configuration.retainPreviewContext.description": "タブが非表示のときプレビュー内容を保持します。タブ切替時の再描画を防ぎますが、メモリ使用量が増えます。（プレビューを開き直す必要があります）",
-  "configuration.useAsDefaultPreview.description": "VS Code 標準の Markdown プレビューのショートカット（Ctrl+Shift+V・Ctrl+K V。macOS は Cmd）で、Markdown・PlantUML・Mermaid・D2 のファイルに本拡張のプレビューを開きます。どちらのショートカットも、プレビューをエディタの横に開きます（VS Code 標準の Ctrl+Shift+V は今のタブに開きます）。エクスプローラーの右クリックの「プレビューを開く」と、エディタ右上の VS Code 標準のプレビューのボタンは置き換わりません。デフォルト: false"
+  "configuration.retainPreviewContext.description": "タブが非表示のときプレビュー内容を保持します。タブ切替時の再描画を防ぎますが、メモリ使用量が増えます。設定を反映させるには、プレビューの場合はプレビューを閉じて再度開いてください。参照ビューの場合は VS Code を再起動するか、ウィンドウを再読み込みしてください。",
+  "configuration.useAsDefaultPreview.description": "VS Code 標準の Markdown プレビューのボタン・右クリックの項目・ショートカット（Ctrl+Shift+V・Ctrl+K V）で本拡張を開きます。VS Code 1.119 より前はショートカットだけです。デフォルト: true"
 }

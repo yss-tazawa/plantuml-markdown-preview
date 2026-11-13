@@ -1,5 +1,6 @@
 {
   "PlantUML Empty Block": {
+    "scope": "markdown,prompt,instructions,chatagent,skill",
     "prefix": "plantuml",
     "body": [
       "```plantuml",
@@ -11,6 +12,7 @@
     "description": "Empty PlantUML code block"
   },
   "PlantUML Sequence Diagram": {
+    "scope": "markdown,prompt,instructions,chatagent,skill",
     "prefix": "plantuml-sequence",
     "body": [
       "```plantuml",
@@ -54,6 +56,7 @@
     "description": "PlantUML sequence diagram block"
   },
   "PlantUML Class Diagram": {
+    "scope": "markdown,prompt,instructions,chatagent,skill",
     "prefix": "plantuml-class",
     "body": [
       "```plantuml",
@@ -90,6 +93,7 @@
     "description": "PlantUML class diagram block"
   },
   "PlantUML Activity Diagram": {
+    "scope": "markdown,prompt,instructions,chatagent,skill",
     "prefix": "plantuml-activity",
     "body": [
       "```plantuml",
@@ -116,6 +120,7 @@
     "description": "PlantUML activity diagram block"
   },
   "PlantUML Use Case Diagram": {
+    "scope": "markdown,prompt,instructions,chatagent,skill",
     "prefix": "plantuml-usecase",
     "body": [
       "```plantuml",
@@ -140,6 +145,7 @@
     "description": "PlantUML use case diagram block"
   },
   "PlantUML Component Diagram": {
+    "scope": "markdown,prompt,instructions,chatagent,skill",
     "prefix": "plantuml-component",
     "body": [
       "```plantuml",
@@ -174,6 +180,7 @@
     "description": "PlantUML component diagram block"
   },
   "PlantUML State Diagram": {
+    "scope": "markdown,prompt,instructions,chatagent,skill",
     "prefix": "plantuml-state",
     "body": [
       "```plantuml",
@@ -198,6 +205,7 @@
     "description": "PlantUML state diagram block"
   },
   "PlantUML ER Diagram": {
+    "scope": "markdown,prompt,instructions,chatagent,skill",
     "prefix": "plantuml-er",
     "body": [
       "```plantuml",
@@ -237,6 +245,7 @@
     "description": "PlantUML entity-relationship diagram block"
   },
   "PlantUML Object Diagram": {
+    "scope": "markdown,prompt,instructions,chatagent,skill",
     "prefix": "plantuml-object",
     "body": [
       "```plantuml",
@@ -271,6 +280,7 @@
     "description": "PlantUML object diagram block"
   },
   "PlantUML Deployment Diagram": {
+    "scope": "markdown,prompt,instructions,chatagent,skill",
     "prefix": "plantuml-deployment",
     "body": [
       "```plantuml",
@@ -303,6 +313,7 @@
     "description": "PlantUML deployment diagram block"
   },
   "PlantUML Mindmap": {
+    "scope": "markdown,prompt,instructions,chatagent,skill",
     "prefix": "plantuml-mindmap",
     "body": [
       "```plantuml",
@@ -329,6 +340,7 @@
     "description": "PlantUML mindmap block"
   },
   "PlantUML Gantt Chart": {
+    "scope": "markdown,prompt,instructions,chatagent,skill",
     "prefix": "plantuml-gantt",
     "body": [
       "```plantuml",

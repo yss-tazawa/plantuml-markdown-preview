@@ -12,6 +12,7 @@ import type { KeywordEntry } from './types.js';
 const K = vscode.CompletionItemKind.Keyword;
 const P = vscode.CompletionItemKind.Property;
 
+/** Completion entries for Mermaid. */
 export const mermaidKeywords: readonly KeywordEntry[] = [
     // --- diagram-type (first line declarations) ---
     { label: 'flowchart', kind: K, context: 'diagram-type', detail: 'Flowchart', sortPriority: 10 },

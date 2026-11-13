@@ -11,33 +11,53 @@ import { getNonce, escapeHtml, CSS_COLOR_RE } from './utils.js';
 import { getPanZoomScript } from './webview/pan-zoom-script.js';
 import { saveDiagramFile, sanitizeSvgEntities } from './export-handler.js';
 
-/** Active viewer panels keyed by 1-based diagram index. */
-const viewers = new Map<number, vscode.WebviewPanel>();
+/** A viewer panel and the preview it was opened from. */
+interface ViewerEntry {
+    /** Id of the preview that opened the viewer. */
+    owner: number;
+    /** 1-based diagram index within that preview. */
+    index: number;
+    panel: vscode.WebviewPanel;
+    /** Latest SVG/bgColor, for re-sending after webview reload (e.g. panel move). */
+    latest?: { svg: string; bgColor?: string };
+}
 
-/** Latest SVG/bgColor per viewer, for re-sending after webview reload (e.g. panel move). */
-const latestState = new Map<number, { svg: string; bgColor?: string }>();
+/** Active viewer panels keyed by {@link viewerKey}. */
+const viewers = new Map<string, ViewerEntry>();
 
-/** Index of the most recently focused viewer panel. */
-let activeViewerIndex = -1;
+/** Key of the most recently focused viewer panel, or null. */
+let activeViewerKey: string | null = null;
 
 /** Pending diagram data from a preview right-click (for Save/Copy as PNG/SVG and Open in Viewer). */
-let pendingSave: { svg: string; diagramIndex: number; bgColor?: string; diagramType?: string; plantumlIndex?: number } | null = null;
+let pendingSave: { owner: number; svg: string; diagramIndex: number; bgColor?: string; diagramType?: string; plantumlIndex?: number } | null = null;
 
 /**
- * Open (or reveal) a diagram viewer panel for the given diagram index.
+ * Key of the viewer for a diagram of a preview.
  *
- * If a viewer for the same index already exists, it is revealed.
+ * @param owner - Id of the preview the diagram belongs to.
+ * @param diagramIndex - 1-based diagram index within that preview.
+ */
+function viewerKey(owner: number, diagramIndex: number): string {
+    return `${owner}:${diagramIndex}`;
+}
+
+/**
+ * Open (or reveal) a diagram viewer panel for the given diagram of a preview.
+ *
+ * If a viewer for the same diagram of the same preview already exists, it is updated.
  * Otherwise a new WebviewPanel is created.
  *
+ * @param owner - Id of the preview the diagram belongs to.
  * @param svg - innerHTML of the .plantuml-diagram element
  * @param diagramIndex - 1-based position of the diagram in the document
  * @param bgColor - CSS background color from the markdown preview theme
  */
-export function openDiagramViewer(svg: string, diagramIndex: number, bgColor?: string): void {
-    const existing = viewers.get(diagramIndex);
+export function openDiagramViewer(owner: number, svg: string, diagramIndex: number, bgColor?: string): void {
+    const key = viewerKey(owner, diagramIndex);
+    const existing = viewers.get(key);
     if (existing) {
-        latestState.set(diagramIndex, { svg, bgColor: bgColor ?? '' });
-        void existing.webview.postMessage({ type: 'updateSvg', svg, bgColor });
+        existing.latest = { svg, bgColor: bgColor ?? '' };
+        void existing.panel.webview.postMessage({ type: 'updateSvg', svg, bgColor });
         return;
     }
 
@@ -48,22 +68,22 @@ export function openDiagramViewer(svg: string, diagramIndex: number, bgColor?: s
         { enableScripts: true, enableFindWidget: true, retainContextWhenHidden: true, localResourceRoots: [] }
     );
 
-    viewers.set(diagramIndex, panel);
-    activeViewerIndex = diagramIndex;
+    const entry: ViewerEntry = { owner, index: diagramIndex, panel };
+    viewers.set(key, entry);
+    activeViewerKey = key;
     // Disposed explicitly in onDidDispose below (not added to a shared disposable array).
     const viewStateDisposable = panel.onDidChangeViewState((e) => {
-        if (e.webviewPanel.active) activeViewerIndex = diagramIndex;
+        if (e.webviewPanel.active) activeViewerKey = key;
     });
     const messageDisposable = panel.webview.onDidReceiveMessage((msg) => {
-        void handleViewerMessage(msg, panel, diagramIndex).catch(err => console.error('[diagram-viewer] message handler error:', err));
+        void handleViewerMessage(msg, entry).catch(err => console.error('[diagram-viewer] message handler error:', err));
     });
     const disposeDisposable = panel.onDidDispose(() => {
         viewStateDisposable.dispose();
         messageDisposable.dispose();
         disposeDisposable.dispose();
-        viewers.delete(diagramIndex);
-        latestState.delete(diagramIndex);
-        if (activeViewerIndex === diagramIndex) activeViewerIndex = -1;
+        if (viewers.get(key) === entry) viewers.delete(key);
+        if (activeViewerKey === key) activeViewerKey = null;
     });
 
     const nonce = getNonce();
@@ -71,40 +91,62 @@ export function openDiagramViewer(svg: string, diagramIndex: number, bgColor?: s
 }
 
 /**
- * Send an updated SVG to an existing viewer panel.
+ * Send an updated SVG to an existing viewer panel of a preview.
  *
+ * @param owner - Id of the preview the diagram belongs to.
  * @param diagramIndex - 1-based diagram index
  * @param svg - Updated innerHTML of the .plantuml-diagram element
  * @param bgColor - CSS background color from the markdown preview theme
  */
-export function updateDiagramViewer(diagramIndex: number, svg: string, bgColor?: string): void {
-    const panel = viewers.get(diagramIndex);
-    if (panel) {
-        latestState.set(diagramIndex, { svg, bgColor });
-        void panel.webview.postMessage({ type: 'updateSvg', svg, bgColor });
+export function updateDiagramViewer(owner: number, diagramIndex: number, svg: string, bgColor?: string): void {
+    const entry = viewers.get(viewerKey(owner, diagramIndex));
+    if (entry) {
+        entry.latest = { svg, bgColor };
+        void entry.panel.webview.postMessage({ type: 'updateSvg', svg, bgColor });
     }
 }
 
 /**
- * Close viewer panels whose index exceeds the current diagram count.
+ * Close the viewer panels of a preview whose index exceeds its current diagram count.
  *
+ * @param owner - Id of the preview.
  * @param diagramCount - Current number of diagrams in the document.
  */
-export function closeStaleViewers(diagramCount: number): void {
-    const stale = [...viewers].filter(([i]) => i > diagramCount);
-    for (const [, panel] of stale) {
-        panel.dispose();
+export function closeStaleViewers(owner: number, diagramCount: number): void {
+    const stale = [...viewers.values()].filter(e => e.owner === owner && e.index > diagramCount);
+    for (const entry of stale) {
+        entry.panel.dispose();
+    }
+}
+
+/**
+ * Dispose the viewer panels opened from a preview (e.g. when it switches files,
+ * or when a preview that owns no lasting panel goes away).
+ *
+ * @param owner - Id of the preview.
+ */
+export function disposeViewersOf(owner: number): void {
+    for (const entry of [...viewers.values()]) {
+        if (entry.owner === owner) entry.panel.dispose();
     }
 }
 
 /** Dispose all open viewer panels (called on extension deactivate). */
 export function disposeAllViewers(): void {
-    for (const panel of viewers.values()) {
-        panel.dispose();
+    for (const entry of [...viewers.values()]) {
+        entry.panel.dispose();
     }
     viewers.clear();
-    latestState.clear();
-    activeViewerIndex = -1;
+    activeViewerKey = null;
+}
+
+/**
+ * The open viewer panels with the preview each belongs to (for test hooks).
+ *
+ * @returns One item per viewer: owning preview id, diagram index, panel and latest SVG sent after creation.
+ */
+export function getDiagramViewers(): { owner: number; index: number; panel: vscode.WebviewPanel; svg: string | null }[] {
+    return [...viewers.values()].map(e => ({ owner: e.owner, index: e.index, panel: e.panel, svg: e.latest?.svg ?? null }));
 }
 
 /**
@@ -112,23 +154,24 @@ export function disposeAllViewers(): void {
  * diagramAction() or openPendingDiagramViewer() call can operate
  * without requiring an open viewer panel.
  *
+ * @param owner - Id of the preview the right-click came from.
  * @param svg - innerHTML of the .plantuml-diagram / .mermaid-diagram element
  * @param diagramIndex - 1-based position of the diagram in the document
  * @param bgColor - CSS background color from the markdown preview theme
  * @param diagramType - 'plantuml', 'mermaid', or 'd2'
  * @param plantumlIndex - 0-based index among PlantUML diagrams only (-1 if not PlantUML)
  */
-export function setPendingSaveDiagram(svg: string, diagramIndex: number, bgColor?: string, diagramType?: string, plantumlIndex?: number): void {
-    pendingSave = { svg, diagramIndex, bgColor, diagramType, plantumlIndex };
+export function setPendingSaveDiagram(owner: number, svg: string, diagramIndex: number, bgColor?: string, diagramType?: string, plantumlIndex?: number): void {
+    pendingSave = { owner, svg, diagramIndex, bgColor, diagramType, plantumlIndex };
 }
 
 /**
- * Return the diagram type and PlantUML-specific index from the most recent
- * right-click context, or null if no context has been stored.
+ * Return the preview, diagram type and PlantUML-specific index from the most
+ * recent right-click context, or null if no context has been stored.
  */
-export function getPendingDiagramContext(): { diagramType?: string; plantumlIndex?: number } | null {
+export function getPendingDiagramContext(): { owner: number; diagramType?: string; plantumlIndex?: number } | null {
     if (!pendingSave) return null;
-    return { diagramType: pendingSave.diagramType, plantumlIndex: pendingSave.plantumlIndex };
+    return { owner: pendingSave.owner, diagramType: pendingSave.diagramType, plantumlIndex: pendingSave.plantumlIndex };
 }
 
 /**
@@ -144,7 +187,7 @@ export function openPendingDiagramViewer(): void {
         vscode.window.showWarningMessage(vscode.l10n.t('No diagram selected. Right-click a diagram first.'));
         return;
     }
-    openDiagramViewer(pendingSave.svg, pendingSave.diagramIndex, pendingSave.bgColor);
+    openDiagramViewer(pendingSave.owner, pendingSave.svg, pendingSave.diagramIndex, pendingSave.bgColor);
 }
 
 /**
@@ -159,10 +202,10 @@ export function openPendingDiagramViewer(): void {
  */
 export function diagramAction(action: 'save' | 'copy', format: 'png' | 'svg', previewPanel?: vscode.WebviewPanel): void {
     // Try active viewer panel first
-    const viewerPanel = viewers.get(activeViewerIndex);
-    if (viewerPanel) {
+    const viewer = activeViewerKey === null ? undefined : viewers.get(activeViewerKey);
+    if (viewer) {
         const msgType = action === 'copy' ? 'copyDiagram' : 'exportDiagram';
-        void viewerPanel.webview.postMessage({ type: msgType, format });
+        void viewer.panel.webview.postMessage({ type: msgType, format });
         return;
     }
 
@@ -233,19 +276,17 @@ export function handleCopyResult(success: boolean): void {
  * whole: each branch checks its type and the fields it uses.
  *
  * @param msg - Message posted by the webview.
- * @param panel - Viewer panel whose webview posted the message.
- * @param diagramIndex - 1-based diagram index the panel shows.
+ * @param entry - Viewer whose webview posted the message.
  */
 async function handleViewerMessage(
     msg: { type: string; format?: string; data?: string; success?: boolean },
-    panel: vscode.WebviewPanel,
-    diagramIndex: number
+    entry: ViewerEntry
 ): Promise<void> {
     if (msg.type === 'webviewReady') {
         // A page load: a webview recreated from its initial HTML (e.g. after a
         // move to another window) shows the first SVG, so re-send the latest one.
-        const latest = latestState.get(diagramIndex);
-        if (latest) void panel.webview.postMessage({ type: 'updateSvg', svg: latest.svg, bgColor: latest.bgColor });
+        const latest = entry.latest;
+        if (latest) void entry.panel.webview.postMessage({ type: 'updateSvg', svg: latest.svg, bgColor: latest.bgColor });
         return;
     }
     if (msg.type === 'copyDiagramResult') {
@@ -255,13 +296,13 @@ async function handleViewerMessage(
     if (msg.type !== 'exportDiagramResult' || !msg.format || !msg.data) return;
     if (msg.format !== 'png' && msg.format !== 'svg') return;
 
-    const viewerIndex = activeViewerIndex;
-    if (viewerIndex < 1) return;
+    const viewer = activeViewerKey === null ? undefined : viewers.get(activeViewerKey);
+    if (!viewer) return;
     const format = msg.format;
     const fileData = format === 'png'
         ? Buffer.from(msg.data.replace(/^data:image\/png;base64,/, ''), 'base64')
         : msg.data;
-    await saveDiagramFile(fileData, vscode.Uri.file(`diagram-${viewerIndex}.${format}`), format);
+    await saveDiagramFile(fileData, vscode.Uri.file(`diagram-${viewer.index}.${format}`), format);
 }
 
 /**

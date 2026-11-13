@@ -3,7 +3,9 @@
  * @description VS Code extension entry point.
  *
  * Responsibilities:
- * - Register commands: openPreview / exportHtml / exportHtmlAndOpen / exportHtmlWidth{640,768,960,1024,1200,1440}[AndOpen] / exportHtmlFitToWidthLeft[AndOpen] / exportHtmlWidth{640,768,960,1024,1200,1440}Left[AndOpen] / exportPdf / exportPdfAndOpen / changeTheme / openDiagramViewer / saveDiagramAsPng / saveDiagramAsSvg / copyDiagramAsPng / exportAllDiagramsAsSvg / exportAllDiagramsAsPng / goToIncludeFile / openIncludeSource
+ * - Register commands: openPreview / exportHtml / exportHtmlAndOpen / exportHtmlWidth{640,768,960,1024,1200,1440}[AndOpen] / exportHtmlFitToWidthLeft[AndOpen] / exportHtmlWidth{640,768,960,1024,1200,1440}Left[AndOpen] / exportPdf / exportPdfAndOpen / changeTheme / openDiagramViewer / saveDiagramAsPng / saveDiagramAsSvg / copyDiagramAsPng / exportAllDiagramsAsSvg / exportAllDiagramsAsPng / goToIncludeFile / openIncludeSource / reopenAsSource / reopenAsReadingView / toggleReadingView / showPreviewToSide / showPreview / reopenAsPreview
+ * - Register the Reading View custom editors (src/preview-editor.ts)
+ * - Stand in for the built-in Markdown preview entries while useAsDefaultPreview is on (src/default-preview.ts)
  * - Read VS Code settings (getConfig)
  * - Auto-follow active editor tab (editorTracker)
  * - Propagate settings changes to the preview (configWatcher)
@@ -25,13 +27,17 @@ import { prepareLocalServer, startLocalServer, stopLocalServer, restartLocalServ
 import type { LocalServerState, LocalServerDiagnostics } from './src/local-server.js';
 import { createStatusBarItem, updateStatusBar, showModeQuickPick, SELECT_MODE_COMMAND } from './src/status-bar.js';
 import { PreviewManager } from './src/preview.js';
-import { execJava, extractPlantUmlBlocks, findLiveSourceDocument } from './src/utils.js';
+import { execJava, extractPlantUmlBlocks, findLiveSourceDocument, isLiveSourceUri } from './src/utils.js';
+import { isMarkdownFile } from './src/markdown-files.js';
+import { getActiveReadingView, allReadingViews, removeReadingView, pickTargetPath, landsOnNotice, markdownViewShowing } from './src/preview-registry.js';
+import { registerReadingViews, detectSwitchInPlace, canSwitchInPlace, releaseSwitchInPlace, reopenAsSource, reopenAsReadingView, READING_VIEW_TYPES } from './src/preview-editor.js';
+import { registerDefaultPreview, syncBuiltinReplacement, releaseBuiltinReplacement, isReplacingBuiltin } from './src/default-preview.js';
 import { clearBrowserCache } from './src/browser-finder.js';
 import { exportAllDiagrams } from './src/bulk-export.js';
-import { disposeAllViewers, diagramAction, openPendingDiagramViewer, getPendingDiagramContext } from './src/diagram-viewer.js';
+import { disposeAllViewers, diagramAction, openPendingDiagramViewer, getPendingDiagramContext, getDiagramViewers } from './src/diagram-viewer.js';
 import { openPumlPreview, updatePumlConfig, getCurrentPumlFilePath, disposePumlPreview, getPumlPreviewPanel, changePumlTheme, getLastPumlRender } from './src/puml-preview.js';
 import type { PumlRender } from './src/puml-preview.js';
-import { openMermaidPreview, updateMermaidConfig, getCurrentMermaidFilePath, disposeMermaidPreview, getMermaidPreviewPanel, changeMermaidTheme, getLastMermaidThemePost, getLastMermaidSourcePost } from './src/mermaid-preview.js';
+import { setMermaidExtensionUri, openMermaidPreview, updateMermaidConfig, getCurrentMermaidFilePath, disposeMermaidPreview, getMermaidPreviewPanel, changeMermaidTheme, getLastMermaidThemePost, getLastMermaidSourcePost } from './src/mermaid-preview.js';
 import type { MermaidThemePost, MermaidSourcePost } from './src/mermaid-preview.js';
 import { openD2Preview, updateD2Config, getCurrentD2FilePath, disposeD2Preview, getD2PreviewPanel, changeD2Theme, getLastD2Render } from './src/d2-preview.js';
 import type { D2Render } from './src/d2-preview.js';
@@ -142,21 +148,35 @@ function getConfig(): Config {
 /**
  * Resolve the target Markdown file path from available sources.
  *
- * Resolution order:
+ * Resolution order ({@link pickTargetPath}):
  * 1. Command argument URI (right-click menu)
- * 2. Active text editor
- * 3. Currently previewed file
+ * 2. Active Markdown Reading View (none when it shows the notice for a non-file document)
+ * 3. Active text editor
+ * 4. Currently previewed file
  *
- * Returns null when no .md file can be determined.
+ * The chosen path is judged by its open live document when there is one, by its
+ * extension otherwise ({@link isMarkdownFile}). Returns null when it is not Markdown.
  *
  * @param [uri] - URI passed from a command invocation (e.g. explorer context menu).
- * @returns Absolute .md file path, or null if no Markdown source is available.
+ * @returns Absolute Markdown file path, or null if no Markdown source is available.
  */
 function resolveMarkdownPath(uri?: vscode.Uri): string | null {
-    const fsPath = uri?.fsPath
-        || vscode.window.activeTextEditor?.document.uri.fsPath
-        || previewManager.getCurrentFilePath();
-    return fsPath?.endsWith('.md') ? fsPath : null;
+    const fsPath = pickTargetPath('markdown', uri?.fsPath, getActiveReadingView(),
+        vscode.window.activeTextEditor?.document.uri.fsPath, previewManager.getCurrentFilePath());
+    if (!fsPath) return null;
+    return isMarkdownFile(fsPath, findLiveSourceDocument(fsPath)) ? fsPath : null;
+}
+
+/**
+ * Tell the user a command found no file to act on, unless the command landed on a
+ * Reading View showing the notice ({@link landsOnNotice}): it then does nothing.
+ *
+ * @param uri - URI the command was given, if any.
+ * @param message - The localized error.
+ */
+function showNoFileError(uri: vscode.Uri | undefined, message: string): void {
+    if (landsOnNotice(uri?.fsPath, getActiveReadingView())) return;
+    vscode.window.showErrorMessage(message);
 }
 
 /** PlantUML file extensions supported for standalone preview. */
@@ -175,15 +195,15 @@ function isPumlFile(fsPath: string): boolean {
 }
 
 /**
- * Resolve the target PlantUML file path from available sources.
+ * Resolve the target PlantUML file path from available sources, in the order of
+ * {@link pickTargetPath}.
  *
  * @param [uri] - URI passed from a command invocation.
  * @returns Absolute .puml file path, or null if unavailable.
  */
 function resolvePumlPath(uri?: vscode.Uri): string | null {
-    const fsPath = uri?.fsPath
-        || vscode.window.activeTextEditor?.document.uri.fsPath
-        || getCurrentPumlFilePath();
+    const fsPath = pickTargetPath('puml', uri?.fsPath, getActiveReadingView(),
+        vscode.window.activeTextEditor?.document.uri.fsPath, getCurrentPumlFilePath());
     return fsPath && isPumlFile(fsPath) ? fsPath : null;
 }
 
@@ -198,15 +218,15 @@ function isMermaidFile(fsPath: string): boolean {
 }
 
 /**
- * Resolve the target Mermaid file path from available sources.
+ * Resolve the target Mermaid file path from available sources, in the order of
+ * {@link pickTargetPath}.
  *
  * @param [uri] - URI passed from a command invocation.
  * @returns Absolute .mmd/.mermaid file path, or null if unavailable.
  */
 function resolveMermaidPath(uri?: vscode.Uri): string | null {
-    const fsPath = uri?.fsPath
-        || vscode.window.activeTextEditor?.document.uri.fsPath
-        || getCurrentMermaidFilePath();
+    const fsPath = pickTargetPath('mermaid', uri?.fsPath, getActiveReadingView(),
+        vscode.window.activeTextEditor?.document.uri.fsPath, getCurrentMermaidFilePath());
     return fsPath && isMermaidFile(fsPath) ? fsPath : null;
 }
 
@@ -221,22 +241,22 @@ function isD2File(fsPath: string): boolean {
 }
 
 /**
- * Resolve the target D2 file path from available sources.
+ * Resolve the target D2 file path from available sources, in the order of
+ * {@link pickTargetPath}.
  *
  * @param [uri] - URI passed from a command invocation.
  * @returns Absolute .d2 file path, or null if unavailable.
  */
 function resolveD2Path(uri?: vscode.Uri): string | null {
-    const fsPath = uri?.fsPath
-        || vscode.window.activeTextEditor?.document.uri.fsPath
-        || getCurrentD2FilePath();
+    const fsPath = pickTargetPath('d2', uri?.fsPath, getActiveReadingView(),
+        vscode.window.activeTextEditor?.document.uri.fsPath, getCurrentD2FilePath());
     return fsPath && isD2File(fsPath) ? fsPath : null;
 }
 
 /**
  * Validate the Markdown file path, verify jarPath setting, and run export.
  *
- * Shows user-facing error messages when validation fails (not .md, jarPath not set).
+ * Shows user-facing error messages when validation fails (not Markdown, jarPath not set).
  *
  * @param [uri] - URI passed from a command invocation.
  * @param [options] - Export options (fitToWidth, pdf).
@@ -245,7 +265,7 @@ function resolveD2Path(uri?: vscode.Uri): string | null {
 async function runExport(uri?: vscode.Uri, options?: { fitToWidth?: boolean | number; fitToWidthAlign?: 'center' | 'left'; pdf?: boolean; landscape?: boolean }): Promise<string | null> {
     const filePath = resolveMarkdownPath(uri);
     if (!filePath) {
-        vscode.window.showErrorMessage(vscode.l10n.t('No Markdown file (.md) is selected.'));
+        showNoFileError(uri, vscode.l10n.t('No Markdown file is selected.'));
         return null;
     }
 
@@ -450,6 +470,37 @@ export interface TestHooks {
     /** Wait for the recording step activation started; returns whether it wrote the
      *  setting and the run-once marker now held by the extension's global state. */
     getActivationThemeRecording(): Promise<{ written: boolean; marker: unknown }>;
+    /**
+     * Every open Reading View: its view type and panel, whether it draws its file (false
+     * for the notice shown for a non-file document) and, when it does, the file, the
+     * source text it last rendered and, for Markdown, the last scroll instruction and a
+     * way to deliver a message as if its webview had posted it.
+     */
+    getEditorPreviews(): EditorPreviewProbe[];
+    /** Every open diagram viewer: the id of the preview or Reading View it belongs to, its diagram index and latest SVG. */
+    getDiagramViewers(): { owner: number; index: number; svg: string | null }[];
+    /** Whether in-place switching was detected, once the detection at activation ends. */
+    getCanSwitchInPlace(): Promise<boolean>;
+    /** Whether the built-in Markdown preview entries are replaced, once the queued updates of the context keys end. */
+    getReplacingBuiltin(): Promise<boolean>;
+}
+
+/** One Reading View as {@link TestHooks.getEditorPreviews} reports it. */
+export interface EditorPreviewProbe {
+    /** View type of the custom editor. */
+    viewType: string;
+    /** The panel VS Code handed over. */
+    panel: vscode.WebviewPanel;
+    /** Whether it draws its file (false for the notice shown for a non-file document). */
+    rendered: boolean;
+    /** Absolute path of the file it draws, or null for the notice. */
+    filePath: string | null;
+    /** Source text it last rendered, or null. */
+    lastRenderedText: string | null;
+    /** Last scroll instruction handed to a Markdown view's webview, or null. */
+    lastPostedScroll: { line: number; maxTopLine: number; atBottom: boolean; force: boolean; instant: boolean } | null;
+    /** Deliver a message to a Markdown view as if its webview had posted it; no-op otherwise. */
+    dispatchWebviewMessage(message: unknown): void;
 }
 
 /** Shape returned by {@link activate}. `extendMarkdownIt` is the contract VS Code's
@@ -481,6 +532,8 @@ export function activate(context: vscode.ExtensionContext): ExtensionApi {
     const channel = outputLog.channel;
     previewManager = new PreviewManager(channel);
     context.subscriptions.push(previewManager);
+    // Before any Mermaid page is built: a Reading View may open before the preview.
+    setMermaidExtensionUri(context.extensionUri);
     setLocalServerOutputChannel(channel);
     setConfigGetter(getConfig);
     // "Use Easy Mode" reads the settings when chosen, not when the guidance was shown.
@@ -525,6 +578,21 @@ export function activate(context: vscode.ExtensionContext): ExtensionApi {
     const selectModeCmd = vscode.commands.registerCommand(SELECT_MODE_COMMAND, () => showModeQuickPick());
     context.subscriptions.push(selectModeCmd);
 
+    registerReadingViews(context, { getConfig, handleOpenEvent, outputChannel: channel });
+    context.subscriptions.push(
+        vscode.commands.registerCommand('plantuml-markdown-preview.reopenAsSource', () => reopenAsSource()),
+        vscode.commands.registerCommand('plantuml-markdown-preview.reopenAsReadingView', () => reopenAsReadingView()),
+    );
+    detectSwitchInPlace()
+        .catch(err => channel.appendLine(`[reading view] could not detect in-place switching: ${err}`));
+    /** Hide or show the built-in preview entries for the setting, once in-place switching is known. */
+    const syncDefaultPreview = (): void => {
+        syncBuiltinReplacement()
+            .catch(err => channel.appendLine(`[default preview] could not update the built-in preview entries: ${err}`));
+    };
+    registerDefaultPreview(context, syncDefaultPreview);
+    syncDefaultPreview();
+
     // Ensure builtInPreviewConfig has correct values after workspace is fully loaded
     const initialConfig = getConfig();
 
@@ -548,6 +616,15 @@ export function activate(context: vscode.ExtensionContext): ExtensionApi {
     // Start D2 Wasm worker (non-blocking; first render awaits readiness)
     initD2().catch(err => channel.appendLine(`[d2] init error: ${err}`));
 
+    /**
+     * Register an export command.
+     *
+     * @param id - Command ID.
+     * @param exportOptions - Options handed to the export (PDF, fit to width, orientation).
+     * @param autoOpen - Whether to open the exported file in the default app.
+     * @param showNotification - Notification shown after the export when not opened automatically.
+     * @returns The command registration.
+     */
     function registerExportCommand(
         id: string,
         exportOptions: { fitToWidth?: boolean | number; fitToWidthAlign?: 'center' | 'left'; pdf?: boolean; landscape?: boolean } | undefined,
@@ -565,6 +642,11 @@ export function activate(context: vscode.ExtensionContext): ExtensionApi {
         });
     }
 
+    /**
+     * Tell the user the HTML was exported, with a button that opens it in the browser.
+     *
+     * @param outputPath - Absolute path of the exported file.
+     */
     async function notifyHtmlExported(outputPath: string): Promise<void> {
         const label = vscode.l10n.t('Open in Browser');
         const action = await vscode.window.showInformationMessage(
@@ -574,6 +656,11 @@ export function activate(context: vscode.ExtensionContext): ExtensionApi {
         if (action === label) openInDefaultApp(outputPath);
     }
 
+    /**
+     * Tell the user the PDF was exported, with a button that opens it.
+     *
+     * @param outputPath - Absolute path of the exported file.
+     */
     async function notifyPdfExported(outputPath: string): Promise<void> {
         const label = vscode.l10n.t('Open');
         const action = await vscode.window.showInformationMessage(
@@ -628,7 +715,7 @@ export function activate(context: vscode.ExtensionContext): ExtensionApi {
         return vscode.commands.registerCommand(id, async (uri?: vscode.Uri) => {
             const filePath = resolveMarkdownPath(uri);
             if (!filePath) {
-                vscode.window.showErrorMessage(vscode.l10n.t('No Markdown file (.md) is selected.'));
+                showNoFileError(uri, vscode.l10n.t('No Markdown file is selected.'));
                 return;
             }
             const config = getConfig();
@@ -659,7 +746,7 @@ export function activate(context: vscode.ExtensionContext): ExtensionApi {
         async (uri?: vscode.Uri) => {
             const filePath = resolveMarkdownPath(uri);
             if (!filePath) {
-                vscode.window.showErrorMessage(vscode.l10n.t('No Markdown file (.md) is selected.'));
+                showNoFileError(uri, vscode.l10n.t('No Markdown file is selected.'));
                 return;
             }
             const config = getConfig();
@@ -684,7 +771,7 @@ export function activate(context: vscode.ExtensionContext): ExtensionApi {
         async (uri?: vscode.Uri) => {
             const filePath = resolvePumlPath(uri);
             if (!filePath) {
-                vscode.window.showErrorMessage(vscode.l10n.t('No PlantUML file is selected.'));
+                showNoFileError(uri, vscode.l10n.t('No PlantUML file is selected.'));
                 return;
             }
             const config = getConfig();
@@ -708,7 +795,7 @@ export function activate(context: vscode.ExtensionContext): ExtensionApi {
         async (uri?: vscode.Uri) => {
             const filePath = resolveMermaidPath(uri);
             if (!filePath) {
-                vscode.window.showErrorMessage(vscode.l10n.t('No Mermaid file is selected.'));
+                showNoFileError(uri, vscode.l10n.t('No Mermaid file is selected.'));
                 return;
             }
             const config = getConfig();
@@ -720,7 +807,7 @@ export function activate(context: vscode.ExtensionContext): ExtensionApi {
             // command handler to VS Code, which is what reported it before.
             await vscode.window.withProgress(
                 { location: vscode.ProgressLocation.Window, title: vscode.l10n.t('Opening preview...') },
-                () => openMermaidPreview(filePath, config, context.extensionUri),
+                () => openMermaidPreview(filePath, config),
             );
         }
     );
@@ -730,7 +817,7 @@ export function activate(context: vscode.ExtensionContext): ExtensionApi {
         async (uri?: vscode.Uri) => {
             const filePath = resolveD2Path(uri);
             if (!filePath) {
-                vscode.window.showErrorMessage(vscode.l10n.t('No D2 file is selected.'));
+                showNoFileError(uri, vscode.l10n.t('No D2 file is selected.'));
                 return;
             }
             const config = getConfig();
@@ -750,6 +837,12 @@ export function activate(context: vscode.ExtensionContext): ExtensionApi {
     const changeThemeCmd = vscode.commands.registerCommand(
         'plantuml-markdown-preview.changeTheme',
         () => {
+            // A Reading View in front takes the command; one showing the notice ignores it.
+            const reading = getActiveReadingView();
+            if (reading) {
+                if (reading.rendered) void reading.view.changeTheme();
+                return;
+            }
             if (getD2PreviewPanel()?.active) {
                 void changeD2Theme();
             } else if (getMermaidPreviewPanel()?.active) {
@@ -765,6 +858,13 @@ export function activate(context: vscode.ExtensionContext): ExtensionApi {
     /** Dispatch a save/copy diagram command to the appropriate webview panel. */
     function handleDiagramCommand(action: 'save' | 'copy', format: 'png' | 'svg'): void {
         const msgType = action === 'copy' ? 'copyDiagram' : 'exportDiagram';
+        const reading = getActiveReadingView();
+        if (reading) {
+            if (!reading.rendered) return;
+            if (reading.kind === 'markdown') diagramAction(action, format, reading.panel);
+            else void reading.panel.webview.postMessage({ type: msgType, format });
+            return;
+        }
         const d2Panel = getD2PreviewPanel();
         if (d2Panel?.active) {
             void d2Panel.webview.postMessage({ type: msgType, format });
@@ -796,15 +896,18 @@ export function activate(context: vscode.ExtensionContext): ExtensionApi {
     async function runBulkExport(uri: vscode.Uri | undefined, format: 'svg' | 'png'): Promise<void> {
         const filePath = resolveMarkdownPath(uri);
         if (!filePath) {
-            vscode.window.showErrorMessage(vscode.l10n.t('No Markdown file (.md) is selected.'));
+            showNoFileError(uri, vscode.l10n.t('No Markdown file is selected.'));
             return;
         }
-        const panel = previewManager.getPanel();
+        // The diagrams come from the Reading View in front when it shows the file,
+        // from the preview otherwise.
+        const view = markdownViewShowing(getActiveReadingView(), filePath);
+        const panel = view ? view.panel() : previewManager.getPanel();
         if (!panel) {
             vscode.window.showErrorMessage(vscode.l10n.t('No preview is open. Open a preview first.'));
             return;
         }
-        const renderedText = previewManager.getLastRenderedText();
+        const renderedText = view ? view.getLastRenderedText() : previewManager.getLastRenderedText();
         if (renderedText !== null) handleExportEvent(renderedText, getConfig());
         try {
             const result = await vscode.window.withProgress(
@@ -844,7 +947,7 @@ export function activate(context: vscode.ExtensionContext): ExtensionApi {
         // Track .mermaid files
         if (isMermaidFile(filePath) && getCurrentMermaidFilePath()) {
             if (filePath !== getCurrentMermaidFilePath()) {
-                void openMermaidPreview(filePath, getConfig(), context.extensionUri);
+                void openMermaidPreview(filePath, getConfig());
             }
             return;
         }
@@ -857,14 +960,17 @@ export function activate(context: vscode.ExtensionContext): ExtensionApi {
             return;
         }
 
-        // Track .md files
+        // Track Markdown files. A document that is not live content (a notebook cell,
+        // a revision) is judged by the live document of its path, or by the extension.
         if (!previewManager.getCurrentFilePath()) return;
-        if (!filePath.endsWith('.md')) return;
+        const liveDocument = isLiveSourceUri(editor.document.uri) ? editor.document : findLiveSourceDocument(filePath);
+        if (!isMarkdownFile(filePath, liveDocument)) return;
         if (filePath === previewManager.getCurrentFilePath() && !previewManager.getLastRenderFailed()) return;
         void previewManager.open(filePath, getConfig(), true);
     });
 
     const configWatcher = vscode.workspace.onDidChangeConfiguration((event) => {
+        if (event.affectsConfiguration(`${CONFIG_SECTION}.useAsDefaultPreview`)) syncDefaultPreview();
         if (event.affectsConfiguration(CONFIG_SECTION)) {
             const config = getConfig();
 
@@ -908,6 +1014,9 @@ export function activate(context: vscode.ExtensionContext): ExtensionApi {
             updatePumlConfig(config);
             updateMermaidConfig(config);
             updateD2Config(config);
+            for (const reading of allReadingViews()) {
+                if (reading.rendered) reading.view.updateConfig(config);
+            }
             syncBuiltInPreviewConfig(config);
             updateStatusBar(statusBarItem, config, currentServerState);
         }
@@ -916,6 +1025,11 @@ export function activate(context: vscode.ExtensionContext): ExtensionApi {
     // Track whether the cursor is on a !include line for context menu visibility.
     const INCLUDE_LINE_CONTEXT = 'plantuml-markdown-preview.cursorOnIncludeLine';
     const includeLineRe = /^\s*!include(?:_once|_many|sub)?\s+/;
+    /**
+     * Set the context key telling whether the cursor is on a `!include` line.
+     *
+     * @param editor - The editor whose cursor to check, if any.
+     */
     function updateIncludeContext(editor: vscode.TextEditor | undefined): void {
         const onInclude = !!editor && includeLineRe.test(
             editor.document.lineAt(editor.selection.active.line).text
@@ -954,7 +1068,13 @@ export function activate(context: vscode.ExtensionContext): ExtensionApi {
             if (!ctx || ctx.diagramType !== 'plantuml' || ctx.plantumlIndex == null || ctx.plantumlIndex < 0) {
                 return;
             }
-            const filePath = previewManager.getCurrentFilePath();
+            // Only a diagram right-clicked in the Markdown Reading View in front, or in the
+            // preview when no Reading View is in front.
+            const reading = getActiveReadingView();
+            const view = reading?.rendered && reading.view.kind === 'markdown' ? reading.view : null;
+            if (reading && !view) return;
+            if (!(view ?? previewManager).ownsPendingDiagram()) return;
+            const filePath = view ? view.filePath() : previewManager.getCurrentFilePath();
             if (!filePath) return;
             const doc = findLiveSourceDocument(filePath);
             const text = doc?.getText();
@@ -1048,6 +1168,20 @@ export function activate(context: vscode.ExtensionContext): ExtensionApi {
                 recordPreviewThemeIfUnset(state ?? context.globalState, line => channel.appendLine(line)),
             getActivationThemeRecording: () => themeRecording.then(written =>
                 ({ written, marker: context.globalState.get(PREVIEW_THEME_RECORDED_KEY) })),
+            getEditorPreviews: () => allReadingViews().map(reading => ({
+                viewType: READING_VIEW_TYPES[reading.kind],
+                panel: reading.panel,
+                rendered: reading.rendered,
+                filePath: reading.rendered ? reading.view.filePath() : null,
+                lastRenderedText: reading.rendered ? reading.view.getLastRenderedText() : null,
+                lastPostedScroll: reading.rendered && reading.view.kind === 'markdown' ? reading.view.getLastPostedScroll() : null,
+                dispatchWebviewMessage: (message: unknown) => {
+                    if (reading.rendered && reading.view.kind === 'markdown') reading.view.dispatchWebviewMessage(message);
+                },
+            })),
+            getDiagramViewers: () => getDiagramViewers().map(({ owner, index, svg }) => ({ owner, index, svg })),
+            getCanSwitchInPlace: () => canSwitchInPlace(),
+            getReplacingBuiltin: () => isReplacingBuiltin(),
         },
     };
 }
@@ -1136,8 +1270,10 @@ function handleLocalServerConfigChange(oldConfig: Config | null, newConfig: Conf
  *
  * Disposes the preview panel and all associated event listeners via disposePreview().
  * Clears all caches (SVG render cache, theme cache, markdown-it cache).
+ *
+ * @returns Settles once the context keys this extension set are cleared.
  */
-export function deactivate(): void {
+export function deactivate(): Promise<void> {
     cancelRunningJavaChecks();
     if (warmupChild) {
         warmupChild.kill();
@@ -1153,8 +1289,15 @@ export function deactivate(): void {
     disposePumlPreview();
     disposeMermaidPreview();
     disposeD2Preview();
+    // VS Code owns the Reading Views' panels: stop the views, leave the panels.
+    for (const reading of allReadingViews()) {
+        if (reading.rendered) reading.view.dispose();
+        removeReadingView(reading);
+    }
     // previewManager.dispose() is called automatically via context.subscriptions
     disposeD2();
+    // The window may be going away with the extension host: a key left set does no harm.
+    return Promise.all([releaseBuiltinReplacement(), releaseSwitchInPlace()]).then(() => {}, () => {});
 }
 
 /**

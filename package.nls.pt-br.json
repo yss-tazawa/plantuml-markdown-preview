@@ -55,8 +55,15 @@
   "command.selectMode.title": "Selecionar modo de renderização",
   "command.goToIncludeFile.title": "Ir para o arquivo include",
   "command.openIncludeSource.title": "Abrir arquivo de origem include",
+  "command.reopenAsSource.title": "Alternar para o código-fonte",
+  "command.reopenAsReadingView.title": "Alternar para o modo de leitura",
+  "command.showPreviewToSide.title": "Abrir Visualização ao Lado",
+  "command.reopenAsPreview.title": "Abrir como Visualização",
+  "command.showPreview.title": "Abrir Visualização",
+  "command.toggleReadingView.title": "Alternar o modo de leitura",
   "command.changeTheme.title": "Alterar tema de pré-visualização",
   "command.category": "PlantUML Markdown Preview",
+  "customEditor.displayName": "PlantUML Markdown Preview (Modo de leitura)",
   "configuration.title": "PlantUML Markdown Preview",
   "configuration.plantumlJarPath.description": "Caminho para o arquivo jar do PlantUML. Deixe vazio para usar o jar incluído (LGPL). Exemplo: /usr/local/lib/plantuml.jar",
   "configuration.javaPath.description": "Caminho para o executável Java (Java 11+ necessário). Se definido, este valor é usado diretamente. Caso contrário, JAVA_HOME/bin/java é tentado primeiro, depois 'java' no PATH. Padrão: java",
@@ -171,6 +178,6 @@
   "configuration.plantumlLocalServerJvmInitialHeapMb.description": "Tamanho inicial do heap da JVM (-Xms) em MB para o servidor PlantUML local gerenciado. Usado somente quando o preset de heap é 'custom'. Aplica-se somente quando o servidor PlantUML local é usado (modo: fast). Padrão: 16",
   "configuration.plantumlLocalServerJvmMaxHeapMb.description": "Tamanho máximo do heap da JVM (-Xmx) em MB para o servidor PlantUML local gerenciado. Usado somente quando o preset de heap é 'custom'. Aplica-se somente quando o servidor PlantUML local é usado (modo: fast). Padrão: 512",
   "configuration.enableDiagramViewer.description": "Ativar clique com botão direito em um diagrama na pré-visualização para abri-lo em um visualizador de pan e zoom. (Requer reabrir a pré-visualização)",
-  "configuration.retainPreviewContext.description": "Reter o conteúdo da pré-visualização quando a aba está oculta. Evita re-renderização ao trocar de aba, mas usa mais memória. (Requer reabrir a pré-visualização)",
-  "configuration.useAsDefaultPreview.description": "Abrir a pré-visualização desta extensão com os atalhos padrão de pré-visualização de Markdown do VS Code (Ctrl+Shift+V / Ctrl+K V; Cmd no macOS) para arquivos Markdown, PlantUML, Mermaid e D2. Os dois atalhos abrem a pré-visualização ao lado do editor, ao contrário do Ctrl+Shift+V do VS Code, que a abre na aba atual. O menu de contexto \"Abrir Visualização\" do Explorador e o botão de pré-visualização do próprio VS Code no título do editor não são substituídos. Padrão: false"
+  "configuration.retainPreviewContext.description": "Reter o conteúdo da pré-visualização quando a aba está oculta. Evita re-renderização ao trocar de aba, mas usa mais memória. Para aplicar uma alteração, feche e reabra a pré-visualização. Para o modo de leitura, reinicie o VS Code ou recarregue a janela.",
+  "configuration.useAsDefaultPreview.description": "Abrir esta extensão com os botões, os itens do menu de contexto e os atalhos padrão de pré-visualização de Markdown do VS Code (Ctrl+Shift+V / Ctrl+K V). Antes do VS Code 1.119, apenas com os atalhos. Padrão: true"
 }

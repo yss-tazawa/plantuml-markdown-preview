@@ -1,7 +1,7 @@
 # Third-Party Licenses
 
-This extension ships the TextMate grammars listed below and reuses the VS Code color values
-listed at the end. Each keeps its own license;
+This extension ships the TextMate grammars and the VS Code icon listed below and reuses the
+VS Code color values listed near the end. Each keeps its own license;
 the full texts are in this folder. The extension's own code is not covered by them.
 
 The grammars are taken **unmodified** from the VS Code extensions published on Open VSX
@@ -54,3 +54,14 @@ styles). No VS Code files are shipped; only the color values are used, in
 `src/themes/vscode-light-2026.ts` and `src/themes/vscode-dark-2026.ts`.
 
 - License: MIT — see `vscode-LICENSE.txt` (Copyright (c) 2015 - present Microsoft Corporation)
+
+## VS Code preview icon (microsoft/vscode)
+
+The "Open Preview" command that stands in for VS Code's own while `useAsDefaultPreview` is on
+uses the same icon as VS Code's. The two SVG files are copied **unmodified** from the built-in
+Markdown extension of VS Code 1.146.0 (`extensions/markdown-language-features/media/`,
+https://github.com/microsoft/vscode).
+
+- License: MIT — see `vscode-LICENSE.txt` (Copyright (c) 2015 - present Microsoft Corporation)
+- Shipped as: `images/vscode-preview-light.svg` (from `preview-light.svg`, md5 5944368b7ba7dc0281b621688e6d6f54)
+  and `images/vscode-preview-dark.svg` (from `preview-dark.svg`, md5 f70fc340e69316a92cf2014a1a7485a4)

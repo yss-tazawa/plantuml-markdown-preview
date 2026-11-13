@@ -78,6 +78,18 @@ src/
   export-handler.ts Shared PNG/SVG export handler for viewer webviews
   scroll-sync.ts    Bidirectional editor ↔ preview scroll sync
   browser-finder.ts Detect Chrome/Edge/Chromium for headless PDF export
+  bulk-export.ts   Export every diagram in a Markdown file as individual SVG or PNG files
+  default-preview.ts Puts the Preview and Reading View behind VS Code's own Markdown preview buttons, menus and keys
+  markdown-files.ts Which files the Markdown preview opens, and the names derived from them
+  reading-view.ts  Shape shared by the Reading Views of every file kind
+  preview-editor.ts Custom editors that show a file's Reading View in its own tab
+  preview-registry.ts The open Reading Views (custom editor tabs)
+  revision-preview.ts Read-only preview of a Markdown file at a Git revision
+  git.ts            Reading a file's content at a Git revision
+  preview-theme-default.ts Records github-light as the preview theme for users who never chose one
+  d2-worker.mjs     Entry point of the D2 Wasm worker thread
+  color/            PlantUML color provider (color picker and color names)
+  completion/       Keyword completion providers for PlantUML, Mermaid, and D2
   utils.ts          Shared utilities (escapeHtml, getNonce, errorHtml, fence regex, Java process helpers, LRU cache)
   webview/          Webview-side TypeScript (bundled separately for the browser context)
   themes/           CSS theme definitions (17 themes: 1 that follows VS Code + 9 light + 7 dark)

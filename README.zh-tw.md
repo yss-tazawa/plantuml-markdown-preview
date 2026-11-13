@@ -47,6 +47,7 @@
 - **雙向捲動同步** — 編輯器與預覽雙向聯動捲動
 - **導覽與目錄** — 跳至頂部/底部按鈕及預覽面板目錄側邊欄
 - **圖表檢視器** — 右鍵任意圖表開啟平移和縮放面板，即時同步並匹配主題背景
+- **閱讀檢視（Reading View）** — 在專屬分頁中顯示算繪後的 Markdown、PlantUML、Mermaid 或 D2 檔案，並可在原位與原始碼之間切換
 - **獨立圖表預覽** — 直接預覽 `.puml`、`.plantuml`、`.mmd`、`.mermaid`、`.d2` 檔案，支援平移縮放、即時更新和主題 — 無需 Markdown 包裝
 - **Git 版本預覽** — 將 Markdown 檔案依 HEAD 或暫存版本時的內容算繪，與目前預覽並排顯示，讓變更過的圖表可以算繪後比較
 - **儲存/複製圖表為 PNG/SVG** — 在預覽或圖表檢視器中右鍵圖表儲存或複製到剪貼簿
@@ -62,6 +63,7 @@
 - [功能](#功能)
 - [快速開始](#快速開始)
 - [使用方式](#使用方式)
+  - [閱讀檢視](#閱讀檢視)
 - [設定](#設定)
 - [程式碼片段](#程式碼片段)
 - [顏色選擇器](#顏色選擇器)
@@ -317,7 +319,7 @@ Markdown 中的 ```` ```plantuml ````、```` ```mermaid ````、```` ```d2 ```` �
 
 ### 與 VS Code 內建 Markdown 預覽整合
 
-PlantUML、Mermaid 和 D2 圖表也可在 VS Code 內建 Markdown 預覽（`Markdown: 開啟側邊預覽`）中渲染。無需額外設定。
+PlantUML、Mermaid 和 D2 圖表也可在 VS Code 內建 Markdown 預覽（`Markdown: 在一側開啟預覽`）中渲染。無需額外設定。
 
 > **注意：** 內建預覽不支援此擴充功能的預覽主題、雙向捲動同步或 HTML 匯出。如需完整功能，請使用擴充功能自帶的預覽面板（`Cmd+Alt+V` / `Ctrl+Alt+V`）。
 >
@@ -480,11 +482,44 @@ PlantUML、Mermaid 和 D2 圖表也可在 VS Code 內建 Markdown 預覽（`Mark
 
 - **鍵盤快捷鍵：** `Cmd+Alt+V`（Mac）/ `Ctrl+Alt+V`（Windows/Linux）
 - **編輯器標題列：** 點擊編輯器右上角的預覽按鈕（Plotdown 圖示）
-- **標準預覽快捷鍵：** 開啟 `useAsDefaultPreview` 後，`Cmd+Shift+V` / `Cmd+K V`（Mac）或 `Ctrl+Shift+V` / `Ctrl+K V`（Windows/Linux）也會在編輯器旁開啟預覽
-- **右鍵選單：** 在檔案總管或編輯器中右鍵 `.md` 檔案 → **PlantUML Markdown Preview** → **在側邊開啟預覽**
-- **命令面板：** `PlantUML Markdown Preview: Open Preview to Side`
+- **VS Code 標準按鈕和快捷鍵：** `useAsDefaultPreview` 開啟（預設）時，VS Code 的 **在一側開啟預覽** 按鈕、右鍵選單中的 **開啟預覽** 以及 `Cmd+K V`（Mac）/ `Ctrl+K V`（Windows/Linux）會開啟本擴充功能的預覽。`Cmd+Shift+V` / `Ctrl+Shift+V` 則切換到[閱讀檢視](#閱讀檢視)
+- **右鍵選單：** 在檔案總管或編輯器中右鍵 Markdown 檔案 → **PlantUML Markdown Preview** → **在側邊開啟預覽**
+- **命令面板：** `PlantUML Markdown Preview: 在側邊開啟預覽`
 
 預覽使用自己的主題 — 預設為白色背景（GitHub Light）。選擇 `follow-vscode` 即可使用目前 VS Code 色彩佈景主題的顏色。
+
+### 閱讀檢視
+
+閱讀檢視（Reading View）在檔案自己的分頁中顯示渲染後的內容，取代文字編輯器，不會再開啟第二個面板。它固定在該檔案上，不會跟隨目前作用中的編輯器，並且可以與預覽同時開啟。
+
+適用於 Markdown 檔案（`.md`、`.markdown` 以及 VS Code 的 Markdown 預覽涵蓋的其他副檔名）以及 `.puml` / `.plantuml`、`.mmd` / `.mermaid` 和 `.d2` 檔案。在你使用之前，不會有任何變化。
+
+- **就地切換：** 在編輯器中按右鍵 → **PlantUML Markdown Preview** → **切換到閱讀檢視**（PlantUML、Mermaid 和 D2 檔案中，**切換到閱讀檢視** 直接顯示在選單中）。要返回，在閱讀檢視中按右鍵 → **切換到原始碼**，或點選編輯器標題列中的 **切換到原始碼**。切換的是分頁本身，不會開啟新分頁。
+- **開啟一次：** 在檔案總管中對檔案按右鍵 → **開啟方式...** → **PlantUML Markdown Preview（閱讀檢視）**。對於已經開啟的檔案，改為對其分頁按右鍵，使用 **重新開啟編輯器，使用...**。
+- **預設開啟：** 在 **開啟方式...** 清單中，選擇 **設定 '\*.md' 的預設編輯器...** → **PlantUML Markdown Preview（閱讀檢視）**。此後，點選 `.md` 檔案就會以閱讀檢視開啟。每種副檔名需要設定一次。
+- **復原：** 以同樣的方式選擇 **文字編輯器**，或從設定中刪除該行。
+
+直接在 `settings.json` 中設定：
+
+```json
+"workbench.editorAssociations": {
+  "*.md": "plantumlMarkdownPreviewEditor",
+  "*.puml": "plantumlPumlPreviewEditor",
+  "*.mmd": "plantumlMermaidPreviewEditor",
+  "*.d2": "plantumlD2PreviewEditor"
+}
+```
+
+| 檔案 | 值 |
+| ---- | -- |
+| Markdown（`*.md`、`*.markdown` 等） | `plantumlMarkdownPreviewEditor` |
+| `*.puml`、`*.plantuml` | `plantumlPumlPreviewEditor` |
+| `*.mmd`、`*.mermaid` | `plantumlMermaidPreviewEditor` |
+| `*.d2` | `plantumlD2PreviewEditor` |
+
+- 在 VS Code 1.100 之前，不會顯示 **切換到閱讀檢視** 和 **切換到原始碼**。請改用 **開啟方式...** 開啟閱讀檢視。
+- Git 差異仍以文字差異開啟，即使檔案已設定為以閱讀檢視開啟。
+- `useAsDefaultPreview` 開啟（預設）時，VS Code 的 **以預覽模式開啟** 按鈕（VS Code 1.119 及以上）和 `Ctrl+Shift+V`（VS Code 1.100 及以上）就會切換到閱讀檢視，詳見[設定](#設定)。
 
 ### 開啟圖表預覽
 
@@ -492,54 +527,54 @@ PlantUML、Mermaid 和 D2 圖表也可在 VS Code 內建 Markdown 預覽（`Mark
 
 - **鍵盤快捷鍵：** `Cmd+Alt+V`（Mac）/ `Ctrl+Alt+V`（Windows/Linux）— 相同快捷鍵，根據檔案類型自動選擇
 - **編輯器標題列：** 點擊編輯器右上角的預覽按鈕（Plotdown 圖示）
-- **標準預覽快捷鍵：** 開啟 `useAsDefaultPreview` 後，`Cmd+Shift+V` / `Cmd+K V`（Mac）或 `Ctrl+Shift+V` / `Ctrl+K V`（Windows/Linux）也會在編輯器旁開啟預覽
+- **標準預覽快捷鍵：** `useAsDefaultPreview` 開啟（預設）時，`Cmd+K V`（Mac）/ `Ctrl+K V`（Windows/Linux）也會在編輯器旁開啟預覽。`Cmd+Shift+V` / `Ctrl+Shift+V` 則切換到[閱讀檢視](#閱讀檢視)
 - **右鍵選單：** 在檔案總管或編輯器中右鍵對應檔案 → **預覽 PlantUML 檔案** / **預覽 Mermaid 檔案** / **預覽 D2 檔案**
-- **命令面板：** `PlantUML Markdown Preview: Preview PlantUML File`、`Preview Mermaid File` 或 `Preview D2 File`
+- **命令面板：** `PlantUML Markdown Preview: 預覽 PlantUML 檔案`、`預覽 Mermaid 檔案` 或 `預覽 D2 檔案`
 
 ### 開啟 Git 版本預覽
 
 在目前版本預覽的旁邊，算繪並顯示 Markdown 檔案在某個 Git 版本時的內容。
 
-- **右鍵選單:** 在檔案總管或編輯器中右鍵點擊 `.md` 檔案 → **PlantUML Markdown Preview** → **在側邊開啟 HEAD 版本預覽** / **在側邊開啟暫存版本預覽**
+- **右鍵選單:** 在檔案總管或編輯器中右鍵點擊 Markdown 檔案 → **PlantUML Markdown Preview** → **在側邊開啟 HEAD 版本預覽** / **在側邊開啟暫存版本預覽**
 - **命令選擇區:** `PlantUML Markdown Preview: 在側邊開啟 HEAD 版本預覽` / `在側邊開啟暫存版本預覽`
 
 先開啟一般預覽，再開啟版本預覽，兩個面板會並排顯示。版本面板是固定快照，編輯時不會更新。
 
 ### 匯出為 HTML
 
-- **右鍵選單：** 右鍵 `.md` 檔案 → **PlantUML Markdown Preview** → **匯出為 HTML** → 選擇寬度選項
+- **右鍵選單：** 右鍵 Markdown 檔案 → **PlantUML Markdown Preview** → **匯出為 HTML** → 選擇寬度選項
 - **預覽面板：** 在預覽內右鍵 → **匯出為 HTML** 或 **匯出為 HTML 並開啟**
 
 子選單提供以下寬度選項：
 
 | 選項 | 說明 |
 | ---- | ---- |
-| Current Settings | 使用目前設定匯出（無響應式 CSS） |
+| 目前設定 | 使用目前設定匯出（無響應式 CSS） |
 | 640px – 1440px | 固定像素寬度，置中 |
-| Responsive (Left-Aligned) | 本文寬度等於視口，靠左對齊；溢出的圖表才會縮小 |
-| 640px – 1440px (Left-Aligned) | 固定寬度，靠左對齊 |
+| 響應式 (靠左) | 本文寬度等於視口，靠左對齊；溢出的圖表才會縮小 |
+| 640px – 1440px (靠左) | 固定寬度，靠左對齊 |
 
-HTML 檔案儲存在來源 `.md` 檔案旁邊。
+HTML 檔案儲存在來源 Markdown 檔案旁邊。
 
 ### 匯出為 PDF
 
-- **右鍵選單：** 右鍵 `.md` 檔案 → **PlantUML Markdown Preview** → **匯出為 PDF** → **直向** 或 **橫向**
+- **右鍵選單：** 右鍵 Markdown 檔案 → **PlantUML Markdown Preview** → **匯出為 PDF** → **直向** 或 **橫向**
 - **預覽面板：** 在預覽內右鍵 → **匯出為 PDF** 或 **匯出為 PDF 並開啟** → **直向** 或 **橫向**
 
-PDF 檔案儲存在來源 `.md` 檔案旁邊。需要 Chrome、Edge 或 Chromium。
+PDF 檔案儲存在來源 Markdown 檔案旁邊。需要 Chrome、Edge 或 Chromium。
 `pdfScale` 設定（預設 0.625）控制文字和圖表的整體縮放。
 
 ### 儲存/複製圖表為 PNG/SVG
 
-- **預覽面板：** 右鍵圖表 → **複製圖表為 PNG**、**儲存圖表為 PNG** 或 **儲存圖表為 SVG**
+- **預覽面板：** 右鍵圖表 → **將圖表複製為 PNG**、**將圖表儲存為 PNG** 或 **將圖表儲存為 SVG**
 - **圖表檢視器：** 在檢視器內右鍵 → 同上
 - **獨立圖表預覽：** 在預覽內右鍵 → 同上
 
 ### 匯出所有圖表
 
-- **右鍵選單：** 右鍵點擊 `.md` 檔案 → **PlantUML Markdown Preview** → **Export All Diagrams as PNG** 或 **Export All Diagrams as SVG**
-- **預覽面板：** 在預覽面板內右鍵 → **Export All Diagrams as PNG** 或 **Export All Diagrams as SVG**
-- **命令面板：** `PlantUML Markdown Preview: Export All Diagrams as PNG` / `Export All Diagrams as SVG`
+- **右鍵選單：** 右鍵點擊 Markdown 檔案 → **PlantUML Markdown Preview** → **將所有圖表匯出為 PNG** 或 **將所有圖表匯出為 SVG**
+- **預覽面板：** 在預覽面板內右鍵 → **將所有圖表匯出為 PNG** 或 **將所有圖表匯出為 SVG**
+- **命令面板：** `PlantUML Markdown Preview: 將所有圖表匯出為 PNG` / `將所有圖表匯出為 SVG`
 
 儲存對話框可選擇輸出目錄名稱（預設：`{檔名}_diagrams`）。每個圖表按文件順序儲存為 `diagram-1.png`、`diagram-2.png` 等。需要開啟預覽。
 
@@ -553,7 +588,7 @@ PDF 檔案儲存在來源 `.md` 檔案旁邊。需要 Chrome、Edge 或 Chromium
 
 點擊預覽面板標題列的主題圖示，或使用命令面板：
 
-- **命令面板：** `PlantUML Markdown Preview: Change Preview Theme`
+- **命令面板：** `PlantUML Markdown Preview: 變更預覽主題`
 
 主題選擇器在同一個清單中顯示所有四種主題類別 — 預覽主題、PlantUML 主題、Mermaid 主題和 D2 主題 — 可從同一處切換任何主題。
 
@@ -802,8 +837,8 @@ PlantUML、Mermaid 和 D2 的上下文感知關鍵字建議。適用於獨立檔
 | `plantumlLocalServerJvmMaxHeapMb` | `512` | `"custom"` 預設值的最大堆積大小（`-Xmx`，MB）。其他預設值會忽略此設定。範圍: 64–32768。 |
 | `plantumlServerUrl` | `"https://www.plantuml.com/plantuml"` | Easy 模式的 PlantUML 伺服器 URL。 |
 | `enableDiagramViewer` | `true` | 啟用右鍵選單中的「在圖表檢視器中開啟」項目。 |
-| `retainPreviewContext` | `true` | 索引標籤隱藏時保留預覽內容。防止切換時重新渲染，但使用更多記憶體（需要重新開啟預覽才會生效）。 |
-| `useAsDefaultPreview` | `false` | 使用 VS Code 標準 Markdown 預覽快速鍵（`Ctrl+Shift+V` / `Ctrl+K V`；Mac 為 `Cmd`）為 Markdown、PlantUML、Mermaid 和 D2 檔案開啟本擴充功能的預覽。兩個快速鍵都會在編輯器旁邊開啟預覽（VS Code 本身的 `Ctrl+Shift+V` 則在目前的分頁中開啟預覽）。檔案總管右鍵選單中的 **開啟預覽** 和編輯器標題列中 VS Code 本身的預覽按鈕不會被取代。 |
+| `retainPreviewContext` | `true` | 索引標籤隱藏時保留預覽內容。防止切換索引標籤時重新渲染，但會使用更多記憶體。若要套用變更，請關閉並重新開啟預覽。若為閱讀檢視，請重新啟動 VS Code 或重新載入視窗。 |
+| `useAsDefaultPreview` | `true` | 使用本擴充功能取代 VS Code 內建的 Markdown 預覽。VS Code 標準的 Markdown 預覽按鈕、右鍵選單項目和快速鍵會改為開啟本擴充功能。`Ctrl+K V`（Mac 為 `Cmd`）在編輯器旁開啟預覽；`Ctrl+Shift+V` 在同一個分頁中切換原始碼和[閱讀檢視](#閱讀檢視)（PlantUML、Mermaid 和 D2 檔案也一樣）。在 VS Code 1.119 之前，只會取代快速鍵；在 1.100 之前，兩個快速鍵都會在編輯器旁開啟預覽。**0.8.0 中的變更：** 此設定現在預設開啟。如果想繼續使用 VS Code 內建的 Markdown 預覽按鈕和快速鍵，請將其關閉。**與 Markdown Preview Enhanced 同時使用時：** 它也綁定了 `Ctrl+Shift+V` 和 `Ctrl+K V`。兩個擴充功能都安裝時，本擴充功能的快速鍵生效。如果想改用 Markdown Preview Enhanced 的快速鍵，請關閉此設定。 |
 
 > **注意：** `allowLocalImages` 和 `allowHttpImages` 僅適用於預覽面板。HTML 匯出始終輸出原始圖片路徑，不受 CSP 限制。
 
@@ -840,7 +875,9 @@ PlantUML、Mermaid 和 D2 的上下文感知關鍵字建議。適用於獨立檔
 | 預覽 PlantUML 檔案 | `Cmd+Alt+V` | `Ctrl+Alt+V` |
 | 預覽 Mermaid 檔案 | `Cmd+Alt+V` | `Ctrl+Alt+V` |
 | 預覽 D2 檔案 | `Cmd+Alt+V` | `Ctrl+Alt+V` |
-| 開啟預覽（開啟 `useAsDefaultPreview` 時；Markdown、PlantUML、Mermaid、D2） | `Cmd+Shift+V` / `Cmd+K V` | `Ctrl+Shift+V` / `Ctrl+K V` |
+| 在一側開啟預覽（`useAsDefaultPreview` 開啟（預設）時；Markdown、PlantUML、Mermaid、D2） | `Cmd+K V` | `Ctrl+K V` |
+| 切換到閱讀檢視（`useAsDefaultPreview` 開啟（預設）時；Markdown、PlantUML、Mermaid、D2） | `Cmd+Shift+V` | `Ctrl+Shift+V` |
+| 切換到原始碼（在閱讀檢視中，與 `useAsDefaultPreview` 無關） | `Cmd+Shift+V` | `Ctrl+Shift+V` |
 | 選擇渲染模式 | — | — |
 
 ## 常見問題

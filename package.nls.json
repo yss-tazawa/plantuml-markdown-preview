@@ -55,8 +55,15 @@
   "command.selectMode.title": "Select Rendering Mode",
   "command.goToIncludeFile.title": "Go to Include File",
   "command.openIncludeSource.title": "Open Include Source",
+  "command.reopenAsSource.title": "Switch to Source",
+  "command.reopenAsReadingView.title": "Switch to Reading View",
+  "command.showPreviewToSide.title": "Open Preview to the Side",
+  "command.reopenAsPreview.title": "Open as Preview",
+  "command.showPreview.title": "Open Preview",
+  "command.toggleReadingView.title": "Toggle Reading View",
   "command.changeTheme.title": "Change Preview Theme",
   "command.category": "PlantUML Markdown Preview",
+  "customEditor.displayName": "PlantUML Markdown Preview (Reading View)",
   "configuration.title": "PlantUML Markdown Preview",
   "configuration.plantumlJarPath.description": "Path to the PlantUML jar file. Leave empty to use the bundled jar (LGPL). Example: /usr/local/lib/plantuml.jar",
   "configuration.javaPath.description": "Path to the Java executable (Java 11+ required). If set, this value is used as-is. Otherwise, JAVA_HOME/bin/java is tried first, then 'java' on PATH. Default: java",
@@ -171,6 +178,6 @@
   "configuration.plantumlLocalServerJvmInitialHeapMb.description": "Initial JVM heap size (-Xms) in MB for the managed local PlantUML server. Only used when the heap preset is 'custom'. Only applies when the local PlantUML server is used (mode: fast). Default: 16",
   "configuration.plantumlLocalServerJvmMaxHeapMb.description": "Maximum JVM heap size (-Xmx) in MB for the managed local PlantUML server. Only used when the heap preset is 'custom'. Only applies when the local PlantUML server is used (mode: fast). Default: 512",
   "configuration.enableDiagramViewer.description": "Enable right-clicking a diagram in the preview to open it in a pan & zoom viewer. (Requires reopening the preview)",
-  "configuration.retainPreviewContext.description": "Retain preview content when the tab is hidden. Prevents re-rendering on tab switch but uses more memory. (Requires reopening the preview)",
-  "configuration.useAsDefaultPreview.description": "Open this extension's preview with VS Code's standard Markdown preview shortcuts (Ctrl+Shift+V / Ctrl+K V; Cmd on macOS) for Markdown, PlantUML, Mermaid and D2 files. Both shortcuts open the preview beside the editor, unlike VS Code's Ctrl+Shift+V, which opens the preview in the current tab. The Explorer's \"Open Preview\" context menu and VS Code's own preview button in the editor title are not replaced. Default: false"
+  "configuration.retainPreviewContext.description": "Retain preview content when the tab is hidden. Prevents re-rendering on tab switch but uses more memory. To apply a change, close and reopen the preview. For Reading View, restart VS Code or reload the window.",
+  "configuration.useAsDefaultPreview.description": "Open this extension from VS Code's standard Markdown preview buttons, context menu items and shortcuts (Ctrl+Shift+V / Ctrl+K V). Before VS Code 1.119, only the shortcuts do. Default: true"
 }

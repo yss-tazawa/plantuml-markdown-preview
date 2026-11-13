@@ -14,6 +14,7 @@ const K = vscode.CompletionItemKind.Keyword;
 const P = vscode.CompletionItemKind.Property;
 const C = vscode.CompletionItemKind.Color;
 
+/** Completion entries for PlantUML. */
 export const plantumlKeywords: readonly KeywordEntry[] = [
     // --- @start / @end ---
     { label: '@startuml', kind: K, context: 'line-start', detail: 'UML diagram', sortPriority: 10 },

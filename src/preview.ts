@@ -20,9 +20,11 @@ import { getLocalServerUrl, isLocalServerRunning, handleServerEvent } from './lo
 import { scalePlantUmlSvg, scaleD2Svg } from './renderer.js';
 import { renderD2ToSvg } from './d2-renderer.js';
 import { getScrollSyncScriptTag } from './scroll-sync.js';
-import { getNonce, resolveLocalImagePaths, extractPlantUmlBlocks, PLANTUML_FENCE_TEST_RE, extractMermaidBlocks, MERMAID_FENCE_TEST_RE, extractD2Blocks, D2_FENCE_TEST_RE, escapeHtml, errorHtml, buildThemeItems, showThemeQuickPick, isLiveSourceUri, findLiveSourceDocument } from './utils.js';
+import { getNonce, resolveLocalImagePaths, extractPlantUmlBlocks, PLANTUML_FENCE_TEST_RE, extractMermaidBlocks, MERMAID_FENCE_TEST_RE, extractD2Blocks, D2_FENCE_TEST_RE, escapeHtml, errorHtml, errorPage, buildThemeItems, showThemeQuickPick, isLiveSourceUri, findLiveSourceDocument } from './utils.js';
+import { fileNameWithoutExtension } from './markdown-files.js';
 import { CONFIG_SECTION, MERMAID_THEME_KEYS, D2_THEME_KEYS, D2_THEME_MAP, type Config } from './config.js';
-import { updateDiagramViewer, closeStaleViewers, disposeAllViewers, setPendingSaveDiagram, handlePngFromPreview, handleCopyResult } from './diagram-viewer.js';
+import { updateDiagramViewer, closeStaleViewers, disposeViewersOf, setPendingSaveDiagram, getPendingDiagramContext, handlePngFromPreview, handleCopyResult } from './diagram-viewer.js';
+import type { AdoptedPanel, MarkdownReadingView } from './reading-view.js';
 
 /** Config keys that affect &lt;head&gt; content and require a full HTML reload. */
 const HEAD_KEYS = new Set(['allowLocalImages', 'allowHttpImages', 'mermaidScale', 'enableMath']);
@@ -37,6 +39,9 @@ const SYNC_MASTER_TIMEOUT_MS = 300;
 /** Property keys that affect rendering output. */
 const RENDER_KEYS = ['plantumlJarPath', 'javaPath', 'dotPath', 'plantumlTheme', 'plantumlScale', 'previewTheme', 'allowLocalImages', 'allowHttpImages', 'mode', 'plantumlServerUrl', 'plantumlLocalServerPort', 'mermaidTheme', 'mermaidScale', 'enableMath', 'plantumlIncludePath', 'd2Theme', 'd2Layout', 'd2Scale'] as const;
 
+/** Source of preview ids; each PreviewManager takes the next one. */
+let previewIdSeq = 0;
+
 // =====================================================================
 // PreviewManager class
 // =====================================================================
@@ -44,12 +49,18 @@ const RENDER_KEYS = ['plantumlJarPath', 'javaPath', 'dotPath', 'plantumlTheme', 
 /**
  * Encapsulates all preview state and behaviour in a single Disposable class.
  *
- * Instantiated once in extension.ts activate() and pushed to
+ * The preview is instantiated once in extension.ts activate() and pushed to
  * context.subscriptions so dispose() is called automatically on deactivation.
+ * A Reading View instance shows one file in a panel VS Code hands over (see
+ * {@link createMarkdownReadingView}); it never disposes that panel.
  */
 export class PreviewManager implements vscode.Disposable {
     // -- injected dependencies ----------------------------------------
     private readonly outputChannel: vscode.OutputChannel;
+    /** Identifies this preview to the diagram viewers it opens. */
+    private readonly id = ++previewIdSeq;
+    /** True when the panel was handed over by VS Code rather than created here. */
+    private readonly adopted: boolean;
 
     // -- panel / file -------------------------------------------------
     private panel: vscode.WebviewPanel | null = null;
@@ -135,8 +146,18 @@ export class PreviewManager implements vscode.Disposable {
      *  the webview once updates start arriving by message. */
     private lastRenderedHtml: string | null = null;
 
-    constructor(outputChannel: vscode.OutputChannel) {
+    /**
+     * @param outputChannel - Channel for render errors.
+     * @param adopted - Panel handed over by VS Code and the file it shows; omitted for
+     *                  the preview, which creates its own panel in {@link open}.
+     */
+    constructor(outputChannel: vscode.OutputChannel, adopted?: AdoptedPanel) {
         this.outputChannel = outputChannel;
+        this.adopted = !!adopted;
+        if (adopted) {
+            this.panel = adopted.panel;
+            this.currentFilePath = adopted.filePath;
+        }
     }
 
     // -- pure / stateless helpers --------------------------------------
@@ -188,8 +209,8 @@ export class PreviewManager implements vscode.Disposable {
 
     /** Build the panel title from the current file name. */
     private makeTitle(): string {
-        const name = this.currentFilePath ? path.basename(this.currentFilePath, '.md') : 'Untitled';
-        return name + ' ' + vscode.l10n.t('(Preview)');
+        const name = this.currentFilePath ? fileNameWithoutExtension(this.currentFilePath) : 'Untitled';
+        return name + ' ' + (this.adopted ? vscode.l10n.t('[Reading View]') : vscode.l10n.t('(Preview)'));
     }
 
     /** Build the localResourceRoots array based on the file location.
@@ -287,7 +308,8 @@ export class PreviewManager implements vscode.Disposable {
             ? this.buildLocalResourceRoots(this.currentFilePath)
             : [vscode.Uri.file(__dirname)];
         const old = this.panel.webview.options.localResourceRoots;
-        if (old && old.length === newRoots.length
+        // A panel handed over by VS Code starts without scripts.
+        if (this.panel.webview.options.enableScripts && old && old.length === newRoots.length
             && old.every((u, i) => u.toString() === newRoots[i].toString())) {
             return false;
         }
@@ -419,8 +441,12 @@ export class PreviewManager implements vscode.Disposable {
                 // position when it re-gains focus — if we don't update it here, a stale
                 // editor-side value would cause the preview to jump back to that old
                 // position when re-focused after scrolling while the source was hidden.
+                // A Reading View keeps its own position the same way, so a webview
+                // recreated from its HTML returns there.
                 const line = Math.max(0, Math.round(message.line));
                 this.lastScrollLine = line;
+                // A Reading View does not sync scrolling with the source.
+                if (this.adopted) return;
 
                 if (this.syncMaster === 'editor') return;
                 // A revealLine here means the user actively scrolled the preview:
@@ -436,11 +462,11 @@ export class PreviewManager implements vscode.Disposable {
                 const range = new vscode.Range(line, 0, line, 0);
                 editor.revealRange(range, vscode.TextEditorRevealType.InCenter);
             } else if (this.enableDiagramViewer && message.type === 'updateDiagramViewer') {
-                updateDiagramViewer(message.diagramIndex, message.svg, message.bgColor);
+                updateDiagramViewer(this.id, message.diagramIndex, message.svg, message.bgColor);
             } else if (this.enableDiagramViewer && message.type === 'diagramCount') {
-                closeStaleViewers(message.count);
+                closeStaleViewers(this.id, message.count);
             } else if (this.enableDiagramViewer && message.type === 'saveDiagramContext') {
-                setPendingSaveDiagram(message.svg, message.diagramIndex, message.bgColor, message.diagramType, message.plantumlIndex);
+                setPendingSaveDiagram(this.id, message.svg, message.diagramIndex, message.bgColor, message.diagramType, message.plantumlIndex);
             } else if (this.enableDiagramViewer && message.type === 'exportDiagramFromPreview') {
                 void handlePngFromPreview(message.data);
             } else if (this.enableDiagramViewer && message.type === 'copyDiagramFromPreview') {
@@ -544,6 +570,9 @@ export class PreviewManager implements vscode.Disposable {
                 void this.renderPanel(text).catch(err => this.outputChannel.appendLine(`[render error] ${err}`));
             }, delay);
         });
+
+        // A Reading View does not sync scrolling with the source.
+        if (this.adopted) return;
 
         this.scrollDisposable = vscode.window.onDidChangeTextEditorVisibleRanges((event) => {
             if (!this.panel) return;
@@ -773,7 +802,8 @@ export class PreviewManager implements vscode.Disposable {
         const mySeq = ++this.renderSeq;
         let htmlReplaced = false;
 
-        if (!this.initialHtmlSet || this.pendingScrollRestore) {
+        // A Reading View starts at the top instead of the source editor's position.
+        if (!this.adopted && (!this.initialHtmlSet || this.pendingScrollRestore)) {
             const editor = vscode.window.activeTextEditor;
             if (editor && this.currentFilePath && isLiveSourceUri(editor.document.uri)
                     && editor.document.uri.fsPath === this.currentFilePath && editor.visibleRanges.length > 0) {
@@ -911,6 +941,11 @@ export class PreviewManager implements vscode.Disposable {
                     hasMermaid: false,
                 });
                 htmlReplaced = true;
+            } else if (this.panel && this.adopted && this.renderSeq === mySeq) {
+                // A Reading View has no preview to fall back to: show the error in place
+                // of the "Rendering..." page. The page has no token, so showing the
+                // panel again renders once more.
+                this.setWebviewHtml(errorPage(String(err)));
             }
         } finally {
             if (this.renderAbortController === myController) {
@@ -947,9 +982,13 @@ export class PreviewManager implements vscode.Disposable {
             return;
         }
 
-        void this.panel.webview.postMessage({ type: 'showLoading' });
+        // Only a page that reported its load gets the overlay. Until the webview exists,
+        // VS Code holds messages and delivers them to the newest page, so an overlay asked
+        // for then would land on the page this render assigns, with nothing to hide it.
+        if (this.webviewLoaded) void this.panel.webview.postMessage({ type: 'showLoading' });
 
-        const skipNotification = this.suppressLoadingNotification;
+        // Reading Views never notify: reopening VS Code may restore many at once.
+        const skipNotification = this.adopted || this.suppressLoadingNotification;
         this.suppressLoadingNotification = false;
 
         const doRender = () => {
@@ -979,6 +1018,9 @@ export class PreviewManager implements vscode.Disposable {
 
     /** Return the current preview WebviewPanel, or null if not open. */
     getPanel(): vscode.WebviewPanel | null { return this.panel; }
+
+    /** Whether the diagram right-clicked last was in this preview. */
+    ownsPendingDiagram(): boolean { return getPendingDiagramContext()?.owner === this.id; }
 
     /** Return the Markdown file path being previewed, or null. */
     getCurrentFilePath(): string | null { return this.currentFilePath; }
@@ -1032,7 +1074,7 @@ export class PreviewManager implements vscode.Disposable {
             this.lastAtBottom = false;
             this.pendingScrollRestore = true;
             this.lastDiagramContent = '';
-            disposeAllViewers();
+            disposeViewersOf(this.id);
         }
         this.currentFilePath = filePath;
 
@@ -1051,7 +1093,6 @@ export class PreviewManager implements vscode.Disposable {
             }
         } else {
             const pmCfg = vscode.workspace.getConfiguration('plantumlMarkdownPreview');
-            this.enableDiagramViewer = pmCfg.get<boolean>('enableDiagramViewer', true);
             this.panel = vscode.window.createWebviewPanel(
                 'plantumlMarkdownPreview',
                 this.makeTitle(),
@@ -1063,78 +1104,117 @@ export class PreviewManager implements vscode.Disposable {
                     localResourceRoots: config.allowLocalImages ? this.buildLocalResourceRoots(filePath) : [vscode.Uri.file(__dirname)],
                 }
             );
-            this.setWebviewHtml(`<!DOCTYPE html>
-<html><head><meta charset="UTF-8"></head><body>
-<div id="loading-overlay" style="position:fixed;top:0;left:0;width:100%;height:100%;background:var(--vscode-editor-background,#fff);display:flex;align-items:center;justify-content:center;z-index:9999;">
-<div style="color:var(--vscode-editor-foreground,#333);font-size:14px;">${escapeHtml(vscode.l10n.t('Rendering...'))}</div>
-</div></body></html>`);
-
-            this.disposeDisposable = this.panel.onDidDispose(() => this.resetState());
-            this.viewStateDisposable = this.panel.onDidChangeViewState(() => {
-                if (!this.panel) return;
-                if (!this.panel.visible) {
-                    // Snapshot the scroll line so a visible restore can detect whether
-                    // the source scrolled while we were hidden (see the active block).
-                    this.scrollLineWhenHidden = this.lastScrollLine;
-                    this.hiddenSinceShown = true;
-                    return;
-                }
-                const shownAfterHide = this.hiddenSinceShown;
-                this.hiddenSinceShown = false;
-                // Re-render on show when a render was deferred while hidden
-                // (pendingShowRender). A webview recreated on show re-renders when it
-                // reports its load (handleWebviewReady). A page without the preview
-                // script (the "Rendering..." placeholder left by a failed full render)
-                // never reports one, so it re-renders on show unless a render is under way.
-                // This must run regardless of active state. The render pipeline's
-                // pendingScrollRestore path restores to the source's current
-                // position (lastScrollLine is kept up to date even while hidden).
-                const placeholderShown = shownAfterHide && this.pageToken === null
-                    && !this.renderAbortController && !this.loadingRenderTimer;
-                const willReRender = (this.pendingShowRender || placeholderShown)
-                    && !!this.currentFilePath && !!this.lastConfig;
-                if (willReRender) {
-                    this.pendingShowRender = false;
-                    this.pendingScrollRestore = true;
-                    this.scrollLineWhenHidden = -1;
-                    void this.readFileContent(this.currentFilePath!).then((text) => {
-                        if (text === null || !this.panel || !this.lastConfig) return;
-                        void this.renderPanel(text).catch(err =>
-                            this.outputChannel.appendLine(`[re-render on show] ${err}`)
-                        );
-                    });
-                }
-                if (!this.panel.active) {
-                    // Preview lost focus — do NOT move the source editor here.
-                    // Per the user's rule, whichever side becomes current stays
-                    // put; the other side follows. When the source becomes the
-                    // new current, it is the preview that must follow, not the
-                    // source that gets yanked to the preview's position.
-                    return;
-                }
-
-                // Preview regained focus without a re-render. Two cases, by whether
-                // the source scrolled while we were hidden:
-                //  (B) source moved -> the source is the master; re-sync the preview
-                //      to the source's current position (this is the bug we fix).
-                //  (A) source unchanged -> the preview is the master. With
-                //      retainContextWhenHidden=true the webview already holds its
-                //      exact pixel position; sending scrollToLine (integer line)
-                //      would cause sub-line round-trip drift, so send nothing.
-                // (A re-render above already restored scroll via the render pipeline.)
-                const sourceMovedWhileHidden = !willReRender &&
-                    this.scrollLineWhenHidden >= 0 && this.lastScrollLine !== this.scrollLineWhenHidden;
-                this.scrollLineWhenHidden = -1; // consume (avoid re-fire / false positives)
-                if (sourceMovedWhileHidden) {
-                    this.syncPreviewToSourceNow();
-                }
-            });
-            this.registerEventHandlers();
+            this.setUpPanel();
         }
 
         // Note: the initial scroll position is captured by renderPanel's
         // (!initialHtmlSet || pendingScrollRestore) branch from the active editor —
         // no need to set lastScrollLine here as well.
+        return this.renderFirst(filePath);
+    }
+
+    /**
+     * Show the file of a Reading View in the panel VS Code handed over. Unlike
+     * {@link open} it neither switches files nor reveals the panel.
+     *
+     * @param config - Current extension configuration snapshot.
+     * @returns Settles when the first render ends.
+     */
+    openAdopted(config: Config): Promise<void> {
+        if (!this.adopted || !this.panel || !this.currentFilePath) return Promise.resolve();
+        this.lastConfig = config;
+        this.panel.title = this.makeTitle();
+        // Before the first HTML: the panel comes without scripts or resource roots.
+        this.applyWebviewOptions();
+        this.setUpPanel();
+        return this.renderFirst(this.currentFilePath);
+    }
+
+    /**
+     * Prepare a panel that has no content yet: show the "Rendering..." page and
+     * listen to the panel, the webview and the documents.
+     */
+    private setUpPanel(): void {
+        if (!this.panel) return;
+        const pmCfg = vscode.workspace.getConfiguration('plantumlMarkdownPreview');
+        this.enableDiagramViewer = pmCfg.get<boolean>('enableDiagramViewer', true);
+        this.setWebviewHtml(`<!DOCTYPE html>
+<html><head><meta charset="UTF-8"></head><body>
+<div id="loading-overlay" style="position:fixed;top:0;left:0;width:100%;height:100%;background:var(--vscode-editor-background,#fff);display:flex;align-items:center;justify-content:center;z-index:9999;">
+<div style="color:var(--vscode-editor-foreground,#333);font-size:14px;">${escapeHtml(vscode.l10n.t('Rendering...'))}</div>
+</div></body></html>`);
+
+        // A Reading View's panel is closed by VS Code; the preview's by the user.
+        this.disposeDisposable = this.panel.onDidDispose(() => this.adopted ? this.dispose() : this.resetState());
+        this.viewStateDisposable = this.panel.onDidChangeViewState(() => {
+            if (!this.panel) return;
+            if (!this.panel.visible) {
+                // Snapshot the scroll line so a visible restore can detect whether
+                // the source scrolled while we were hidden (see the active block).
+                this.scrollLineWhenHidden = this.lastScrollLine;
+                this.hiddenSinceShown = true;
+                return;
+            }
+            const shownAfterHide = this.hiddenSinceShown;
+            this.hiddenSinceShown = false;
+            // Re-render on show when a render was deferred while hidden
+            // (pendingShowRender). A webview recreated on show re-renders when it
+            // reports its load (handleWebviewReady). A page without the preview
+            // script (the "Rendering..." placeholder left by a failed full render)
+            // never reports one, so it re-renders on show unless a render is under way.
+            // This must run regardless of active state. The render pipeline's
+            // pendingScrollRestore path restores to the source's current
+            // position (lastScrollLine is kept up to date even while hidden).
+            const placeholderShown = shownAfterHide && this.pageToken === null
+                && !this.renderAbortController && !this.loadingRenderTimer;
+            const willReRender = (this.pendingShowRender || placeholderShown)
+                && !!this.currentFilePath && !!this.lastConfig;
+            if (willReRender) {
+                this.pendingShowRender = false;
+                this.pendingScrollRestore = true;
+                this.scrollLineWhenHidden = -1;
+                void this.readFileContent(this.currentFilePath!).then((text) => {
+                    if (text === null || !this.panel || !this.lastConfig) return;
+                    void this.renderPanel(text).catch(err =>
+                        this.outputChannel.appendLine(`[re-render on show] ${err}`)
+                    );
+                });
+            }
+            if (!this.panel.active) {
+                // Preview lost focus — do NOT move the source editor here.
+                // Per the user's rule, whichever side becomes current stays
+                // put; the other side follows. When the source becomes the
+                // new current, it is the preview that must follow, not the
+                // source that gets yanked to the preview's position.
+                return;
+            }
+
+            // Preview regained focus without a re-render. Two cases, by whether
+            // the source scrolled while we were hidden:
+            //  (B) source moved -> the source is the master; re-sync the preview
+            //      to the source's current position (this is the bug we fix).
+            //  (A) source unchanged -> the preview is the master. With
+            //      retainContextWhenHidden=true the webview already holds its
+            //      exact pixel position; sending scrollToLine (integer line)
+            //      would cause sub-line round-trip drift, so send nothing.
+            // (A re-render above already restored scroll via the render pipeline.)
+            const sourceMovedWhileHidden = !willReRender &&
+                this.scrollLineWhenHidden >= 0 && this.lastScrollLine !== this.scrollLineWhenHidden;
+            this.scrollLineWhenHidden = -1; // consume (avoid re-fire / false positives)
+            if (sourceMovedWhileHidden && !this.adopted) {
+                this.syncPreviewToSourceNow();
+            }
+        });
+        this.registerEventHandlers();
+    }
+
+    /**
+     * Read the file and render it for the first time.
+     *
+     * @param filePath - Absolute path to the Markdown file.
+     * @returns Settles when the render ends, or when a later open supersedes it.
+     */
+    private renderFirst(filePath: string): Promise<void> {
         // If open() is called again before the first render completes,
         // resolve the previous promise immediately so it doesn't hang.
         return new Promise<void>((resolve) => {
@@ -1145,6 +1225,10 @@ export class PreviewManager implements vscode.Disposable {
             void this.readFileContent(filePath).then((text) => {
                 if (text === null) {
                     this.suppressLoadingNotification = false;
+                    if (this.adopted && this.panel && this.currentFilePath === filePath) {
+                        // Nothing else to show: replace the "Rendering..." page.
+                        this.setWebviewHtml(errorPage(vscode.l10n.t('File not found: {0}', filePath)));
+                    }
                     this.fireDeferredWork();
                     return;
                 }
@@ -1287,10 +1371,46 @@ export class PreviewManager implements vscode.Disposable {
         }
     }
 
-    /** Dispose the preview panel and all associated resources. */
+    /**
+     * Dispose the preview panel and all associated resources. A Reading View leaves
+     * its panel to VS Code: it stops listening and rendering, and closes the diagram
+     * viewers opened from it, which no longer receive updates.
+     */
     dispose(): void {
+        if (this.adopted) {
+            disposeViewersOf(this.id);
+            this.resetState();
+            return;
+        }
         if (this.panel) {
             this.panel.dispose();
         }
     }
+}
+
+/**
+ * Create a Reading View of a Markdown file in a panel VS Code handed over, and start
+ * its first render.
+ *
+ * @param adopted - The panel and the file it shows.
+ * @param config - Current extension configuration snapshot.
+ * @param outputChannel - Channel for render errors.
+ * @returns The Reading View.
+ */
+export function createMarkdownReadingView(adopted: AdoptedPanel, config: Config, outputChannel: vscode.OutputChannel): MarkdownReadingView {
+    const manager = new PreviewManager(outputChannel, adopted);
+    const firstRender = manager.openAdopted(config);
+    return {
+        kind: 'markdown',
+        filePath: () => adopted.filePath,
+        panel: () => adopted.panel,
+        firstRender,
+        updateConfig: (c) => manager.updateConfig(c),
+        changeTheme: () => manager.changeTheme(),
+        getLastRenderedText: () => manager.getLastRenderedText(),
+        ownsPendingDiagram: () => manager.ownsPendingDiagram(),
+        getLastPostedScroll: () => manager.getLastPostedScroll(),
+        dispatchWebviewMessage: (message) => manager.dispatchWebviewMessageForTest(message),
+        dispose: () => manager.dispose(),
+    };
 }

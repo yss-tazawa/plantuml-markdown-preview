@@ -80,15 +80,20 @@ Promise.all([
         process.exit(1);
     }
 
-    // Copy D2 Wasm + worker files to dist/d2/ for runtime import
+    // Copy D2 Wasm + worker files to dist/d2/ for runtime import.
+    // The package's worker.js is copied as d2-worker.js, and worker.js (the script
+    // the package starts as its worker) is src/d2-worker.mjs, which prepares the
+    // worker's globals and then loads d2-worker.js.
     const d2Dest = path.join(__dirname, 'dist/d2');
     try {
         fs.mkdirSync(d2Dest, { recursive: true });
         const d2Src = path.join(__dirname, 'node_modules/@terrastruct/d2/dist/node-esm');
         const d2Files = fs.readdirSync(d2Src);
         for (const f of d2Files) {
-            fs.copyFileSync(path.join(d2Src, f), path.join(d2Dest, f));
+            const destName = f === 'worker.js' ? 'd2-worker.js' : f;
+            fs.copyFileSync(path.join(d2Src, f), path.join(d2Dest, destName));
         }
+        fs.copyFileSync(path.join(__dirname, 'src/d2-worker.mjs'), path.join(d2Dest, 'worker.js'));
         // Write a package.json with "type": "module" so Node.js treats
         // the D2 .js files (and Worker script) as ESM.
         fs.writeFileSync(path.join(d2Dest, 'package.json'), '{"type":"module"}\n');

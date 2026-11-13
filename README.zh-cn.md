@@ -47,6 +47,7 @@
 - **双向滚动同步** — 编辑器与预览双向联动滚动
 - **导航与目录** — 跳转至顶部/底部按钮及预览面板目录侧边栏
 - **图表查看器** — 右键任意图表打开平移和缩放面板，实时同步并匹配主题背景
+- **阅读视图（Reading View）** — 在专属标签页中显示渲染后的 Markdown、PlantUML、Mermaid 或 D2 文件，并可在原位与源码之间切换
 - **独立图表预览** — 直接预览 `.puml`、`.plantuml`、`.mmd`、`.mermaid`、`.d2` 文件，支持平移缩放、实时更新和主题 — 无需 Markdown 包装
 - **Git 版本预览** — 将 Markdown 文件按 HEAD 或暂存版本时的内容渲染，与当前预览并排显示，让改动过的图表可以渲染后比较
 - **保存/复制图表为 PNG/SVG** — 在预览或图表查看器中右键图表保存或复制到剪贴板
@@ -62,6 +63,7 @@
 - [功能](#功能)
 - [快速开始](#快速开始)
 - [使用方法](#使用方法)
+  - [阅读视图](#阅读视图)
 - [配置](#配置)
 - [代码片段](#代码片段)
 - [颜色选择器](#颜色选择器)
@@ -480,11 +482,44 @@ PlantUML、Mermaid 和 D2 图表也可在 VS Code 内置 Markdown 预览（`Mark
 
 - **键盘快捷键：** `Cmd+Alt+V`（Mac）/ `Ctrl+Alt+V`（Windows/Linux）
 - **编辑器标题栏：** 点击编辑器右上角的预览按钮（Plotdown 图标）
-- **标准预览快捷键：** 开启 `useAsDefaultPreview` 后，`Cmd+Shift+V` / `Cmd+K V`（Mac）或 `Ctrl+Shift+V` / `Ctrl+K V`（Windows/Linux）也会在编辑器旁打开预览
-- **右键菜单：** 在资源管理器或编辑器中右键 `.md` 文件 → **PlantUML Markdown Preview** → **打开侧边预览**
-- **命令面板：** `PlantUML Markdown Preview: Open Preview to Side`
+- **VS Code 标准按钮和快捷键：** `useAsDefaultPreview` 开启（默认）时，VS Code 的 **打开侧边预览** 按钮、右键菜单中的 **打开预览** 以及 `Cmd+K V`（Mac）/ `Ctrl+K V`（Windows/Linux）会打开本扩展的预览。`Cmd+Shift+V` / `Ctrl+Shift+V` 则切换到[阅读视图](#阅读视图)
+- **右键菜单：** 在资源管理器或编辑器中右键 Markdown 文件 → **PlantUML Markdown Preview** → **在侧边打开预览**
+- **命令面板：** `PlantUML Markdown Preview: 在侧边打开预览`
 
 预览使用自己的主题 — 默认为白色背景（GitHub Light）。选择 `follow-vscode` 即可使用当前 VS Code 颜色主题的颜色。
+
+### 阅读视图
+
+阅读视图（Reading View）在文件自己的标签页中显示渲染后的内容，代替文本编辑器，不会再打开第二个面板。它固定在该文件上，不会跟随当前活动的编辑器，并且可以与预览同时打开。
+
+适用于 Markdown 文件（`.md`、`.markdown` 以及 VS Code 的 Markdown 预览涵盖的其他扩展名）以及 `.puml` / `.plantuml`、`.mmd` / `.mermaid` 和 `.d2` 文件。在你使用之前，不会有任何变化。
+
+- **就地切换：** 在编辑器中右键 → **PlantUML Markdown Preview** → **切换到阅读视图**（PlantUML、Mermaid 和 D2 文件中，**切换到阅读视图** 直接显示在菜单中）。要返回，在阅读视图中右键 → **切换到源代码**，或点击编辑器标题栏中的 **切换到源代码**。切换的是标签页本身，不会打开新标签页。
+- **打开一次：** 在资源管理器中右键文件 → **打开方式…** → **PlantUML Markdown Preview（阅读视图）**。对于已经打开的文件，改为右键点击其标签页，使用 **重新打开编辑器的方式…**。
+- **默认打开：** 在 **打开方式…** 列表中，选择 **为 "\*.md" 配置默认编辑器...** → **PlantUML Markdown Preview（阅读视图）**。此后，点击 `.md` 文件就会以阅读视图打开。每种文件扩展名需要设置一次。
+- **撤销：** 以同样的方式选择 **文本编辑器**，或从设置中删除该行。
+
+直接在 `settings.json` 中设置：
+
+```json
+"workbench.editorAssociations": {
+  "*.md": "plantumlMarkdownPreviewEditor",
+  "*.puml": "plantumlPumlPreviewEditor",
+  "*.mmd": "plantumlMermaidPreviewEditor",
+  "*.d2": "plantumlD2PreviewEditor"
+}
+```
+
+| 文件 | 值 |
+| ---- | -- |
+| Markdown（`*.md`、`*.markdown` 等） | `plantumlMarkdownPreviewEditor` |
+| `*.puml`、`*.plantuml` | `plantumlPumlPreviewEditor` |
+| `*.mmd`、`*.mermaid` | `plantumlMermaidPreviewEditor` |
+| `*.d2` | `plantumlD2PreviewEditor` |
+
+- 在 VS Code 1.100 之前，不会显示 **切换到阅读视图** 和 **切换到源代码**。请改用 **打开方式…** 打开阅读视图。
+- Git 差异仍以文本差异打开，即使文件已设置为以阅读视图打开。
+- `useAsDefaultPreview` 开启（默认）时，VS Code 的 **以预览方式打开** 按钮（VS Code 1.119 及以上）和 `Ctrl+Shift+V`（VS Code 1.100 及以上）就会切换到阅读视图，详见[配置](#配置)。
 
 ### 打开图表预览
 
@@ -492,54 +527,54 @@ PlantUML、Mermaid 和 D2 图表也可在 VS Code 内置 Markdown 预览（`Mark
 
 - **键盘快捷键：** `Cmd+Alt+V`（Mac）/ `Ctrl+Alt+V`（Windows/Linux）— 相同快捷键，根据文件类型自动选择
 - **编辑器标题栏：** 点击编辑器右上角的预览按钮（Plotdown 图标）
-- **标准预览快捷键：** 开启 `useAsDefaultPreview` 后，`Cmd+Shift+V` / `Cmd+K V`（Mac）或 `Ctrl+Shift+V` / `Ctrl+K V`（Windows/Linux）也会在编辑器旁打开预览
+- **标准预览快捷键：** `useAsDefaultPreview` 开启（默认）时，`Cmd+K V`（Mac）/ `Ctrl+K V`（Windows/Linux）也会在编辑器旁打开预览。`Cmd+Shift+V` / `Ctrl+Shift+V` 则切换到[阅读视图](#阅读视图)
 - **右键菜单：** 在资源管理器或编辑器中右键对应文件 → **预览 PlantUML 文件** / **预览 Mermaid 文件** / **预览 D2 文件**
-- **命令面板：** `PlantUML Markdown Preview: Preview PlantUML File`、`Preview Mermaid File` 或 `Preview D2 File`
+- **命令面板：** `PlantUML Markdown Preview: 预览 PlantUML 文件`、`预览 Mermaid 文件` 或 `预览 D2 文件`
 
 ### 打开 Git 版本预览
 
 在当前版本预览的旁边，渲染并显示 Markdown 文件在某个 Git 版本时的内容。
 
-- **右键菜单:** 在资源管理器或编辑器中右键点击 `.md` 文件 → **PlantUML Markdown Preview** → **在侧边打开 HEAD 版本预览** / **在侧边打开暂存版本预览**
+- **右键菜单:** 在资源管理器或编辑器中右键点击 Markdown 文件 → **PlantUML Markdown Preview** → **在侧边打开 HEAD 版本预览** / **在侧边打开暂存版本预览**
 - **命令面板:** `PlantUML Markdown Preview: 在侧边打开 HEAD 版本预览` / `在侧边打开暂存版本预览`
 
 先打开普通预览，再打开版本预览，两个面板会并排显示。版本面板是固定快照，编辑时不会更新。
 
 ### 导出为 HTML
 
-- **右键菜单：** 右键 `.md` 文件 → **PlantUML Markdown Preview** → **导出为 HTML** → 选择宽度选项
+- **右键菜单：** 右键 Markdown 文件 → **PlantUML Markdown Preview** → **导出为 HTML** → 选择宽度选项
 - **预览面板：** 在预览内右键 → **导出为 HTML** 或 **导出为 HTML 并打开**
 
 子菜单提供以下宽度选项：
 
 | 选项 | 说明 |
 | ---- | ---- |
-| Current Settings | 使用当前配置导出（无响应式 CSS） |
+| 当前设置 | 使用当前配置导出（无响应式 CSS） |
 | 640px – 1440px | 固定像素宽度，居中 |
-| Responsive (Left-Aligned) | 正文宽度等于视口，靠左对齐；溢出的图表才会缩小 |
-| 640px – 1440px (Left-Aligned) | 固定宽度，靠左对齐 |
+| 响应式 (左对齐) | 正文宽度等于视口，靠左对齐；溢出的图表才会缩小 |
+| 640px – 1440px (左对齐) | 固定宽度，靠左对齐 |
 
-HTML 文件保存在源 `.md` 文件旁边。
+HTML 文件保存在源 Markdown 文件旁边。
 
 ### 导出为 PDF
 
-- **右键菜单：** 右键 `.md` 文件 → **PlantUML Markdown Preview** → **导出为 PDF** → **纵向** 或 **横向**
+- **右键菜单：** 右键 Markdown 文件 → **PlantUML Markdown Preview** → **导出为 PDF** → **纵向** 或 **横向**
 - **预览面板：** 在预览内右键 → **导出为 PDF** 或 **导出为 PDF 并打开** → **纵向** 或 **横向**
 
-PDF 文件保存在源 `.md` 文件旁边。需要 Chrome、Edge 或 Chromium。
+PDF 文件保存在源 Markdown 文件旁边。需要 Chrome、Edge 或 Chromium。
 `pdfScale` 设置（默认 0.625）控制文本和图表的整体缩放。
 
 ### 将图表保存/复制为 PNG/SVG
 
-- **预览面板：** 右键图表 → **复制图表为 PNG**、**保存图表为 PNG** 或 **保存图表为 SVG**
+- **预览面板：** 右键图表 → **将图表复制为 PNG**、**将图表保存为 PNG** 或 **将图表保存为 SVG**
 - **图表查看器：** 在查看器内右键 → 同上
 - **独立图表预览：** 在预览内右键 → 同上
 
 ### 导出所有图表
 
-- **上下文菜单：** 右键点击 `.md` 文件 → **PlantUML Markdown Preview** → **Export All Diagrams as PNG** 或 **Export All Diagrams as SVG**
-- **预览面板：** 在预览面板内右键 → **Export All Diagrams as PNG** 或 **Export All Diagrams as SVG**
-- **命令面板：** `PlantUML Markdown Preview: Export All Diagrams as PNG` / `Export All Diagrams as SVG`
+- **上下文菜单：** 右键点击 Markdown 文件 → **PlantUML Markdown Preview** → **将所有图表导出为 PNG** 或 **将所有图表导出为 SVG**
+- **预览面板：** 在预览面板内右键 → **将所有图表导出为 PNG** 或 **将所有图表导出为 SVG**
+- **命令面板：** `PlantUML Markdown Preview: 将所有图表导出为 PNG` / `将所有图表导出为 SVG`
 
 保存对话框可选择输出目录名称（默认：`{文件名}_diagrams`）。每个图表按文档顺序保存为 `diagram-1.png`、`diagram-2.png` 等。需要打开预览。
 
@@ -553,7 +588,7 @@ PDF 文件保存在源 `.md` 文件旁边。需要 Chrome、Edge 或 Chromium。
 
 点击预览面板标题栏的主题图标，或使用命令面板：
 
-- **命令面板：** `PlantUML Markdown Preview: Change Preview Theme`
+- **命令面板：** `PlantUML Markdown Preview: 更改预览主题`
 
 ### PlantUML 语法
 
@@ -800,8 +835,8 @@ PlantUML、Mermaid 和 D2 的上下文感知关键字建议。适用于独立文
 | `plantumlLocalServerJvmMaxHeapMb` | `512` | `"custom"` 预设的最大堆大小（`-Xmx`，MB）。其他预设下会被忽略。范围: 64–32768。 |
 | `plantumlServerUrl` | `"https://www.plantuml.com/plantuml"` | Easy 模式的 PlantUML 服务器 URL。 |
 | `enableDiagramViewer` | `true` | 启用右键菜单中的"在图表查看器中打开"项。 |
-| `retainPreviewContext` | `true` | 标签页隐藏时保留预览内容。防止切换时重新渲染，但使用更多内存（需要重新打开预览才会生效）。 |
-| `useAsDefaultPreview` | `false` | 使用 VS Code 标准 Markdown 预览快捷键（`Ctrl+Shift+V` / `Ctrl+K V`；Mac 为 `Cmd`）为 Markdown、PlantUML、Mermaid 和 D2 文件打开本扩展的预览。两个快捷键都会在编辑器旁边打开预览（VS Code 自带的 `Ctrl+Shift+V` 则在当前标签页中打开预览）。资源管理器右键菜单中的 **打开预览** 和编辑器标题栏中 VS Code 自带的预览按钮不会被替换。 |
+| `retainPreviewContext` | `true` | 标签页隐藏时保留预览内容。防止切换标签页时重新渲染，但会占用更多内存。要应用更改，请关闭并重新打开预览。对于阅读视图，请重新启动 VS Code 或重新加载窗口。 |
+| `useAsDefaultPreview` | `true` | 使用本扩展代替 VS Code 内置的 Markdown 预览。VS Code 标准的 Markdown 预览按钮、右键菜单项和快捷键会改为打开本扩展。`Ctrl+K V`（Mac 为 `Cmd`）在编辑器旁打开预览；`Ctrl+Shift+V` 在同一标签页中切换源代码和[阅读视图](#阅读视图)（PlantUML、Mermaid 和 D2 文件也一样）。在 VS Code 1.119 之前，只替换快捷键；在 1.100 之前，两个快捷键都会在编辑器旁打开预览。**0.8.0 中的变更：** 此设置现在默认开启。如果想继续使用 VS Code 自带的 Markdown 预览按钮和快捷键，请将其关闭。**与 Markdown Preview Enhanced 同时使用时：** 它也绑定了 `Ctrl+Shift+V` 和 `Ctrl+K V`。两个扩展都安装时，本扩展的快捷键生效。如果想改用 Markdown Preview Enhanced 的快捷键，请关闭此设置。 |
 
 > **注意：** `allowLocalImages` 和 `allowHttpImages` 仅适用于预览面板。HTML 导出始终输出原始图片路径，不受 CSP 限制。
 
@@ -838,7 +873,9 @@ PlantUML、Mermaid 和 D2 的上下文感知关键字建议。适用于独立文
 | 预览 PlantUML 文件 | `Cmd+Alt+V` | `Ctrl+Alt+V` |
 | 预览 Mermaid 文件 | `Cmd+Alt+V` | `Ctrl+Alt+V` |
 | 预览 D2 文件 | `Cmd+Alt+V` | `Ctrl+Alt+V` |
-| 打开预览（开启 `useAsDefaultPreview` 时；Markdown、PlantUML、Mermaid、D2） | `Cmd+Shift+V` / `Cmd+K V` | `Ctrl+Shift+V` / `Ctrl+K V` |
+| 打开侧边预览（`useAsDefaultPreview` 开启（默认）时；Markdown、PlantUML、Mermaid、D2） | `Cmd+K V` | `Ctrl+K V` |
+| 切换到阅读视图（`useAsDefaultPreview` 开启（默认）时；Markdown、PlantUML、Mermaid、D2） | `Cmd+Shift+V` | `Ctrl+Shift+V` |
+| 切换到源代码（在阅读视图中，与 `useAsDefaultPreview` 无关） | `Cmd+Shift+V` | `Ctrl+Shift+V` |
 | 选择渲染模式 | — | — |
 
 ## 常见问题

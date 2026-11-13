@@ -6,7 +6,7 @@
  * - renderHtmlAsync: Markdown text -> full HTML document (export & preview, unified)
  *   - Pre-renders PlantUML blocks asynchronously (local or server) before md.render()
  *   - When options.sourceMap is true, adds data-source-line attributes for scroll sync
- * - exportToHtml: .md file -> .html file in the same directory
+ * - exportToHtml: Markdown file -> .html file in the same directory
  * - getOrCreateMd: Cached markdown-it instance factory (with/without source map)
  * - buildHtml: Assemble <html> with theme CSS, CSP meta, and optional script
  *
@@ -28,6 +28,7 @@ import { getLocalServerUrl, waitForLocalServer, ensureLocalServerStarted, localS
 import { escapeHtml, extractPlantUmlBlocks, extractD2Blocks, errorHtml } from './utils.js';
 import { renderAllD2 } from './d2-renderer.js';
 import { findBrowser } from './browser-finder.js';
+import { exportOutputPath, fileNameWithoutExtension } from './markdown-files.js';
 import { MERMAID_THEME_SET, type Config } from './config.js';
 import katexPlugin, { type MarkdownKatexOptions } from '@vscode/markdown-it-katex';
 import type { KatexOptions } from 'katex';
@@ -271,6 +272,14 @@ async function ensureGithubAlerts(): Promise<void> {
     return githubAlertsLoading;
 }
 
+/**
+ * Return the cached markdown-it instance for the configuration, creating it when the
+ * cache is empty or was discarded by {@link invalidateMdCache}.
+ *
+ * @param config - Current configuration.
+ * @param withSourceMap - Whether to return the instance that adds data-source-line attributes.
+ * @returns The markdown-it instance.
+ */
 function getOrCreateMd(config: Config, withSourceMap?: boolean): MarkdownIt {
     invalidateMdCache(config);
 
@@ -469,9 +478,25 @@ export async function renderHtmlAsync(source: string, title: string, config: Con
 }
 
 /**
+ * Build the export output path next to the source file.
+ *
+ * @param mdFilePath - Absolute path to the Markdown file.
+ * @param extension - Output extension with the dot.
+ * @returns Absolute output path.
+ * @throws When the output path is the source file itself, so the export never overwrites its source.
+ */
+function requireOutputPath(mdFilePath: string, extension: string): string {
+    const outputPath = exportOutputPath(mdFilePath, extension);
+    if (!outputPath) {
+        throw new Error(vscode.l10n.t('The output file would overwrite the source file: {0}', mdFilePath));
+    }
+    return outputPath;
+}
+
+/**
  * Export a Markdown file to a standalone HTML file with PlantUML SVG inline embedding.
  *
- * Reads the .md file asynchronously, renders it to HTML (without source map or scripts),
+ * Reads the Markdown file asynchronously, renders it to HTML (without source map or scripts),
  * and writes the result to the same directory with a .html extension.
  *
  * @param mdFilePath - Absolute path to the Markdown file.
@@ -482,6 +507,7 @@ export async function renderHtmlAsync(source: string, title: string, config: Con
  * @returns Absolute path of the generated HTML file.
  */
 export async function exportToHtml(mdFilePath: string, config: Config, signal?: AbortSignal, fitToWidth?: boolean | number, fitToWidthAlign?: 'center' | 'left'): Promise<string> {
+    const outputPath = requireOutputPath(mdFilePath, '.html');
     const source = await fs.promises.readFile(mdFilePath, 'utf8');
     handleExportEvent(source, config);
     const exportOptions: RenderOptions = {
@@ -495,9 +521,8 @@ export async function exportToHtml(mdFilePath: string, config: Config, signal?: 
         enableMath: config.enableMath,
     };
     const exportConfig = { ...config, previewTheme: resolveExportTheme(config.previewTheme) };
-    const fullHtml = await renderHtmlAsync(source, path.basename(mdFilePath, '.md'), exportConfig, exportOptions, signal);
+    const fullHtml = await renderHtmlAsync(source, fileNameWithoutExtension(mdFilePath), exportConfig, exportOptions, signal);
     if (signal?.aborted || !fullHtml) throw new Error('Aborted');
-    const outputPath = mdFilePath.replace(/\.md$/, '.html');
     await fs.promises.writeFile(outputPath, fullHtml, 'utf8');
     return outputPath;
 }
@@ -651,6 +676,7 @@ class CdpConnection {
  * @throws When no supported browser is found or when the browser process fails.
  */
 export async function exportToPdf(mdFilePath: string, config: Config, signal?: AbortSignal, landscape?: boolean): Promise<string> {
+    const outputPath = requireOutputPath(mdFilePath, '.pdf');
     const browserPath = await findBrowser();
     if (!browserPath) {
         throw new Error(vscode.l10n.t('Chrome, Edge, or Chromium is required for PDF export. No supported browser was found.'));
@@ -669,13 +695,12 @@ export async function exportToPdf(mdFilePath: string, config: Config, signal?: A
         enableMath: config.enableMath,
     };
     const exportConfig = { ...config, previewTheme: resolveExportTheme(config.previewTheme) };
-    const fullHtml = await renderHtmlAsync(source, path.basename(mdFilePath, '.md'), exportConfig, exportOptions, signal);
+    const fullHtml = await renderHtmlAsync(source, fileNameWithoutExtension(mdFilePath), exportConfig, exportOptions, signal);
     if (signal?.aborted || !fullHtml) throw new Error('Aborted');
 
     const printHtml = fullHtml.replace('</head>', '<style>@page{margin:15mm}</style>\n</head>');
 
     const tmpHtml = path.join(os.tmpdir(), `plantuml-md-preview-${Date.now()}.html`);
-    const outputPath = mdFilePath.replace(/\.md$/, '.pdf');
 
     // Launch Chrome with remote debugging
     const args = [

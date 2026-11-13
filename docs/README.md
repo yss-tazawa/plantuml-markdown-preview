@@ -47,6 +47,7 @@ Switch between modes anytime with a single setting — no migration, no restart.
 - **Bidirectional scroll sync** — editor and preview scroll together, both ways
 - **Navigation & TOC** — go-to-top / go-to-bottom buttons and a Table of Contents sidebar in the preview panel
 - **Diagram Viewer** — right-click any diagram to open a pan & zoom panel with live sync and theme-matched background
+- **Reading View** — view a Markdown, PlantUML, Mermaid, or D2 file rendered in its own tab, and switch between it and the source in place
 - **Standalone diagram preview** — open `.puml`, `.plantuml`, `.mmd`, `.mermaid`, and `.d2` files directly with pan & zoom, live updates, and theme support — no Markdown wrapper needed
 - **Git revision preview** — render a Markdown file as it was at HEAD or the staged version, side by side with your current preview, so changed diagrams can be compared rendered
 - **Save or copy diagrams as PNG / SVG** — right-click any diagram in the preview or Diagram Viewer to save or copy to clipboard
@@ -62,6 +63,7 @@ Switch between modes anytime with a single setting — no migration, no restart.
 - [Features](#features)
 - [Quick Start](#quick-start)
 - [Usage](#usage)
+  - [Reading View](#reading-view)
 - [Configuration](#configuration)
 - [Snippets](#snippets)
 - [Color Picker](#color-picker)
@@ -483,11 +485,44 @@ follow the steps for your platform below.
 
 - **Keyboard shortcut:** `Cmd+Alt+V` (Mac) / `Ctrl+Alt+V` (Windows / Linux)
 - **Editor title bar:** Click the preview button (Plotdown icon) at the top right of the editor
-- **Standard preview shortcuts:** With `useAsDefaultPreview` turned on, `Cmd+Shift+V` / `Cmd+K V` (Mac) or `Ctrl+Shift+V` / `Ctrl+K V` (Windows / Linux) also open the preview beside the editor
-- **Context menu:** Right-click a `.md` file in the Explorer or inside the editor → **PlantUML Markdown Preview** → **Open Preview to Side**
+- **VS Code's standard buttons and shortcuts:** With `useAsDefaultPreview` on (the default), VS Code's **Open Preview to the Side** button, its **Open Preview** context menu items and `Cmd+K V` (Mac) / `Ctrl+K V` (Windows / Linux) open this preview. `Cmd+Shift+V` / `Ctrl+Shift+V` switches to [Reading View](#reading-view) instead
+- **Context menu:** Right-click a Markdown file in the Explorer or inside the editor → **PlantUML Markdown Preview** → **Open Preview to Side**
 - **Command Palette:** `PlantUML Markdown Preview: Open Preview to Side`
 
 The preview uses its own themes — default is a white background (GitHub Light). Choose `follow-vscode` to use the colors of your current VS Code color theme.
+
+### Reading View
+
+Reading View shows a file rendered in its own tab, in place of the text editor — no second panel. It stays on that file instead of following the active editor, and can be open at the same time as the Preview.
+
+It works for Markdown files (`.md`, `.markdown` and the other extensions covered by VS Code's Markdown preview) and for `.puml` / `.plantuml`, `.mmd` / `.mermaid` and `.d2` files. Nothing changes until you use it.
+
+- **Switch in place:** Right-click in the editor → **PlantUML Markdown Preview** → **Switch to Reading View** (for PlantUML, Mermaid and D2 files, **Switch to Reading View** is directly in the menu). To go back, right-click in Reading View → **Switch to Source**, or click **Switch to Source** in the editor title bar. The tab itself switches; no new tab opens.
+- **Open once:** Right-click a file in the Explorer → **Open With...** → **PlantUML Markdown Preview (Reading View)**. For a file that is already open, right-click its tab and use **Reopen Editor With...** instead.
+- **Open by default:** In the **Open With...** list, choose **Configure default editor for '\*.md'...** → **PlantUML Markdown Preview (Reading View)**. From then on, clicking a `.md` file opens it in Reading View. Do this once for each file extension.
+- **Undo:** Choose **Text Editor** the same way, or remove the line from your settings.
+
+To set it in `settings.json` instead:
+
+```json
+"workbench.editorAssociations": {
+  "*.md": "plantumlMarkdownPreviewEditor",
+  "*.puml": "plantumlPumlPreviewEditor",
+  "*.mmd": "plantumlMermaidPreviewEditor",
+  "*.d2": "plantumlD2PreviewEditor"
+}
+```
+
+| Files | Value |
+| ----- | ----- |
+| Markdown (`*.md`, `*.markdown`, …) | `plantumlMarkdownPreviewEditor` |
+| `*.puml`, `*.plantuml` | `plantumlPumlPreviewEditor` |
+| `*.mmd`, `*.mermaid` | `plantumlMermaidPreviewEditor` |
+| `*.d2` | `plantumlD2PreviewEditor` |
+
+- Before VS Code 1.100, **Switch to Reading View** and **Switch to Source** are not shown. Open Reading View with **Open With...** instead.
+- Git diffs still open as text diffs, even for files set to open in Reading View.
+- With `useAsDefaultPreview` on (the default), VS Code's **Open as Preview** button (VS Code 1.119 or later) and `Ctrl+Shift+V` (VS Code 1.100 or later) switch to Reading View — see [Configuration](#configuration).
 
 ### Open Diagram Preview
 
@@ -495,7 +530,7 @@ Open `.puml` / `.plantuml`, `.mmd` / `.mermaid`, or `.d2` files directly in a pa
 
 - **Keyboard shortcut:** `Cmd+Alt+V` (Mac) / `Ctrl+Alt+V` (Windows / Linux) — same shortcut, auto-selects based on file type
 - **Editor title bar:** Click the preview button (Plotdown icon) at the top right of the editor
-- **Standard preview shortcuts:** With `useAsDefaultPreview` turned on, `Cmd+Shift+V` / `Cmd+K V` (Mac) or `Ctrl+Shift+V` / `Ctrl+K V` (Windows / Linux) also open the preview beside the editor
+- **Standard preview shortcuts:** With `useAsDefaultPreview` on (the default), `Cmd+K V` (Mac) / `Ctrl+K V` (Windows / Linux) also opens the preview beside the editor. `Cmd+Shift+V` / `Ctrl+Shift+V` switches to [Reading View](#reading-view) instead
 - **Context menu:** Right-click a `.puml` / `.plantuml`, `.mmd` / `.mermaid`, or `.d2` file in the Explorer or editor → **Preview PlantUML File** / **Preview Mermaid File** / **Preview D2 File**
 - **Command Palette:** `PlantUML Markdown Preview: Preview PlantUML File`, `Preview Mermaid File`, or `Preview D2 File`
 
@@ -503,14 +538,14 @@ Open `.puml` / `.plantuml`, `.mmd` / `.mermaid`, or `.d2` files directly in a pa
 
 Render a Markdown file as it was at a Git revision, beside the preview of your current version.
 
-- **Context menu:** Right-click a `.md` file in the Explorer or editor → **PlantUML Markdown Preview** → **Open Preview of HEAD Revision to Side** / **Open Preview of Staged Revision to Side**
+- **Context menu:** Right-click a Markdown file in the Explorer or editor → **PlantUML Markdown Preview** → **Open Preview of HEAD Revision to Side** / **Open Preview of Staged Revision to Side**
 - **Command Palette:** `PlantUML Markdown Preview: Open Preview of HEAD Revision to Side` / `Open Preview of Staged Revision to Side`
 
 Open your normal preview first, then the revision preview: the two panels sit side by side. The revision panel is a fixed snapshot — it does not update as you edit.
 
 ### Export to HTML
 
-- **Context menu:** Right-click a `.md` file → **PlantUML Markdown Preview** → **Export as HTML** → choose a width option
+- **Context menu:** Right-click a Markdown file → **PlantUML Markdown Preview** → **Export as HTML** → choose a width option
 - **Preview panel:** Right-click inside the preview panel → **Export as HTML** or **Export as HTML & Open**
 
 The submenu offers these width options:
@@ -522,14 +557,14 @@ The submenu offers these width options:
 | Responsive (Left-Aligned) | Viewport-width body anchored to the left; diagrams shrink only if they overflow |
 | 640px – 1440px (Left-Aligned) | Fixed width, left-aligned |
 
-The HTML file is saved alongside the source `.md` file.
+The HTML file is saved alongside the source Markdown file.
 
 ### Export to PDF
 
-- **Context menu:** Right-click a `.md` file → **PlantUML Markdown Preview** → **Export as PDF** → **Portrait** or **Landscape**
+- **Context menu:** Right-click a Markdown file → **PlantUML Markdown Preview** → **Export as PDF** → **Portrait** or **Landscape**
 - **Preview panel:** Right-click inside the preview panel → **Export as PDF** or **Export as PDF & Open** → **Portrait** or **Landscape**
 
-The PDF file is saved alongside the source `.md` file. Chrome, Edge, or Chromium is required.
+The PDF file is saved alongside the source Markdown file. Chrome, Edge, or Chromium is required.
 The `pdfScale` setting (default 0.625) controls the overall scale of text and diagrams.
 
 ### Save / Copy Diagram as PNG / SVG
@@ -540,7 +575,7 @@ The `pdfScale` setting (default 0.625) controls the overall scale of text and di
 
 ### Export All Diagrams
 
-- **Context menu:** Right-click a `.md` file → **PlantUML Markdown Preview** → **Export All Diagrams as PNG** or **Export All Diagrams as SVG**
+- **Context menu:** Right-click a Markdown file → **PlantUML Markdown Preview** → **Export All Diagrams as PNG** or **Export All Diagrams as SVG**
 - **Preview panel:** Right-click inside the preview panel → **Export All Diagrams as PNG** or **Export All Diagrams as SVG**
 - **Command Palette:** `PlantUML Markdown Preview: Export All Diagrams as PNG` / `Export All Diagrams as SVG`
 
@@ -809,8 +844,8 @@ All settings use the `plantumlMarkdownPreview.` prefix.
 | `plantumlLocalServerJvmMaxHeapMb` | `512` | Max heap (`-Xmx`, MB) for the `"custom"` preset. Ignored for other presets. Range: 64–32768. |
 | `plantumlServerUrl` | `"https://www.plantuml.com/plantuml"` | PlantUML server URL for Easy mode. Set to a self-hosted server URL for privacy. |
 | `enableDiagramViewer` | `true` | Enable the "Open in Diagram Viewer" context menu item when right-clicking a diagram. Requires reopening the preview to take effect. |
-| `retainPreviewContext` | `true` | Retain preview content when the tab is hidden. Prevents re-rendering on tab switch but uses more memory. Requires reopening the preview to take effect. |
-| `useAsDefaultPreview` | `false` | Open this extension's preview with VS Code's standard Markdown preview shortcuts (`Ctrl+Shift+V` / `Ctrl+K V`; `Cmd` on Mac) for Markdown, PlantUML, Mermaid and D2 files. Both shortcuts open the preview beside the editor, unlike VS Code's `Ctrl+Shift+V`, which opens the preview in the current tab. The Explorer's **Open Preview** context menu and VS Code's own preview button in the editor title bar are not replaced. |
+| `retainPreviewContext` | `true` | Retain preview content when the tab is hidden. Prevents re-rendering on tab switch but uses more memory. To apply a change, close and reopen the preview. For Reading View, restart VS Code or reload the window. |
+| `useAsDefaultPreview` | `true` | Use this extension in place of VS Code's built-in Markdown preview. VS Code's standard Markdown preview buttons, context menu items and shortcuts open this extension instead. `Ctrl+K V` (`Cmd` on Mac) opens the Preview to the side; `Ctrl+Shift+V` switches between the source and [Reading View](#reading-view) in the same tab, also for PlantUML, Mermaid and D2 files. Before VS Code 1.119, only the shortcuts are replaced; before 1.100, both open the Preview to the side. **Changed in 0.8.0:** this setting is now on by default. To keep VS Code's own Markdown preview buttons and shortcuts, turn it off. **With Markdown Preview Enhanced:** it also binds `Ctrl+Shift+V` and `Ctrl+K V`. When both are installed, this extension's shortcuts take effect. To use Markdown Preview Enhanced's shortcuts instead, turn this setting off. |
 
 > **Note:** `allowLocalImages` and `allowHttpImages` apply only to the preview panel. HTML export always outputs original image paths without CSP restrictions.
 
@@ -847,7 +882,9 @@ All settings use the `plantumlMarkdownPreview.` prefix.
 | Preview PlantUML File | `Cmd+Alt+V` | `Ctrl+Alt+V` |
 | Preview Mermaid File | `Cmd+Alt+V` | `Ctrl+Alt+V` |
 | Preview D2 File | `Cmd+Alt+V` | `Ctrl+Alt+V` |
-| Open Preview (when `useAsDefaultPreview` is on; Markdown, PlantUML, Mermaid, D2) | `Cmd+Shift+V` / `Cmd+K V` | `Ctrl+Shift+V` / `Ctrl+K V` |
+| Open Preview to the Side (with `useAsDefaultPreview` on, the default; Markdown, PlantUML, Mermaid, D2) | `Cmd+K V` | `Ctrl+K V` |
+| Switch to Reading View (with `useAsDefaultPreview` on, the default; Markdown, PlantUML, Mermaid, D2) | `Cmd+Shift+V` | `Ctrl+Shift+V` |
+| Switch to Source (in Reading View, regardless of `useAsDefaultPreview`) | `Cmd+Shift+V` | `Ctrl+Shift+V` |
 | Select Rendering Mode | — | — |
 
 ## FAQ

@@ -47,6 +47,7 @@ Cambia entre modos en cualquier momento con un solo ajuste: sin migración, sin 
 - **Sincronización de desplazamiento bidireccional**: el editor y la vista previa se desplazan juntos en ambas direcciones.
 - **Navegación y TOC**: botones para ir al principio/final y una barra lateral de Tabla de contenidos en el panel de vista previa.
 - **Visor de diagramas (Diagram Viewer)**: haz clic derecho en cualquier diagrama para abrir un panel de desplazamiento y zoom con sincronización en vivo y fondo adaptado al tema.
+- **Vista de lectura (Reading View)** — muestra un archivo Markdown, PlantUML, Mermaid o D2 renderizado en su propia pestaña y permite alternar con el código fuente en el mismo lugar
 - **Vista previa de diagramas independiente**: abre archivos `.puml`, `.plantuml`, `.mmd`, `.mermaid` y `.d2` directamente con zoom, actualizaciones en vivo y soporte de temas, sin necesidad de un envoltorio Markdown.
 - **Vista previa de revisiones de Git** — renderiza un archivo Markdown tal como estaba en HEAD o en la versión preparada, junto a tu vista previa actual, para comparar los diagramas modificados ya renderizados
 - **Guardar o copiar diagramas como PNG / SVG**: haz clic derecho en cualquier diagrama en la vista previa o en el Visor de diagramas para guardarlo o copiarlo al portapapeles.
@@ -62,6 +63,7 @@ Cambia entre modos en cualquier momento con un solo ajuste: sin migración, sin 
 - [Funcionalidades](#funcionalidades)
 - [Inicio rápido](#inicio-rápido)
 - [Uso](#uso)
+  - [Vista de lectura](#vista-de-lectura)
 - [Configuración](#configuración)
 - [Fragmentos de código](#fragmentos-de-código)
 - [Selector de color](#selector-de-color)
@@ -171,7 +173,7 @@ Todos los presets excepto `unlimited` también fijan `-XX:+UseSerialGC`, `-XX:Ma
 La barra de estado muestra el modo de renderizado actual (Fast / Secure / Easy) y, en el modo Fast, el estado del servidor local (iniciado, iniciando, error, detenido).
 
 - Haz clic en el elemento de la barra de estado para cambiar de modo a través de un menú de selección rápida, sin necesidad de abrir los Ajustes.
-- Equivale al comando `Select Rendering Mode` en la Paleta de comandos.
+- Equivale al comando `Seleccionar modo de renderizado` en la Paleta de comandos.
 
 ### Exportación HTML
 
@@ -207,7 +209,7 @@ Exporta todos los diagramas de un archivo Markdown como archivos PNG o SVG indiv
 
 ### Visor de diagramas (Diagram Viewer)
 
-Haz clic derecho en cualquier diagrama PlantUML, Mermaid o D2 en la vista previa y selecciona **Open in Diagram Viewer** para abrirlo en un panel separado con zoom y desplazamiento.
+Haz clic derecho en cualquier diagrama PlantUML, Mermaid o D2 en la vista previa y selecciona **Abrir en visor de diagramas** para abrirlo en un panel separado con zoom y desplazamiento.
 
 - Zoom con la rueda del ratón (centrado en el cursor) y arrastrar para desplazar.
 - Barra de herramientas: Ajustar a la ventana, restablecer 1:1, zoom por pasos (+/-).
@@ -224,8 +226,8 @@ Usa las directivas `!include` para compartir estilos comunes, macros y definicio
 
 - Los archivos incluidos se resuelven de forma relativa a la raíz del espacio de trabajo (o al directorio establecido en `plantumlIncludePath`).
 - Guardar un archivo incluido refresca automáticamente la vista previa (también puedes hacer clic en el botón **Reload** ↻ para forzar un refresco manual).
-- **Go to Include File** — haz clic derecho en una línea `!include` en archivos `.puml` o Markdown para abrir el archivo referenciado (la opción del menú solo aparece cuando el cursor está sobre una línea `!include`).
-- **Open Include Source** — haz clic derecho en un diagrama PlantUML en la vista previa para abrir sus archivos incluidos directamente.
+- **Ir al archivo include** — haz clic derecho en una línea `!include` en archivos `.puml` o Markdown para abrir el archivo referenciado (la opción del menú solo aparece cuando el cursor está sobre una línea `!include`).
+- **Abrir archivo de origen include** — haz clic derecho en un diagrama PlantUML en la vista previa para abrir sus archivos incluidos directamente.
 - Funciona en los modos Fast y Secure. No disponible en el modo Easy (el servidor remoto no puede acceder a archivos locales).
 
 > **Nota:** `plantumlIncludePath` (y la resolución basada en la raíz del espacio de trabajo) solo tiene efecto cuando es la propia extensión la que inicia el proceso de PlantUML — siempre en el modo Secure, pero en el modo Fast solo cuando la extensión inicia su propio servidor local. Si el modo Fast se conecta a un servidor que ya está en ejecución (Start Mode `"off"`, o un servidor existente reutilizado en un puerto fijo), los includes se resuelven en cambio respecto al propio directorio de trabajo de ese servidor. Para asegurarte de que el ajuste tenga efecto en el modo Fast, configura el puerto en `0` (auto).
@@ -469,11 +471,44 @@ Lo que funciona depende de tu configuración:
 
 - **Atajo de teclado:** `Cmd+Alt+V` (Mac) / `Ctrl+Alt+V` (Windows / Linux).
 - **Barra de título del editor:** Haz clic en el botón de vista previa (icono de Plotdown) en la parte superior derecha del editor.
-- **Atajos estándar de vista previa:** Con `useAsDefaultPreview` activado, `Cmd+Shift+V` / `Cmd+K V` (Mac) o `Ctrl+Shift+V` / `Ctrl+K V` (Windows / Linux) también abren la vista previa al lado del editor.
-- **Menú contextual:** Haz clic derecho en un archivo `.md` en el Explorador o dentro del editor → **PlantUML Markdown Preview** → **Open Preview to Side**.
-- **Paleta de comandos:** `PlantUML Markdown Preview: Open Preview to Side`.
+- **Botones y atajos estándar de VS Code:** Con `useAsDefaultPreview` activado (el valor predeterminado), el botón **Abrir vista previa en el lateral** de VS Code, sus elementos **Abrir vista previa** del menú contextual y `Cmd+K V` (Mac) / `Ctrl+K V` (Windows / Linux) abren esta vista previa. `Cmd+Shift+V` / `Ctrl+Shift+V` cambia a la [Vista de lectura](#vista-de-lectura) en su lugar
+- **Menú contextual:** Haz clic derecho en un archivo Markdown en el Explorador o dentro del editor → **PlantUML Markdown Preview** → **Abrir vista previa al lado**.
+- **Paleta de comandos:** `PlantUML Markdown Preview: Abrir vista previa al lado`.
 
 La vista previa usa sus propios temas; el predeterminado es fondo blanco (GitHub Light). Elige `follow-vscode` para usar los colores del tema de color actual de VS Code.
+
+### Vista de lectura
+
+La vista de lectura (Reading View) muestra un archivo renderizado en su propia pestaña, en lugar del editor de texto, sin abrir un segundo panel. Se queda en ese archivo en vez de seguir al editor activo, y puede estar abierta al mismo tiempo que la vista previa.
+
+Funciona con archivos Markdown (`.md`, `.markdown` y las demás extensiones que cubre la vista previa de Markdown de VS Code) y con archivos `.puml` / `.plantuml`, `.mmd` / `.mermaid` y `.d2`. No cambia nada hasta que la use.
+
+- **Cambiar en el mismo sitio:** Clic derecho en el editor → **PlantUML Markdown Preview** → **Cambiar a la vista de lectura** (en archivos PlantUML, Mermaid y D2, **Cambiar a la vista de lectura** está directamente en el menú). Para volver, clic derecho en la vista de lectura → **Cambiar al código fuente**, o haga clic en **Cambiar al código fuente** en la barra de título del editor. Cambia la propia pestaña; no se abre otra.
+- **Abrir una vez:** Clic derecho en un archivo del Explorador → **Abrir con...** → **PlantUML Markdown Preview (Vista de lectura)**. Para un archivo que ya está abierto, haga clic derecho en su pestaña y use **Volver a abrir el editor con...** en su lugar.
+- **Abrir por defecto:** En la lista de **Abrir con...**, elija **Configurar el editor predeterminado para '\*.md'...** → **PlantUML Markdown Preview (Vista de lectura)**. A partir de ahí, al hacer clic en un archivo `.md` se abre en la vista de lectura. Hágalo una vez por cada extensión de archivo.
+- **Deshacer:** Elija **Editor de texto** del mismo modo, o elimine la línea de sus ajustes.
+
+Para configurarlo en `settings.json`:
+
+```json
+"workbench.editorAssociations": {
+  "*.md": "plantumlMarkdownPreviewEditor",
+  "*.puml": "plantumlPumlPreviewEditor",
+  "*.mmd": "plantumlMermaidPreviewEditor",
+  "*.d2": "plantumlD2PreviewEditor"
+}
+```
+
+| Archivos | Valor |
+| -------- | ----- |
+| Markdown (`*.md`, `*.markdown`, …) | `plantumlMarkdownPreviewEditor` |
+| `*.puml`, `*.plantuml` | `plantumlPumlPreviewEditor` |
+| `*.mmd`, `*.mermaid` | `plantumlMermaidPreviewEditor` |
+| `*.d2` | `plantumlD2PreviewEditor` |
+
+- Antes de VS Code 1.100 no se muestran **Cambiar a la vista de lectura** ni **Cambiar al código fuente**. Abra la vista de lectura con **Abrir con...** en su lugar.
+- Las diferencias de Git se siguen abriendo como diferencias de texto, incluso para archivos configurados para abrirse en la vista de lectura.
+- Con `useAsDefaultPreview` activado (el valor predeterminado), el botón **Abrir como vista previa** de VS Code (a partir de VS Code 1.119) y `Ctrl+Shift+V` (a partir de VS Code 1.100) pasan a la vista de lectura; consulte [Configuración](#configuración).
 
 ### Abrir vista previa de diagrama
 
@@ -481,53 +516,53 @@ Abre archivos `.puml` / `.plantuml`, `.mmd` / `.mermaid` o `.d2` directamente en
 
 - **Atajo de teclado:** `Cmd+Alt+V` (Mac) / `Ctrl+Alt+V` (Windows / Linux): el mismo atajo selecciona automáticamente según el tipo de archivo.
 - **Barra de título del editor:** Haz clic en el botón de vista previa (icono de Plotdown) en la parte superior derecha del editor.
-- **Atajos estándar de vista previa:** Con `useAsDefaultPreview` activado, `Cmd+Shift+V` / `Cmd+K V` (Mac) o `Ctrl+Shift+V` / `Ctrl+K V` (Windows / Linux) también abren la vista previa al lado del editor.
-- **Menú contextual:** Haz clic derecho en un archivo `.puml` / `.plantuml`, `.mmd` / `.mermaid` o `.d2` en el Explorador o en el editor → **Preview PlantUML File** / **Preview Mermaid File** / **Preview D2 File**.
-- **Paleta de comandos:** `PlantUML Markdown Preview: Preview PlantUML File`, `Preview Mermaid File` o `Preview D2 File`.
+- **Atajos estándar de vista previa:** Con `useAsDefaultPreview` activado (el valor predeterminado), `Cmd+K V` (Mac) / `Ctrl+K V` (Windows / Linux) también abre la vista previa al lado del editor. `Cmd+Shift+V` / `Ctrl+Shift+V` cambia a la [Vista de lectura](#vista-de-lectura) en su lugar
+- **Menú contextual:** Haz clic derecho en un archivo `.puml` / `.plantuml`, `.mmd` / `.mermaid` o `.d2` en el Explorador o en el editor → **Vista previa de archivo PlantUML** / **Vista previa de archivo Mermaid** / **Vista previa de archivo D2**.
+- **Paleta de comandos:** `PlantUML Markdown Preview: Vista previa de archivo PlantUML`, `Vista previa de archivo Mermaid` o `Vista previa de archivo D2`.
 
 ### Abrir la vista previa de una revisión de Git
 
 Renderiza un archivo Markdown tal como estaba en una revisión de Git, junto a la vista previa de tu versión actual.
 
-- **Menú contextual:** Haz clic derecho en un archivo `.md` en el Explorador o el editor → **PlantUML Markdown Preview** → **Abrir vista previa de la revisión HEAD al lado** / **Abrir vista previa de la revisión preparada al lado**
+- **Menú contextual:** Haz clic derecho en un archivo Markdown en el Explorador o el editor → **PlantUML Markdown Preview** → **Abrir vista previa de la revisión HEAD al lado** / **Abrir vista previa de la revisión preparada al lado**
 - **Paleta de comandos:** `PlantUML Markdown Preview: Abrir vista previa de la revisión HEAD al lado` / `Abrir vista previa de la revisión preparada al lado`
 
 Abre primero tu vista previa normal y luego la de la revisión: los dos paneles quedan uno al lado del otro. El panel de revisión es una instantánea fija y no se actualiza mientras editas.
 
 ### Exportar a HTML
 
-- **Menú contextual:** Haz clic derecho en un archivo `.md` → **PlantUML Markdown Preview** → **Export as HTML** → elige una opción de ancho
-- **Panel de vista previa:** Haz clic derecho dentro del panel de vista previa → **Export as HTML** o **Export as HTML & Open**
+- **Menú contextual:** Haz clic derecho en un archivo Markdown → **PlantUML Markdown Preview** → **Exportar como HTML** → elige una opción de ancho
+- **Panel de vista previa:** Haz clic derecho dentro del panel de vista previa → **Exportar como HTML** o **Exportar como HTML y abrir**
 
 El submenú ofrece estas opciones de ancho:
 
 | Opción | Descripción |
 | ------ | ----------- |
-| Current Settings | Exportar con la configuración actual (sin CSS responsive) |
+| Configuración actual | Exportar con la configuración actual (sin CSS responsive) |
 | 640px – 1440px | Ancho fijo del cuerpo en píxeles, centrado |
-| Responsive (Left-Aligned) | Cuerpo del ancho del viewport alineado a la izquierda; los diagramas se reducen solo si desbordan |
-| 640px – 1440px (Left-Aligned) | Ancho fijo, alineado a la izquierda |
+| Responsive (izquierda) | Cuerpo del ancho del viewport alineado a la izquierda; los diagramas se reducen solo si desbordan |
+| 640px – 1440px (izquierda) | Ancho fijo, alineado a la izquierda |
 
-El archivo HTML se guarda junto al archivo `.md` fuente.
+El archivo HTML se guarda junto al archivo Markdown fuente.
 
 ### Exportar a PDF
 
-- **Menú contextual:** Haz clic derecho en un archivo `.md` → **PlantUML Markdown Preview** → **Export as PDF** → **Portrait** (Vertical) o **Landscape** (Horizontal)
-- **Panel de vista previa:** Haz clic derecho dentro del panel de vista previa → **Export as PDF** o **Export as PDF & Open** → **Portrait** (Vertical) o **Landscape** (Horizontal)
+- **Menú contextual:** Haz clic derecho en un archivo Markdown → **PlantUML Markdown Preview** → **Exportar como PDF** → **Vertical** o **Horizontal**
+- **Panel de vista previa:** Haz clic derecho dentro del panel de vista previa → **Exportar como PDF** o **Exportar como PDF y abrir** → **Vertical** u **Horizontal**
 
-El archivo PDF se guarda junto al archivo `.md` fuente. Se requiere Chrome, Edge o Chromium. La configuración `pdfScale` (predeterminado 0.625) controla la escala general del texto y los diagramas.
+El archivo PDF se guarda junto al archivo Markdown fuente. Se requiere Chrome, Edge o Chromium. La configuración `pdfScale` (predeterminado 0.625) controla la escala general del texto y los diagramas.
 
 ### Guardar / Copiar diagrama como PNG / SVG
 
-- **Panel de vista previa:** Haz clic derecho en un diagrama → **Copy Diagram as PNG**, **Save Diagram as PNG** o **Save Diagram as SVG**.
-- **Visor de diagramas:** Haz clic derecho dentro del visor → **Copy Diagram as PNG**, **Save Diagram as PNG** o **Save Diagram as SVG**.
-- **Vista previa de diagrama independiente:** Haz clic derecho dentro de la vista previa → **Copy Diagram as PNG**, **Save Diagram as PNG** o **Save Diagram as SVG**.
+- **Panel de vista previa:** Haz clic derecho en un diagrama → **Copiar diagrama como PNG**, **Guardar diagrama como PNG** o **Guardar diagrama como SVG**.
+- **Visor de diagramas:** Haz clic derecho dentro del visor → **Copiar diagrama como PNG**, **Guardar diagrama como PNG** o **Guardar diagrama como SVG**.
+- **Vista previa de diagrama independiente:** Haz clic derecho dentro de la vista previa → **Copiar diagrama como PNG**, **Guardar diagrama como PNG** o **Guardar diagrama como SVG**.
 
 ### Exportar todos los diagramas
 
-- **Menú contextual:** Haz clic derecho en un archivo `.md` → **PlantUML Markdown Preview** → **Export All Diagrams as PNG** o **Export All Diagrams as SVG**.
-- **Panel de vista previa:** Haz clic derecho dentro del panel de vista previa → **Export All Diagrams as PNG** o **Export All Diagrams as SVG**.
-- **Paleta de comandos:** `PlantUML Markdown Preview: Export All Diagrams as PNG` / `Export All Diagrams as SVG`
+- **Menú contextual:** Haz clic derecho en un archivo Markdown → **PlantUML Markdown Preview** → **Exportar todos los diagramas como PNG** o **Exportar todos los diagramas como SVG**.
+- **Panel de vista previa:** Haz clic derecho dentro del panel de vista previa → **Exportar todos los diagramas como PNG** o **Exportar todos los diagramas como SVG**.
+- **Paleta de comandos:** `PlantUML Markdown Preview: Exportar todos los diagramas como PNG` / `Exportar todos los diagramas como SVG`
 
 Un diálogo de guardado permite elegir el nombre del directorio de salida (predeterminado: `{nombre_archivo}_diagrams`). Cada diagrama se guarda como `diagram-1.png`, `diagram-2.png`, etc. en orden del documento. La vista previa debe estar abierta.
 
@@ -541,7 +576,7 @@ Un diálogo de guardado permite elegir el nombre del directorio de salida (prede
 
 Haz clic en el icono de tema en la barra de título del panel de vista previa, o usa la Paleta de comandos:
 
-- **Paleta de comandos:** `PlantUML Markdown Preview: Change Preview Theme`.
+- **Paleta de comandos:** `PlantUML Markdown Preview: Cambiar tema de vista previa`.
 
 El selector de temas muestra las cuatro categorías de temas en una sola lista (temas de vista previa, temas de PlantUML, temas de Mermaid y temas de D2), para que puedas cambiar cualquiera de ellos desde un solo lugar.
 
@@ -793,9 +828,9 @@ Todos los ajustes usan el prefijo `plantumlMarkdownPreview.`.
 | `plantumlLocalServerJvmInitialHeapMb` | `16` | Heap inicial (`-Xms`, MB) para el preset `"custom"`. Se ignora para otros presets. Rango: 8–32768. |
 | `plantumlLocalServerJvmMaxHeapMb` | `512` | Heap máximo (`-Xmx`, MB) para el preset `"custom"`. Se ignora para otros presets. Rango: 64–32768. |
 | `plantumlServerUrl` | `"https://www.plantuml.com/plantuml"` | URL del servidor PlantUML para el modo Easy. Establécela en una URL de servidor autohospedado por privacidad. |
-| `enableDiagramViewer` | `true` | Habilita la opción del menú contextual "Open in Diagram Viewer" al hacer clic derecho en un diagrama. Requiere volver a abrir la vista previa para que surta efecto. |
-| `retainPreviewContext` | `true` | Mantiene el contenido de la vista previa cuando la pestaña está oculta. Evita el redibujado al cambiar de pestaña pero usa más memoria. Requiere volver a abrir la vista previa para que surta efecto. |
-| `useAsDefaultPreview` | `false` | Abre la vista previa de esta extensión con los atajos estándar de vista previa de Markdown de VS Code (`Ctrl+Shift+V` / `Ctrl+K V`; `Cmd` en Mac) para archivos Markdown, PlantUML, Mermaid y D2. Ambos atajos abren la vista previa junto al editor, a diferencia de `Ctrl+Shift+V` de VS Code, que la abre en la pestaña actual. El menú contextual **Abrir vista previa** del Explorador y el botón de vista previa propio de VS Code en la barra de título del editor no se reemplazan. |
+| `enableDiagramViewer` | `true` | Habilita la opción del menú contextual "Abrir en visor de diagramas" al hacer clic derecho en un diagrama. Requiere volver a abrir la vista previa para que surta efecto. |
+| `retainPreviewContext` | `true` | Mantiene el contenido de la vista previa cuando la pestaña está oculta. Evita el re-renderizado al cambiar de pestaña, pero usa más memoria. Para aplicar un cambio, cierre y vuelva a abrir la vista previa. Para la vista de lectura, reinicie VS Code o recargue la ventana. |
+| `useAsDefaultPreview` | `true` | Usa esta extensión en lugar de la vista previa de Markdown integrada de VS Code. Los botones, los elementos del menú contextual y los atajos estándar de vista previa de Markdown de VS Code abren esta extensión. `Ctrl+K V` (`Cmd` en Mac) abre la vista previa junto al editor; `Ctrl+Shift+V` alterna entre el código fuente y la [Vista de lectura](#vista-de-lectura) en la misma pestaña, también para archivos PlantUML, Mermaid y D2. Antes de VS Code 1.119 solo se reemplazan los atajos; antes de la 1.100, ambos abren la vista previa junto al editor. **Cambio en 0.8.0:** este ajuste ahora está activado de forma predeterminada. Para conservar los botones y atajos de la vista previa de Markdown propia de VS Code, desactívelo. **Con Markdown Preview Enhanced:** también usa `Ctrl+Shift+V` y `Ctrl+K V`. Si ambas están instaladas, tienen efecto los atajos de esta extensión. Para usar en su lugar los atajos de Markdown Preview Enhanced, desactive este ajuste. |
 
 > **Nota:** `allowLocalImages` y `allowHttpImages` solo se aplican al panel de vista previa. La exportación HTML siempre genera las rutas de imagen originales sin restricciones de CSP.
 
@@ -828,12 +863,14 @@ Todos los ajustes usan el prefijo `plantumlMarkdownPreview.`.
 
 | Comando | Mac | Windows / Linux |
 |---------|-----|-----------------|
-| Open Preview to Side (Markdown) | `Cmd+Alt+V` | `Ctrl+Alt+V` |
-| Preview PlantUML File | `Cmd+Alt+V` | `Ctrl+Alt+V` |
-| Preview Mermaid File | `Cmd+Alt+V` | `Ctrl+Alt+V` |
-| Preview D2 File | `Cmd+Alt+V` | `Ctrl+Alt+V` |
-| Open Preview (con `useAsDefaultPreview` activado; Markdown, PlantUML, Mermaid, D2) | `Cmd+Shift+V` / `Cmd+K V` | `Ctrl+Shift+V` / `Ctrl+K V` |
-| Select Rendering Mode | — | — |
+| Abrir vista previa al lado (Markdown) | `Cmd+Alt+V` | `Ctrl+Alt+V` |
+| Vista previa de archivo PlantUML | `Cmd+Alt+V` | `Ctrl+Alt+V` |
+| Vista previa de archivo Mermaid | `Cmd+Alt+V` | `Ctrl+Alt+V` |
+| Vista previa de archivo D2 | `Cmd+Alt+V` | `Ctrl+Alt+V` |
+| Abrir vista previa en el lateral (con `useAsDefaultPreview` activado, el valor predeterminado; Markdown, PlantUML, Mermaid, D2) | `Cmd+K V` | `Ctrl+K V` |
+| Cambiar a la vista de lectura (con `useAsDefaultPreview` activado, el valor predeterminado; Markdown, PlantUML, Mermaid, D2) | `Cmd+Shift+V` | `Ctrl+Shift+V` |
+| Cambiar al código fuente (dentro de la vista de lectura, independientemente de `useAsDefaultPreview`) | `Cmd+Shift+V` | `Ctrl+Shift+V` |
+| Seleccionar modo de renderizado | — | — |
 
 ## Preguntas frecuentes
 
