@@ -30,14 +30,14 @@ import { PreviewManager } from './src/preview.js';
 import { execJava, extractPlantUmlBlocks, findLiveSourceDocument, isLiveSourceUri } from './src/utils.js';
 import { isMarkdownFile } from './src/markdown-files.js';
 import { getActiveReadingView, allReadingViews, removeReadingView, pickTargetPath, landsOnNotice, markdownViewShowing } from './src/preview-registry.js';
-import { registerReadingViews, detectSwitchInPlace, canSwitchInPlace, releaseSwitchInPlace, reopenAsSource, reopenAsReadingView, READING_VIEW_TYPES } from './src/preview-editor.js';
+import { registerReadingViews, detectSwitchInPlace, canSwitchInPlace, releaseSwitchInPlace, reopenAsSource, reopenAsReadingView, READING_VIEW_TYPES, noticeMessage } from './src/preview-editor.js';
 import { registerDefaultPreview, syncBuiltinReplacement, releaseBuiltinReplacement, isReplacingBuiltin } from './src/default-preview.js';
 import { clearBrowserCache } from './src/browser-finder.js';
 import { exportAllDiagrams } from './src/bulk-export.js';
 import { disposeAllViewers, diagramAction, openPendingDiagramViewer, getPendingDiagramContext, getDiagramViewers } from './src/diagram-viewer.js';
 import { openPumlPreview, updatePumlConfig, getCurrentPumlFilePath, disposePumlPreview, getPumlPreviewPanel, changePumlTheme, getLastPumlRender } from './src/puml-preview.js';
 import type { PumlRender } from './src/puml-preview.js';
-import { setMermaidExtensionUri, openMermaidPreview, updateMermaidConfig, getCurrentMermaidFilePath, disposeMermaidPreview, getMermaidPreviewPanel, changeMermaidTheme, getLastMermaidThemePost, getLastMermaidSourcePost } from './src/mermaid-preview.js';
+import { setMermaidExtensionUri, setMermaidOutputChannel, openMermaidPreview, updateMermaidConfig, getCurrentMermaidFilePath, disposeMermaidPreview, getMermaidPreviewPanel, changeMermaidTheme, getLastMermaidThemePost, getLastMermaidSourcePost } from './src/mermaid-preview.js';
 import type { MermaidThemePost, MermaidSourcePost } from './src/mermaid-preview.js';
 import { openD2Preview, updateD2Config, getCurrentD2FilePath, disposeD2Preview, getD2PreviewPanel, changeD2Theme, getLastD2Render } from './src/d2-preview.js';
 import type { D2Render } from './src/d2-preview.js';
@@ -167,15 +167,23 @@ function resolveMarkdownPath(uri?: vscode.Uri): string | null {
     return isMarkdownFile(fsPath, findLiveSourceDocument(fsPath)) ? fsPath : null;
 }
 
+/** Tell the user a command cannot act on the Reading View in front, which shows the notice. */
+function showNoticeError(): void {
+    vscode.window.showErrorMessage(noticeMessage());
+}
+
 /**
- * Tell the user a command found no file to act on, unless the command landed on a
- * Reading View showing the notice ({@link landsOnNotice}): it then does nothing.
+ * Tell the user a command found no file to act on, or, when the command landed on a
+ * Reading View showing the notice ({@link landsOnNotice}), the notice's text.
  *
  * @param uri - URI the command was given, if any.
  * @param message - The localized error.
  */
 function showNoFileError(uri: vscode.Uri | undefined, message: string): void {
-    if (landsOnNotice(uri?.fsPath, getActiveReadingView())) return;
+    if (landsOnNotice(uri?.fsPath, getActiveReadingView())) {
+        showNoticeError();
+        return;
+    }
     vscode.window.showErrorMessage(message);
 }
 
@@ -534,6 +542,7 @@ export function activate(context: vscode.ExtensionContext): ExtensionApi {
     context.subscriptions.push(previewManager);
     // Before any Mermaid page is built: a Reading View may open before the preview.
     setMermaidExtensionUri(context.extensionUri);
+    setMermaidOutputChannel(channel);
     setLocalServerOutputChannel(channel);
     setConfigGetter(getConfig);
     // "Use Easy Mode" reads the settings when chosen, not when the guidance was shown.
@@ -837,10 +846,11 @@ export function activate(context: vscode.ExtensionContext): ExtensionApi {
     const changeThemeCmd = vscode.commands.registerCommand(
         'plantuml-markdown-preview.changeTheme',
         () => {
-            // A Reading View in front takes the command; one showing the notice ignores it.
+            // A Reading View in front takes the command; one showing the notice says why it cannot.
             const reading = getActiveReadingView();
             if (reading) {
                 if (reading.rendered) void reading.view.changeTheme();
+                else showNoticeError();
                 return;
             }
             if (getD2PreviewPanel()?.active) {
@@ -860,7 +870,10 @@ export function activate(context: vscode.ExtensionContext): ExtensionApi {
         const msgType = action === 'copy' ? 'copyDiagram' : 'exportDiagram';
         const reading = getActiveReadingView();
         if (reading) {
-            if (!reading.rendered) return;
+            if (!reading.rendered) {
+                showNoticeError();
+                return;
+            }
             if (reading.kind === 'markdown') diagramAction(action, format, reading.panel);
             else void reading.panel.webview.postMessage({ type: msgType, format });
             return;
@@ -1064,29 +1077,41 @@ export function activate(context: vscode.ExtensionContext): ExtensionApi {
     const openIncludeSourceCmd = vscode.commands.registerCommand(
         'plantuml-markdown-preview.openIncludeSource',
         async () => {
-            const ctx = getPendingDiagramContext();
-            if (!ctx || ctx.diagramType !== 'plantuml' || ctx.plantumlIndex == null || ctx.plantumlIndex < 0) {
+            const reading = getActiveReadingView();
+            if (reading && !reading.rendered) {
+                showNoticeError();
                 return;
             }
+            /** Nothing usable is right-clicked: say how to pick a diagram. */
+            const noDiagram = () => vscode.window.showWarningMessage(vscode.l10n.t('No diagram selected. Right-click a diagram first.'));
+            const noInclude = () => vscode.window.showInformationMessage(vscode.l10n.t('This diagram has no !include directives.'));
             // Only a diagram right-clicked in the Markdown Reading View in front, or in the
             // preview when no Reading View is in front.
-            const reading = getActiveReadingView();
+            const ctx = getPendingDiagramContext();
             const view = reading?.rendered && reading.view.kind === 'markdown' ? reading.view : null;
-            if (reading && !view) return;
-            if (!(view ?? previewManager).ownsPendingDiagram()) return;
+            if (!ctx || (reading && !view) || !(view ?? previewManager).ownsPendingDiagram()) {
+                noDiagram();
+                return;
+            }
+            // Only a PlantUML diagram can have !include directives.
+            if (ctx.diagramType !== 'plantuml' || ctx.plantumlIndex == null || ctx.plantumlIndex < 0) {
+                noInclude();
+                return;
+            }
             const filePath = view ? view.filePath() : previewManager.getCurrentFilePath();
-            if (!filePath) return;
-            const doc = findLiveSourceDocument(filePath);
-            const text = doc?.getText();
-            if (text == null) return;
-            const blocks = extractPlantUmlBlocks(text);
-            const block = blocks[ctx.plantumlIndex];
-            if (!block) return;
+            // The diagram's number counts the diagrams of the text the view rendered, which is
+            // there even after the source tab is closed.
+            const text = view ? view.getLastRenderedText() : previewManager.getLastRenderedText();
+            const block = text == null ? undefined : extractPlantUmlBlocks(text)[ctx.plantumlIndex];
+            if (!filePath || !block) {
+                noDiagram();
+                return;
+            }
             const config = getConfig();
             const basePath = resolveIncludePath(config) ?? path.dirname(filePath);
             const paths = extractIncludePaths(block, basePath);
             if (paths.length === 0) {
-                vscode.window.showInformationMessage(vscode.l10n.t('This diagram has no !include directives.'));
+                noInclude();
                 return;
             }
             let selected: string;

@@ -6,6 +6,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## 0.8.1 - 2026-11-15
+
+### Changed
+
+- Switching between the source and Markdown Reading View keeps the position, as VS Code's own Markdown preview does
+
+### Fixed
+
+- Opening or switching to a file with Mermaid diagrams no longer leaves the preview or Reading View blank for a second or more; "Rendering..." shows until the diagrams are rendered
+- When Mermaid cannot be loaded, each Mermaid diagram says so instead of staying blank
+- Saving or copying a diagram that is not rendered, or whose PNG image could not be made, shows an error instead of doing nothing or saving an empty file
+- Commands run while a Reading View that cannot show its file is in front, and **Open Include Source** with no PlantUML diagram right-clicked, say why instead of doing nothing
+
 ## 0.8.0 - 2026-11-13
 
 ### Added

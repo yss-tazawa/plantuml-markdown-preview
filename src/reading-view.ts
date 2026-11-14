@@ -46,6 +46,8 @@ export interface MarkdownReadingView extends ReadingViewBase {
     readonly kind: 'markdown';
     /** Whether the diagram right-clicked last was in this view. */
     ownsPendingDiagram(): boolean;
+    /** Source line at the middle of the view after it last scrolled, or null when it has not scrolled. */
+    getScrolledLine(): number | null;
     /** Last scroll instruction handed to the webview (observation point for tests). */
     getLastPostedScroll(): { line: number; maxTopLine: number; atBottom: boolean; force: boolean; instant: boolean } | null;
     /** Deliver a message as if the webview had posted it (tests cannot make it post). */

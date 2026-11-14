@@ -9,7 +9,7 @@
 import * as vscode from 'vscode';
 import { getNonce, escapeHtml, CSS_COLOR_RE } from './utils.js';
 import { getPanZoomScript } from './webview/pan-zoom-script.js';
-import { saveDiagramFile, sanitizeSvgEntities } from './export-handler.js';
+import { saveDiagramFile, sanitizeSvgEntities, decodePngDataUrl, reportDiagramNotRendered, reportUnsavedImage } from './export-handler.js';
 
 /** A viewer panel and the preview it was opened from. */
 interface ViewerEntry {
@@ -215,9 +215,16 @@ export function diagramAction(action: 'save' | 'copy', format: 'png' | 'svg', pr
         return;
     }
     const { svg, diagramIndex } = pendingSave;
+    // The diagram shows an error instead of an image.
+    const svgMatch = svg.match(/<svg[\s\S]*<\/svg>/i);
+    if (!svgMatch) {
+        pendingSave = null;
+        reportDiagramNotRendered();
+        return;
+    }
 
     if (format === 'svg' && action === 'save') {
-        void saveSvgFromHtml(svg, diagramIndex);
+        void saveSvgFile(svgMatch[0], diagramIndex);
     } else if (format === 'svg' && action === 'copy') {
         // SVG copy is normally handled via the webview clipboard API.
         // If we reach this fallback path, notify the user.
@@ -227,34 +234,43 @@ export function diagramAction(action: 'save' | 'copy', format: 'png' | 'svg', pr
         const msgType = action === 'copy' ? 'copyDiagramAsPng' : 'exportDiagramAsPng';
         if (previewPanel) {
             void previewPanel.webview.postMessage({ type: msgType, svg });
+        } else if (action === 'copy') {
+            handleCopyResult(false);
+        } else {
+            pendingSave = null;
+            reportUnsavedImage('png');
         }
     }
 }
 
 
 /**
- * Extract SVG from innerHTML and save to file.
+ * Save an SVG to a file.
  *
- * @param html - Raw innerHTML containing an SVG element.
+ * @param svg - The SVG element's markup.
  * @param diagramIndex - 1-based diagram index for the default file name.
  */
-async function saveSvgFromHtml(html: string, diagramIndex: number): Promise<void> {
-    const match = html.match(/<svg[\s\S]*<\/svg>/i);
-    if (!match) return;
-    await saveDiagramFile(sanitizeSvgEntities(match[0]), vscode.Uri.file(`diagram-${diagramIndex}.svg`), 'svg');
+async function saveSvgFile(svg: string, diagramIndex: number): Promise<void> {
+    await saveDiagramFile(sanitizeSvgEntities(svg), vscode.Uri.file(`diagram-${diagramIndex}.svg`), 'svg');
     pendingSave = null;
 }
 
 /**
  * Handle PNG data returned from the preview webview after canvas conversion.
  *
- * @param data - Base64-encoded PNG data URL string.
+ * @param data - Base64-encoded PNG data URL string; empty when the preview could not make the image.
  */
 export async function handlePngFromPreview(data: string): Promise<void> {
-    if (!data || !pendingSave) return;
+    if (!pendingSave) return;
     const { diagramIndex } = pendingSave;
     pendingSave = null;
-    await saveDiagramFile(Buffer.from(data.replace(/^data:image\/png;base64,/, ''), 'base64'), vscode.Uri.file(`diagram-${diagramIndex}.png`), 'png');
+    const bytes = decodePngDataUrl(data);
+    // The preview could not make the image.
+    if (!bytes) {
+        reportUnsavedImage('png');
+        return;
+    }
+    await saveDiagramFile(bytes, vscode.Uri.file(`diagram-${diagramIndex}.png`), 'png');
 }
 
 /**
@@ -293,16 +309,20 @@ async function handleViewerMessage(
         handleCopyResult(!!msg.success);
         return;
     }
-    if (msg.type !== 'exportDiagramResult' || !msg.format || !msg.data) return;
+    if (msg.type === 'diagramNotRendered') {
+        reportDiagramNotRendered();
+        return;
+    }
+    if (msg.type !== 'exportDiagramResult' || !msg.format) return;
     if (msg.format !== 'png' && msg.format !== 'svg') return;
-
-    const viewer = activeViewerKey === null ? undefined : viewers.get(activeViewerKey);
-    if (!viewer) return;
     const format = msg.format;
-    const fileData = format === 'png'
-        ? Buffer.from(msg.data.replace(/^data:image\/png;base64,/, ''), 'base64')
-        : msg.data;
-    await saveDiagramFile(fileData, vscode.Uri.file(`diagram-${viewer.index}.${format}`), format);
+    const fileData = format === 'png' ? decodePngDataUrl(msg.data) : msg.data || null;
+    if (!fileData) {
+        reportUnsavedImage(format);
+        return;
+    }
+    // The viewer that sent the image names the file.
+    await saveDiagramFile(fileData, vscode.Uri.file(`diagram-${entry.index}.${format}`), format);
 }
 
 /**

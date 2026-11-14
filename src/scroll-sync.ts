@@ -20,6 +20,7 @@ import { escapeHtml } from './utils.js';
  * @param pageToken - Token identifying this page, posted back with its `webviewReady`.
  * @param [initialAtBottom=false] - If true, snap preview to bottom on initial render.
  * @param [enableDiagramViewer=true] - If true, diagrams are clickable to open in a viewer.
+ * @param [initialLoading=false] - If true, the page shows the loading overlay until its Mermaid diagrams are rendered.
  * @returns HTML `<script>` tag string ready for insertion before `</body>`.
  */
 export function getScrollSyncScriptTag(
@@ -31,7 +32,8 @@ export function getScrollSyncScriptTag(
     scrollSyncUri: string,
     pageToken: string,
     initialAtBottom = false,
-    enableDiagramViewer = true
+    enableDiagramViewer = true,
+    initialLoading = false
 ): string {
     return `<script nonce="${nonce}" src="${escapeHtml(scrollSyncUri)}"` +
         ` data-initial-line="${initialLine}"` +
@@ -40,5 +42,6 @@ export function getScrollSyncScriptTag(
         ` data-rendering-text="${escapeHtml(renderingText)}"` +
         ` data-sync-master-timeout-ms="${syncMasterTimeoutMs}"` +
         ` data-page-token="${escapeHtml(pageToken)}"` +
-        ` data-enable-diagram-viewer="${enableDiagramViewer}"></script>`;
+        ` data-enable-diagram-viewer="${enableDiagramViewer}"` +
+        ` data-initial-loading="${initialLoading}"></script>`;
 }

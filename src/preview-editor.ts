@@ -11,13 +11,14 @@ import * as vscode from 'vscode';
 import path from 'path';
 import { CONFIG_SECTION, type Config } from './config.js';
 import type { ReadingView, ReadingViewKind } from './reading-view.js';
-import { addReadingView, removeReadingView, type ReadingViewEntry } from './preview-registry.js';
+import { addReadingView, removeReadingView, getActiveReadingView, type ReadingViewEntry } from './preview-registry.js';
 import { createMarkdownReadingView } from './preview.js';
 import { createPumlReadingView } from './puml-preview.js';
 import { createMermaidReadingView } from './mermaid-preview.js';
 import { createD2ReadingView } from './d2-preview.js';
 import { escapeHtml, isLiveSourceUri } from './utils.js';
 import { MARKDOWN_EXTENSIONS } from './markdown-files.js';
+import { trackSourcePositions, switchSourceToReadingView, revealLineInSource } from './reading-view-position.js';
 
 /** Custom editor view type of each file kind (as declared in package.json). */
 export const READING_VIEW_TYPES: Readonly<Record<ReadingViewKind, string>> = {
@@ -97,12 +98,17 @@ export async function releaseSwitchInPlace(): Promise<void> {
 }
 
 /**
- * Switch the active Reading View tab to the source, in place.
+ * Switch the active Reading View tab to the source, in place. A Markdown Reading View
+ * that scrolled hands its line to the source; otherwise the source shows where it was.
  * Arguments a menu passes are ignored: the active editor is the one switched.
  */
 export async function reopenAsSource(): Promise<void> {
     if (!await canSwitchInPlace()) return;
+    const reading = getActiveReadingView();
+    const view = reading?.rendered && reading.view.kind === 'markdown' ? reading.view : undefined;
+    const line = view?.getScrolledLine() ?? null;
     await vscode.commands.executeCommand('reopenActiveEditorWith', 'default');
+    if (view && line !== null) revealLineInSource(view.filePath(), line);
 }
 
 /**
@@ -115,7 +121,7 @@ export async function reopenAsReadingView(): Promise<void> {
     const document = vscode.window.activeTextEditor?.document;
     const viewType = document ? readingViewTypeForFile(document.uri.fsPath) : undefined;
     if (!viewType) return;
-    await vscode.commands.executeCommand('reopenActiveEditorWith', viewType);
+    await switchSourceToReadingView(viewType);
 }
 
 /** What the custom editors need from the extension. */
@@ -129,12 +135,22 @@ export interface ReadingViewHost {
 }
 
 /**
+ * Text of the notice shown in place of a document that is not a file, also shown when a
+ * command is run with that notice in front.
+ *
+ * @returns The localized text.
+ */
+export function noticeMessage(): string {
+    return vscode.l10n.t('This file cannot be shown in the Reading View. Right-click and choose "Switch to Source" to switch to the source.');
+}
+
+/**
  * Page shown in place of a document that is not a file.
  *
  * @returns The full HTML of the page.
  */
 function noticePage(): string {
-    const message = vscode.l10n.t('This file cannot be shown in the Reading View. Right-click and choose "Switch to Source" to switch to the source.');
+    const message = noticeMessage();
     return `<!DOCTYPE html>
 <html><head><meta charset="UTF-8"></head><body style="padding:1em;color:var(--vscode-foreground);">${escapeHtml(message)}</body></html>`;
 }
@@ -227,4 +243,5 @@ export function registerReadingViews(context: vscode.ExtensionContext, host: Rea
             { webviewOptions: { enableFindWidget: true, retainContextWhenHidden } },
         ));
     }
+    context.subscriptions.push(trackSourcePositions());
 }

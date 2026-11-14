@@ -87,6 +87,15 @@ export interface StandalonePreviewDef {
     onWebviewReady?(panel: vscode.WebviewPanel, bgColor: string): void;
 
     /**
+     * Handle a message of the diagram's own kind posted by the page.
+     *
+     * @param msg - The message.
+     * @param filePath - The file the panel shows, or null.
+     * @returns True when the message was handled; otherwise the shared viewer handler gets it.
+     */
+    onPageMessage?(msg: unknown, filePath: string | null): boolean;
+
+    /**
      * Return the diagram-specific section for the theme QuickPick.
      *
      * May be async (PlantUML fetches the theme list lazily).
@@ -415,6 +424,7 @@ export function createStandalonePreview(def: StandalonePreviewDef, adopted?: Ado
                 handleWebviewReady(target);
                 return;
             }
+            if (def.onPageMessage?.(msg, currentFilePath)) return;
             void handleViewerMessage(msg, currentFilePath);
         }));
         target.webview.html = html;

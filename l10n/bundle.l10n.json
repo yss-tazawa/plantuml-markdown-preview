@@ -121,5 +121,8 @@
   "Read-only snapshot of {0} at {1}. It does not follow your edits.": "Read-only snapshot of {0} at {1}. It does not follow your edits.",
   "{0} is not inside a Git repository.": "{0} is not inside a Git repository.",
   "{0} does not exist at {1}.": "{0} does not exist at {1}.",
-  "Git was not found. Install Git or make sure it is on your PATH.": "Git was not found. Install Git or make sure it is on your PATH."
+  "Git was not found. Install Git or make sure it is on your PATH.": "Git was not found. Install Git or make sure it is on your PATH.",
+  "Mermaid could not be loaded, so this diagram cannot be rendered. Close the preview or Reading View and open it again to retry.": "Mermaid could not be loaded, so this diagram cannot be rendered. Close the preview or Reading View and open it again to retry.",
+  "The diagram is not rendered, so it cannot be saved or copied.": "The diagram is not rendered, so it cannot be saved or copied.",
+  "Failed to save diagram as PNG": "Failed to save diagram as PNG"
 }
