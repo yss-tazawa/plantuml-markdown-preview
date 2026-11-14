@@ -59,8 +59,8 @@ export function allReadingViews(): ReadingViewEntry[] {
 
 /**
  * Whether a command lands on a Reading View showing the notice (a document that is not
- * a file): it was given no URI and that Reading View is active. The command then does
- * nothing, without an error.
+ * a file): it was given no URI and that Reading View is active. The command then shows
+ * the notice's text instead of acting.
  *
  * @param uriPath - Path of the URI the command was given, if any.
  * @param active - The active Reading View ({@link getActiveReadingView}).

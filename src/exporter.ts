@@ -32,6 +32,9 @@ import { exportOutputPath, fileNameWithoutExtension } from './markdown-files.js'
 import { MERMAID_THEME_SET, type Config } from './config.js';
 import katexPlugin, { type MarkdownKatexOptions } from '@vscode/markdown-it-katex';
 import type { KatexOptions } from 'katex';
+import { loadingOverlayHtml } from './loading-overlay.js';
+import { shownScriptLoader } from './shown-script-loader.js';
+import { mermaidLoadErrorLiteral, SHOW_MERMAID_LOAD_ERROR_SCRIPT } from './mermaid-load-error.js';
 
 // KaTeX plugin options. throwOnError:false renders invalid math as a katex-error
 // display instead of throwing. output:'html' is a KaTeX render option that works
@@ -203,6 +206,8 @@ export interface RenderOptions {
     enableMath?: boolean;
     /** When true, add style="visibility:hidden" to <body> for scroll-restore without flash. */
     hideBodyInitially?: boolean;
+    /** When set, the page starts under the loading overlay with this text, shown before its scripts load. */
+    loadingText?: string;
 }
 
 /**
@@ -842,7 +847,7 @@ function buildHtml(title: string, body: string, previewTheme?: string, options?:
         mermaidScriptUri, mermaidTheme, mermaidScale,
         htmlMaxWidth, htmlAlignment,
         navTopTitle, navBottomTitle, navReloadTitle, navTocTitle,
-        fitToWidth, fitToWidthAlign, katexCssHtml, enableMath, hideBodyInitially,
+        fitToWidth, fitToWidthAlign, katexCssHtml, enableMath, hideBodyInitially, loadingText,
     } = options || {};
     const fontSrc = enableMath && cspSource ? cspSource : "'none'";
     const cspMeta = cspNonce
@@ -856,7 +861,7 @@ function buildHtml(title: string, body: string, previewTheme?: string, options?:
     //    apply scale factor to SVG width, show error message on failure
     // 3. Invoke immediately after definition
     const mermaidInitScript =
-        `mermaid.initialize({startOnLoad:false,theme:'${mermaidThemeValue}'});` +
+        `mermaid.initialize({startOnLoad:false,theme:window.__mermaidTheme||'${mermaidThemeValue}'});` +
         `window.__renderMermaid=async function(){` +
         `var prefix='m'+Date.now()+'_';` +
         `var scale=${scaleNum};` +
@@ -878,8 +883,19 @@ function buildHtml(title: string, body: string, previewTheme?: string, options?:
     const includeMermaid = hasMermaid ?? body.includes('mermaid-diagram');
     let mermaidHtml = '';
     if (mermaidScriptUri && cspNonce && includeMermaid) {
-        // Webview preview: load from local bundled file
-        mermaidHtml = `\n<script nonce="${cspNonce}" src="${mermaidScriptUri}"></script>\n<script nonce="${cspNonce}">${mermaidInitScript}</script>`;
+        // Webview preview: load from local bundled file once the page is shown (with its loading
+        // overlay; see shown-script-loader). __renderMermaidDone stands for the load and the render.
+        // When the library cannot be used, the page shows why in place of each diagram, and
+        // __mermaidLoadError keeps the text for diagrams that come later (scroll-sync-webview).
+        const loadError = `window.__mermaidLoadError=${mermaidLoadErrorLiteral()};window.__showMermaidLoadError();`;
+        const loader =
+            `window.__renderMermaidDone=new Promise(function(resolve,reject){` +
+            shownScriptLoader(cspNonce, mermaidScriptUri,
+                `try{${mermaidInitScript}window.__renderMermaidDone.then(resolve,reject)}catch(e){${loadError}reject(e)}`,
+                `${loadError}reject(new Error('mermaid failed to load'))`) +
+            // The preview script also handles the failure; a page without it (a revision's snapshot) must not leave it unhandled.
+            `});window.__renderMermaidDone.catch(function(){});`;
+        mermaidHtml = `\n<script nonce="${cspNonce}">${SHOW_MERMAID_LOAD_ERROR_SCRIPT}${loader}</script>`;
     } else if (includeMermaid && !cspNonce) {
         // HTML export: load from CDN
         mermaidHtml = `\n<script src="https://cdn.jsdelivr.net/npm/mermaid@${__MERMAID_MAJOR__}/dist/mermaid.min.js"></script>\n<script>${mermaidInitScript}</script>`;
@@ -932,7 +948,7 @@ ${cspNonce ? `<div id="nav-toolbar">
 ` : ''}<!-- NOTE: This ID is also referenced in src/webview/scroll-sync-webview.ts (applyPendingBodyUpdate). -->
 <div id="preview-content">
 ${body}
-</div>${mermaidHtml}
+</div>${loadingText !== undefined ? `\n${loadingOverlayHtml(loadingText)}` : ''}${mermaidHtml}
 ${scriptHtml || ''}
 </body>
 </html>`;

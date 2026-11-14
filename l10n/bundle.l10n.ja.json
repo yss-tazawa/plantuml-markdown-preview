@@ -121,5 +121,8 @@
   "Read-only snapshot of {0} at {1}. It does not follow your edits.": "{0} の {1} 時点のスナップショットです（読み取り専用）。編集には追従しません。",
   "{0} is not inside a Git repository.": "{0} は Git リポジトリ内にありません。",
   "{0} does not exist at {1}.": "{0} は {1} には存在しません。",
-  "Git was not found. Install Git or make sure it is on your PATH.": "Git が見つかりません。Git をインストールするか、PATH が通っているか確認してください。"
+  "Git was not found. Install Git or make sure it is on your PATH.": "Git が見つかりません。Git をインストールするか、PATH が通っているか確認してください。",
+  "Mermaid could not be loaded, so this diagram cannot be rendered. Close the preview or Reading View and open it again to retry.": "Mermaid を読み込めなかったため、このダイアグラムを描画できません。プレビューまたは参照ビューを閉じて開き直し、もう一度試してください。",
+  "The diagram is not rendered, so it cannot be saved or copied.": "ダイアグラムが描画されていないため、保存もコピーもできません。",
+  "Failed to save diagram as PNG": "ダイアグラムの PNG での保存に失敗しました"
 }

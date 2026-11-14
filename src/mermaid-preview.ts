@@ -9,6 +9,9 @@ import * as vscode from 'vscode';
 import { MERMAID_THEME_KEYS, MERMAID_THEME_SET, type Config } from './config.js';
 import { escapeHtml, CSS_COLOR_RE, buildThemeItems } from './utils.js';
 import { getPanZoomScript } from './webview/pan-zoom-script.js';
+import { LOADING_OVERLAY_ID, loadingOverlayHtml } from './loading-overlay.js';
+import { shownScriptLoader } from './shown-script-loader.js';
+import { mermaidLoadErrorLiteral } from './mermaid-load-error.js';
 import { createStandalonePreview, createDiagramReadingView, type StandalonePreview } from './standalone-preview.js';
 import type { AdoptedPanel, ReadingView } from './reading-view.js';
 
@@ -51,6 +54,18 @@ export interface MermaidPreview extends StandalonePreview {
  */
 export function setMermaidExtensionUri(extensionUri: vscode.Uri): void {
     cachedExtensionUri = extensionUri;
+}
+
+/** Output channel for logging (shared with the extension). */
+let outputChannel: vscode.OutputChannel | null = null;
+
+/**
+ * Set the shared output channel for logging.
+ *
+ * @param channel - VS Code output channel to write log messages to.
+ */
+export function setMermaidOutputChannel(channel: vscode.OutputChannel): void {
+    outputChannel = channel;
 }
 
 // ---------------------------------------------------------------------------
@@ -149,10 +164,62 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: ${containe
     <div id="svg-container"></div>
 </div>
 <textarea id="initial-source" style="display:none;">\n${escapedSource}</textarea>
-<script nonce="${nonce}" src="${mermaidScriptUri}"></script>
+${loadingOverlayHtml(vscode.l10n.t('Rendering...'))}
 <script nonce="${nonce}">
 (function() {
+    // The API can be acquired only once per page.
     var vscodeApi = acquireVsCodeApi();
+    // The library loads once the page is shown (with its loading overlay; see shown-script-loader).
+    // Messages that come before the first render are kept and handled after it.
+    var pendingMessages = [];
+    // Set when no image can come (the library failed, or the first render took too long):
+    // a save or copy is answered that nothing is rendered instead of being kept.
+    var answerSavesNow = false;
+    function isSave(e) { return e.data.type === 'exportDiagram' || e.data.type === 'copyDiagram'; }
+    function answerUnrendered() { vscodeApi.postMessage({ type: 'diagramNotRendered' }); }
+    function queueMessage(e) {
+        if (answerSavesNow && isSave(e)) answerUnrendered();
+        else pendingMessages.push(e);
+    }
+    // Answer the saves kept so far, and those still to come, that nothing is rendered.
+    function answerSaves() {
+        answerSavesNow = true;
+        pendingMessages = pendingMessages.filter(function(e) {
+            if (!isSave(e)) return true;
+            answerUnrendered();
+            return false;
+        });
+    }
+    window.addEventListener('message', queueMessage);
+    ${shownScriptLoader(nonce, mermaidScriptUri, 'try { startViewer(); } catch (e) { showLoadError(); }', 'showLoadError();')}
+    // Safety timeout: if the first render never ends, hide the overlay and stop keeping saves.
+    // The viewer then also takes the kept and later messages (a new source may render).
+    var timedOut = false;
+    // Set by startViewer: hand the messages to the viewer's handler.
+    var startHandling = null;
+    var loadingTimeout = setTimeout(function() {
+        timedOut = true;
+        hideLoadingOverlay();
+        answerSaves();
+        if (startHandling) startHandling();
+    }, 10000);
+    // The library cannot be used: say so in place of the diagram, and answer a save or copy
+    // that nothing is rendered.
+    function showLoadError() {
+        hideLoadingOverlay();
+        vscodeApi.postMessage({ type: 'mermaidLoadFailed' });
+        var error = document.createElement('div');
+        error.id = 'render-error';
+        error.textContent = ${mermaidLoadErrorLiteral()};
+        document.getElementById('svg-container').replaceChildren(error);
+        answerSaves();
+    }
+    function hideLoadingOverlay() {
+        clearTimeout(loadingTimeout);
+        var overlay = document.getElementById('${LOADING_OVERLAY_ID}');
+        if (overlay) overlay.style.display = 'none';
+    }
+    function startViewer() {
 ${getPanZoomScript()}
     // Mermaid rendering
     var renderCounter = 0;
@@ -210,7 +277,7 @@ ${getPanZoomScript()}
     }
 
     // Message handler
-    window.addEventListener('message', function(e) {
+    function onMessage(e) {
         if (e.data.type === 'updateSource') {
             // Each page load is sent the current source, usually the one already rendered.
             if (sameSource(e.data.source, lastSource)) return;
@@ -232,18 +299,35 @@ ${getPanZoomScript()}
         } else if (e.data.type === 'copyDiagram') {
             handleDiagramAction('copy', e.data.format);
         }
-    });
-
+    }
     // Render initial source
     var initialEl = document.getElementById('initial-source');
-    if (initialEl && initialEl.textContent) {
-        renderMermaid(initialEl.textContent).catch(function(err) {
+    var initialRender = initialEl && initialEl.textContent
+        ? renderMermaid(initialEl.textContent).catch(function(err) {
             console.error('Mermaid initial render failed:', err);
-        });
-    }
+        })
+        : Promise.resolve();
+    // Messages kept until now, in the order they came, after the initial render they may
+    // replace (or once it has taken too long); later ones go straight to the handler.
+    var handling = false;
+    startHandling = function() {
+        if (handling) return;
+        handling = true;
+        window.removeEventListener('message', queueMessage);
+        window.addEventListener('message', onMessage);
+        var queued = pendingMessages;
+        pendingMessages = [];
+        queued.forEach(onMessage);
+    };
+    if (timedOut) startHandling();
+    initialRender.then(function() {
+        hideLoadingOverlay();
+        startHandling();
+    });
 
     // Report each page load; a webview recreated from this HTML gets the current state.
     vscodeApi.postMessage({ type: 'webviewReady' });
+    }
 })();
 </script>
 </body>
@@ -348,6 +432,12 @@ function createMermaidPreview(initialConfig: Config | null, adopted?: AdoptedPan
 
         onPreviewThemeChanged(panel, bgColor) {
             void panel.webview.postMessage({ type: 'updateBgColor', bgColor });
+        },
+
+        onPageMessage(msg, filePath) {
+            if ((msg as { type?: unknown } | null)?.type !== 'mermaidLoadFailed') return false;
+            outputChannel?.appendLine(`[mermaid] Could not load the Mermaid library for ${filePath ?? 'the page'}`);
+            return true;
         },
 
         onWebviewReady(panel, bgColor) {

@@ -146,7 +146,10 @@ export function getPanZoomScript(): string {
      */
     function handleDiagramAction(action, format) {
         var svgEl = container.querySelector('svg');
-        if (!svgEl) return;
+        if (!svgEl) {
+            vscodeApi.postMessage({ type: 'diagramNotRendered' });
+            return;
+        }
         if (format === 'svg') {
             vscodeApi.postMessage({ type: 'exportDiagramResult', format: 'svg', data: svgEl.outerHTML });
             return;
@@ -173,7 +176,10 @@ export function getPanZoomScript(): string {
                         vscodeApi.postMessage({ type: 'copyDiagramResult', success: false, format: 'png' });
                         return;
                     }
-                    navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]).then(function() {
+                    // Promise.resolve().then also turns a synchronous throw (e.g. no ClipboardItem) into a failure.
+                    Promise.resolve().then(function() {
+                        return navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+                    }).then(function() {
                         vscodeApi.postMessage({ type: 'copyDiagramResult', success: true, format: 'png' });
                     }, function() {
                         vscodeApi.postMessage({ type: 'copyDiagramResult', success: false, format: 'png' });

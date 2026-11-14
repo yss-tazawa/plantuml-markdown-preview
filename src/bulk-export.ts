@@ -13,7 +13,7 @@
 import fs from 'fs';
 import path from 'path';
 import * as vscode from 'vscode';
-import { sanitizeSvgEntities } from './export-handler.js';
+import { sanitizeSvgEntities, decodePngDataUrl } from './export-handler.js';
 import { fileNameWithoutExtension } from './markdown-files.js';
 
 /** Result of a bulk export operation. */
@@ -118,9 +118,13 @@ export async function exportAllDiagrams(
             await fs.promises.writeFile(filePath, sanitizeSvgEntities(diag.data), 'utf8');
             exported++;
         } else {
-            // PNG: data is a base64 data URL
-            const base64 = diag.data.replace(/^data:image\/png;base64,/, '');
-            await fs.promises.writeFile(filePath, Buffer.from(base64, 'base64'));
+            // PNG: data is a base64 data URL, without an image when the canvas was too large
+            const bytes = decodePngDataUrl(diag.data);
+            if (!bytes) {
+                failed++;
+                continue;
+            }
+            await fs.promises.writeFile(filePath, bytes);
             exported++;
         }
     }

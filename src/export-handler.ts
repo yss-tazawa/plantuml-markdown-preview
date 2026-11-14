@@ -50,6 +50,38 @@ export async function saveDiagramFile(
     }
 }
 
+/** Prefix of the PNG data URL a page sends for a PNG image. */
+const PNG_DATA_URL_PREFIX = 'data:image/png;base64,';
+
+/**
+ * Decode the PNG data URL a page sends.
+ *
+ * @param data - The data URL, if any.
+ * @returns The image bytes, or null when it holds no image: empty, or `data:,` from a
+ *          canvas too large to export.
+ */
+export function decodePngDataUrl(data: string | undefined): Buffer | null {
+    if (!data || !data.startsWith(PNG_DATA_URL_PREFIX)) return null;
+    const bytes = Buffer.from(data.slice(PNG_DATA_URL_PREFIX.length), 'base64');
+    return bytes.length > 0 ? bytes : null;
+}
+
+/** Tell the user a diagram that is not rendered cannot be saved or copied. */
+export function reportDiagramNotRendered(): void {
+    vscode.window.showErrorMessage(vscode.l10n.t('The diagram is not rendered, so it cannot be saved or copied.'));
+}
+
+/**
+ * Tell the user a save got no image from the page.
+ *
+ * @param format - Format of the save: an SVG comes empty only when nothing is rendered,
+ *                 a PNG also when the page could not make the image.
+ */
+export function reportUnsavedImage(format: 'png' | 'svg'): void {
+    if (format === 'png') vscode.window.showErrorMessage(vscode.l10n.t('Failed to save diagram as PNG'));
+    else reportDiagramNotRendered();
+}
+
 /**
  * Handle an export message from a viewer webview (PNG/SVG save-to-file).
  *
@@ -63,13 +95,14 @@ export async function handleExportMessage(
     msg: { type: string; format?: string; data?: string },
     defaultFilePath: string | null
 ): Promise<void> {
-    if (msg.type !== 'exportDiagramResult' || !msg.format || !msg.data) return;
+    if (msg.type !== 'exportDiagramResult' || !msg.format) return;
     if (msg.format !== 'png' && msg.format !== 'svg') return;
-
     const format = msg.format;
-    const fileData = format === 'png'
-        ? Buffer.from(msg.data.replace(/^data:image\/png;base64,/, ''), 'base64')
-        : sanitizeSvgEntities(msg.data);
+    const fileData = format === 'png' ? decodePngDataUrl(msg.data) : msg.data ? sanitizeSvgEntities(msg.data) : null;
+    if (!fileData) {
+        reportUnsavedImage(format);
+        return;
+    }
 
     const defaultName = defaultFilePath
         ? defaultFilePath.replace(/\.[^.]+$/, `.${format}`)
@@ -90,6 +123,10 @@ export async function handleViewerMessage(
 ): Promise<void> {
     if (msg.type === 'copyDiagramResult') {
         handleCopyResult(!!msg.success);
+        return;
+    }
+    if (msg.type === 'diagramNotRendered') {
+        reportDiagramNotRendered();
         return;
     }
     return handleExportMessage(msg, currentFilePath);

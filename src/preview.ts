@@ -25,6 +25,8 @@ import { fileNameWithoutExtension } from './markdown-files.js';
 import { CONFIG_SECTION, MERMAID_THEME_KEYS, D2_THEME_KEYS, D2_THEME_MAP, type Config } from './config.js';
 import { updateDiagramViewer, closeStaleViewers, disposeViewersOf, setPendingSaveDiagram, getPendingDiagramContext, handlePngFromPreview, handleCopyResult } from './diagram-viewer.js';
 import type { AdoptedPanel, MarkdownReadingView } from './reading-view.js';
+import { takeSourcePosition } from './reading-view-position.js';
+import { LOADING_OVERLAY_ID } from './loading-overlay.js';
 
 /** Config keys that affect &lt;head&gt; content and require a full HTML reload. */
 const HEAD_KEYS = new Set(['allowLocalImages', 'allowHttpImages', 'mermaidScale', 'enableMath']);
@@ -89,6 +91,10 @@ export class PreviewManager implements vscode.Disposable {
     private lastScrollLine = -1;
     private lastMaxTopLine = -1;
     private lastAtBottom = false;
+    /** Reading View: source line at its middle after it last scrolled, or null before it scrolls. */
+    private scrolledLine: number | null = null;
+    /** Whether the page in the webview reported that it could not load the Mermaid library. */
+    private mermaidLoadFailed = false;
     private renderSeq = 0;
     private initialHtmlSet = false;
     private initialHtmlHadMermaid = false;
@@ -345,6 +351,8 @@ export class PreviewManager implements vscode.Disposable {
         this.lastScrollLine = -1;
         this.lastMaxTopLine = -1;
         this.lastAtBottom = false;
+        this.scrolledLine = null;
+        this.mermaidLoadFailed = false;
         this.initialHtmlSet = false;
         this.initialHtmlHadMermaid = false;
         this.pendingScrollRestore = false;
@@ -445,8 +453,14 @@ export class PreviewManager implements vscode.Disposable {
                 // recreated from its HTML returns there.
                 const line = Math.max(0, Math.round(message.line));
                 this.lastScrollLine = line;
-                // A Reading View does not sync scrolling with the source.
-                if (this.adopted) return;
+                // A Reading View does not sync scrolling with the source: the source
+                // takes its line when the tab switches to it.
+                // Once it scrolled, the line rules: the bottom it may have started at no longer holds.
+                if (this.adopted) {
+                    this.scrolledLine = line;
+                    this.lastAtBottom = false;
+                    return;
+                }
 
                 if (this.syncMaster === 'editor') return;
                 // A revealLine here means the user actively scrolled the preview:
@@ -473,9 +487,17 @@ export class PreviewManager implements vscode.Disposable {
                 handleCopyResult(!!message.success);
             } else if (message.type === 'webviewReady') {
                 this.handleWebviewReady(message.token);
+            } else if (message.type === 'mermaidLoadFailed') {
+                this.outputChannel.appendLine(`[preview] Could not load the Mermaid library for ${this.currentFilePath ?? 'the page'}`);
+                // A body update keeps the page without the library: the next reload builds a new page.
+                this.mermaidLoadFailed = true;
             } else if (message.type === 'reload') {
                 clearCache();
                 clearServerCache();
+                if (this.mermaidLoadFailed) {
+                    this.mermaidLoadFailed = false;
+                    this.initialHtmlSet = false;
+                }
                 // Before the render: a server that stopped retrying starts again,
                 // and this render waits for that start.
                 if (this.lastConfig) handleServerEvent(this.lastConfig, { checkJava: true });
@@ -534,6 +556,7 @@ export class PreviewManager implements vscode.Disposable {
         if (!this.panel.visible) this.pendingShowRender = true;
         this.panel.webview.html = html;
         this.webviewLoaded = false;
+        this.mermaidLoadFailed = false;
         this.pageToken = pageToken;
     }
 
@@ -782,8 +805,14 @@ export class PreviewManager implements vscode.Disposable {
         return true;
     }
 
-    /** Render Markdown content into the webview (full HTML or body-only update). */
-    private async renderPanel(text: string): Promise<void> {
+    /**
+     * Render Markdown content into the webview (full HTML or body-only update).
+     *
+     * @param text - Markdown source.
+     * @param [loading=false] - True for a render that shows the loading overlay: a full page
+     *   it assigns starts under the overlay and keeps it until its Mermaid diagrams are rendered.
+     */
+    private async renderPanel(text: string, loading = false): Promise<void> {
         if (!this.panel || !this.lastConfig) return;
         // Defer rendering while the preview is hidden. A render here (especially a
         // full reload triggered by a document switch changing localResourceRoots)
@@ -802,7 +831,8 @@ export class PreviewManager implements vscode.Disposable {
         const mySeq = ++this.renderSeq;
         let htmlReplaced = false;
 
-        // A Reading View starts at the top instead of the source editor's position.
+        // A Reading View takes its starting position in openAdopted, from the source
+        // editor it replaced.
         if (!this.adopted && (!this.initialHtmlSet || this.pendingScrollRestore)) {
             const editor = vscode.window.activeTextEditor;
             if (editor && this.currentFilePath && isLiveSourceUri(editor.document.uri)
@@ -842,9 +872,12 @@ export class PreviewManager implements vscode.Disposable {
                     if (!this.panel || !this.lastConfig || this.renderSeq !== mySeq || signal.aborted) return;
                 }
 
+                // The page keeps the overlay while it renders its Mermaid diagrams, when this render
+                // shows the overlay or the page replaces the "Rendering..." placeholder.
+                const startsLoading = (loading || this.pageToken === null) && MERMAID_FENCE_TEST_RE.test(text);
                 const renderOptions = {
                     sourceMap: true,
-                    scriptHtml: getScrollSyncScriptTag(this.lastScrollLine, this.lastMaxTopLine, nonce, vscode.l10n.t('Rendering...'), SYNC_MASTER_TIMEOUT_MS, scrollSyncUri, pageToken, this.lastAtBottom, this.enableDiagramViewer),
+                    scriptHtml: getScrollSyncScriptTag(this.lastScrollLine, this.lastMaxTopLine, nonce, vscode.l10n.t('Rendering...'), SYNC_MASTER_TIMEOUT_MS, scrollSyncUri, pageToken, this.lastAtBottom, this.enableDiagramViewer, startsLoading),
                     cspNonce: nonce,
                     cspSource: this.panel.webview.cspSource,
                     lang: vscode.env.language,
@@ -859,6 +892,7 @@ export class PreviewManager implements vscode.Disposable {
                     katexCssHtml,
                     enableMath: this.lastConfig.enableMath,
                     hideBodyInitially: this.lastScrollLine > 0 || this.lastAtBottom,
+                    loadingText: startsLoading ? vscode.l10n.t('Rendering...') : undefined,
                 };
 
                 const html = await renderHtmlAsync(text, this.makeTitle(), this.lastConfig, renderOptions, signal);
@@ -886,9 +920,13 @@ export class PreviewManager implements vscode.Disposable {
                 // fields from the editor's actual position, and the equality check
                 // in the handler (midLine === lastScrollLine) will then correctly
                 // detect real scroll changes versus the initial -1 state.
-                this.lastScrollLine = -1;
-                this.lastMaxTopLine = -1;
-                this.lastAtBottom = false;
+                // A Reading View has no editor to re-populate them: it keeps the position
+                // it started at until its webview reports a scroll.
+                if (!this.adopted) {
+                    this.lastScrollLine = -1;
+                    this.lastMaxTopLine = -1;
+                    this.lastAtBottom = false;
+                }
             } else {
                 const renderOptions = { sourceMap: true };
                 const { bodyHtml, hasMermaid } = await renderBodyAsync(text, this.lastConfig, renderOptions, signal);
@@ -906,7 +944,7 @@ export class PreviewManager implements vscode.Disposable {
                     if (this.renderAbortController === myController) {
                         this.renderAbortController = null;
                     }
-                    return await this.renderPanel(text);
+                    return await this.renderPanel(text, loading);
                 }
 
                 let finalBody = bodyHtml;
@@ -993,7 +1031,7 @@ export class PreviewManager implements vscode.Disposable {
 
         const doRender = () => {
             this.loadingRenderTimer = null;
-            void this.renderPanel(text).catch(err => {
+            void this.renderPanel(text, true).catch(err => {
                 this.outputChannel.appendLine(`[render error] ${err}`);
             }).finally(() => {
                 if (this.loadingResolve) { this.loadingResolve(); this.loadingResolve = null; }
@@ -1039,6 +1077,9 @@ export class PreviewManager implements vscode.Disposable {
 
     /** Theme CSS most recently sent to the webview. */
     getLastPostedThemeCss(): string | null { return this.lastPostedThemeCss; }
+
+    /** Source line at the middle of a Reading View after it last scrolled, or null when it has not scrolled. */
+    getScrolledLine(): number | null { return this.scrolledLine; }
 
     /** Last scroll instruction sent to the webview, or null if none was sent yet. */
     getLastPostedScroll(): { line: number; maxTopLine: number; atBottom: boolean; force: boolean; instant: boolean } | null {
@@ -1124,6 +1165,15 @@ export class PreviewManager implements vscode.Disposable {
         if (!this.adopted || !this.panel || !this.currentFilePath) return Promise.resolve();
         this.lastConfig = config;
         this.panel.title = this.makeTitle();
+        // Start where a source editor of the file last showed, as the built-in preview
+        // does when a tab switches from the source.
+        const source = takeSourcePosition(this.currentFilePath);
+        if (source) {
+            const { midLine, maxTopLine, atBottom } = this.calcScrollSync(source.topLine, source.bottomLine, source.lineCount);
+            this.lastScrollLine = midLine;
+            this.lastMaxTopLine = maxTopLine;
+            this.lastAtBottom = atBottom;
+        }
         // Before the first HTML: the panel comes without scripts or resource roots.
         this.applyWebviewOptions();
         this.setUpPanel();
@@ -1140,7 +1190,7 @@ export class PreviewManager implements vscode.Disposable {
         this.enableDiagramViewer = pmCfg.get<boolean>('enableDiagramViewer', true);
         this.setWebviewHtml(`<!DOCTYPE html>
 <html><head><meta charset="UTF-8"></head><body>
-<div id="loading-overlay" style="position:fixed;top:0;left:0;width:100%;height:100%;background:var(--vscode-editor-background,#fff);display:flex;align-items:center;justify-content:center;z-index:9999;">
+<div id="${LOADING_OVERLAY_ID}" style="position:fixed;top:0;left:0;width:100%;height:100%;background:var(--vscode-editor-background,#fff);display:flex;align-items:center;justify-content:center;z-index:9999;">
 <div style="color:var(--vscode-editor-foreground,#333);font-size:14px;">${escapeHtml(vscode.l10n.t('Rendering...'))}</div>
 </div></body></html>`);
 
@@ -1409,6 +1459,7 @@ export function createMarkdownReadingView(adopted: AdoptedPanel, config: Config,
         changeTheme: () => manager.changeTheme(),
         getLastRenderedText: () => manager.getLastRenderedText(),
         ownsPendingDiagram: () => manager.ownsPendingDiagram(),
+        getScrolledLine: () => manager.getScrolledLine(),
         getLastPostedScroll: () => manager.getLastPostedScroll(),
         dispatchWebviewMessage: (message) => manager.dispatchWebviewMessageForTest(message),
         dispose: () => manager.dispose(),

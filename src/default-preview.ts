@@ -16,6 +16,7 @@ import { CONFIG_SECTION } from './config.js';
 import { isFileUri, isMarkdownFile, MARKDOWN_LANGUAGE_IDS } from './markdown-files.js';
 import { canSwitchInPlace, readingViewTypeForFile, READING_VIEW_TYPES } from './preview-editor.js';
 import type { ReadingViewKind } from './reading-view.js';
+import { switchSourceToReadingView } from './reading-view-position.js';
 
 /** Context key that hides the built-in Markdown preview's buttons and menu items. */
 const HIDE_BUILTIN_CONTEXT = 'hasCustomMarkdownPreview';
@@ -264,7 +265,7 @@ async function toggleReadingView(): Promise<void> {
         return;
     }
     if (opensInReadingView(target, kind)) {
-        await vscode.commands.executeCommand('reopenActiveEditorWith', READING_VIEW_TYPES[kind]);
+        await switchSourceToReadingView(READING_VIEW_TYPES[kind]);
     } else if (kind === 'markdown') {
         await runBuiltin('markdown.togglePreview', []);
     }
@@ -280,7 +281,7 @@ async function reopenAsPreview(...args: unknown[]): Promise<void> {
     const canSwitch = await canSwitchInPlace();
     const target = targetOf(args[0]);
     if (canSwitch && target && opensInReadingView(target, 'markdown')) {
-        await vscode.commands.executeCommand('reopenActiveEditorWith', READING_VIEW_TYPES.markdown);
+        await switchSourceToReadingView(READING_VIEW_TYPES.markdown);
         return;
     }
     await runBuiltin(BUILTIN_REOPEN_AS_PREVIEW, args);

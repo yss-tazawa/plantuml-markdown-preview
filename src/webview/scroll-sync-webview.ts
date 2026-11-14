@@ -13,6 +13,8 @@
  * Dynamic parameters are passed via data-* attributes on the <script> element.
  */
 
+import { LOADING_OVERLAY_ID, loadingOverlayHtml } from '../loading-overlay.js';
+
 declare function acquireVsCodeApi(): { postMessage(msg: unknown): void };
 
 // Minimal interface for the mermaid global that this script touches.
@@ -25,6 +27,12 @@ interface MermaidLib {
 // Use a typed reference to window for globals the script accesses.
 interface ExtendedWindow extends Window {
     __loadingTimeout: ReturnType<typeof setTimeout> | null;
+    /** Mermaid theme picked after the page was built; the page's Mermaid init reads it. */
+    __mermaidTheme?: string;
+    /** Set when the Mermaid library cannot be used: the text shown in place of each diagram. */
+    __mermaidLoadError?: string;
+    /** Shows __mermaidLoadError in place of each Mermaid diagram not shown yet (defined by the page). */
+    __showMermaidLoadError?: () => void;
     __renderMermaid?: () => Promise<void>;
     __renderMermaidDone?: Promise<void>;
     mermaid?: MermaidLib;
@@ -44,6 +52,8 @@ interface Anchor {
     const RENDERING_TEXT = script.dataset.renderingText!;
     const SYNC_MASTER_TIMEOUT_MS = Number(script.dataset.syncMasterTimeoutMs);
     const ENABLE_DIAGRAM_VIEWER = script.dataset.enableDiagramViewer !== 'false';
+    /** The page shows the loading overlay until its Mermaid diagrams are rendered. */
+    const INITIAL_LOADING = script.dataset.initialLoading === 'true';
     /** Identifies this page to the extension, which ignores loads of pages it replaced. */
     const PAGE_TOKEN = script.dataset.pageToken ?? '';
     /** Offset (px) for TOC active-heading detection: clears the fixed nav-toolbar. */
@@ -459,7 +469,10 @@ interface Anchor {
                         vscode.postMessage({ type: 'copyDiagramFromPreview', success: false, format: 'png' });
                         return;
                     }
-                    navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]).then(function () {
+                    // Promise.resolve().then also turns a synchronous throw (e.g. no ClipboardItem) into a failure.
+                    Promise.resolve().then(function () {
+                        return navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+                    }).then(function () {
                         vscode.postMessage({ type: 'copyDiagramFromPreview', success: true, format: 'png' });
                     }, function () {
                         vscode.postMessage({ type: 'copyDiagramFromPreview', success: false, format: 'png' });
@@ -482,6 +495,44 @@ interface Anchor {
         };
         img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svgData);
     }
+
+    /** Show the render progress overlay, dismissed by {@link hideLoadingOverlay} or after 10 seconds. */
+    function showLoadingOverlay(): void {
+        let overlay = document.getElementById(LOADING_OVERLAY_ID);
+        if (!overlay) {
+            document.body.insertAdjacentHTML('beforeend', loadingOverlayHtml(RENDERING_TEXT));
+            overlay = document.getElementById(LOADING_OVERLAY_ID)!;
+        }
+        overlay.style.display = 'flex';
+        // Safety timeout: auto-dismiss the overlay if nothing hides it
+        if (win.__loadingTimeout) clearTimeout(win.__loadingTimeout);
+        win.__loadingTimeout = setTimeout(function () {
+            const ol = document.getElementById(LOADING_OVERLAY_ID);
+            if (ol) ol.style.display = 'none';
+            win.__loadingTimeout = null;
+        }, 10000);
+    }
+
+    /** Hide the render progress overlay. */
+    function hideLoadingOverlay(): void {
+        if (win.__loadingTimeout) { clearTimeout(win.__loadingTimeout); win.__loadingTimeout = null; }
+        const ol = document.getElementById(LOADING_OVERLAY_ID);
+        if (ol) ol.style.display = 'none';
+    }
+
+    /** Whether the page has yet to run its initial Mermaid render (on DOMContentLoaded). */
+    let initialRenderPending = true;
+    /** Whether the initial render dismisses the loading overlay when it ends. */
+    let hideAfterInitialRender = INITIAL_LOADING;
+
+    /** When Mermaid cannot be used, show why in place of each Mermaid diagram not shown yet. */
+    function showMermaidLoadError(): void {
+        if (win.__mermaidLoadError && win.__showMermaidLoadError) win.__showMermaidLoadError();
+    }
+
+    // The page came with the overlay: the render that assigned it is not over until the
+    // page renders its Mermaid diagrams. Arm the safety timeout for it.
+    if (INITIAL_LOADING) showLoadingOverlay();
 
     // --- Event listeners ---
 
@@ -508,36 +559,21 @@ interface Anchor {
             anchors = null;
             requestAnimationFrame(notifyDiagramViewers);
         } else if (message && message.type === 'reinitMermaid' && typeof message.theme === 'string') {
-            // Re-initialize Mermaid with a new theme so the next __renderMermaid() uses it.
+            // Re-initialize Mermaid with a new theme so the next __renderMermaid() uses it,
+            // or leave it for the init that runs once the library has loaded.
+            win.__mermaidTheme = message.theme;
             if (win.mermaid) {
                 win.mermaid.initialize({ startOnLoad: false, theme: message.theme });
             }
         } else if (message && message.type === 'showLoading') {
-            let overlay = document.getElementById('loading-overlay');
-            if (!overlay) {
-                overlay = document.createElement('div');
-                overlay.id = 'loading-overlay';
-                overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.3);display:flex;align-items:center;justify-content:center;z-index:9999;';
-                overlay.innerHTML = '<div style="background:var(--vscode-editor-background,#fff);color:var(--vscode-editor-foreground,#333);padding:12px 24px;border-radius:6px;font-size:14px;box-shadow:0 2px 8px rgba(0,0,0,0.3);">' + RENDERING_TEXT + '</div>';
-                document.body.appendChild(overlay);
-            }
-            overlay.style.display = 'flex';
-            // Safety timeout: auto-dismiss overlay if hideLoading is never received
-            if (win.__loadingTimeout) clearTimeout(win.__loadingTimeout);
-            win.__loadingTimeout = setTimeout(function () {
-                const ol = document.getElementById('loading-overlay');
-                if (ol) ol.style.display = 'none';
-                win.__loadingTimeout = null;
-            }, 10000);
+            showLoadingOverlay();
         } else if (message && message.type === 'hideLoading') {
-            if (win.__loadingTimeout) { clearTimeout(win.__loadingTimeout); win.__loadingTimeout = null; }
-            const ol = document.getElementById('loading-overlay');
-            if (ol) ol.style.display = 'none';
+            hideLoadingOverlay();
         } else if (message && message.type === 'updateBody' && typeof message.html === 'string') {
-            // Dismiss loading overlay immediately
-            if (win.__loadingTimeout) { clearTimeout(win.__loadingTimeout); win.__loadingTimeout = null; }
-            const ol = document.getElementById('loading-overlay');
-            if (ol) ol.style.display = 'none';
+            // Dismiss the loading overlay, unless the body has Mermaid diagrams that wait for
+            // the library: the initial render dismisses it then.
+            if (initialRenderPending && message.hasMermaid) hideAfterInitialRender = true;
+            else hideLoadingOverlay();
 
             // Coalesce rapid updates: store latest and apply on next animation frame.
             // This prevents intermediate states from flickering when the user types
@@ -632,6 +668,17 @@ interface Anchor {
                         }
                     }
                 })().catch(function () { /* suppress unhandled rejection */ });
+            } else if (Array.isArray(message.mermaid)) {
+                // Mermaid has not loaded yet (it is deferred): leave the new source in place
+                // for the render the page runs once it has.
+                var pendingDiagrams = document.querySelectorAll('.mermaid-diagram');
+                for (var qi = 0; qi < message.mermaid.length; qi++) {
+                    var qp = message.mermaid[qi];
+                    if (qp.index < 0 || qp.index >= pendingDiagrams.length) continue;
+                    var pendingPre = pendingDiagrams[qp.index].querySelector('pre.mermaid');
+                    if (pendingPre) pendingPre.textContent = qp.source;
+                }
+                showMermaidLoadError();
             }
             // Restore scroll position after synchronous patches (PlantUML/D2)
             if (savedScrollY !== window.scrollY) {
@@ -795,6 +842,7 @@ interface Anchor {
                 notifyDiagramViewers();
             });
         } else {
+            if (update.hasMermaid) showMermaidLoadError();
             updateDiagramCursors();
             notifyDiagramViewers();
         }
@@ -1024,19 +1072,26 @@ interface Anchor {
         }
     }
 
-    /** Set diagram cursor styles on initial HTML load. */
-    document.addEventListener('DOMContentLoaded', function () {
-        var done = win.__renderMermaidDone;
-        if (done && typeof done.then === 'function') {
-            done.then(function () {
-                updateDiagramCursors();
-                notifyDiagramViewers();
-            });
-        } else {
+    /** On initial HTML load: set diagram cursor styles and, once Mermaid has rendered, hide the overlay the page started with. */
+    var onInitialLoad = function () {
+        var finish = function () {
+            initialRenderPending = false;
+            if (hideAfterInitialRender) hideLoadingOverlay();
+            if (win.__mermaidLoadError) vscode.postMessage({ type: 'mermaidLoadFailed' });
+            showMermaidLoadError();
             updateDiagramCursors();
             notifyDiagramViewers();
-        }
-    });
+        };
+        var done = win.__renderMermaidDone;
+        // A failed render still ends the wait for it.
+        if (done && typeof done.then === 'function') done.then(finish, finish);
+        else finish();
+    };
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', onInitialLoad);
+    } else {
+        onInitialLoad();
+    }
 
     // Report each page load now that the message listener is installed. VS Code
     // recreates the webview from its HTML in some cases (e.g. a hidden tab without
