@@ -208,6 +208,8 @@ export interface RenderOptions {
     hideBodyInitially?: boolean;
     /** When set, the page starts under the loading overlay with this text, shown before its scripts load. */
     loadingText?: string;
+    /** Preview zoom (%) applied as CSS `zoom` on #preview-content (preview only; exports never pass it). */
+    previewZoom?: number;
 }
 
 /**
@@ -847,8 +849,11 @@ function buildHtml(title: string, body: string, previewTheme?: string, options?:
         mermaidScriptUri, mermaidTheme, mermaidScale,
         htmlMaxWidth, htmlAlignment,
         navTopTitle, navBottomTitle, navReloadTitle, navTocTitle,
-        fitToWidth, fitToWidthAlign, katexCssHtml, enableMath, hideBodyInitially, loadingText,
+        fitToWidth, fitToWidthAlign, katexCssHtml, enableMath, hideBodyInitially, loadingText, previewZoom,
     } = options || {};
+    // Written into the page so its first paint is already zoomed; 100% writes nothing.
+    const zoomStyle = typeof previewZoom === 'number' && Number.isFinite(previewZoom) && previewZoom !== 100
+        ? ` style="zoom:${previewZoom / 100}"` : '';
     const fontSrc = enableMath && cspSource ? cspSource : "'none'";
     const cspMeta = cspNonce
         ? `\n  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; font-src ${fontSrc}; img-src ${cspSource || "'self'"} https:${allowHttpImages ? ' http:' : ''} data:; script-src 'nonce-${cspNonce}'${cspSource ? ` ${cspSource}` : ''};">`
@@ -946,7 +951,7 @@ ${cspNonce ? `<div id="nav-toolbar">
 </div>
 <div id="toc-sidebar"><ul id="toc-list"></ul></div>
 ` : ''}<!-- NOTE: This ID is also referenced in src/webview/scroll-sync-webview.ts (applyPendingBodyUpdate). -->
-<div id="preview-content">
+<div id="preview-content"${zoomStyle}>
 ${body}
 </div>${loadingText !== undefined ? `\n${loadingOverlayHtml(loadingText)}` : ''}${mermaidHtml}
 ${scriptHtml || ''}

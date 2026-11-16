@@ -124,5 +124,7 @@
   "Git was not found. Install Git or make sure it is on your PATH.": "未找到 Git。请安装 Git，或确认它已加入 PATH。",
   "Mermaid could not be loaded, so this diagram cannot be rendered. Close the preview or Reading View and open it again to retry.": "无法加载 Mermaid，因此无法渲染此图表。请关闭预览或阅读视图后重新打开以重试。",
   "The diagram is not rendered, so it cannot be saved or copied.": "图表未渲染，因此无法保存或复制。",
-  "Failed to save diagram as PNG": "将图表保存为 PNG 失败"
+  "Failed to save diagram as PNG": "将图表保存为 PNG 失败",
+  "Preview Zoom": "预览缩放",
+  "Select preview zoom": "选择预览缩放"
 }

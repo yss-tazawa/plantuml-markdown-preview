@@ -53,6 +53,7 @@
   "command.exportAllDiagramsAsPng.title": "全ダイアグラムを PNG でエクスポート",
   "command.copyDiagramAsPng.title": "ダイアグラムを PNG でコピー",
   "command.selectMode.title": "レンダリングモードを選択",
+  "command.selectPreviewZoom.title": "プレビューのズームを選択",
   "command.goToIncludeFile.title": "インクルードファイルに移動",
   "command.openIncludeSource.title": "インクルードソースを開く",
   "command.reopenAsSource.title": "ソースに切り替える",
@@ -179,5 +180,6 @@
   "configuration.plantumlLocalServerJvmMaxHeapMb.description": "管理対象のローカル PlantUML サーバーの最大 JVM ヒープサイズ（-Xmx、単位: MB）。ヒーププリセットが 'custom' の場合にのみ使用されます。ローカル PlantUML サーバーが使用される場合（mode: fast）にのみ適用されます。デフォルト: 512",
   "configuration.enableDiagramViewer.description": "プレビュー内のダイアグラムを右クリックしてパン＆ズームビューワーで開く機能を有効にします。（プレビューを開き直す必要があります）",
   "configuration.retainPreviewContext.description": "タブが非表示のときプレビュー内容を保持します。タブ切替時の再描画を防ぎますが、メモリ使用量が増えます。設定を反映させるには、プレビューの場合はプレビューを閉じて再度開いてください。参照ビューの場合は VS Code を再起動するか、ウィンドウを再読み込みしてください。",
-  "configuration.useAsDefaultPreview.description": "VS Code 標準の Markdown プレビューのボタン・右クリックの項目・ショートカット（Ctrl+Shift+V・Ctrl+K V）で本拡張を開きます。VS Code 1.119 より前はショートカットだけです。デフォルト: true"
+  "configuration.useAsDefaultPreview.description": "VS Code 標準の Markdown プレビューのボタン・右クリックの項目・ショートカット（Ctrl+Shift+V・Ctrl+K V）で本拡張を開きます。VS Code 1.119 より前はショートカットだけです。デフォルト: true",
+  "configuration.previewZoom.description": "Markdown のプレビューと参照ビューのズーム（%）。すべてで共通。プレビューでの Ctrl+マウスホイール（Mac では Cmd+マウスホイール）やステータスバーからも変更できます。HTML・PDF のエクスポートには影響しません。デフォルト: 100"
 }

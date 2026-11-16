@@ -53,6 +53,7 @@
   "command.exportAllDiagramsAsPng.title": "Export All Diagrams as PNG",
   "command.copyDiagramAsPng.title": "Copy Diagram as PNG",
   "command.selectMode.title": "Select Rendering Mode",
+  "command.selectPreviewZoom.title": "Select Preview Zoom",
   "command.goToIncludeFile.title": "Go to Include File",
   "command.openIncludeSource.title": "Open Include Source",
   "command.reopenAsSource.title": "Switch to Source",
@@ -179,5 +180,6 @@
   "configuration.plantumlLocalServerJvmMaxHeapMb.description": "Maximum JVM heap size (-Xmx) in MB for the managed local PlantUML server. Only used when the heap preset is 'custom'. Only applies when the local PlantUML server is used (mode: fast). Default: 512",
   "configuration.enableDiagramViewer.description": "Enable right-clicking a diagram in the preview to open it in a pan & zoom viewer. (Requires reopening the preview)",
   "configuration.retainPreviewContext.description": "Retain preview content when the tab is hidden. Prevents re-rendering on tab switch but uses more memory. To apply a change, close and reopen the preview. For Reading View, restart VS Code or reload the window.",
-  "configuration.useAsDefaultPreview.description": "Open this extension from VS Code's standard Markdown preview buttons, context menu items and shortcuts (Ctrl+Shift+V / Ctrl+K V). Before VS Code 1.119, only the shortcuts do. Default: true"
+  "configuration.useAsDefaultPreview.description": "Open this extension from VS Code's standard Markdown preview buttons, context menu items and shortcuts (Ctrl+Shift+V / Ctrl+K V). Before VS Code 1.119, only the shortcuts do. Default: true",
+  "configuration.previewZoom.description": "Zoom (%) of the Markdown preview and Reading View, one level for all of them. Can also be changed with Ctrl+mouse wheel (Cmd+mouse wheel on Mac) in the preview, or from the status bar. Does not affect HTML or PDF export. Default: 100"
 }

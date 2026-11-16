@@ -53,6 +53,7 @@
   "command.exportAllDiagramsAsPng.title": "모든 다이어그램을 PNG로 내보내기",
   "command.copyDiagramAsPng.title": "다이어그램을 PNG로 복사",
   "command.selectMode.title": "렌더링 모드 선택",
+  "command.selectPreviewZoom.title": "미리보기 확대/축소 선택",
   "command.goToIncludeFile.title": "Include 파일로 이동",
   "command.openIncludeSource.title": "Include 소스 열기",
   "command.reopenAsSource.title": "소스로 전환",
@@ -179,5 +180,6 @@
   "configuration.plantumlLocalServerJvmMaxHeapMb.description": "관리되는 로컬 PlantUML 서버의 최대 JVM 힙 크기(-Xmx, 단위: MB). 힙 프리셋이 'custom'일 때만 사용됩니다. 로컬 PlantUML 서버가 사용될 때만 적용됩니다(mode: fast). 기본값: 512",
   "configuration.enableDiagramViewer.description": "미리보기에서 다이어그램을 우클릭하여 팬 & 줌 뷰어에서 열기. (미리보기를 다시 열어야 적용됩니다)",
   "configuration.retainPreviewContext.description": "탭이 숨겨질 때 미리보기 내용을 유지합니다. 탭 전환 시 재렌더링을 방지하지만 메모리를 더 사용합니다. 변경 사항을 적용하려면 미리보기를 닫았다가 다시 여세요. 읽기용 보기의 경우 VS Code를 다시 시작하거나 창을 다시 로드하세요.",
-  "configuration.useAsDefaultPreview.description": "VS Code 표준 Markdown 미리보기의 버튼, 우클릭 메뉴 항목, 단축키(Ctrl+Shift+V / Ctrl+K V)로 이 확장을 엽니다. VS Code 1.119 이전에는 단축키만 해당됩니다. 기본값: true"
+  "configuration.useAsDefaultPreview.description": "VS Code 표준 Markdown 미리보기의 버튼, 우클릭 메뉴 항목, 단축키(Ctrl+Shift+V / Ctrl+K V)로 이 확장을 엽니다. VS Code 1.119 이전에는 단축키만 해당됩니다. 기본값: true",
+  "configuration.previewZoom.description": "Markdown 미리보기와 읽기용 보기의 확대/축소(%)이며, 모두에 공통으로 적용됩니다. 미리보기에서 Ctrl+마우스 휠(Mac에서는 Cmd+마우스 휠)이나 상태 표시줄로도 변경할 수 있습니다. HTML 및 PDF 내보내기에는 영향을 주지 않습니다. 기본값: 100"
 }

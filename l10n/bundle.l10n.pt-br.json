@@ -124,5 +124,7 @@
   "Git was not found. Install Git or make sure it is on your PATH.": "Git não foi encontrado. Instale o Git ou verifique se ele está no seu PATH.",
   "Mermaid could not be loaded, so this diagram cannot be rendered. Close the preview or Reading View and open it again to retry.": "Não foi possível carregar o Mermaid, por isso este diagrama não pode ser renderizado. Feche a pré-visualização ou o modo de leitura e abra novamente para tentar de novo.",
   "The diagram is not rendered, so it cannot be saved or copied.": "O diagrama não está renderizado, por isso não pode ser salvo nem copiado.",
-  "Failed to save diagram as PNG": "Falha ao salvar o diagrama como PNG"
+  "Failed to save diagram as PNG": "Falha ao salvar o diagrama como PNG",
+  "Preview Zoom": "Zoom da pré-visualização",
+  "Select preview zoom": "Selecionar zoom da pré-visualização"
 }

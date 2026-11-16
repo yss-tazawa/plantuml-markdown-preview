@@ -53,6 +53,7 @@
   "command.exportAllDiagramsAsPng.title": "將所有圖表匯出為 PNG",
   "command.copyDiagramAsPng.title": "將圖表複製為 PNG",
   "command.selectMode.title": "選擇渲染模式",
+  "command.selectPreviewZoom.title": "選擇預覽縮放",
   "command.goToIncludeFile.title": "前往 Include 檔案",
   "command.openIncludeSource.title": "開啟 Include 來源檔案",
   "command.reopenAsSource.title": "切換到原始碼",
@@ -179,5 +180,6 @@
   "configuration.plantumlLocalServerJvmMaxHeapMb.description": "受管理的本機 PlantUML 伺服器的最大 JVM 堆積大小（-Xmx，單位: MB）。僅當堆積預設為 'custom' 時使用。僅當使用本機 PlantUML 伺服器時適用（mode: fast）。預設: 512",
   "configuration.enableDiagramViewer.description": "在預覽中右鍵點擊圖表即可在平移和縮放檢視器中開啟。（需要重新開啟預覽）",
   "configuration.retainPreviewContext.description": "索引標籤隱藏時保留預覽內容。防止切換索引標籤時重新渲染，但會使用更多記憶體。若要套用變更，請關閉並重新開啟預覽。若為閱讀檢視，請重新啟動 VS Code 或重新載入視窗。",
-  "configuration.useAsDefaultPreview.description": "使用 VS Code 標準 Markdown 預覽的按鈕、右鍵選單項目和快速鍵（Ctrl+Shift+V / Ctrl+K V）開啟本擴充功能。VS Code 1.119 之前僅限快速鍵。預設: true"
+  "configuration.useAsDefaultPreview.description": "使用 VS Code 標準 Markdown 預覽的按鈕、右鍵選單項目和快速鍵（Ctrl+Shift+V / Ctrl+K V）開啟本擴充功能。VS Code 1.119 之前僅限快速鍵。預設: true",
+  "configuration.previewZoom.description": "Markdown 預覽和閱讀檢視的縮放比例（%），所有預覽共用。也可以在預覽中按 Ctrl+滑鼠滾輪（Mac 為 Cmd+滑鼠滾輪）或透過狀態列變更。不影響 HTML 或 PDF 匯出。預設: 100"
 }

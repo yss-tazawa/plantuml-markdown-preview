@@ -450,10 +450,41 @@ export const buildThemeItems = <C extends string>(keys: readonly string[], categ
     }));
 
 /**
- * Show a theme QuickPick with the keyboard cursor on the current theme of one category.
+ * Show a QuickPick with the keyboard cursor on the current item.
  *
- * `showQuickPick` always starts on the first item, which reads as if that theme were the
+ * `showQuickPick` always starts on the first item, which reads as if that item were the
  * current one, so the picker is built with `createQuickPick` to set the active item.
+ *
+ * @param items - Items to show, including separators.
+ * @param placeholder - Placeholder text of the input box.
+ * @param isCurrent - Whether an item is the current one (the first match receives the cursor).
+ * @returns The accepted item, or undefined when the picker is dismissed.
+ */
+export function showQuickPickAtCurrent<T extends vscode.QuickPickItem>(
+    items: readonly T[],
+    placeholder: string,
+    isCurrent: (item: T) => boolean,
+): Promise<T | undefined> {
+    const picker = vscode.window.createQuickPick<T>();
+    picker.items = items;
+    picker.placeholder = placeholder;
+    const current = items.find(isCurrent);
+    if (current) picker.activeItems = [current];
+    return new Promise<T | undefined>(resolve => {
+        picker.onDidAccept(() => {
+            resolve(picker.selectedItems[0]);
+            picker.hide();
+        });
+        picker.onDidHide(() => {
+            resolve(undefined);
+            picker.dispose();
+        });
+        picker.show();
+    });
+}
+
+/**
+ * Show a theme QuickPick with the keyboard cursor on the current theme of one category.
  *
  * @param items - Items to show, including separators.
  * @param placeholder - Placeholder text of the input box.
@@ -467,22 +498,7 @@ export function showThemeQuickPick<T extends vscode.QuickPickItem & { category?:
     category: string,
     currentKey: string,
 ): Promise<T | undefined> {
-    const picker = vscode.window.createQuickPick<T>();
-    picker.items = items;
-    picker.placeholder = placeholder;
-    const current = items.find(item => item.category === category && item.themeKey === currentKey);
-    if (current) picker.activeItems = [current];
-    return new Promise<T | undefined>(resolve => {
-        picker.onDidAccept(() => {
-            resolve(picker.selectedItems[0]);
-            picker.hide();
-        });
-        picker.onDidHide(() => {
-            resolve(undefined);
-            picker.dispose();
-        });
-        picker.show();
-    });
+    return showQuickPickAtCurrent(items, placeholder, item => item.category === category && item.themeKey === currentKey);
 }
 
 /** Regex matching <img ...src="..." ...> or <img ...src='...' ...> tags. Captures prefix, quote, src value, and suffix. */

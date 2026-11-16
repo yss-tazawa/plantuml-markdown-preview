@@ -14,6 +14,7 @@
  */
 
 import { LOADING_OVERLAY_ID, loadingOverlayHtml } from '../loading-overlay.js';
+import { stepPreviewZoom, accumulateWheelZoom, snapPreviewZoom, DEFAULT_PREVIEW_ZOOM } from '../preview-zoom-levels.js';
 
 declare function acquireVsCodeApi(): { postMessage(msg: unknown): void };
 
@@ -58,16 +59,26 @@ interface Anchor {
     const PAGE_TOKEN = script.dataset.pageToken ?? '';
     /** Offset (px) for TOC active-heading detection: clears the fixed nav-toolbar. */
     const TOC_SCROLL_OFFSET = 60;
+    /** Whether this Chromium zooms the legacy way: positions and sizes measured inside a
+     *  zoomed element come back divided by the zoom, while scrollY, innerHeight and
+     *  body.scrollHeight are on-screen px. See {@link measureScale}. */
+    const LEGACY_ZOOM = detectLegacyZoom();
 
     const vscode = acquireVsCodeApi();
 
     // --- State ---
     let anchors: Anchor[] | null = null;
-    let lastMaxTopLine = -1;
+    /** Maximum editor top line for the synthetic tail anchor; starts from the page's own,
+     *  so a page that needs no initial restore still maps its end to the editor's. */
+    let lastMaxTopLine = Number.isFinite(INITIAL_MAX_TOP_LINE) && INITIAL_MAX_TOP_LINE > 0 ? INITIAL_MAX_TOP_LINE : -1;
     let lastSentLine = -1;
     let expectingScrollEvent = false;
     /** Block scrollToLine messages until the initial scroll restore completes. */
     let initialRestorePending = INITIAL_AT_BOTTOM || INITIAL_LINE > 0;
+    /** Zoom (%) applied to #preview-content; the page is built with it (buildHtml). */
+    let currentZoom = readInitialZoom();
+    /** Wheel distance (px) not yet turned into zoom steps. */
+    let wheelZoomAccumulated = 0;
 
     // syncMaster state machine: 'none' | 'editor' | 'preview'
     type SyncMasterState = 'none' | 'editor' | 'preview';
@@ -105,6 +116,7 @@ interface Anchor {
 
         const list: Anchor[] = [{ line: 0, pixel: 0 }];
         const scrollY = window.scrollY;
+        const scale = measureScale();
 
         for (let i = 0; i < elements.length; i++) {
             const el = elements[i];
@@ -116,7 +128,7 @@ interface Anchor {
             if (el.closest('svg')) continue;
             const line = parseInt(el.getAttribute('data-source-line')!, 10);
             if (!isNaN(line) && line > 0) {
-                const offsetTop = Math.round(el.getBoundingClientRect().top + scrollY);
+                const offsetTop = Math.round(el.getBoundingClientRect().top * scale + scrollY);
                 if (offsetTop > 0) {
                     list.push({ line: line, pixel: offsetTop });
                 }
@@ -329,6 +341,73 @@ interface Anchor {
         vscode.postMessage({ type: 'revealLine', line: line });
     }
 
+    // --- Preview zoom ---
+
+    /**
+     * Measure how this Chromium reports sizes inside a zoomed element: a 10px-high child
+     * of an element at zoom 2 measures 20 the current way and 10 the legacy way.
+     * @returns True for the legacy way.
+     */
+    function detectLegacyZoom(): boolean {
+        const probe = document.createElement('div');
+        probe.style.cssText = 'position:absolute;top:0;left:0;visibility:hidden;pointer-events:none;zoom:2';
+        const child = document.createElement('div');
+        child.style.height = '10px';
+        probe.appendChild(child);
+        document.body.appendChild(probe);
+        const height = child.getBoundingClientRect().height;
+        probe.remove();
+        return height < 15;
+    }
+
+    /**
+     * Factor that turns a position or size measured inside #preview-content into
+     * on-screen px, comparable with scrollY, innerHeight and body.scrollHeight.
+     * @returns The zoom as a factor in the legacy way, 1 otherwise.
+     */
+    function measureScale(): number {
+        return LEGACY_ZOOM ? currentZoom / 100 : 1;
+    }
+
+    /**
+     * Read the zoom the page was built with from #preview-content.
+     * @returns Zoom in percent.
+     */
+    function readInitialZoom(): number {
+        const container = document.getElementById('preview-content');
+        if (!container || !container.style.zoom) return DEFAULT_PREVIEW_ZOOM;
+        return snapPreviewZoom(Math.round(parseFloat(container.style.zoom) * 100));
+    }
+
+    /**
+     * Zoom #preview-content. A view at the top stays at the top, a view at the bottom
+     * stays at the bottom, and otherwise the source line at the middle of the view stays there.
+     * @param zoom - New zoom in percent.
+     * @returns True when the zoom changed.
+     */
+    function applyZoom(zoom: number): boolean {
+        const next = snapPreviewZoom(zoom);
+        if (next === currentZoom) return false;
+        const container = document.getElementById('preview-content');
+        if (!container) return false;
+        // At the top, keeping the middle line would push the first heading out of view
+        // (and send a page shorter than the view to its end): the top stays the top.
+        const atTop = window.scrollY === 0;
+        // A page that fits in the view is at its top, not at its bottom.
+        const atBottom = !atTop && window.scrollY + window.innerHeight >= document.body.scrollHeight - 2;
+        const anc = atTop ? null : ensureAnchors(lastMaxTopLine);
+        const line = anc ? pixelToLine(anc, window.scrollY + window.innerHeight / 2) : -1;
+        container.style.zoom = next === 100 ? '' : String(next / 100);
+        currentZoom = next;
+        // A style change is not a childList mutation: the observer keeps the old anchors.
+        anchors = null;
+        // The initial restore runs after this and measures the zoomed layout itself.
+        if (atTop || initialRestorePending) return true;
+        // No anchors: the page has no source lines to keep in place.
+        if (line >= 0) scrollToSourceLine(line, lastMaxTopLine, atBottom, true);
+        return true;
+    }
+
     /**
      * Export all diagrams from the preview as SVG or PNG.
      *
@@ -376,9 +455,12 @@ interface Anchor {
             var svgData = new XMLSerializer().serializeToString(svgEl)
                 .replace(/&nbsp;/g, '&#160;')
                 .replace(/<!--[\s\S]*?-->/g, '');
+            // The on-screen size includes the preview zoom: take it out so the image is
+            // the same at every zoom.
             var rect = svgEl.getBoundingClientRect();
-            var w = rect.width || 100;
-            var h = rect.height || 100;
+            var toUnzoomed = measureScale() / (currentZoom / 100);
+            var w = rect.width * toUnzoomed || 100;
+            var h = rect.height * toUnzoomed || 100;
             var scale = 1.5;
             var canvas = document.createElement('canvas');
             canvas.width = w * scale;
@@ -595,11 +677,11 @@ interface Anchor {
              */
             function patchElement(el: Element, newHtml: string): void {
                 var rect = el.getBoundingClientRect();
-                var oldH = el.scrollHeight;
                 el.innerHTML = newHtml;
                 // If the element is above the viewport, adjust scroll to compensate
+                // (on-screen px: the measured height change times measureScale).
                 if (rect.bottom < 0) {
-                    var delta = el.scrollHeight - oldH;
+                    var delta = (el.getBoundingClientRect().height - rect.height) * measureScale();
                     if (delta !== 0) savedScrollY += delta;
                 }
             }
@@ -637,7 +719,6 @@ interface Anchor {
                         var pre = mermaidDiagrams[mp.index].querySelector('pre.mermaid');
                         if (!pre) continue;
                         var mRect = mermaidDiagrams[mp.index].getBoundingClientRect();
-                        var mOldH = mermaidDiagrams[mp.index].scrollHeight;
                         try {
                             var r = await mermaidLib.render(mPrefix + mi, mp.source);
                             pre.innerHTML = r.svg;
@@ -663,7 +744,7 @@ interface Anchor {
                         }
                         // Compensate scroll for height change above viewport
                         if (mRect.bottom < 0) {
-                            var mDelta = mermaidDiagrams[mp.index].scrollHeight - mOldH;
+                            var mDelta = (mermaidDiagrams[mp.index].getBoundingClientRect().height - mRect.height) * measureScale();
                             if (mDelta !== 0) window.scrollBy(0, mDelta);
                         }
                     }
@@ -693,8 +774,43 @@ interface Anchor {
             handleSvgAsPng('copy', message.svg);
         } else if (message && message.type === 'exportAllDiagrams' && (message.format === 'svg' || message.format === 'png')) {
             exportAllDiagramsFromWebview(message.format);
+        } else if (message && message.type === 'setZoom' && typeof message.zoom === 'number') {
+            applyZoom(message.zoom);
+        } else if (message && message.type === 'reportScrollPosition') {
+            // Observation point for integration tests: where the view stands, in source
+            // lines (what the scroll sync works from), and the zoom.
+            const anc = ensureAnchors(lastMaxTopLine);
+            vscode.postMessage({
+                type: 'scrollPosition',
+                line: anc ? pixelToLine(anc, window.scrollY + window.innerHeight / 2) : null,
+                atBottom: window.scrollY + window.innerHeight >= document.body.scrollHeight - 2,
+                zoom: currentZoom,
+            });
         }
     });
+
+    /**
+     * Ctrl+wheel (Windows, Linux) or Cmd+wheel (macOS) zooms the page one level once
+     * WHEEL_ZOOM_STEP_PX of distance has accumulated (at most one level per event),
+     * applies it at once and reports it to the extension, which passes it to the other
+     * views and the setting.
+     */
+    window.addEventListener('wheel', function (event: WheelEvent) {
+        if (!event.ctrlKey && !event.metaKey) {
+            // A scroll in between: what was turned towards a zoom no longer counts.
+            wheelZoomAccumulated = 0;
+            return;
+        }
+        event.preventDefault();
+        const deltaPx = event.deltaMode === WheelEvent.DOM_DELTA_LINE ? event.deltaY * 40
+            : event.deltaMode === WheelEvent.DOM_DELTA_PAGE ? event.deltaY * window.innerHeight
+                : event.deltaY;
+        const result = accumulateWheelZoom(wheelZoomAccumulated, deltaPx);
+        wheelZoomAccumulated = result.accumulated;
+        if (result.steps === 0) return;
+        const next = stepPreviewZoom(currentZoom, result.steps);
+        if (applyZoom(next)) vscode.postMessage({ type: 'zoomChanged', zoom: next });
+    }, { passive: false });
 
     /**
      * Preview -> Editor scroll sync (50ms throttled, passive).
@@ -1003,7 +1119,7 @@ interface Anchor {
         for (let i = links.length - 1; i >= 0; i--) {
             const id = (links[i] as HTMLElement).dataset.tocId!;
             const el = document.getElementById(id);
-            if (el && el.getBoundingClientRect().top + window.scrollY <= scrollY) {
+            if (el && el.getBoundingClientRect().top * measureScale() + window.scrollY <= scrollY) {
                 activeId = id;
                 break;
             }
