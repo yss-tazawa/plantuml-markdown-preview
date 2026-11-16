@@ -6,6 +6,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## 0.8.2 - 2026-11-17
+
+### Added
+
+- Zoom the Markdown preview and Reading View with `Ctrl`+mouse wheel (`Cmd`+mouse wheel on Mac) or from the zoom level in the status bar. One level applies to every Markdown preview and Reading View and is kept across restarts (`previewZoom` setting)
+
+### Removed
+
+- The D2 snippets `d2-layers` and `layers` — the preview draws only the root board of a D2 diagram, so a layers template shows no more than its first board
+
 ## 0.8.1 - 2026-11-15
 
 ### Changed
