@@ -2,7 +2,7 @@
   "name": "plantuml-markdown-preview",
   "displayName": "%displayName%",
   "description": "%description%",
-  "version": "0.8.1",
+  "version": "0.8.2",
   "license": "MIT",
   "publisher": "yss-tazawa",
   "icon": "images/icon.png",
@@ -445,6 +445,11 @@
       {
         "command": "plantuml-markdown-preview.selectMode",
         "title": "%command.selectMode.title%",
+        "category": "%command.category%"
+      },
+      {
+        "command": "plantuml-markdown-preview.selectPreviewZoom",
+        "title": "%command.selectPreviewZoom.title%",
         "category": "%command.category%"
       },
       {
@@ -1528,6 +1533,45 @@
           "type": "boolean",
           "default": true,
           "description": "%configuration.useAsDefaultPreview.description%"
+        },
+        "plantumlMarkdownPreview.previewZoom": {
+          "order": 33,
+          "type": "integer",
+          "default": 100,
+          "enum": [
+            50,
+            55,
+            60,
+            65,
+            70,
+            75,
+            80,
+            85,
+            90,
+            95,
+            100,
+            105,
+            110,
+            115,
+            120,
+            125,
+            130,
+            135,
+            140,
+            145,
+            150,
+            155,
+            160,
+            165,
+            170,
+            175,
+            180,
+            185,
+            190,
+            195,
+            200
+          ],
+          "description": "%configuration.previewZoom.description%"
         }
       }
     }

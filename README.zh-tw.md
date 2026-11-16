@@ -172,6 +172,7 @@ Markdown 中的 ```` ```plantuml ````、```` ```mermaid ````、```` ```d2 ```` �
 
 - **模式徽章** — 狀態列顯示目前渲染模式（Fast/Secure/Easy）。點擊可切換模式
 - **伺服器狀態** — Fast 模式下顯示伺服器狀態（啟動中/執行中/已停止）
+- **縮放層級** — 顯示 Markdown 預覽或閱讀檢視時，狀態列還會顯示預覽的縮放層級。點擊可選擇其他層級
 
 ### HTML 匯出
 
@@ -204,6 +205,7 @@ Markdown 中的 ```` ```plantuml ````、```` ```mermaid ````、```` ```d2 ```` �
 
 - **跳至頂部/底部** — 預覽面板右上角的按鈕
 - **目錄側邊欄** — 點擊 TOC 按鈕開啟列出所有標題的側邊欄；點擊標題跳轉
+- **縮放** — `Ctrl`+滑鼠滾輪（Mac 為 `Cmd`+滑鼠滾輪）可將預覽和閱讀檢視在 50% 至 200% 之間縮放。所有 Markdown 預覽和閱讀檢視共用同一層級，重新啟動後仍會保留
 
 ### 圖表檢視器
 
@@ -583,6 +585,7 @@ PDF 檔案儲存在來源 Markdown 檔案旁邊。需要 Chrome、Edge 或 Chrom
 - **跳至頂部/底部：** 預覽面板右上角的按鈕
 - **重新載入：** 點擊 ↻ 按鈕手動重新整理預覽並清除快取
 - **目錄：** 點擊預覽面板右上角的 TOC 按鈕開啟側邊欄
+- **縮放：** 在預覽上按住 `Ctrl`（Mac 為 `Cmd`）並滾動滑鼠滾輪，或點擊狀態列中的縮放層級並選擇層級。HTML 和 PDF 匯出不受影響
 
 ### 更改主題
 
@@ -739,7 +742,6 @@ $$\int_0^\infty e^{-x}\,dx = 1$$
 | `d2-icon` | 圖示節點 |
 | `d2-markdown` | Markdown 文字節點 |
 | `d2-tooltip` | 工具提示和連結 |
-| `d2-layers` | 層/步驟 |
 | `d2-style` | 自訂樣式 |
 
 ### D2 程式碼片段（圍欄區塊內）
@@ -763,7 +765,6 @@ $$\int_0^\infty e^{-x}\,dx = 1$$
 | `icon` | 圖示節點 |
 | `md` | Markdown 節點 |
 | `tooltip` | 工具提示和連結 |
-| `layers` | 層/步驟 |
 | `style` | 自訂樣式 |
 | `direction` | 版面方向 |
 
@@ -816,6 +817,7 @@ PlantUML、Mermaid 和 D2 的上下文感知關鍵字建議。適用於獨立檔
 | `allowLocalImages` | `"mode-default"` | 在預覽中解析相對圖片路徑。`"mode-default"` 使用模式預設（Fast: 開，Secure: 關，Easy: 開）。 |
 | `allowHttpImages` | `false` | 允許在預覽中透過 HTTP 載入圖片。適用於內網或本機開發伺服器。 |
 | `previewTheme` | `"github-light"` | 預覽主題 |
+| `previewZoom` | `100` | Markdown 預覽和閱讀檢視的縮放（%），所有預覽共用。50 到 200，以 5 為間隔。也可以透過 `Ctrl`+滑鼠滾輪（Mac 為 `Cmd`+滑鼠滾輪）或狀態列變更。不影響 HTML 或 PDF 匯出。 |
 | `plantumlTheme` | `"default"` | PlantUML 圖表主題 |
 | `mermaidTheme` | `"default"` | Mermaid 圖表主題：`"default"`、`"dark"`、`"forest"`、`"neutral"` 或 `"base"` |
 | `plantumlScale` | `"100%"` | PlantUML 圖表縮放。`"auto"` 縮小超出容器寬度的圖表。 |

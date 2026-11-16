@@ -239,6 +239,8 @@ export interface Config {
     enableMath: boolean;
     /** PDF export scale factor (0.1–2.0). Scales text and diagrams uniformly. */
     pdfScale: number;
+    /** Zoom (%) of the Markdown preview and Reading View, snapped to a level of PREVIEW_ZOOM_LEVELS. Display only. */
+    previewZoom: number;
     /** Base directory for PlantUML `!include` directives. Empty string = workspace root. */
     plantumlIncludePath: string;
     /** D2 diagram theme name (maps to a themeID internally). */

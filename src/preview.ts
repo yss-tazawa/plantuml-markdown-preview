@@ -27,6 +27,7 @@ import { updateDiagramViewer, closeStaleViewers, disposeViewersOf, setPendingSav
 import type { AdoptedPanel, MarkdownReadingView } from './reading-view.js';
 import { takeSourcePosition } from './reading-view-position.js';
 import { LOADING_OVERLAY_ID } from './loading-overlay.js';
+import { trackZoomPanel, handleZoomChanged, getPreviewZoom, postPreviewZoom } from './preview-zoom.js';
 
 /** Config keys that affect &lt;head&gt; content and require a full HTML reload. */
 const HEAD_KEYS = new Set(['allowLocalImages', 'allowHttpImages', 'mermaidScale', 'enableMath']);
@@ -76,6 +77,8 @@ export class PreviewManager implements vscode.Disposable {
     private scrollDisposable: vscode.Disposable | null = null;
     private disposeDisposable: vscode.Disposable | null = null;
     private viewStateDisposable: vscode.Disposable | null = null;
+    /** Keeps the panel among the webviews that follow the shared zoom level. */
+    private zoomTracking: vscode.Disposable | null = null;
 
     // -- timers / async -----------------------------------------------
     private debounceTimer: ReturnType<typeof setTimeout> | null = null;
@@ -109,6 +112,8 @@ export class PreviewManager implements vscode.Disposable {
     private pageToken: string | null = null;
     /** Source of page tokens; never reset, so a token is not reused by a later page. */
     private pageSeq = 0;
+    /** Zoom (%) the page last assigned to `webview.html` was built with. */
+    private pageZoom = 100;
     private enableDiagramViewer = true;
 
     // -- include tracking ---------------------------------------------
@@ -328,6 +333,7 @@ export class PreviewManager implements vscode.Disposable {
         if (includePanelHandlers) {
             if (this.disposeDisposable) { this.disposeDisposable.dispose(); this.disposeDisposable = null; }
             if (this.viewStateDisposable) { this.viewStateDisposable.dispose(); this.viewStateDisposable = null; }
+            if (this.zoomTracking) { this.zoomTracking.dispose(); this.zoomTracking = null; }
         }
         if (this.messageDisposable) { this.messageDisposable.dispose(); this.messageDisposable = null; }
         if (this.saveDisposable) { this.saveDisposable.dispose(); this.saveDisposable = null; }
@@ -487,6 +493,8 @@ export class PreviewManager implements vscode.Disposable {
                 handleCopyResult(!!message.success);
             } else if (message.type === 'webviewReady') {
                 this.handleWebviewReady(message.token);
+            } else if (message.type === 'zoomChanged') {
+                if (this.panel) handleZoomChanged(this.panel, message.zoom);
             } else if (message.type === 'mermaidLoadFailed') {
                 this.outputChannel.appendLine(`[preview] Could not load the Mermaid library for ${this.currentFilePath ?? 'the page'}`);
                 // A body update keeps the page without the library: the next reload builds a new page.
@@ -524,6 +532,8 @@ export class PreviewManager implements vscode.Disposable {
         // A load of a page replaced since, e.g. the old page reloaded by a change of the
         // webview options right before the new HTML was assigned.
         if (this.pageToken === null || token !== this.pageToken) return;
+        // The page shows the zoom it was built with; the level may have changed since.
+        if (this.panel && getPreviewZoom() !== this.pageZoom) postPreviewZoom(this.panel);
         if (!this.webviewLoaded) { this.webviewLoaded = true; return; }
         // A full rebuild is in progress, or deferred until the panel is shown
         // (pendingShowRender); the page it assigns brings the current state.
@@ -893,6 +903,7 @@ export class PreviewManager implements vscode.Disposable {
                     enableMath: this.lastConfig.enableMath,
                     hideBodyInitially: this.lastScrollLine > 0 || this.lastAtBottom,
                     loadingText: startsLoading ? vscode.l10n.t('Rendering...') : undefined,
+                    previewZoom: getPreviewZoom(),
                 };
 
                 const html = await renderHtmlAsync(text, this.makeTitle(), this.lastConfig, renderOptions, signal);
@@ -908,6 +919,7 @@ export class PreviewManager implements vscode.Disposable {
                     );
                 }
                 this.setWebviewHtml(finalHtml, pageToken);
+                this.pageZoom = renderOptions.previewZoom;
                 this.lastRenderedHtml = finalHtml;
                 this.initialHtmlSet = true;
                 this.initialHtmlHadMermaid = finalHtml.includes('__renderMermaid');
@@ -1196,6 +1208,8 @@ export class PreviewManager implements vscode.Disposable {
 
         // A Reading View's panel is closed by VS Code; the preview's by the user.
         this.disposeDisposable = this.panel.onDidDispose(() => this.adopted ? this.dispose() : this.resetState());
+        if (this.zoomTracking) { this.zoomTracking.dispose(); this.zoomTracking = null; }
+        this.zoomTracking = trackZoomPanel(this.panel);
         this.viewStateDisposable = this.panel.onDidChangeViewState(() => {
             if (!this.panel) return;
             if (!this.panel.visible) {

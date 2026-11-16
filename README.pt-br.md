@@ -175,6 +175,8 @@ A barra de status mostra o modo de renderização atual (Fast / Secure / Easy) e
 - Clique no item da barra de status para alternar os modos via Quick Pick — sem necessidade de abrir as Configurações
 - Mesma função que o comando **Selecionar modo de renderização** na Command Palette
 
+Enquanto uma prévia de Markdown ou o modo de leitura estiver visível, a barra de status também mostra o nível de zoom da prévia. Clique nele para escolher outro nível.
+
 ### Exportação para HTML
 
 Exporte seu documento Markdown para um arquivo HTML independente.
@@ -206,6 +208,7 @@ Exporte todos os diagramas de um arquivo Markdown como arquivos PNG ou SVG indiv
 
 - **Ir para o topo / Ir para o fim** — botões no canto superior direito do painel de prévia
 - **Barra lateral de Sumário** — clique no botão TOC para abrir uma barra lateral listando todos os cabeçalhos; clique em um cabeçalho para pular para ele
+- **Zoom** — `Ctrl`+roda do mouse (`Cmd`+roda do mouse no Mac) amplia ou reduz a prévia e o modo de leitura de 50% a 200%. Um único nível vale para todas as prévias de Markdown e para o modo de leitura, e é mantido entre reinicializações
 
 ### Visualizador de Diagramas
 
@@ -572,6 +575,7 @@ Um diálogo de salvamento permite escolher o nome do diretório de saída (padr�
 - **Ir para o topo / Ir para o fim:** Botões no canto superior direito do painel de prévia
 - **Reload:** Clique no botão ↻ para atualizar manualmente a prévia e limpar os caches (arquivos incluídos também são atualizados automaticamente ao salvar)
 - **Sumário:** Clique no botão TOC no canto superior direito do painel de prévia para abrir uma barra lateral listando todos os cabeçalhos; clique em um cabeçalho para pular para ele
+- **Zoom:** Segure `Ctrl` (`Cmd` no Mac) e gire a roda do mouse sobre a prévia, ou clique no nível de zoom na barra de status e escolha um nível. A exportação para HTML e PDF não é afetada
 
 ### Mudar Tema
 
@@ -732,7 +736,6 @@ Expande um bloco completo `` ```d2 ... ``` `` incluindo as demarcações:
 | `d2-icon` | Nó de ícone |
 | `d2-markdown` | Nó de texto Markdown |
 | `d2-tooltip` | Tooltip e link |
-| `d2-layers` | Camadas/etapas |
 | `d2-style` | Estilo personalizado |
 
 ### Snippets D2 (dentro de blocos demarcados)
@@ -756,7 +759,6 @@ Snippets curtos:
 | `icon` | Nó de ícone |
 | `md` | Nó Markdown |
 | `tooltip` | Tooltip e link |
-| `layers` | Camadas/etapas |
 | `style` | Estilo personalizado |
 | `direction` | Direção do layout |
 
@@ -809,6 +811,7 @@ Todas as configurações usam o prefixo `plantumlMarkdownPreview.`.
 | `allowLocalImages` | `"mode-default"` | Resolve caminhos de imagem relativos (ex: `![](./image.png)`) na prévia. `"mode-default"` usa a predefinição do modo (Fast: ligado, Secure: desligado, Easy: ligado). `"on"` / `"off"` para sobrescrever. |
 | `allowHttpImages` | `false` | Permite carregar imagens via HTTP (não criptografado) na prévia. Útil para intranet ou servidores de desenvolvimento local. |
 | `previewTheme` | `"github-light"` | Tema da prévia (veja [Temas](#temas)) |
+| `previewZoom` | `100` | Zoom (%) da prévia de Markdown e do modo de leitura, um único nível para todos. De 50 a 200 em passos de 5. Também pode ser alterado com `Ctrl`+roda do mouse (`Cmd`+roda do mouse no Mac) ou pela barra de status. Não afeta a exportação para HTML nem PDF. |
 | `plantumlTheme` | `"default"` | Tema do diagrama PlantUML. `"default"` não aplica tema. Outros valores (ex: `"cyborg"`, `"mars"`) são passados como `-theme` para a CLI do PlantUML ou injetados como diretiva `!theme` no modo Easy. |
 | `mermaidTheme` | `"default"` | Tema do diagrama Mermaid: `"default"`, `"dark"`, `"forest"`, `"neutral"` ou `"base"`. |
 | `plantumlScale` | `"100%"` | Escala do diagrama PlantUML. `"auto"` encolhe diagramas que excedem a largura do container. Uma porcentagem (70%–120%) renderiza nessa fração do tamanho natural. |

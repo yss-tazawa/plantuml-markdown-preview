@@ -53,6 +53,7 @@
   "command.exportAllDiagramsAsPng.title": "Exportar todos os diagramas como PNG",
   "command.copyDiagramAsPng.title": "Copiar diagrama como PNG",
   "command.selectMode.title": "Selecionar modo de renderização",
+  "command.selectPreviewZoom.title": "Selecionar zoom da pré-visualização",
   "command.goToIncludeFile.title": "Ir para o arquivo include",
   "command.openIncludeSource.title": "Abrir arquivo de origem include",
   "command.reopenAsSource.title": "Alternar para o código-fonte",
@@ -179,5 +180,6 @@
   "configuration.plantumlLocalServerJvmMaxHeapMb.description": "Tamanho máximo do heap da JVM (-Xmx) em MB para o servidor PlantUML local gerenciado. Usado somente quando o preset de heap é 'custom'. Aplica-se somente quando o servidor PlantUML local é usado (modo: fast). Padrão: 512",
   "configuration.enableDiagramViewer.description": "Ativar clique com botão direito em um diagrama na pré-visualização para abri-lo em um visualizador de pan e zoom. (Requer reabrir a pré-visualização)",
   "configuration.retainPreviewContext.description": "Reter o conteúdo da pré-visualização quando a aba está oculta. Evita re-renderização ao trocar de aba, mas usa mais memória. Para aplicar uma alteração, feche e reabra a pré-visualização. Para o modo de leitura, reinicie o VS Code ou recarregue a janela.",
-  "configuration.useAsDefaultPreview.description": "Abrir esta extensão com os botões, os itens do menu de contexto e os atalhos padrão de pré-visualização de Markdown do VS Code (Ctrl+Shift+V / Ctrl+K V). Antes do VS Code 1.119, apenas com os atalhos. Padrão: true"
+  "configuration.useAsDefaultPreview.description": "Abrir esta extensão com os botões, os itens do menu de contexto e os atalhos padrão de pré-visualização de Markdown do VS Code (Ctrl+Shift+V / Ctrl+K V). Antes do VS Code 1.119, apenas com os atalhos. Padrão: true",
+  "configuration.previewZoom.description": "Zoom (%) da pré-visualização de Markdown e do modo de leitura, um único nível para todos. Também pode ser alterado com Ctrl+roda do mouse (Cmd+roda do mouse no Mac) na pré-visualização, ou pela barra de status. Não afeta a exportação para HTML ou PDF. Padrão: 100"
 }

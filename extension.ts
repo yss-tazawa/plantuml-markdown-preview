@@ -26,6 +26,8 @@ import type { ShownGuidance } from './src/notify-once.js';
 import { prepareLocalServer, startLocalServer, stopLocalServer, restartLocalServer, setLocalServerOutputChannel, setOnServerStateChange, setConfigGetter, setLocalServerPidStore, cleanupStaleLocalServer, setJavaAvailabilityChecker, getLocalServerDiagnostics, handleServerEvent } from './src/local-server.js';
 import type { LocalServerState, LocalServerDiagnostics } from './src/local-server.js';
 import { createStatusBarItem, updateStatusBar, showModeQuickPick, SELECT_MODE_COMMAND } from './src/status-bar.js';
+import { initPreviewZoom, applyPreviewZoomSetting, getPreviewZoomStatus } from './src/preview-zoom.js';
+import { snapPreviewZoom, DEFAULT_PREVIEW_ZOOM } from './src/preview-zoom-levels.js';
 import { PreviewManager } from './src/preview.js';
 import { execJava, extractPlantUmlBlocks, findLiveSourceDocument, isLiveSourceUri } from './src/utils.js';
 import { isMarkdownFile } from './src/markdown-files.js';
@@ -136,6 +138,7 @@ function getConfig(): Config {
         htmlAlignment: cfg.get<string>('htmlAlignment', 'center'),
         enableMath: cfg.get<boolean>('enableMath', true),
         pdfScale: cfg.get<number>('pdfScale', 0.625),
+        previewZoom: snapPreviewZoom(cfg.get<number>('previewZoom', DEFAULT_PREVIEW_ZOOM)),
         plantumlIncludePath: cfg.get<string>('plantumlIncludePath', ''),
         d2Theme: cfg.get<string>('d2Theme', 'Neutral Default'),
         d2Layout: cfg.get<string>('d2Layout', 'dagre'),
@@ -491,6 +494,8 @@ export interface TestHooks {
     getCanSwitchInPlace(): Promise<boolean>;
     /** Whether the built-in Markdown preview entries are replaced, once the queued updates of the context keys end. */
     getReplacingBuiltin(): Promise<boolean>;
+    /** The shared preview zoom level, whether its status bar item is shown, and its text. */
+    getPreviewZoomStatus(): { zoom: number; shown: boolean; text: string };
 }
 
 /** One Reading View as {@link TestHooks.getEditorPreviews} reports it. */
@@ -586,6 +591,8 @@ export function activate(context: vscode.ExtensionContext): ExtensionApi {
     };
     const selectModeCmd = vscode.commands.registerCommand(SELECT_MODE_COMMAND, () => showModeQuickPick());
     context.subscriptions.push(selectModeCmd);
+    // Before the Reading Views register: one restored at startup builds its page with the level.
+    initPreviewZoom(context, vscode.workspace.getConfiguration(CONFIG_SECTION).get<number>('previewZoom', DEFAULT_PREVIEW_ZOOM));
 
     registerReadingViews(context, { getConfig, handleOpenEvent, outputChannel: channel });
     context.subscriptions.push(
@@ -1023,6 +1030,7 @@ export function activate(context: vscode.ExtensionContext): ExtensionApi {
             }
             lastKnownConfig = config;
 
+            if (event.affectsConfiguration(`${CONFIG_SECTION}.previewZoom`)) applyPreviewZoomSetting(config.previewZoom);
             previewManager.updateConfig(config);
             updatePumlConfig(config);
             updateMermaidConfig(config);
@@ -1207,6 +1215,7 @@ export function activate(context: vscode.ExtensionContext): ExtensionApi {
             getDiagramViewers: () => getDiagramViewers().map(({ owner, index, svg }) => ({ owner, index, svg })),
             getCanSwitchInPlace: () => canSwitchInPlace(),
             getReplacingBuiltin: () => isReplacingBuiltin(),
+            getPreviewZoomStatus: () => getPreviewZoomStatus(),
         },
     };
 }
@@ -1362,6 +1371,7 @@ const builtInPreviewConfig: Config = {
     allowHttpImages: false,
     enableMath: true,
     pdfScale: 0.625,
+    previewZoom: DEFAULT_PREVIEW_ZOOM,
     plantumlIncludePath: '',
     d2Theme: 'Neutral Default',
     d2Layout: 'dagre',

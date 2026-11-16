@@ -271,25 +271,6 @@
     ],
     "description": "D2 node with tooltip and link"
   },
-  "D2 Layers": {
-    "scope": "markdown,prompt,instructions,chatagent,skill",
-    "prefix": "d2-layers",
-    "body": [
-      "```d2",
-      "${1:a} -> ${2:b}",
-      "",
-      "layers: {",
-      "  ${3:step1}: {",
-      "    ${1:a}",
-      "  }",
-      "  ${4:step2}: {",
-      "    ${1:a} -> ${2:b}",
-      "  }",
-      "}",
-      "```"
-    ],
-    "description": "D2 layers/steps"
-  },
   "D2 Style": {
     "scope": "markdown,prompt,instructions,chatagent,skill",
     "prefix": "d2-style",

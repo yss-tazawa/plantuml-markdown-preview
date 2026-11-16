@@ -175,6 +175,8 @@ La barra de estado muestra el modo de renderizado actual (Fast / Secure / Easy) 
 - Haz clic en el elemento de la barra de estado para cambiar de modo a través de un menú de selección rápida, sin necesidad de abrir los Ajustes.
 - Equivale al comando `Seleccionar modo de renderizado` en la Paleta de comandos.
 
+Mientras haya una vista previa de Markdown o una vista de lectura visible, la barra de estado también muestra el nivel de zoom de la vista previa. Haz clic en él para elegir otro nivel.
+
 ### Exportación HTML
 
 Exporta tu documento Markdown a un archivo HTML autónomo.
@@ -206,6 +208,7 @@ Exporta todos los diagramas de un archivo Markdown como archivos PNG o SVG indiv
 
 - **Ir arriba / Ir abajo** — botones en la esquina superior derecha del panel de vista previa.
 - **Barra lateral de Tabla de contenidos** — haz clic en el botón TOC para abrir una barra lateral que enumera todos los encabezados; haz clic en un encabezado para saltar a él.
+- **Zoom** — `Ctrl`+rueda del ratón (`Cmd`+rueda del ratón en Mac) amplía o reduce la vista previa y la vista de lectura del 50% al 200%. Un único nivel se aplica a todas las vistas previas de Markdown y a la vista de lectura, y se conserva entre reinicios.
 
 ### Visor de diagramas (Diagram Viewer)
 
@@ -571,6 +574,7 @@ Un diálogo de guardado permite elegir el nombre del directorio de salida (prede
 - **Ir arriba / Ir abajo:** Botones en la esquina superior derecha del panel de vista previa.
 - **Recargar:** Haz clic en el botón ↻ para refrescar manualmente la vista previa y limpiar cachés (los archivos incluidos también se refrescan automáticamente al guardar).
 - **Tabla de contenidos:** Haz clic en el botón TOC en la esquina superior derecha del panel de vista previa para abrir una barra lateral que enumera todos los encabezados; haz clic en un encabezado para saltar a él.
+- **Zoom:** Mantén pulsado `Ctrl` (`Cmd` en Mac) y gira la rueda del ratón sobre la vista previa, o haz clic en el nivel de zoom de la barra de estado y elige un nivel. La exportación HTML y PDF no se ven afectadas.
 
 ### Cambiar tema
 
@@ -731,7 +735,6 @@ Expanden un bloque `` ```d2 ... ``` `` completo incluyendo los delimitadores:
 | `d2-icon` | Nodo con icono |
 | `d2-markdown` | Nodo de texto Markdown |
 | `d2-tooltip` | Información sobre herramientas y enlace |
-| `d2-layers` | Capas/pasos |
 | `d2-style` | Estilo personalizado |
 
 ### Fragmentos de D2 (dentro de bloques delimitados)
@@ -755,7 +758,6 @@ Fragmentos cortos:
 | `icon` | Nodo con icono |
 | `md` | Nodo Markdown |
 | `tooltip` | Información sobre herramientas y enlace |
-| `layers` | Capas/pasos |
 | `style` | Estilo personalizado |
 | `direction` | Dirección del diseño |
 
@@ -808,6 +810,7 @@ Todos los ajustes usan el prefijo `plantumlMarkdownPreview.`.
 | `allowLocalImages` | `"mode-default"` | Resuelve rutas de imágenes relativas (ej. `![](./image.png)`) en la vista previa. `"mode-default"` usa el preajuste del modo (Fast: activado, Secure: desactivado, Easy: activado). `"on"` / `"off"` para anular. |
 | `allowHttpImages` | `false` | Permite cargar imágenes por HTTP (no cifrado) en la vista previa. Útil para intranets o servidores de desarrollo locales. |
 | `previewTheme` | `"github-light"` | Tema de vista previa (ver [Temas](#temas)). |
+| `previewZoom` | `100` | Zoom (%) de la vista previa de Markdown y de la vista de lectura, un único nivel para todas. De 50 a 200 en pasos de 5. También se puede cambiar con `Ctrl`+rueda del ratón (`Cmd`+rueda del ratón en Mac) o desde la barra de estado. No afecta a la exportación HTML ni PDF. |
 | `plantumlTheme` | `"default"` | Tema del diagrama PlantUML. `"default"` no aplica tema. Otros valores (ej. `"cyborg"`, `"mars"`) se pasan como `-theme` a la CLI de PlantUML o se inyectan como directiva `!theme` en el modo Easy. |
 | `mermaidTheme` | `"default"` | Tema del diagrama Mermaid: `"default"`, `"dark"`, `"forest"`, `"neutral"` o `"base"`. |
 | `plantumlScale` | `"100%"` | Escala del diagrama PlantUML. `"auto"` reduce los diagramas que exceden el ancho del contenedor. Un porcentaje (70%–120%) renderiza a esa fracción del tamaño natural. |

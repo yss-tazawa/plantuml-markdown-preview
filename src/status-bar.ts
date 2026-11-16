@@ -30,7 +30,7 @@ const MODE_LABEL: Record<Mode, string> = {
  * @returns The created StatusBarItem.
  */
 export function createStatusBarItem(): vscode.StatusBarItem {
-    const item = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 100);
+    const item = vscode.window.createStatusBarItem('mode', vscode.StatusBarAlignment.Left, 100);
     item.command = SELECT_MODE_COMMAND;
     item.show();
     return item;

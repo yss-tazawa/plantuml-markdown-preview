@@ -175,6 +175,8 @@ The status bar shows the current rendering mode (Fast / Secure / Easy) and, in F
 - Click the status bar item to switch modes via a quick pick — no need to open Settings
 - Same as the **Select Rendering Mode** command in the Command Palette
 
+While a Markdown preview or Reading View is visible, the status bar also shows the preview zoom level. Click it to pick another level.
+
 ### HTML Export
 
 Export your Markdown document to a self-contained HTML file.
@@ -206,6 +208,7 @@ Export all diagrams from a Markdown file as individual PNG or SVG files.
 
 - **Go to top / Go to bottom** — buttons in the top-right corner of the preview panel
 - **Table of Contents sidebar** — click the TOC button to open a sidebar listing all headings; click a heading to jump to it
+- **Zoom** — `Ctrl`+mouse wheel (`Cmd`+mouse wheel on Mac) zooms the preview and Reading View from 50% to 200%. One level applies to every Markdown preview and Reading View and is kept across restarts
 
 ### Diagram Viewer
 
@@ -586,6 +589,7 @@ A save dialog lets you choose the output directory name (default: `{filename}_di
 - **Go to top / Go to bottom:** Buttons in the top-right corner of the preview panel
 - **Reload:** Click the ↻ button to manually refresh the preview and clear caches (included files are also refreshed automatically on save)
 - **Table of Contents:** Click the TOC button in the top-right corner of the preview panel to open a sidebar listing all headings; click a heading to jump to it
+- **Zoom:** Hold `Ctrl` (`Cmd` on Mac) and turn the mouse wheel over the preview, or click the zoom level in the status bar and pick a level. HTML and PDF export are not affected
 
 ### Change Theme
 
@@ -746,7 +750,6 @@ Expand a complete `` ```d2 ... ``` `` block including fences:
 | `d2-icon` | Icon node |
 | `d2-markdown` | Markdown text node |
 | `d2-tooltip` | Tooltip and link |
-| `d2-layers` | Layers/steps |
 | `d2-style` | Custom style |
 
 ### D2 Snippets (inside fenced blocks)
@@ -770,7 +773,6 @@ Short snippets:
 | `icon` | Icon node |
 | `md` | Markdown node |
 | `tooltip` | Tooltip and link |
-| `layers` | Layers/steps |
 | `style` | Custom style |
 | `direction` | Layout direction |
 
@@ -823,6 +825,7 @@ All settings use the `plantumlMarkdownPreview.` prefix.
 | `allowLocalImages` | `"mode-default"` | Resolve relative image paths (e.g. `![](./image.png)`) in the preview. `"mode-default"` uses the mode preset (Fast: on, Secure: off, Easy: on). `"on"` / `"off"` to override. |
 | `allowHttpImages` | `false` | Allow loading images over HTTP (unencrypted) in the preview. Useful for intranet or local development servers. |
 | `previewTheme` | `"github-light"` | Preview theme (see [Themes](#themes)) |
+| `previewZoom` | `100` | Zoom (%) of the Markdown preview and Reading View, one level for all of them. 50 to 200 in steps of 5. Can also be changed with `Ctrl`+mouse wheel (`Cmd`+mouse wheel on Mac) or from the status bar. Does not affect HTML or PDF export. |
 | `plantumlTheme` | `"default"` | PlantUML diagram theme. `"default"` applies no theme. Other values (e.g. `"cyborg"`, `"mars"`) are passed as `-theme` to PlantUML CLI or injected as `!theme` directive in Easy mode. |
 | `mermaidTheme` | `"default"` | Mermaid diagram theme: `"default"`, `"dark"`, `"forest"`, `"neutral"`, or `"base"`. |
 | `plantumlScale` | `"100%"` | PlantUML diagram scale. `"auto"` shrinks diagrams that exceed container width. A percentage (70%–120%) renders at that fraction of natural size. |
