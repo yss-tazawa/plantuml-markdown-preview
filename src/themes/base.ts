@@ -241,6 +241,11 @@ export function buildThemeCss(p: ThemePalette): string {
     h3 { font-size: 1.25em; }
     h1, h2, h3, h4, h5, h6 { margin-top: 1.5em; margin-bottom: 0.5em; scroll-margin-top: 1.5em;${headingColor} }
     p { margin: 0.8em 0; }
+    /* Paragraphs inside list items have no margin; lists whose items are separated by blank lines (loose lists) get paragraph spacing. */
+    li > p { margin: 0; }
+    ul.list-loose > li > p, ol.list-loose > li > p { margin: 0.8em 0; }
+    ul.list-loose > li:first-child > p:first-child, ol.list-loose > li:first-child > p:first-child { margin-top: 0; }
+    ul.list-loose > li:last-child > p:last-child, ol.list-loose > li:last-child > p:last-child { margin-bottom: 0; }
     a { color: ${p.link}; }
     a:visited { color: ${p.linkVisited}; }
     code {

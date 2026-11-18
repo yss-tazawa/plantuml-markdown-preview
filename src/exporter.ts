@@ -32,6 +32,7 @@ import { exportOutputPath, fileNameWithoutExtension } from './markdown-files.js'
 import { MERMAID_THEME_SET, type Config } from './config.js';
 import katexPlugin, { type MarkdownKatexOptions } from '@vscode/markdown-it-katex';
 import type { KatexOptions } from 'katex';
+import { strikethroughPlugin, trimAutolinkTrailing, listLooseClassPlugin } from './markdown-rules.js';
 import { loadingOverlayHtml } from './loading-overlay.js';
 import { shownScriptLoader } from './shown-script-loader.js';
 import { mermaidLoadErrorLiteral, SHOW_MERMAID_LOAD_ERROR_SCRIPT } from './mermaid-load-error.js';
@@ -297,6 +298,10 @@ function getOrCreateMd(config: Config, withSourceMap?: boolean): MarkdownIt {
     }
 
     const md = new MarkdownIt(MD_OPTIONS);
+    // GitHub-style autolink ends, `~`/`~~` strikethrough and loose-list class (see markdown-rules.ts).
+    trimAutolinkTrailing(md);
+    md.use(strikethroughPlugin);
+    md.use(listLooseClassPlugin);
     plantumlPlugin(md, config);
     if (config.enableMath) {
         md.use(katexPlugin, KATEX_OPTIONS);
