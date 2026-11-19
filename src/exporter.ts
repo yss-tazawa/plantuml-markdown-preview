@@ -32,6 +32,7 @@ import { exportOutputPath, fileNameWithoutExtension } from './markdown-files.js'
 import { MERMAID_THEME_SET, type Config } from './config.js';
 import katexPlugin, { type MarkdownKatexOptions } from '@vscode/markdown-it-katex';
 import type { KatexOptions } from 'katex';
+import { strikethroughPlugin, trimAutolinkTrailing, listLooseClassPlugin } from './markdown-rules.js';
 import { loadingOverlayHtml } from './loading-overlay.js';
 import { shownScriptLoader } from './shown-script-loader.js';
 import { mermaidLoadErrorLiteral, SHOW_MERMAID_LOAD_ERROR_SCRIPT } from './mermaid-load-error.js';
@@ -297,6 +298,10 @@ function getOrCreateMd(config: Config, withSourceMap?: boolean): MarkdownIt {
     }
 
     const md = new MarkdownIt(MD_OPTIONS);
+    // GitHub-style autolink ends, `~`/`~~` strikethrough and loose-list class (see markdown-rules.ts).
+    trimAutolinkTrailing(md);
+    md.use(strikethroughPlugin);
+    md.use(listLooseClassPlugin);
     plantumlPlugin(md, config);
     if (config.enableMath) {
         md.use(katexPlugin, KATEX_OPTIONS);
@@ -923,7 +928,7 @@ ${theme.css}
 #toc-sidebar::before{content:'';position:absolute;left:0;top:44px;bottom:16px;width:1px}
 #toc-sidebar.open{display:block}
 #toc-sidebar ul{list-style:none;margin:0;padding:0}
-#toc-sidebar li{position:relative}
+#toc-sidebar li{position:relative;margin:0}
 #toc-sidebar li>ul{display:none}
 #toc-sidebar li.open>ul{display:block}
 #toc-sidebar .toc-toggle{position:absolute;top:0;left:2px;width:20px;height:26px;display:flex;align-items:center;justify-content:center;cursor:pointer;opacity:0.5;font-size:10px;user-select:none;z-index:1}

@@ -6,6 +6,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## 0.8.3 - 2026-11-19
+
+### Changed
+
+- The Markdown preview, Reading View and HTML/PDF export look closer to GitHub: heading sizes, spacing, code blocks, tables and links (underlined only on hover), with more room around the text on screen. Theme colors are unchanged
+- As on GitHub, `~text~` with a single tilde is struck through, links typed as plain URLs leave out trailing punctuation, and lists with blank lines between items are spaced evenly
+- Bare `ftp://` addresses are no longer turned into links
+
 ## 0.8.2 - 2026-11-17
 
 ### Added

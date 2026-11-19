@@ -83,7 +83,8 @@ function revisionBanner(filePath: string, revision: Revision): string {
         'Read-only snapshot of {0} at {1}. It does not follow your edits.',
         path.basename(filePath), revision.label,
     );
-    return `<div style="position:sticky;top:0;z-index:10;padding:6px 12px;margin:0 0 1em;`
+    // The page leaves 46px above the document; the banner rises 30px into it to sit where it did before.
+    return `<div style="position:sticky;top:0;z-index:10;padding:6px 12px;margin:-30px 0 1em;`
         + `border-bottom:1px solid rgba(127,127,127,0.4);opacity:0.85;font-size:0.85em;">`
         + `${escapeHtml(text)}</div>`;
 }
