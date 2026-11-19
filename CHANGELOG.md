@@ -6,15 +6,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
-## Unreleased
+## 0.8.3 - 2026-11-19
 
 ### Changed
 
-- The Markdown preview, Reading View and HTML/PDF export follow GitHub more closely (VS Code's own Markdown preview is unchanged):
-  - `~text~` with a single tilde is struck through, as `~~text~~` is. Opening and closing tildes must match in number, and three or more stay as text
-  - Autolinks leave out trailing punctuation such as `.` `,` `:` `*` `_` `~` `?` `!`, quotes, an unmatched `)` and an entity-like `&name;`
-  - Bare `ftp://` addresses are no longer turned into links
-  - A list with blank lines between its items no longer leaves extra space at its top and bottom inside quotes, alerts and other lists
+- The Markdown preview, Reading View and HTML/PDF export look closer to GitHub: heading sizes, spacing, code blocks, tables and links (underlined only on hover), with more room around the text on screen. Theme colors are unchanged
+- As on GitHub, `~text~` with a single tilde is struck through, links typed as plain URLs leave out trailing punctuation, and lists with blank lines between items are spaced evenly
+- Bare `ftp://` addresses are no longer turned into links
 
 ## 0.8.2 - 2026-11-17
 
