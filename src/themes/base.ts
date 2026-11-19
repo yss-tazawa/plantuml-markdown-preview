@@ -5,9 +5,11 @@
  * Each theme file defines only a color palette object and passes it to buildThemeCss(),
  * which generates a complete CSS string covering body, headings, links, code blocks,
  * tables, blockquotes, PlantUML diagrams, and highlight.js syntax colors.
- * Optional palette fields let a theme depart from the shared layout (table headers,
- * title weight, link underline, comment and diff tokens, per-token syntax colors);
- * unset fields leave the output unchanged.
+ * The block shapes (sizes, weights, spacing, borders, indents) follow GitHub; the
+ * colors come from the palette.
+ * Optional palette fields let a theme depart from the shared layout (table header
+ * colors, code block border, title weight, link underline, comment and diff tokens,
+ * per-token syntax colors); unset fields leave the output unchanged.
  */
 
 /**
@@ -22,7 +24,7 @@ export interface ThemePalette {
     bg: string;
     /** Body text color. */
     text: string;
-    /** General border color (headings, horizontal rules). */
+    /** General border color (headings, horizontal rules, `kbd`). */
     border: string;
     /** Hyperlink color. */
     link: string;
@@ -72,7 +74,11 @@ export interface ThemePalette {
     headingColor?: string;
     /** Inline code text color override (defaults to body text color); code blocks use `hljsText`. */
     codeText?: string;
-    /** Pre/code block border color override (defaults to general border). */
+    /**
+     * Code block border color. Code blocks have no border, as on GitHub, unless this is set
+     * or the code block background is the body background (then the general border marks
+     * the block's edge).
+     */
     preBorder?: string;
     /** Table border color override (defaults to general border). */
     tableBorder?: string;
@@ -115,6 +121,9 @@ export function buildHljsTokenCss(tokens: Readonly<Record<string, string>>, scop
     return Object.entries(tokens)
         .map(([token, color]) => `\n    ${scope}.hljs-${token} { color: ${color}; }`).join('');
 }
+
+/** Monospace font stack for inline code, code blocks and `kbd`. */
+const MONO_FONT = "'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace";
 
 /**
  * GitHub Primer accent colors for alert types, per light/dark theme.
@@ -174,7 +183,7 @@ function buildAlertCss(bg: string): string {
     return `
     .markdown-alert {
       padding: 0.5em 1em;
-      margin: 0.8em 0;
+      margin: 1em 0;
       border-left: 0.25em solid ${c.note};
       color: inherit;
     }
@@ -183,7 +192,7 @@ function buildAlertCss(bg: string): string {
     .markdown-alert-title {
       display: flex;
       align-items: center;
-      font-weight: 600;
+      font-weight: 500;
       line-height: 1;
       margin-bottom: 0.5em;
     }
@@ -200,8 +209,9 @@ function buildAlertCss(bg: string): string {
  *
  * Produces CSS rules for body layout, headings, links, inline/block code,
  * tables, blockquotes, horizontal rules, images, PlantUML diagrams,
- * and highlight.js syntax token classes. Optional palette fields fall back
- * to their corresponding base values.
+ * and highlight.js syntax token classes, with GitHub's block shapes. Optional
+ * palette fields fall back to their corresponding base values, except `preBorder`:
+ * without it code blocks have no border unless their background is the body background.
  *
  * @param p - Theme color palette defining all visual tokens.
  * @returns Complete CSS string (without wrapping `<style>` tags).
@@ -209,7 +219,8 @@ function buildAlertCss(bg: string): string {
 export function buildThemeCss(p: ThemePalette): string {
     const headingColor = p.headingColor ? ` color: ${p.headingColor};` : '';
     const codeText = p.codeText || p.text;
-    const preBorder = p.preBorder || p.border;
+    const preBorderColor = p.preBorder ?? (p.hljsBg === p.bg ? p.border : undefined);
+    const preBorder = preBorderColor ? `\n      border: 1px solid ${preBorderColor};` : '';
     const tableBorder = p.tableBorder || p.border;
     const hljsText = p.hljsText || p.text;
     const thBg = p.thBg || p.codeBg;
@@ -230,46 +241,81 @@ export function buildThemeCss(p: ThemePalette): string {
       font-size: 16px;
       max-width: 960px; /* matches GitHub / VS Code markdown preview width */
       margin: 0 auto;
-      padding: 1em 1.5rem 4rem;
-      line-height: 1.7;
+      padding: 46px 30px 4rem; /* as much room as Typora (GitHub theme): 30px at the sides, 30px + 16px above the first heading */
+      line-height: 1.6;
       word-wrap: break-word;
       color: ${p.text};
       background-color: ${p.bg};
     }
-    h1 { font-size: 2em; border-bottom: 2px solid ${p.border}; padding-bottom: 0.3em; }
-    h2 { font-size: 1.5em; border-bottom: 1px solid ${p.border}; padding-bottom: 0.2em; }
+    /* Block shapes (sizes, weights, spacing, borders, indents) follow GitHub (github-markdown-css 5.8.1); colors stay the theme's.
+       Body and table line height stay 1.6 rather than GitHub's 1.5, which is cramped for CJK text.
+       Spacing is the same margin above and below (adjacent margins collapse), which gives GitHub's gaps. */
+    #preview-content > :first-child { margin-top: 0 !important; }
+    #preview-content > :last-child { margin-bottom: 0 !important; }
+    h1 { font-size: 2em; border-bottom: 1px solid ${p.border}; padding-bottom: 0.3em; }
+    h2 { font-size: 1.5em; border-bottom: 1px solid ${p.border}; padding-bottom: 0.3em; }
     h3 { font-size: 1.25em; }
-    h1, h2, h3, h4, h5, h6 { margin-top: 1.5em; margin-bottom: 0.5em; scroll-margin-top: 1.5em;${headingColor} }
-    p { margin: 0.8em 0; }
+    h4 { font-size: 1em; }
+    h5 { font-size: 0.875em; }
+    h6 { font-size: 0.85em; }
+    h1, h2, h3, h4, h5, h6 { margin-top: 24px; margin-bottom: 16px; font-weight: 600; line-height: 1.25; scroll-margin-top: 1.5em;${headingColor} }
+    p { margin: 1em 0; }
     /* Paragraphs inside list items have no margin; lists whose items are separated by blank lines (loose lists) get paragraph spacing. */
     li > p { margin: 0; }
-    ul.list-loose > li > p, ol.list-loose > li > p { margin: 0.8em 0; }
+    ul.list-loose > li > p, ol.list-loose > li > p { margin: 1em 0; }
     ul.list-loose > li:first-child > p:first-child, ol.list-loose > li:first-child > p:first-child { margin-top: 0; }
     ul.list-loose > li:last-child > p:last-child, ol.list-loose > li:last-child > p:last-child { margin-bottom: 0; }
-    a { color: ${p.link}; }
+    ul, ol { margin: 1em 0; padding-left: 2em; }
+    ul ul, ul ol, ol ul, ol ol { margin: 0; }
+    ol ol, ul ol { list-style-type: lower-roman; }
+    ul ul ol, ul ol ol, ol ul ol, ol ol ol { list-style-type: lower-alpha; }
+    li + li { margin-top: 0.25em; }
+    b, strong { font-weight: 600; }
+    a { color: ${p.link}; text-decoration: none; }
+    a:hover { text-decoration: underline; }
     a:visited { color: ${p.linkVisited}; }
     code {
-      font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+      font-family: ${MONO_FONT};
       font-size: 0.875em;
       color: ${codeText};
       background: ${p.codeBg};
       padding: 0.2em 0.4em;
-      border-radius: 3px;
-    }
-    pre {
-      border: 1px solid ${preBorder};
       border-radius: 6px;
-      padding: 1em 1.2em;
+    }
+    /* The code block carries the code font size and line height, so the line pitch is the code size x 1.45 as on GitHub. */
+    pre {
+      font-family: ${MONO_FONT};
+      font-size: 0.875em;
+      line-height: 1.45;
+      margin: 16px 0;
+      border-radius: 6px;${preBorder}
+      padding: 16px;
       overflow-x: auto;
     }
-    pre code { background: none; padding: 0; font-size: 0.875em; color: inherit; }
+    h1 code, h2 code, h3 code, h4 code, h5 code, h6 code { padding: 0 0.2em; font-size: inherit; }
+    pre code { background: none; padding: 0; font-size: inherit; color: inherit; }
+    /* With source lines, a code block is wrapped in a div ending in a line marker that stops margin collapsing,
+       so the wrapper takes the code block's margin (with the specificity of a bare div, so first and last child rules still win). */
+    div:where([data-source-line]:not([class])) { margin: 16px 0; }
+    div:where([data-source-line]:not([class])) > pre { margin: 0; }
+    kbd {
+      display: inline-block;
+      padding: 4px;
+      font: 11px ${MONO_FONT};
+      line-height: 10px;
+      vertical-align: middle;
+      background-color: ${p.codeBg};
+      border: 1px solid ${p.border};
+      border-radius: 6px;
+      box-shadow: inset 0 -1px 0 ${p.border};
+    }
     table { border-collapse: collapse; display: block; width: 100%; overflow: auto; margin: 1em 0; word-break: keep-all; }
-    th, td { border: 1px solid ${tableBorder}; padding: 0.5em 1em; text-align: left; }
+    th, td { border: 1px solid ${tableBorder}; padding: 6px 13px; text-align: left; }
     th { background: ${thBg}; font-weight: 600;${thBorder} }
     tr:nth-child(even) { background: ${p.trEvenBg}; }
     blockquote {
-      border-left: 4px solid ${p.blockquoteBorder};
-      margin: 0.8em 0; /* vertical margin so consecutive blockquotes stay separate, like GitHub */
+      border-left: 0.25em solid ${p.blockquoteBorder};
+      margin: 1em 0; /* vertical margin so consecutive blockquotes stay separate, like GitHub */
       padding: 0.5em 1em;
       color: ${p.blockquoteColor};
       background-color: ${p.blockquoteBg};
@@ -277,20 +323,23 @@ export function buildThemeCss(p: ThemePalette): string {
     blockquote > :first-child { margin-top: 0; }
     blockquote > :last-child { margin-bottom: 0; }
     ${buildAlertCss(p.bg)}
-    hr { border: none; border-top: 2px solid ${p.border}; margin: 2em 0; }
+    hr { height: 0.25em; padding: 0; border: none; background-color: ${p.border}; margin: 24px 0; overflow: hidden; }
     img { max-width: 100%; height: auto; }
     .plantuml-diagram { margin: 1.5em 0; text-align: left; width: fit-content; }
     .plantuml-diagram svg { height: auto; }
     .mermaid-diagram { margin: 1.5em 0; text-align: left; width: fit-content; }
-    .mermaid-diagram pre.mermaid { visibility: hidden; overflow: visible; border: none; padding: 0; }
+    .mermaid-diagram pre.mermaid { visibility: hidden; overflow: visible; border: none; margin: 0; padding: 0; font-size: inherit; line-height: inherit; }
     .mermaid-diagram svg { visibility: visible; height: auto; }
     .mermaid-error { visibility: visible; color: #d32f2f; border-left: 3px solid #d32f2f; padding: 0.5em; white-space: pre-wrap; font-size: 0.85em; }
     .d2-diagram { margin: 1.5em 0; text-align: left; }
+    .d2-diagram pre.d2 { margin: 0; }
     .d2-diagram svg { height: auto; }
     .d2-error { color: #d32f2f; border-left: 3px solid #d32f2f; padding: 0.5em; white-space: pre-wrap; font-size: 0.85em; }
     .katex { color: inherit; }
     .katex-display { margin: 1em 0; overflow-x: auto; overflow-y: hidden; }
-    body.preview { margin: 0; max-width: none; padding: 1em 26px; }
+    body.preview { margin: 0; max-width: none; padding: 46px 30px 1em; }
+    /* In print (PDF export, or printing an exported HTML file) the page margin takes the place of the room above the document. */
+    @media print { body { padding-top: 0; } }
     .hljs { background: ${p.hljsBg}; color: ${hljsText}; }
     ${hljsCommentSelector} { color: ${p.hljsComment}; font-style: italic; }
     .hljs-keyword, .hljs-selector-tag { color: ${p.hljsKeyword}; }

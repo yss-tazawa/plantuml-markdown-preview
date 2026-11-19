@@ -928,7 +928,7 @@ ${theme.css}
 #toc-sidebar::before{content:'';position:absolute;left:0;top:44px;bottom:16px;width:1px}
 #toc-sidebar.open{display:block}
 #toc-sidebar ul{list-style:none;margin:0;padding:0}
-#toc-sidebar li{position:relative}
+#toc-sidebar li{position:relative;margin:0}
 #toc-sidebar li>ul{display:none}
 #toc-sidebar li.open>ul{display:block}
 #toc-sidebar .toc-toggle{position:absolute;top:0;left:2px;width:20px;height:26px;display:flex;align-items:center;justify-content:center;cursor:pointer;opacity:0.5;font-size:10px;user-select:none;z-index:1}
