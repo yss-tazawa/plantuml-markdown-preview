@@ -1,6 +1,6 @@
 {
   "displayName": "PlantUML Markdown Preview",
-  "description": "3 種模式適配你的工作流程。內嵌渲染 PlantUML、Mermaid 和 D2 — 快速、安全或零設定。",
+  "description": "直接在 Markdown 預覽中顯示 PlantUML、Mermaid 和 D2 圖表。Fast、Secure、Easy — 選擇適合你的模式。",
   "submenu.label": "PlantUML Markdown Preview",
   "command.openPreview.title": "在側邊開啟預覽",
   "command.openHeadRevisionPreview.title": "在側邊開啟 HEAD 版本預覽",
@@ -141,7 +141,7 @@
   "configuration.allowLocalImages.off": "Off — 一律封鎖本機圖片",
   "configuration.allowHttpImages.description": "允許在預覽中透過 HTTP（非加密）載入圖片。適用於內部網路或本機開發伺服器。基於安全考量，預設停用。預設: false",
   "configuration.mode.description": "預設模式。以一個設定統一控制渲染方式、防抖時間和安全預設值。",
-  "configuration.mode.fast": "Fast（預設） — 本地伺服器，即時渲染。需要 Java 11+。資料不會離開本機。",
+  "configuration.mode.fast": "Fast（預設） — 本機伺服器，即時渲染。需要 Java 11+。資料不會離開本機。",
   "configuration.mode.secure": "Secure — 無網路存取，最高安全性。需要 Java 11+。本機圖片預設被封鎖。",
   "configuration.mode.easy": "Easy — 無需設定（圖表原始碼將傳送至 PlantUML 伺服器）。",
   "configuration.plantumlServerUrl.description": "Easy 模式使用的 PlantUML 伺服器 URL。預設: https://www.plantuml.com/plantuml。可設定為自架伺服器 URL 以保護隱私。",

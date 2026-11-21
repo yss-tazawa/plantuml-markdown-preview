@@ -9,7 +9,7 @@
 <h1 align="center">PlantUML Markdown Preview</h1>
 
 <p align="center">
-  <strong>3 modos para se adaptar ao seu fluxo de trabalho. Renderize PlantUML, Mermaid &amp; D2 inline — rápido, seguro ou sem configuração.</strong>
+  <strong>Diagramas PlantUML, Mermaid e D2 direto na sua pré-visualização de Markdown. Fast, Secure ou Easy — escolha o modo que combina com você.</strong>
 </p>
 
 <p align="center">
@@ -19,42 +19,44 @@
 </p>
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/yss-tazawa/plantuml-markdown-preview/main/images/hero-screenshot.png" width="800" alt="Editor e prévia lado a lado no tema GitHub Light mostrando um diagrama de sequência">
+  <img src="https://raw.githubusercontent.com/yss-tazawa/plantuml-markdown-preview/main/images/hero-screenshot.png" width="800" alt="Editor e pré-visualização lado a lado no tema GitHub Light mostrando um diagrama de sequência">
 </p>
+
+Escreva diagramas como código no seu Markdown e veja-os renderizados enquanto você digita — depois exporte o documento inteiro para HTML ou PDF, com os diagramas.
 
 ## Escolha seu Modo
 
 | | **Fast** (padrão) | **Secure** | **Easy** |
 |---|---|---|---|
-| | Re-renderizações instantâneas | Privacidade máxima | Sem configuração |
-| | Executa um servidor PlantUML no localhost — sem custo de inicialização de JVM, atualizações instantâneas | Sem rede, sem processos em segundo plano — tudo permanece na sua máquina | Java não é necessário — funciona imediatamente com um servidor PlantUML |
+| | Renderização rápida | Privacidade máxima | Sem configuração |
+| | Um servidor PlantUML local atualiza os diagramas enquanto você digita | Sem rede, sem processos em segundo plano — tudo fica na sua máquina | Sem Java — funciona de imediato com um servidor PlantUML online |
 | **Java** | 11+ necessário | 11+ necessário | Não necessário |
 | **Rede** | Nenhuma | Nenhuma | Necessária |
-| **Privacidade** | Apenas local | Apenas local | Código fonte do diagrama enviado ao servidor PlantUML |
-| **Configuração** | [Instalar Java →](#pré-requisitos) | [Instalar Java →](#pré-requisitos) | Nenhuma configuração necessária |
+| **Privacidade** | Apenas local | Apenas local | Código-fonte do diagrama enviado ao servidor PlantUML |
+| **Configuração** | [Instalar Java →](#pré-requisitos) | [Instalar Java →](#pré-requisitos) | Não necessária |
 
-Alterne entre modos a qualquer momento com uma única configuração — sem migração, sem reiniciar.
+Alterne entre os modos a qualquer momento com uma única configuração — sem migração, sem reiniciar.
 
-> Veja [Modos de Renderização](#modos-de-renderização) para detalhes e [Início Rápido](#início-rápido) para instruções completas de configuração.
+Veja [Modos de Renderização](#modos-de-renderização) para os detalhes e [Início Rápido](#início-rápido) para a configuração.
 
 ## Destaques
 
-- **Renderização inline de PlantUML, Mermaid & D2** — diagramas aparecem diretamente na sua prévia do Markdown, não em um painel separado
-- **Seguro por design** — política baseada em CSP nonce bloqueia toda execução de código a partir do conteúdo Markdown
-- **Controle de escala de diagramas** — ajuste os tamanhos de diagramas PlantUML, Mermaid e D2 independentemente
-- **Exportação HTML independente** — diagramas SVG incorporados inline, largura de layout e alinhamento configuráveis
-- **Exportação para PDF** — exportação com um clique via Chromium headless; diagramas redimensionados automaticamente para caber na página
-- **Sincronização de rolagem bidirecional** — editor e prévia rolam juntos, em ambos os sentidos
-- **Navegação & TOC** — botões ir para o topo / ir para o fim e uma barra lateral de Sumário (TOC) no painel de prévia
-- **Visualizador de Diagramas** — clique com o botão direito em qualquer diagrama para abrir um painel de pan & zoom com sincronização ao vivo e fundo correspondente ao tema
-- **Modo de leitura (Reading View)** — veja um arquivo Markdown, PlantUML, Mermaid ou D2 renderizado na própria aba e alterne entre ele e o código-fonte no mesmo lugar
-- **Prévia de diagrama independente** — abra arquivos `.puml`, `.plantuml`, `.mmd`, `.mermaid` e `.d2` diretamente com pan & zoom, atualizações em tempo real e suporte a temas — sem necessidade de Markdown
-- **Prévia de revisões do Git** — renderiza um arquivo Markdown como ele estava em HEAD ou na versão preparada, lado a lado com sua prévia atual, para comparar diagramas alterados já renderizados
-- **Salvar ou copiar diagramas como PNG / SVG** — clique com o botão direito em qualquer diagrama na prévia ou no Visualizador de Diagramas para salvar ou copiar para a área de transferência
-- **17 temas de prévia** — um tema VS Code que acompanha seu tema de cores, mais 9 temas claros + 7 escuros, incluindo GitHub, Atom, Solarized, Dracula, Monokai e mais
-- **Assistência ao editor** — completamento de palavras-chave, seletor de cores e trechos de código (snippets) para PlantUML, Mermaid e D2
-- **Internacionalização** — interface em Inglês, Chinês (Simplificado / Tradicional), Espanhol, Português Brasileiro, Japonês e Coreano
-- **Suporte a matemática** — fórmulas inline `$...$` e em bloco `$$...$$` renderizadas com [KaTeX](https://katex.org/)
+- **Diagramas direto no documento** — diagramas PlantUML, Mermaid e D2 aparecem dentro da sua pré-visualização de Markdown, não em um painel separado.
+- **Seguro para abrir** — scripts no seu Markdown nunca são executados na pré-visualização.
+- **Tamanhos sob seu controle** — você define a escala de exibição dos diagramas PlantUML, Mermaid e D2 de forma independente.
+- **Exportação para um único arquivo HTML** — seu documento e seus diagramas em um só arquivo HTML, com a largura e o alinhamento de layout que você escolher.
+- **Exportação para PDF com um clique** — a impressão é feita pelo Chrome, Edge ou Chromium, com os diagramas ajustados para caber na página.
+- **Sincronização de rolagem bidirecional** — quando você rola o editor ou a pré-visualização, o outro acompanha.
+- **Navegação fácil** — você vai para o topo ou o final, ou abre uma barra lateral de sumário, direto da pré-visualização.
+- **Visualizador de Diagramas** — com um clique com o botão direito em qualquer diagrama, você o amplia e move no seu próprio painel, sincronizado com as suas edições.
+- **Modo de leitura (Reading View)** — você lê um arquivo Markdown, PlantUML, Mermaid ou D2 renderizado na própria aba e volta ao código-fonte no mesmo lugar.
+- **Pré-visualização de diagrama independente** — você abre arquivos `.puml`, `.plantuml`, `.mmd`, `.mermaid` e `.d2` diretamente, com pan & zoom e atualizações ao vivo.
+- **Pré-visualização de revisões do Git** — você vê um arquivo Markdown como ele estava em HEAD ou na área de preparação, renderizado ao lado da sua pré-visualização atual, para comparar visualmente os diagramas alterados.
+- **Salvar ou copiar como PNG / SVG** — com um clique com o botão direito em qualquer diagrama na pré-visualização ou no Visualizador de Diagramas, você o salva ou copia para a área de transferência.
+- **17 temas de pré-visualização** — a pré-visualização acompanha o tema de cores do VS Code, ou você escolhe um dos 9 temas claros e 7 escuros, incluindo GitHub, Atom, Solarized, Dracula e Monokai.
+- **Assistência no editor** — completamento de palavras-chave, seletor de cores e snippets para PlantUML, Mermaid e D2.
+- **Disponível em 7 idiomas** — a interface está disponível em inglês, chinês (simplificado e tradicional), espanhol, português brasileiro, japonês e coreano.
+- **Suporte a matemática** — fórmulas inline `$...$` e em bloco `$$...$$` são renderizadas com o [KaTeX](https://katex.org/).
 
 ## Sumário
 
@@ -80,14 +82,14 @@ Alterne entre modos a qualquer momento com uma única configuração — sem mig
 
 Blocos de código ```` ```plantuml ````, ```` ```mermaid ```` e ```` ```d2 ```` são renderizados como diagramas SVG inline ao lado do seu conteúdo Markdown regular.
 
-- Atualizações de prévia em tempo real enquanto você digita (debouncing em dois estágios)
-- Atualização automática ao salvar o arquivo
-- Acompanhamento automático ao alternar abas do editor
-- Indicador de carregamento durante a renderização do diagrama
-- Erros de sintaxe exibidos inline com números de linha e contexto do código
-- PlantUML: renderizado via Java (modo Secure / Fast) ou servidor PlantUML remoto (modo Easy) — veja [Modos de Renderização](#modos-de-renderização)
-- Mermaid: renderizado no lado do cliente usando [mermaid.js](https://mermaid.js.org/) — sem necessidade de Java ou ferramentas externas
-- D2: renderizado no lado do cliente usando [@terrastruct/d2](https://d2lang.com/) (Wasm) — sem necessidade de ferramentas externas
+- **Atualizações ao vivo** — a pré-visualização é atualizada enquanto você digita.
+- **Atualização ao salvar** — salvar o arquivo atualiza a pré-visualização.
+- **Acompanha suas abas** — a pré-visualização muda junto com a aba ativa do editor.
+- **Indicador de carregamento** — você vê quando um diagrama ainda está sendo renderizado.
+- **Mensagens de erro claras** — erros de sintaxe aparecem inline, com números de linha e o código ao redor.
+- **PlantUML** — renderizado com Java na sua máquina (modo Fast / Secure) ou por um servidor PlantUML (modo Easy); veja [Modos de Renderização](#modos-de-renderização).
+- **Mermaid** — renderizado com o [mermaid.js](https://mermaid.js.org/), sem Java nem outras ferramentas para instalar.
+- **D2** — renderizado com o [@terrastruct/d2](https://d2lang.com/) (Wasm) incluído, sem outras ferramentas para instalar.
 
 ### Realce do código-fonte de diagramas
 
@@ -99,19 +101,18 @@ O código-fonte dos diagramas é realçado no editor, tanto dentro dos blocos
 
 Renderize expressões matemáticas usando [KaTeX](https://katex.org/).
 
-- **Matemática inline** — `$E=mc^2$` renderiza como uma fórmula inline
-- **Matemática em bloco** — `$$\int_0^\infty e^{-x}\,dx = 1$$` renderiza como uma fórmula de exibição centralizada
-- Renderização no lado do servidor — sem JavaScript no Webview, apenas HTML/CSS
-- Funciona tanto na prévia quanto na exportação para HTML/PDF
-- Desative com `enableMath: false` se os símbolos `$` causarem análise matemática indesejada
+- **Matemática inline** — `$E=mc^2$` é renderizado como uma fórmula inline.
+- **Matemática em bloco** — `$$\int_0^\infty e^{-x}\,dx = 1$$` é renderizado como uma fórmula centralizada em destaque.
+- **Mesma aparência em todo lugar** — as fórmulas ficam iguais na pré-visualização e na exportação para HTML/PDF.
+- **Fácil de desativar** — defina `enableMath: false` se os símbolos `$` do seu texto forem lidos como matemática.
 
 ### Escala do Diagrama
 
 Controle o tamanho de exibição dos diagramas PlantUML, Mermaid e D2 independentemente.
 
-- **Escala PlantUML** — `auto` (encolher para caber) ou porcentagem fixa (70%–120%, padrão 100%). O SVG permanece nítido em qualquer escala.
-- **Escala Mermaid** — `auto` (ajustar ao container) ou porcentagem fixa (50%–100%, padrão 80%).
-- **Escala D2** — `auto` (ajustar ao container) ou porcentagem fixa (50%–100%, padrão 70%).
+- **Escala PlantUML** — escolha `auto` (reduzir para caber) ou uma porcentagem fixa de 70% a 120% (padrão 100%); os diagramas continuam nítidos em qualquer escala.
+- **Escala Mermaid** — escolha `auto` (reduzir para caber) ou uma porcentagem fixa de 50% a 100% (padrão 80%).
+- **Escala D2** — escolha `auto` (reduzir para caber) ou uma porcentagem fixa de 50% a 100% (padrão 70%).
 
 ### Modos de Renderização
 
@@ -121,23 +122,23 @@ Escolha um modo predefinido que controla como os diagramas PlantUML são renderi
 |---|---|---|---|
 | **Java necessário** | Sim | Sim | Não |
 | **Rede** | Nenhuma (apenas localhost) | Nenhuma | Necessária |
-| **Privacidade** | Diagramas permanecem na sua máquina | Diagramas permanecem na sua máquina | Código fonte do diagrama enviado ao servidor PlantUML |
-| **Velocidade** | Instantâneo (servidor local persistente) | Mais lento (JVM inicia cada vez) | Depende da rede |
+| **Privacidade** | Apenas local | Apenas local | Código-fonte do diagrama enviado ao servidor PlantUML |
+| **Velocidade** | Instantânea (servidor local persistente) | Mais lenta (o Java inicia a cada renderização) | Depende da rede |
 
-- **Modo Fast** (padrão) — executa um servidor PlantUML persistente em `localhost`, iniciado somente na primeira renderização de diagrama (configurável — veja [Modo de início](#modo-fast-modo-de-início-do-servidor)). Elimina o custo de inicialização da JVM a cada edição, permitindo re-renderizações instantâneas. Os diagramas nunca saem da sua máquina.
-- **Modo Secure** — usa Java + JAR do PlantUML na sua máquina. Os diagramas nunca saem da sua máquina. Sem acesso à rede. Imagens locais são bloqueadas por padrão para segurança máxima.
-- **Modo Easy** — envia o código fonte do PlantUML para um servidor PlantUML para renderização. Nenhuma configuração necessária. Usa o servidor público (`https://www.plantuml.com/plantuml`) por padrão, ou configure seu próprio URL de servidor auto-hospedado para maior privacidade.
+- **Modo Fast** (padrão) — mantém um servidor PlantUML em execução em `localhost`, para que os diagramas sejam atualizados instantaneamente enquanto você edita. O servidor inicia com o seu primeiro diagrama PlantUML (você pode mudar isso; veja [Modo de início](#modo-fast-modo-de-início-do-servidor)), e os diagramas nunca saem da sua máquina.
+- **Modo Secure** — executa o Java e o jar do PlantUML na sua máquina a cada renderização, sem acesso à rede e sem servidor em segundo plano. Imagens locais são bloqueadas por padrão para segurança máxima.
+- **Modo Easy** — envia o código-fonte do PlantUML para um servidor PlantUML, então não há nada para instalar. Usa o servidor público (`https://www.plantuml.com/plantuml`) por padrão; aponte-o para o seu próprio servidor para ter privacidade.
 
-Se o Java não for encontrado ao abrir uma prévia, uma notificação oferecerá a mudança para o modo Easy.
+Se o Java não for encontrado quando você abrir uma pré-visualização, a extensão oferece a mudança para o modo Easy.
 
 #### Modo Fast: modo de início do servidor
 
-Por padrão, o modo Fast inicia e gerencia seu próprio servidor PlantUML vinculado a `127.0.0.1` — nenhuma configuração necessária. O `plantumlLocalServerStartMode` controla quando (e se) isso acontece:
+Por padrão, o modo Fast inicia e gerencia seu próprio servidor PlantUML em `127.0.0.1` — nenhuma configuração necessária. `plantumlLocalServerStartMode` (Start Mode) controla quando, e se, isso acontece:
 
 | Valor | Efeito |
 |---|---|
-| `"lazy"` (padrão) | Inicia o servidor gerenciado na primeira renderização de diagrama. Nenhuma JVM é executada enquanto você não renderizar nenhum diagrama PlantUML; a primeira renderização demora alguns segundos a mais. |
-| `"on"` | Inicia o servidor gerenciado assim que a extensão é ativada. A primeira renderização é instantânea, ao custo de uma JVM residente desde a inicialização. |
+| `"lazy"` (padrão) | Inicia o servidor gerenciado na primeira renderização de diagrama. O Java só é executado quando você renderiza um diagrama PlantUML; a primeira renderização demora alguns segundos a mais. |
+| `"on"` | Inicia o servidor gerenciado assim que a extensão é ativada. A primeira renderização é instantânea, mas o Java fica em execução em segundo plano desde a inicialização. |
 | `"off"` | Nunca inicia um servidor. Conecta-se a um que você mesmo executa (por exemplo `java -jar plantuml.jar -picoweb`), incluindo um em outra máquina da sua rede local. |
 
 O host e a porta usados para alcançar o servidor são controlados por estas configurações:
@@ -147,12 +148,12 @@ O host e a porta usados para alcançar o servidor são controlados por estas con
 | `plantumlLocalServerHost` | `127.0.0.1` | Host ao qual se conectar quando Start Mode é `"off"` (por exemplo, um servidor picoweb em outro ponto da sua rede local). Ignorado para `"on"`/`"lazy"` — um servidor gerenciado sempre se vincula a `127.0.0.1`. |
 | `plantumlLocalServerPort` | `0` | Start Mode `"on"`/`"lazy"`: porta na qual iniciar (`0` = atribui automaticamente uma porta livre). Start Mode `"off"`: porta à qual se conectar. |
 
-Notas:
+Algumas coisas que vale a pena saber:
 
-- Em um modo gerenciado (`"on"`/`"lazy"`) com uma porta fixa, se já houver um servidor PlantUML saudável em execução nessa porta, a extensão o reutiliza em vez de iniciar um segundo — assim ela não entra em conflito com um processo remanescente ou com um servidor que você mesmo iniciou.
-- Com Start Mode `"off"`, a extensão nunca inicia um servidor (e não precisa de Java local) — ela apenas se conecta ao host/porta configurados.
-- A extensão só interrompe os servidores que ela mesma iniciou; um servidor que você executa nunca é encerrado pela extensão.
-- O antigo booleano `plantumlLocalServerAutoStart` está obsoleto, mas ainda é respeitado quando Start Mode não é definido explicitamente (`true` → `"on"`, `false` → `"off"`). Um Start Mode definido explicitamente sempre prevalece.
+- **Convive com servidores existentes** — com `"on"` ou `"lazy"` e uma porta fixa, um servidor PlantUML que já funciona nessa porta é reutilizado em vez de iniciar um segundo.
+- **Sem Java local com `"off"`** — a extensão nunca inicia um servidor; ela apenas se conecta ao host e à porta que você configurar.
+- **Seus servidores continuam seus** — a extensão só interrompe os servidores que ela mesma iniciou.
+- **A configuração antiga ainda é lida** — se Start Mode não estiver definido, a configuração antiga `plantumlLocalServerAutoStart` é usada (`true` → `"on"`, `false` → `"off"`).
 
 #### Modo Fast: configurações de memória (heap) da JVM
 
@@ -163,112 +164,109 @@ O consumo de memória do servidor gerenciado é limitado por predefinições de 
 | `small` | `-Xms16m -Xmx256m` | Menor uso de memória; apenas diagramas pequenos. |
 | `medium` (padrão) | `-Xms16m -Xmx512m` | Equilibrado; lida bem com a maioria dos diagramas. |
 | `large` | `-Xms64m -Xmx1024m` | Diagramas muito grandes; corresponde à recomendação do FAQ do PlantUML. |
-| `unlimited` | _(nenhuma)_ | Nenhuma flag — a JVM decide (o heap máximo padrão é 1/4 da RAM física). Volta ao comportamento anterior à versão 0.7.10. |
+| `unlimited` | _(nenhuma)_ | Nenhuma flag — o Java decide (o heap máximo padrão é 1/4 da RAM física). |
 | `custom` | seus valores | Lê `plantumlLocalServerJvmInitialHeapMb` (8–32768, padrão 16) e `plantumlLocalServerJvmMaxHeapMb` (64–32768, padrão 512). |
 
 Toda predefinição exceto `unlimited` também fixa `-XX:+UseSerialGC`, `-XX:MaxMetaspaceSize=128m` e `-XX:ReservedCodeCacheSize=64m` para manter o servidor enxuto. Essas configurações se aplicam apenas ao servidor que a própria extensão inicia (modo Fast, Start Mode `"on"`/`"lazy"`).
 
 ### Barra de Status
 
-A barra de status mostra o modo de renderização atual (Fast / Secure / Easy) e, no modo Fast, o estado do servidor local (executando, iniciando, erro, parado).
+A barra de status mostra o modo de renderização atual (Fast / Secure / Easy) e, no modo Fast, o estado do servidor local (iniciando, em execução, erro, parado).
 
-- Clique no item da barra de status para alternar os modos via Quick Pick — sem necessidade de abrir as Configurações
-- Mesma função que o comando **Selecionar modo de renderização** na Command Palette
+- **Troca de modo com um clique** — clique no item da barra de status para escolher um modo em uma seleção rápida, sem abrir as Configurações.
+- **Também na Paleta de Comandos** — o comando **Selecionar modo de renderização** faz o mesmo.
 
-Enquanto uma prévia de Markdown ou o modo de leitura estiver visível, a barra de status também mostra o nível de zoom da prévia. Clique nele para escolher outro nível.
+Enquanto uma pré-visualização de Markdown ou o modo de leitura estiver visível, a barra de status também mostra o nível de zoom da pré-visualização. Clique nele para escolher outro nível.
 
 ### Exportação para HTML
 
-Exporte seu documento Markdown para um arquivo HTML independente.
+Exporte seu documento Markdown para um único arquivo HTML.
 
-- Diagramas PlantUML, Mermaid e D2 incorporados como SVG inline
-- CSS de realce de sintaxe incluído — sem dependências externas
-- Exportar e abrir no navegador em um único comando
-- Largura do layout configurável (640px–1440px ou ilimitada) e alinhamento (centro ou esquerda)
-- **Presets de largura em pixels** (640–1440px) com alinhamento central, mais um modo **Responsivo** (alinhado à esquerda) que se expande para a largura do viewport
+- **Diagramas incluídos** — diagramas PlantUML e D2 são incorporados como SVG inline; diagramas Mermaid e fontes de matemática são carregados de uma CDN quando o arquivo é aberto.
+- **Estilos incluídos** — os estilos de realce de sintaxe vão dentro do arquivo.
+- **Exportar e abrir** — exporte e abra o resultado no seu navegador com um único comando.
+- **Seu layout** — escolha uma largura fixa de 640px a 1440px, centralizada ou alinhada à esquerda, ou **Responsivo**, que ocupa a janela do navegador e reduz apenas os diagramas que transbordariam. Defina sua largura e seu alinhamento habituais nas Configurações, ou escolha a cada exportação pelo menu.
 
 ### Exportação para PDF
 
-Exporte seu documento Markdown para PDF usando um navegador baseado em Chromium headless.
+Exporte seu documento Markdown para PDF usando o Chrome, Edge ou Chromium que já está na sua máquina.
 
-- Requer Chrome, Edge ou Chromium instalado no seu sistema
-- Orientação retrato e paisagem
-- Escala uniforme de texto e diagramas (configuração `pdfScale`, padrão 0.625)
-- Margens de impressão são aplicadas para um layout limpo
+- **Usa o seu navegador** — requer Chrome, Edge ou Chromium instalado no seu sistema.
+- **Retrato ou paisagem** — escolha a orientação ao exportar.
+- **Escala consistente** — texto e diagramas são dimensionados juntos (`pdfScale`, padrão 0.625).
+- **Páginas limpas** — as margens de impressão são aplicadas para você.
 
 ### Exportação em massa de diagramas
 
 Exporte todos os diagramas de um arquivo Markdown como arquivos PNG ou SVG individuais.
 
-- Exporta todos os diagramas PlantUML / Mermaid / D2 na ordem do documento
-- O nome do diretório de saída é personalizável (padrão: `{nome_arquivo}_diagrams`)
-- Requer que a prévia esteja aberta (renderização via Webview da prévia)
+- **Todos os diagramas de uma vez** — todos os diagramas PlantUML, Mermaid e D2 são exportados na ordem do documento.
+- **O nome da pasta é seu** — escolha o nome da pasta de saída (padrão: `{nome_arquivo}_diagrams`).
+- **Pré-visualização necessária** — a pré-visualização precisa estar aberta, já que é nela que os diagramas são renderizados.
 
 ### Navegação
 
-- **Ir para o topo / Ir para o fim** — botões no canto superior direito do painel de prévia
-- **Barra lateral de Sumário** — clique no botão TOC para abrir uma barra lateral listando todos os cabeçalhos; clique em um cabeçalho para pular para ele
-- **Zoom** — `Ctrl`+roda do mouse (`Cmd`+roda do mouse no Mac) amplia ou reduz a prévia e o modo de leitura de 50% a 200%. Um único nível vale para todas as prévias de Markdown e para o modo de leitura, e é mantido entre reinicializações
+- **Ir para o topo / Ir para o final** — botões no canto superior direito da pré-visualização levam você até lá com um clique.
+- **Barra lateral de sumário** — clique no botão TOC para listar todos os títulos e depois clique em um deles para ir até ele.
+- **Zoom** — `Ctrl`+roda do mouse (`Cmd`+roda do mouse no Mac) aplica zoom na pré-visualização e no modo de leitura de 50% a 200%; um único nível vale para todos e é mantido entre reinicializações.
 
 ### Visualizador de Diagramas
 
-Clique com o botão direito em qualquer diagrama PlantUML, Mermaid ou D2 na prévia e selecione **Abrir no visualizador de diagramas** para abri-lo em um painel separado de pan & zoom.
+Clique com o botão direito em qualquer diagrama PlantUML, Mermaid ou D2 na pré-visualização e selecione **Abrir no visualizador de diagramas** para abri-lo em um painel separado de pan & zoom.
 
-- Zoom com a roda do mouse (centralizado no cursor) e arraste para mover (pan)
-- Barra de ferramentas: Ajustar à Janela, Redefinir 1:1, Zoom por etapas (+/-)
-- Sincronização ao vivo — as alterações no editor são refletidas em tempo real enquanto preservam sua posição de zoom
-- A cor de fundo corresponde ao tema de prévia atual
-- Fechado automaticamente ao alternar para um arquivo fonte diferente
-- **Salvar ou copiar como PNG / SVG** — clique com o botão direito em um diagrama na prévia ou no Visualizador de Diagramas para salvá-lo como arquivo ou copiar o PNG para a área de transferência
-- **Localizar no visualizador** — pressione `Cmd+F` / `Ctrl+F` para abrir o widget de localização
-- Desative com `enableDiagramViewer: false`
+- **Pan & zoom** — aplique zoom com a roda do mouse em torno do cursor e arraste para mover.
+- **Barra de ferramentas** — Ajustar à janela, Tamanho real (1:1) e zoom por etapas (+/-).
+- **Sincronização ao vivo** — suas edições aparecem na hora, e sua posição de zoom é mantida.
+- **Fundo combinando** — a cor de fundo acompanha o tema de pré-visualização atual.
+- **Fecha com o arquivo** — o visualizador fecha quando você muda para outro arquivo de origem.
+- **Salvar ou copiar como PNG / SVG** — clique com o botão direito em um diagrama na pré-visualização ou no Visualizador de Diagramas para salvá-lo como arquivo ou copiá-lo como PNG.
+- **Localizar no visualizador** — pressione `Cmd+F` / `Ctrl+F` para abrir o widget de localização.
+- **Opcional** — desative com `enableDiagramViewer: false`.
 
 ### Suporte a `!include` no PlantUML
 
 Use diretivas `!include` para compartilhar estilos comuns, macros e definições de componentes entre diagramas.
 
-- Arquivos incluídos são resolvidos em relação à raiz da área de trabalho (ou ao diretório configurado em `plantumlIncludePath`)
-- Salvar um arquivo incluído atualiza automaticamente a prévia (você também pode clicar no botão **Reload** ↻ para forçar uma atualização manual)
-- **Ir para o arquivo include** — clique com o botão direito em uma linha `!include` em arquivos `.puml` ou Markdown para abrir o arquivo referenciado (o item do menu aparece apenas quando o cursor está em uma linha `!include`)
-- **Abrir arquivo de origem include** — clique com o botão direito em um diagrama PlantUML na prévia para abrir seus arquivos incluídos diretamente
-- Funciona nos modos Fast e Secure. Não disponível no modo Easy (o servidor remoto não pode acessar arquivos locais).
-
-> **Nota:** `plantumlIncludePath` (e a resolução baseada na raiz da área de trabalho) só tem efeito quando é a própria extensão que inicia o processo do PlantUML — sempre no modo Secure, mas no modo Fast apenas quando a extensão inicia seu próprio servidor local. Se o modo Fast se conectar a um servidor que já está em execução (Start Mode `"off"`, ou um servidor existente reutilizado em uma porta fixa), os includes são resolvidos em relação ao diretório de trabalho desse servidor. Para garantir que a configuração tenha efeito no modo Fast, defina a porta como `0` (automático).
+- **Onde os arquivos são procurados** — os arquivos incluídos são resolvidos a partir da raiz do workspace ou da pasta definida em `plantumlIncludePath`. No modo Fast, isso vale quando a extensão executa o seu próprio servidor; veja o [FAQ](#faq) para os detalhes.
+- **Atualização ao salvar** — salvar um arquivo incluído atualiza a pré-visualização, e o botão **Recarregar** (↻) força uma atualização a qualquer momento.
+- **Ir para o arquivo include** — clique com o botão direito em uma linha `!include` em um arquivo `.puml` ou Markdown para abrir o arquivo referenciado.
+- **Abrir arquivo de origem include** — clique com o botão direito em um diagrama PlantUML na pré-visualização para abrir os arquivos incluídos diretamente.
+- **Modos Fast e Secure** — o modo Easy não consegue ler seus arquivos locais, então `!include` não está disponível nele.
 
 ### Prévia de Diagrama Independente
 
-Abra arquivos `.puml`, `.plantuml`, `.mmd`, `.mermaid` ou `.d2` diretamente — sem necessidade de Markdown.
+Abra arquivos `.puml`, `.plantuml`, `.mmd`, `.mermaid` ou `.d2` diretamente — sem precisar de Markdown.
 
-- Mesma interface de pan & zoom do Visualizador de Diagramas
-- Atualizações de prévia ao vivo enquanto você digita (com debouncing)
-- Acompanhamento automático ao alternar entre arquivos do mesmo tipo
-- Seleção de tema independente (tema da prévia + tema do diagrama)
-- Salvar ou copiar como PNG / SVG via botão direito
-- **Localizar na prévia** — pressione `Cmd+F` / `Ctrl+F` para abrir o widget de localização
-- PlantUML: suporta todos os três modos de renderização (Fast / Secure / Easy)
-- Mermaid: renderizado no lado do cliente usando mermaid.js
-- D2: renderizado usando @terrastruct/d2 (Wasm) com tema e motor de layout configuráveis
+- **Pan & zoom** — os mesmos controles do Visualizador de Diagramas.
+- **Atualizações ao vivo** — a pré-visualização é atualizada enquanto você digita.
+- **Acompanha suas abas** — a pré-visualização muda junto quando você alterna entre arquivos do mesmo tipo.
+- **Temas** — escolha o tema da pré-visualização e o tema do diagrama de forma independente.
+- **Salvar ou copiar como PNG / SVG** — clique com o botão direito no diagrama.
+- **Localizar na pré-visualização** — pressione `Cmd+F` / `Ctrl+F` para abrir o widget de localização.
+- **PlantUML** — funciona nos três modos de renderização (Fast / Secure / Easy).
+- **Mermaid** — renderizado com o mermaid.js.
+- **D2** — renderizado com o @terrastruct/d2 (Wasm), com tema e motor de layout que você pode escolher.
 
 ### Prévia de Revisões do Git
 
-Renderiza um arquivo Markdown como ele estava em uma revisão do Git, em um painel lateral, permitindo comparar um diagrama alterado lado a lado em vez de lê-lo como diferença de texto.
+Pré-visualize um arquivo Markdown como ele estava em uma revisão do Git, renderizado, em um painel lateral — assim um diagrama alterado pode ser comparado lado a lado em vez de lido como diferença de texto.
 
-- **HEAD** — a última versão confirmada
-- **Preparada** — a versão atualmente preparada para commit
-- Abre ao lado da sua prévia existente, deixando os diagramas antigo e novo visíveis ao mesmo tempo
-- Instantâneo somente leitura: renderiza uma vez e não acompanha edições posteriores, e um aviso no topo informa isso
-- Requer que o arquivo esteja versionado em um repositório Git
+- **HEAD** — a última versão confirmada.
+- **Preparada** — a versão atualmente preparada para commit.
+- **Lado a lado** — abre ao lado da sua pré-visualização atual, então os diagramas antigo e novo ficam visíveis ao mesmo tempo.
+- **Instantâneo** — renderiza uma vez e não acompanha edições posteriores; um aviso no topo informa isso.
+- **Requer Git** — o arquivo precisa estar versionado em um repositório Git.
 
 ### Sincronização de Rolagem Bidirecional
 
-O editor e a prévia permanecem sincronizados enquanto você rola qualquer um deles.
+O editor e a pré-visualização permanecem sincronizados enquanto você rola qualquer um deles.
 
-- Mapeamento de rolagem baseado em âncoras entre o editor e a prévia
-- Restauração estável da posição após a re-renderização
+- **Posições correspondentes** — a pré-visualização se alinha com a parte do código-fonte que você está olhando.
+- **Estável** — sua posição de rolagem se mantém quando a pré-visualização é renderizada novamente.
 
 ### Temas
 
-**Temas de prévia** controlam a aparência geral do documento:
+**Temas de pré-visualização** controlam a aparência geral do documento:
 
 **Tema VS Code:**
 
@@ -302,37 +300,32 @@ O editor e a prévia permanecem sincronizados enquanto você rola qualquer um de
 | Monokai | Sintaxe vívida, inspirado no Sublime Text |
 | VS Code Dark 2026 | Pré-visualização de Markdown integrada do VS Code com o tema de cores Dark 2026 |
 
-Alterne os temas de prévia instantaneamente a partir do ícone na barra de título — não é necessária re-renderização (troca apenas via CSS). Mudanças no tema do PlantUML disparam uma re-renderização.
+Alterne os temas de pré-visualização instantaneamente pelo ícone na barra de título — os diagramas não são redesenhados. Mudar o tema do PlantUML redesenha os diagramas.
 
-**Temas PlantUML** controlam o estilo do diagrama independentemente. A extensão descobre os temas disponíveis da sua instalação do PlantUML e os apresenta em um QuickPick combinado junto com os temas de prévia.
+**Temas PlantUML** controlam o estilo dos diagramas de forma independente. A extensão descobre os temas disponíveis na sua instalação do PlantUML e os lista na mesma seleção rápida dos temas de pré-visualização.
 
-**Temas Mermaid** controlam o estilo dos diagramas Mermaid: `default`, `dark`, `forest`, `neutral`, `base`. Também disponíveis no seletor de temas QuickPick.
+**Temas Mermaid** controlam o estilo dos diagramas Mermaid: `default`, `dark`, `forest`, `neutral`, `base`. Eles também estão na mesma seleção rápida.
 
-**Temas D2** — 19 temas integrados (ex: `Neutral Default`, `Dark Mauve`, `Terminal`). Configuráveis através das definições ou do seletor de temas QuickPick.
+**Temas D2** — 19 temas integrados (ex.: `Neutral Default`, `Dark Mauve`, `Terminal`), que você pode escolher nas configurações ou na mesma seleção rápida.
 
 ### Realce de Sintaxe
 
-Mais de 190 linguagens suportadas via highlight.js. Blocos de código são estilizados para corresponder ao tema de prévia selecionado.
+Mais de 190 linguagens suportadas via highlight.js. Blocos de código são estilizados para combinar com o tema de pré-visualização selecionado.
 
 ### Segurança
 
-- Content Security Policy com restrições de script baseadas em nonce
-- Sem execução de código a partir do conteúdo Markdown
-- Tags `<script>` escritas pelo usuário são bloqueadas
-- O carregamento de imagens locais segue o modo predefinido por padrão (`allowLocalImages: "mode-default"`); o modo Secure desativa por padrão para segurança máxima
-- O carregamento de imagens via HTTP está desativado por padrão (`allowHttpImages`); ativar adiciona `http:` à diretiva `img-src` da CSP, o que permite requisições de imagem não criptografadas — use apenas em redes confiáveis (intranet, servidores de desenvolvimento local)
+- **Política de scripts rigorosa** — a pré-visualização executa apenas os scripts da própria extensão.
+- **Nenhum código dos seus documentos** — tags `<script>` e outros códigos no Markdown nunca são executados.
+- **Imagens locais conforme o modo** — por padrão, as imagens locais seguem o modo (`allowLocalImages: "mode-default"`); o modo Secure as bloqueia para segurança máxima.
+- **Sem imagens via HTTP simples por padrão** — o carregamento de imagens via HTTP não criptografado está desativado (`allowHttpImages`); ative-o apenas em redes confiáveis, como uma intranet ou um servidor de desenvolvimento local.
 
 ### Integração com a Prévia de Markdown Nativa
 
-Diagramas PlantUML, Mermaid e D2 também são renderizados na prévia de Markdown integrada do VS Code (`Markdown: Open Preview to the Side`). Nenhuma configuração adicional é necessária.
-
-> **Nota:** A prévia integrada não suporta os temas de prévia desta extensão, sincronização de rolagem bidirecional ou exportação para HTML. Para o conjunto completo de funcionalidades, use o painel de prévia da própria extensão (`Cmd+Alt+V` / `Ctrl+Alt+V`).
->
-> **Nota:** A prévia integrada renderiza diagramas de forma síncrona. Diagramas PlantUML grandes ou complexos podem congelar o editor brevemente. Para diagramas pesados, use o painel de prévia da extensão.
+Diagramas PlantUML, Mermaid e D2 também aparecem na pré-visualização de Markdown integrada do VS Code (`Markdown: Abrir Visualização ao Lado`) — sem configuração extra. Para temas de pré-visualização, sincronização de rolagem e exportação para HTML, abra a pré-visualização desta extensão (`Cmd+Alt+V` / `Ctrl+Alt+V`). Ela também é a melhor escolha para diagramas PlantUML grandes, que podem congelar o editor brevemente na pré-visualização integrada.
 
 ### Alertas ao estilo GitHub
 
-Renderiza alertas ao estilo GitHub (caixas de destaque) a partir de marcadores de citação, igualando a saída nativa do GitHub.
+Renderiza alertas ao estilo GitHub (caixas de destaque) a partir de marcadores de citação, iguais aos do próprio GitHub.
 
 ```markdown
 > [!NOTE]
@@ -351,10 +344,10 @@ Renderiza alertas ao estilo GitHub (caixas de destaque) a partir de marcadores d
 > Negative potential consequences of an action.
 ```
 
-- Cinco tipos: `NOTE`, `TIP`, `IMPORTANT`, `WARNING`, `CAUTION` — cada um com ícone e cor de destaque próprios
-- Os marcadores funcionam apenas em maiúsculas, como no GitHub (`[!note]` permanece uma citação comum)
-- As cores se adaptam ao tema de prévia ativo (claro / escuro)
-- Funciona tanto na prévia quanto na exportação para HTML/PDF
+- **Cinco tipos** — `NOTE`, `TIP`, `IMPORTANT`, `WARNING` e `CAUTION`, cada um com ícone e cor de destaque próprios.
+- **Mesmas regras do GitHub** — os marcadores funcionam apenas em maiúsculas (`[!note]` permanece uma citação comum).
+- **Acompanham o tema** — as cores se adaptam ao tema de pré-visualização ativo, claro ou escuro.
+- **Mesma aparência em todo lugar** — os alertas ficam iguais na pré-visualização e na exportação para HTML/PDF.
 
 ## Início Rápido
 
@@ -364,18 +357,17 @@ Renderiza alertas ao estilo GitHub (caixas de destaque) a partir de marcadores d
 
 **D2** — sem pré-requisitos. Renderizado usando o Wasm integrado do [D2](https://d2lang.com/) — funciona imediatamente.
 
-**PlantUML (modo Easy)** — sem pré-requisitos. O código fonte do diagrama é enviado a um servidor PlantUML para renderização.
+**PlantUML (modo Easy)** — sem pré-requisitos. O código-fonte do diagrama é enviado a um servidor PlantUML para renderização.
 
 **PlantUML (modo Fast / Secure)** — padrão:
 
 | Ferramenta | Propósito | Verificar |
 |------|---------|--------|
-| [Java 11+ (JRE ou JDK)](#configuração) | Executa o PlantUML (o JAR v1.2026.2 incluído requer Java 11+) | `java -version` |
+| [Java 11+ (JRE ou JDK)](#configuração) | Executa o PlantUML (o PlantUML 1.2026.2 incluído requer Java 11+) | `java -version` |
 | [Graphviz](https://graphviz.org/) | Opcional — necessário para diagramas de classe, componentes e outros dependentes de layout (veja [Suporte a Diagramas](#suporte-a-diagramas)) | `dot -V` |
 
-> **Nota:** Um JAR do PlantUML (LGPL, v1.2026.2) vem incluído com a extensão. Nenhum download separado é necessário. **Java 11 ou posterior é obrigatório.**
->
-> **Dica:** Se o Java não estiver instalado, a extensão oferecerá a mudança para o modo Easy quando você abrir uma prévia.
+O PlantUML vem incluído (LGPL, v1.2026.2) — não há nada para baixar. O Java 11 ou posterior é o único requisito; o Graphviz é opcional.
+Ainda não tem Java? A extensão oferece a mudança para o modo Easy quando você abre uma pré-visualização.
 
 ### Suporte a Diagramas
 
@@ -409,17 +401,17 @@ O que funciona depende da sua configuração:
 
 1. Abra o VS Code
 2. Procure por **PlantUML Markdown Preview** na visualização de Extensões (`Ctrl+Shift+X` / `Cmd+Shift+X`)
-3. Clique em **Install**
+3. Clique em **Instalar**
 
 ### Configuração inicial
 
-**Modo Fast** (padrão): Executa um servidor PlantUML local persistente para re-renderizações instantâneas, iniciado na primeira renderização de diagrama. Requer Java 11+.
+**Modo Fast** (padrão) — nada para configurar. Um servidor PlantUML local inicia com o seu primeiro diagrama e mantém as atualizações instantâneas. Requer Java 11+.
 
-**Para usar o modo Secure**: Defina `mode` como `"secure"`. Usa Java 11+ por renderização sem um servidor em segundo plano ou acesso à rede.
+**Para usar o modo Secure** — defina `mode` como `"secure"`. O Java 11+ é executado a cada renderização, sem servidor em segundo plano e sem acesso à rede.
 
-**Para usar o modo Easy** (sem configuração): Defina `mode` como `"easy"`. O código fonte do diagrama é enviado para um servidor PlantUML para renderização. A extensão também sugerirá a troca quando o Java não for detectado.
+**Para usar o modo Easy** (sem configuração) — defina `mode` como `"easy"`. O código-fonte do diagrama é enviado a um servidor PlantUML para renderização.
 
-**Modos Fast e Secure**: O JAR LGPL incluído suporta diagramas de sequência, atividade, mapa mental e outros sem configuração extra (veja [Suporte a Diagramas](#suporte-a-diagramas)). Para habilitar diagramas de classe, componentes, casos de uso e outros dependentes de layout, siga os passos para sua plataforma abaixo.
+**Modos Fast e Secure** — o JAR LGPL incluído suporta diagramas de sequência, atividade, mapa mental e outros sem configuração extra (veja [Suporte a Diagramas](#suporte-a-diagramas)). Para habilitar diagramas de classe, componentes, casos de uso e outros dependentes de layout, siga os passos para sua plataforma abaixo.
 
 #### Windows
 
@@ -434,7 +426,7 @@ O que funciona depende da sua configuração:
    ```
    Abra as configurações do VS Code (`Ctrl+,`), procure por `plantumlMarkdownPreview.javaPath` e insira o caminho mostrado acima
 3. Baixe a [versão GPLv2 do PlantUML](https://plantuml.com/download) (`plantuml-gplv2-*.jar`) para uma pasta de sua escolha (inclui Graphviz — sem necessidade de instalação separada)
-4. Abra as configurações do VS Code (`Ctrl+,`), procure por `plantumlMarkdownPreview.plantumlJarPath` e insira o caminho completo para o arquivo `.jar` baixado (ex: `C:\tools\plantuml-gplv2-1.2026.2.jar`)
+4. Abra as configurações do VS Code (`Ctrl+,`), procure por `plantumlMarkdownPreview.plantumlJarPath` e insira o caminho completo para o arquivo `.jar` baixado (ex.: `C:\tools\plantuml-gplv2-1.2026.2.jar`)
 
 #### Mac
 
@@ -466,30 +458,30 @@ O que funciona depende da sua configuração:
    ```
    Abra as configurações do VS Code (`Ctrl+,`), procure por `plantumlMarkdownPreview.dotPath` e insira o caminho mostrado acima
 
-> **Nota:** `javaPath` tem como padrão `"java"`. Se deixado no padrão, o binário Java em `JAVA_HOME/bin/` (ou `JAVA_HOME\bin\` no Windows) é tentado primeiro, depois o `java` no PATH. `dotPath` e `plantumlJarPath` têm como padrão `"dot"` e o JAR incluído, respectivamente. Configure-os apenas se esses comandos não estiverem no seu PATH ou se quiser usar um JAR diferente.
+Raramente você precisa definir esses caminhos. Por padrão, a extensão procura o Java em `JAVA_HOME/bin/` (`JAVA_HOME\bin\` no Windows) e depois no seu PATH, encontra o `dot` no seu PATH e usa o JAR do PlantUML incluído. Defina `javaPath`, `dotPath` ou `plantumlJarPath` apenas se um comando não estiver no seu PATH ou se você quiser outro JAR.
 
 ## Uso
 
 ### Abrir Prévia
 
-- **Atalho de teclado:** `Cmd+Alt+V` (Mac) / `Ctrl+Alt+V` (Windows / Linux)
-- **Barra de título do editor:** Clique no botão de prévia (ícone do Plotdown) no canto superior direito do editor
-- **Botões e atalhos padrão do VS Code:** Com `useAsDefaultPreview` ativado (o padrão), o botão **Abrir Visualização ao Lado** do VS Code, seus itens de menu de contexto **Abrir Visualização** e `Cmd+K V` (Mac) / `Ctrl+K V` (Windows / Linux) abrem esta prévia. `Cmd+Shift+V` / `Ctrl+Shift+V` alterna para o [modo de leitura](#modo-de-leitura) em vez disso
-- **Menu de contexto:** Clique com o botão direito em um arquivo Markdown no Explorer ou dentro do editor → **PlantUML Markdown Preview** → **Abrir pré-visualização ao lado**
-- **Command Palette:** `PlantUML Markdown Preview: Abrir pré-visualização ao lado`
+- **Atalho de teclado** — pressione `Cmd+Alt+V` (Mac) / `Ctrl+Alt+V` (Windows / Linux).
+- **Barra de título do editor** — clique no botão de pré-visualização (um "P" em um quadrado arredondado) no canto superior direito do editor.
+- **Botões e atalhos padrão do VS Code** — com `useAsDefaultPreview` ativado (o padrão), o botão **Abrir Visualização ao Lado** do VS Code, seus itens de menu de contexto **Abrir Visualização** e `Cmd+K V` (Mac) / `Ctrl+K V` (Windows / Linux) abrem esta pré-visualização; `Cmd+Shift+V` / `Ctrl+Shift+V` alterna para o [modo de leitura](#modo-de-leitura) em vez disso.
+- **Menu de contexto** — clique com o botão direito em um arquivo Markdown no Explorador ou dentro do editor → **PlantUML Markdown Preview** → **Abrir pré-visualização ao lado**.
+- **Paleta de Comandos** — execute `PlantUML Markdown Preview: Abrir pré-visualização ao lado`.
 
-A prévia usa seus próprios temas — o padrão é fundo branco (GitHub Light). Escolha `follow-vscode` para usar as cores do tema de cores atual do VS Code.
+A pré-visualização tem seus próprios temas e começa com fundo branco (GitHub Light). Escolha `follow-vscode` para acompanhar o tema de cores atual do VS Code.
 
 ### Modo de leitura
 
-O modo de leitura (Reading View) mostra um arquivo renderizado na própria aba, no lugar do editor de texto, sem abrir um segundo painel. Ele fica fixo nesse arquivo em vez de acompanhar o editor ativo, e pode ficar aberto ao mesmo tempo que a prévia.
+O modo de leitura (Reading View) mostra um arquivo renderizado na própria aba, no lugar do editor de texto, sem abrir um segundo painel. Ele fica fixo nesse arquivo em vez de acompanhar o editor ativo, e pode ficar aberto ao mesmo tempo que a pré-visualização.
 
 Funciona com arquivos Markdown (`.md`, `.markdown` e as demais extensões cobertas pela pré-visualização de Markdown do VS Code) e com arquivos `.puml` / `.plantuml`, `.mmd` / `.mermaid` e `.d2`. Nada muda até você usá-lo.
 
-- **Alternar no mesmo lugar:** Clique com o botão direito no editor → **PlantUML Markdown Preview** → **Alternar para o modo de leitura** (em arquivos PlantUML, Mermaid e D2, **Alternar para o modo de leitura** fica diretamente no menu). Para voltar, clique com o botão direito no modo de leitura → **Alternar para o código-fonte**, ou clique em **Alternar para o código-fonte** na barra de título do editor. A própria aba muda; nenhuma aba nova é aberta.
-- **Abrir uma vez:** Clique com o botão direito em um arquivo no Explorador → **Abrir Com...** → **PlantUML Markdown Preview (Modo de leitura)**. Para um arquivo que já está aberto, clique com o botão direito na aba dele e use **Reabrir o Editor com...** em vez disso.
-- **Abrir por padrão:** Na lista de **Abrir Com...**, escolha **Configurar editor padrão para '\*.md'...** → **PlantUML Markdown Preview (Modo de leitura)**. A partir daí, clicar em um arquivo `.md` o abre no modo de leitura. Faça isso uma vez para cada extensão de arquivo.
-- **Desfazer:** Escolha **Editor de Texto** da mesma forma, ou remova a linha das suas configurações.
+- **Alternar no mesmo lugar** — clique com o botão direito no editor → **PlantUML Markdown Preview** → **Alternar para o modo de leitura** (em arquivos PlantUML, Mermaid e D2, **Alternar para o modo de leitura** fica diretamente no menu). Para voltar, clique com o botão direito no modo de leitura → **Alternar para o código-fonte**, ou clique em **Alternar para o código-fonte** na barra de título do editor. A própria aba muda; nenhuma aba nova é aberta.
+- **Abrir uma vez** — clique com o botão direito em um arquivo no Explorador → **Abrir Com...** → **PlantUML Markdown Preview (Modo de leitura)**. Para um arquivo que já está aberto, clique com o botão direito na aba dele e use **Reabrir o Editor com...** em vez disso.
+- **Abrir por padrão** — na lista de **Abrir Com...**, escolha **Configurar editor padrão para '\*.md'...** → **PlantUML Markdown Preview (Modo de leitura)**. A partir daí, clicar em um arquivo `.md` o abre no modo de leitura. Faça isso uma vez para cada extensão de arquivo.
+- **Desfazer** — escolha **Editor de Texto** da mesma forma, ou remova a linha das suas configurações.
 
 Para definir em `settings.json`:
 
@@ -509,33 +501,33 @@ Para definir em `settings.json`:
 | `*.mmd`, `*.mermaid` | `plantumlMermaidPreviewEditor` |
 | `*.d2` | `plantumlD2PreviewEditor` |
 
-- Antes do VS Code 1.100, **Alternar para o modo de leitura** e **Alternar para o código-fonte** não aparecem. Abra o modo de leitura com **Abrir Com...** em vez disso.
-- Diffs do Git continuam abrindo como diffs de texto, mesmo para arquivos configurados para abrir no modo de leitura.
-- Com `useAsDefaultPreview` ativado (o padrão), o botão **Abrir como Visualização** do VS Code (a partir do VS Code 1.119) e `Ctrl+Shift+V` (a partir do VS Code 1.100) alternam para o modo de leitura; veja [Configuração](#configuração).
+- **VS Code mais antigo** — antes do VS Code 1.100, **Alternar para o modo de leitura** e **Alternar para o código-fonte** não aparecem; abra o modo de leitura com **Abrir Com...** em vez disso.
+- **Diffs do Git** — os diffs continuam abrindo como diffs de texto, mesmo para arquivos configurados para abrir no modo de leitura.
+- **Botões padrão** — com `useAsDefaultPreview` ativado (o padrão), o botão **Abrir como Visualização** do VS Code (a partir do VS Code 1.119) e `Ctrl+Shift+V` (a partir do VS Code 1.100) alternam para o modo de leitura; veja [Configuração](#configuração).
 
 ### Abrir Prévia de Diagrama
 
-Abra arquivos `.puml` / `.plantuml`, `.mmd` / `.mermaid` ou `.d2` diretamente em uma prévia com pan & zoom — sem necessidade de Markdown.
+Abra arquivos `.puml` / `.plantuml`, `.mmd` / `.mermaid` ou `.d2` diretamente em uma pré-visualização com pan & zoom — sem precisar de Markdown.
 
-- **Atalho de teclado:** `Cmd+Alt+V` (Mac) / `Ctrl+Alt+V` (Windows / Linux) — o mesmo atalho, seleciona automaticamente com base no tipo de arquivo
-- **Barra de título do editor:** Clique no botão de prévia (ícone do Plotdown) no canto superior direito do editor
-- **Atalhos padrão de prévia:** Com `useAsDefaultPreview` ativado (o padrão), `Cmd+K V` (Mac) / `Ctrl+K V` (Windows / Linux) também abre a prévia ao lado do editor. `Cmd+Shift+V` / `Ctrl+Shift+V` alterna para o [modo de leitura](#modo-de-leitura) em vez disso
-- **Menu de contexto:** Clique com o botão direito em um arquivo `.puml` / `.plantuml`, `.mmd` / `.mermaid` ou `.d2` no Explorer ou editor → **Pré-visualizar arquivo PlantUML** / **Pré-visualizar arquivo Mermaid** / **Pré-visualizar arquivo D2**
-- **Command Palette:** `PlantUML Markdown Preview: Pré-visualizar arquivo PlantUML`, `Pré-visualizar arquivo Mermaid` ou `Pré-visualizar arquivo D2`
+- **Atalho de teclado** — o mesmo `Cmd+Alt+V` (Mac) / `Ctrl+Alt+V` (Windows / Linux) escolhe a pré-visualização certa para o tipo de arquivo.
+- **Barra de título do editor** — clique no botão de pré-visualização (um "P" em um quadrado arredondado) no canto superior direito do editor.
+- **Atalhos padrão de pré-visualização** — com `useAsDefaultPreview` ativado (o padrão), `Cmd+K V` (Mac) / `Ctrl+K V` (Windows / Linux) também abre a pré-visualização ao lado do editor; `Cmd+Shift+V` / `Ctrl+Shift+V` alterna para o [modo de leitura](#modo-de-leitura) em vez disso.
+- **Menu de contexto** — clique com o botão direito em um arquivo `.puml` / `.plantuml`, `.mmd` / `.mermaid` ou `.d2` no Explorador ou no editor → **Pré-visualizar arquivo PlantUML** / **Pré-visualizar arquivo Mermaid** / **Pré-visualizar arquivo D2**.
+- **Paleta de Comandos** — execute `PlantUML Markdown Preview: Pré-visualizar arquivo PlantUML`, `Pré-visualizar arquivo Mermaid` ou `Pré-visualizar arquivo D2`.
 
 ### Abrir a Prévia de uma Revisão do Git
 
-Renderiza um arquivo Markdown como ele estava em uma revisão do Git, ao lado da prévia da sua versão atual.
+Renderiza um arquivo Markdown como ele estava em uma revisão do Git, ao lado da pré-visualização da sua versão atual.
 
-- **Menu de contexto:** Clique com o botão direito em um arquivo Markdown no Explorador ou no editor → **PlantUML Markdown Preview** → **Abrir pré-visualização da revisão HEAD ao lado** / **Abrir pré-visualização da revisão preparada ao lado**
-- **Paleta de comandos:** `PlantUML Markdown Preview: Abrir pré-visualização da revisão HEAD ao lado` / `Abrir pré-visualização da revisão preparada ao lado`
+- **Menu de contexto** — clique com o botão direito em um arquivo Markdown no Explorador ou no editor → **PlantUML Markdown Preview** → **Abrir pré-visualização da revisão HEAD ao lado** / **Abrir pré-visualização da revisão preparada ao lado**.
+- **Paleta de Comandos** — execute `PlantUML Markdown Preview: Abrir pré-visualização da revisão HEAD ao lado` / `Abrir pré-visualização da revisão preparada ao lado`.
 
-Abra primeiro a prévia normal e depois a da revisão: os dois painéis ficam lado a lado. O painel de revisão é um instantâneo fixo e não se atualiza enquanto você edita.
+Abra primeiro a sua pré-visualização normal e depois a da revisão: os dois painéis ficam lado a lado. O painel da revisão é um instantâneo fixo e não se atualiza enquanto você edita.
 
 ### Exportar para HTML
 
-- **Menu de contexto:** Clique com o botão direito em um arquivo Markdown → **PlantUML Markdown Preview** → **Exportar como HTML** → escolha uma opção de largura
-- **Painel de prévia:** Clique com o botão direito dentro do painel de prévia → **Exportar como HTML** ou **Exportar como HTML e abrir**
+- **Menu de contexto** — clique com o botão direito em um arquivo Markdown → **PlantUML Markdown Preview** → **Exportar como HTML** → escolha uma opção de largura.
+- **Pré-visualização** — clique com o botão direito dentro da pré-visualização → **Exportar como HTML** ou **Exportar como HTML e abrir**.
 
 O submenu oferece estas opções de largura:
 
@@ -550,40 +542,40 @@ O arquivo HTML é salvo ao lado do arquivo Markdown de origem.
 
 ### Exportar para PDF
 
-- **Menu de contexto:** Clique com o botão direito em um arquivo Markdown → **PlantUML Markdown Preview** → **Exportar como PDF** → **Retrato** ou **Paisagem**
-- **Painel de prévia:** Clique com o botão direito dentro do painel de prévia → **Exportar como PDF** ou **Exportar como PDF e abrir** → **Retrato** ou **Paisagem**
+- **Menu de contexto** — clique com o botão direito em um arquivo Markdown → **PlantUML Markdown Preview** → **Exportar como PDF** → **Retrato** ou **Paisagem**.
+- **Pré-visualização** — clique com o botão direito dentro da pré-visualização → **Exportar como PDF** ou **Exportar como PDF e abrir** → **Retrato** ou **Paisagem**.
 
-O arquivo PDF é salvo ao lado do arquivo Markdown de origem. Chrome, Edge ou Chromium são necessários.
+O arquivo PDF é salvo ao lado do arquivo Markdown de origem. É necessário ter Chrome, Edge ou Chromium.
 A configuração `pdfScale` (padrão 0.625) controla a escala geral de texto e diagramas.
 
 ### Salvar / Copiar Diagrama como PNG / SVG
 
-- **Painel de prévia:** Clique com o botão direito em um diagrama → **Copiar diagrama como PNG**, **Salvar diagrama como PNG** ou **Salvar diagrama como SVG**
-- **Visualizador de Diagramas:** Clique com o botão direito dentro do visualizador → **Copiar diagrama como PNG**, **Salvar diagrama como PNG** ou **Salvar diagrama como SVG**
-- **Prévia de diagrama independente:** Clique com o botão direito dentro da prévia → **Copiar diagrama como PNG**, **Salvar diagrama como PNG** ou **Salvar diagrama como SVG**
+- **Pré-visualização** — clique com o botão direito em um diagrama → **Copiar diagrama como PNG**, **Salvar diagrama como PNG** ou **Salvar diagrama como SVG**.
+- **Visualizador de Diagramas** — clique com o botão direito dentro do visualizador → **Copiar diagrama como PNG**, **Salvar diagrama como PNG** ou **Salvar diagrama como SVG**.
+- **Pré-visualização de diagrama independente** — clique com o botão direito dentro da pré-visualização → **Copiar diagrama como PNG**, **Salvar diagrama como PNG** ou **Salvar diagrama como SVG**.
 
 ### Exportar todos os diagramas
 
-- **Menu de contexto:** Clique com o botão direito em um arquivo Markdown → **PlantUML Markdown Preview** → **Exportar todos os diagramas como PNG** ou **Exportar todos os diagramas como SVG**
-- **Painel de prévia:** Clique com o botão direito dentro do painel de prévia → **Exportar todos os diagramas como PNG** ou **Exportar todos os diagramas como SVG**
-- **Paleta de Comandos:** `PlantUML Markdown Preview: Exportar todos os diagramas como PNG` / `Exportar todos os diagramas como SVG`
+- **Menu de contexto** — clique com o botão direito em um arquivo Markdown → **PlantUML Markdown Preview** → **Exportar todos os diagramas como PNG** ou **Exportar todos os diagramas como SVG**.
+- **Pré-visualização** — clique com o botão direito dentro da pré-visualização → **Exportar todos os diagramas como PNG** ou **Exportar todos os diagramas como SVG**.
+- **Paleta de Comandos** — execute `PlantUML Markdown Preview: Exportar todos os diagramas como PNG` / `Exportar todos os diagramas como SVG`.
 
-Um diálogo de salvamento permite escolher o nome do diretório de saída (padrão: `{nome_arquivo}_diagrams`). Cada diagrama é salvo como `diagram-1.png`, `diagram-2.png`, etc. na ordem do documento. A prévia deve estar aberta.
+Uma caixa de diálogo de salvamento permite escolher o nome da pasta de saída (padrão: `{nome_arquivo}_diagrams`). Os diagramas são salvos como `diagram-1.png`, `diagram-2.png` e assim por diante, na ordem do documento. Mantenha a pré-visualização aberta durante a exportação.
 
 ### Navegação
 
-- **Ir para o topo / Ir para o fim:** Botões no canto superior direito do painel de prévia
-- **Reload:** Clique no botão ↻ para atualizar manualmente a prévia e limpar os caches (arquivos incluídos também são atualizados automaticamente ao salvar)
-- **Sumário:** Clique no botão TOC no canto superior direito do painel de prévia para abrir uma barra lateral listando todos os cabeçalhos; clique em um cabeçalho para pular para ele
-- **Zoom:** Segure `Ctrl` (`Cmd` no Mac) e gire a roda do mouse sobre a prévia, ou clique no nível de zoom na barra de status e escolha um nível. A exportação para HTML e PDF não é afetada
+- **Ir para o topo / Ir para o final** — use os botões no canto superior direito da pré-visualização.
+- **Recarregar** — clique no botão ↻ para atualizar a pré-visualização e limpar os caches.
+- **Sumário** — clique no botão TOC no canto superior direito da pré-visualização para listar todos os títulos e depois clique em um deles para ir até ele.
+- **Zoom** — segure `Ctrl` (`Cmd` no Mac) e gire a roda do mouse sobre a pré-visualização, ou clique no nível de zoom na barra de status e escolha um nível; a exportação para HTML e PDF não é afetada.
 
 ### Mudar Tema
 
-Clique no ícone de tema na barra de título do painel de prévia, ou use a Command Palette:
+Clique no ícone de tema na barra de título da pré-visualização, ou use a Paleta de Comandos:
 
-- **Command Palette:** `PlantUML Markdown Preview: Alterar tema de pré-visualização`
+- **Paleta de Comandos** — execute `PlantUML Markdown Preview: Alterar tema de pré-visualização`.
 
-O seletor de temas mostra todas as quatro categorias de temas em uma única lista — temas de prévia, temas PlantUML, temas Mermaid e temas D2 — para que você possa alternar qualquer um deles em um só lugar.
+A seleção rápida mostra as quatro categorias de temas em uma única lista — temas de pré-visualização, temas PlantUML, temas Mermaid e temas D2 — para que você possa alternar qualquer um deles em um só lugar.
 
 ### Sintaxe PlantUML
 
@@ -594,7 +586,7 @@ Bob --> Alice: Hi!
 ```
 ````
 
-Wrappers `@startuml` / `@enduml` são adicionados automaticamente se omitidos.
+Os wrappers `@startuml` / `@enduml` são adicionados automaticamente se você os omitir.
 
 ### Sintaxe Mermaid
 
@@ -628,14 +620,14 @@ A famosa equação de Einstein $E=mc^2$ mostra a equivalência massa-energia.
 $$\int_0^\infty e^{-x}\,dx = 1$$
 ````
 
-> Desative com `enableMath: false` se os símbolos `$` causarem uma análise matemática indesejada (ex: `$100`).
+Você escreve preços como `$100`? Defina `enableMath: false` para manter o `$` como texto simples.
 
 ## Snippets
 
 Digite um prefixo de snippet e pressione `Tab` para expandir. Dois conjuntos de snippets estão disponíveis:
 
-- **Snippets Markdown** (fora de blocos demarcados) — prefixados com `plantuml-`, `mermaid-` ou `d2-`, expande um bloco demarcado completo
-- **Snippets de Template** (dentro de blocos demarcados) — prefixados com `tmpl-`, expande apenas o corpo do diagrama. Digite `tmpl` para ver todos os templates disponíveis
+- **Snippets Markdown** (fora de blocos demarcados) — prefixos que começam com `plantuml`, `mermaid` ou `d2` expandem um bloco demarcado completo.
+- **Snippets de template** (dentro de blocos demarcados) — prefixos que começam com `tmpl-` expandem apenas o corpo do diagrama; digite `tmpl` para ver todos.
 
 ### Snippets Markdown (fora de blocos demarcados)
 
@@ -766,11 +758,11 @@ Snippets curtos:
 
 Amostras de cores e um seletor de cores inline para PlantUML, Mermaid e D2. Funciona em arquivos independentes (`.puml`, `.mmd`, `.d2`) e blocos demarcados de Markdown.
 
-- **Hex de 6 dígitos** — `#FF0000`, `#1565C0` etc.
-- **Hex de 3 dígitos** — `#F00`, `#ABC` etc.
-- **Cores nomeadas** (apenas PlantUML) — `#Red`, `#LightBlue`, `#Salmon` etc. (20 cores)
-- Escolher uma nova cor substitui o valor pelo formato `#RRGGBB`
-- Linhas de comentário são excluídas (`'` para PlantUML, `%%` para Mermaid, `#` para D2)
+- **Hex de 6 dígitos** — como `#FF0000` e `#1565C0`.
+- **Hex de 3 dígitos** — como `#F00` e `#ABC`.
+- **Cores nomeadas** (apenas PlantUML) — 20 cores, como `#Red`, `#LightBlue` e `#Salmon`.
+- **Escolher para substituir** — escolher uma nova cor grava o valor no formato `#RRGGBB`.
+- **Comentários ignorados** — linhas de comentário são ignoradas (`'` para PlantUML, `%%` para Mermaid, `#` para D2).
 
 ## Completamento de Palavras-chave
 
@@ -778,24 +770,24 @@ Sugestões de palavras-chave sensíveis ao contexto para PlantUML, Mermaid e D2.
 
 ### PlantUML
 
-- **Palavras-chave de início de linha** — `@startuml`, `participant`, `class`, `skinparam`, `!include`, etc.
-- **Parâmetros de `skinparam`** — digite `skinparam` seguido de um espaço para obter sugestões para `backgroundColor`, `defaultFontName`, `arrowColor`, etc.
-- **Nomes de cores** — digite `#` para obter sugestões de cores (`Red`, `Blue`, `LightGreen`, etc.)
-- **Caracteres de gatilho**: `@`, `!`, `#`
+- **Palavras-chave de início de linha** — como `@startuml`, `participant`, `class`, `skinparam` e `!include`.
+- **Parâmetros de `skinparam`** — digite `skinparam` e um espaço para obter sugestões como `backgroundColor`, `defaultFontName` e `arrowColor`.
+- **Nomes de cores** — digite `#` para obter sugestões de cores como `Red`, `Blue` e `LightGreen`.
+- **Caracteres de gatilho** — `@`, `!` e `#`.
 
 ### Mermaid
 
-- **Declarações de tipo de diagrama** — `flowchart`, `sequenceDiagram`, `classDiagram`, `gantt`, etc. na primeira linha
-- **Palavras-chave específicas do diagrama** — as sugestões mudam com base no tipo de diagrama declarado (ex: `subgraph` para fluxograma, `participant` para sequência)
-- **Valores de direção** — digite `direction` seguido de um espaço para obter `TB`, `LR`, etc.
+- **Declarações de tipo de diagrama** — `flowchart`, `sequenceDiagram`, `classDiagram`, `gantt` e outros na primeira linha.
+- **Palavras-chave específicas do diagrama** — as sugestões seguem o tipo de diagrama declarado (por exemplo, `subgraph` para fluxogramas e `participant` para diagramas de sequência).
+- **Valores de direção** — digite `direction` e um espaço para obter `TB`, `LR` e outros.
 
 ### D2
 
-- **Tipos de forma (shape)** — digite `shape:` para obter sugestões (`rectangle`, `cylinder`, `person`, etc.)
-- **Propriedades de estilo** — digite `style.` para obter `fill`, `stroke`, `font-size`, etc.
-- **Valores de direção** — digite `direction:` para obter `right`, `down`, `left`, `up`
-- **Valores de restrição (constraint)** — digite `constraint:` para obter `primary_key`, `foreign_key`, `unique`
-- **Caracteres de gatilho**: `:`, `.`
+- **Tipos de forma (shape)** — digite `shape:` para obter sugestões como `rectangle`, `cylinder` e `person`.
+- **Propriedades de estilo** — digite `style.` para obter `fill`, `stroke`, `font-size` e outras.
+- **Valores de direção** — digite `direction:` para obter `right`, `down`, `left` e `up`.
+- **Valores de restrição (constraint)** — digite `constraint:` para obter `primary_key`, `foreign_key` e `unique`.
+- **Caracteres de gatilho** — `:` e `.`.
 
 ## Configuração
 
@@ -803,28 +795,28 @@ Todas as configurações usam o prefixo `plantumlMarkdownPreview.`.
 
 | Configuração | Padrão | Descrição |
 |---------|---------|-------------|
-| `mode` | `"fast"` | Modo predefinido. `"fast"` (padrão) — servidor local, re-renderizações instantâneas. `"secure"` — sem rede, segurança máxima. `"easy"` — sem configuração (código fonte enviado ao servidor PlantUML). |
+| `mode` | `"fast"` | Modo de renderização. `"fast"` (padrão) — servidor local, atualizações instantâneas. `"secure"` — sem rede, segurança máxima. `"easy"` — sem configuração (o código-fonte do diagrama é enviado a um servidor PlantUML). |
 | `javaPath` | `"java"` | Caminho para o executável Java. Se definido, é usado como está; caso contrário, tenta `JAVA_HOME/bin/java`, depois `java` no PATH. (Modos Fast e Secure) |
 | `plantumlJarPath` | `""` | Caminho para o `plantuml.jar`. Deixe vazio para usar o JAR incluído (LGPL). (Modos Fast e Secure) |
 | `dotPath` | `"dot"` | Caminho para o executável `dot` do Graphviz (Modos Fast e Secure) |
-| `plantumlIncludePath` | `""` | Diretório base para diretivas `!include` do PlantUML. Deixe vazio para usar a raiz da área de trabalho. Não disponível no modo Easy. |
-| `allowLocalImages` | `"mode-default"` | Resolve caminhos de imagem relativos (ex: `![](./image.png)`) na prévia. `"mode-default"` usa a predefinição do modo (Fast: ligado, Secure: desligado, Easy: ligado). `"on"` / `"off"` para sobrescrever. |
-| `allowHttpImages` | `false` | Permite carregar imagens via HTTP (não criptografado) na prévia. Útil para intranet ou servidores de desenvolvimento local. |
-| `previewTheme` | `"github-light"` | Tema da prévia (veja [Temas](#temas)) |
-| `previewZoom` | `100` | Zoom (%) da prévia de Markdown e do modo de leitura, um único nível para todos. De 50 a 200 em passos de 5. Também pode ser alterado com `Ctrl`+roda do mouse (`Cmd`+roda do mouse no Mac) ou pela barra de status. Não afeta a exportação para HTML nem PDF. |
-| `plantumlTheme` | `"default"` | Tema do diagrama PlantUML. `"default"` não aplica tema. Outros valores (ex: `"cyborg"`, `"mars"`) são passados como `-theme` para a CLI do PlantUML ou injetados como diretiva `!theme` no modo Easy. |
+| `plantumlIncludePath` | `""` | Diretório base para diretivas `!include` do PlantUML. Deixe vazio para usar a raiz do workspace. Não disponível no modo Easy. |
+| `allowLocalImages` | `"mode-default"` | Resolve caminhos de imagem relativos (ex.: `![](./image.png)`) na pré-visualização. `"mode-default"` usa a predefinição do modo (Fast: ligado, Secure: desligado, Easy: ligado). `"on"` / `"off"` para sobrescrever. |
+| `allowHttpImages` | `false` | Permite carregar imagens via HTTP (não criptografado) na pré-visualização. Útil para intranet ou servidores de desenvolvimento local. |
+| `previewTheme` | `"github-light"` | Tema da pré-visualização (veja [Temas](#temas)) |
+| `previewZoom` | `100` | Zoom (%) da pré-visualização de Markdown e do modo de leitura, um único nível para todos. De 50 a 200 em passos de 5. Também pode ser alterado com `Ctrl`+roda do mouse (`Cmd`+roda do mouse no Mac) ou pela barra de status. Não afeta a exportação para HTML nem PDF. |
+| `plantumlTheme` | `"default"` | Tema do diagrama PlantUML. `"default"` não aplica tema. Outros valores (ex.: `"cyborg"`, `"mars"`) são passados como `-theme` para a CLI do PlantUML ou injetados como diretiva `!theme` no modo Easy. |
 | `mermaidTheme` | `"default"` | Tema do diagrama Mermaid: `"default"`, `"dark"`, `"forest"`, `"neutral"` ou `"base"`. |
-| `plantumlScale` | `"100%"` | Escala do diagrama PlantUML. `"auto"` encolhe diagramas que excedem a largura do container. Uma porcentagem (70%–120%) renderiza nessa fração do tamanho natural. |
-| `mermaidScale` | `"80%"` | Escala do diagrama Mermaid. `"auto"` ajusta à largura do container. Uma porcentagem (50%–100%) renderiza nessa fração do tamanho natural. |
-| `d2Theme` | `"Neutral Default"` | Tema do diagrama D2. 19 temas integrados disponíveis (ex: `"Neutral Default"`, `"Dark Mauve"`, `"Terminal"`). |
+| `plantumlScale` | `"100%"` | Escala do diagrama PlantUML. `"auto"` reduz os diagramas mais largos que a pré-visualização. Uma porcentagem (70%–120%) renderiza nessa fração do tamanho natural. |
+| `mermaidScale` | `"80%"` | Escala do diagrama Mermaid. `"auto"` reduz os diagramas mais largos que a pré-visualização. Uma porcentagem (50%–100%) renderiza nessa fração do tamanho natural. |
+| `d2Theme` | `"Neutral Default"` | Tema do diagrama D2. 19 temas integrados disponíveis (ex.: `"Neutral Default"`, `"Dark Mauve"`, `"Terminal"`). |
 | `d2Layout` | `"dagre"` | Motor de layout D2: `"dagre"` (padrão, rápido) ou `"elk"` (melhor para grafos complexos com muitos nós). |
-| `d2Scale` | `"70%"` | Escala do diagrama D2. `"auto"` ajusta à largura do container. Uma porcentagem (50%–100%) renderiza nessa fração do tamanho natural. |
+| `d2Scale` | `"70%"` | Escala do diagrama D2. `"auto"` reduz os diagramas mais largos que a pré-visualização. Uma porcentagem (50%–100%) renderiza nessa fração do tamanho natural. |
 | `htmlMaxWidth` | `"960px"` | Largura máxima do corpo do HTML exportado. Opções: `"640px"` – `"1440px"`, ou `"none"` para sem limite. |
 | `htmlAlignment` | `"center"` | Alinhamento do corpo do HTML. `"center"` (padrão) ou `"left"`. |
 | `pdfScale` | `0.625` | Fator de escala para exportação PDF. Escala texto e diagramas uniformemente. Faixa: 0.1–2.0. |
-| `enableMath` | `true` | Habilita a renderização matemática KaTeX. Suporta `$...$` (inline) e `$$...$$` (bloco). Defina como `false` se os símbolos `$` causarem análise indesejada. |
-| `debounceNoDiagramChangeMs` | _(vazio)_ | Atraso de debounce (ms) para alterações de texto que não sejam diagramas (diagramas servidos do cache). Deixe vazio para usar o padrão do modo (Fast: 100, Secure: 100, Easy: 100). |
-| `debounceDiagramChangeMs` | _(vazio)_ | Atraso de debounce (ms) para alterações no conteúdo do diagrama. Deixe vazio para usar o padrão do modo (Fast: 100, Secure: 300, Easy: 300). |
+| `enableMath` | `true` | Habilita a renderização matemática KaTeX. Suporta `$...$` (inline) e `$$...$$` (bloco). |
+| `debounceNoDiagramChangeMs` | _(vazio)_ | Quanto tempo (ms) a pré-visualização espera depois que você para de digitar antes de ser atualizada, quando nenhum diagrama mudou. Deixe vazio para usar o padrão do modo (Fast: 100, Secure: 100, Easy: 100). |
+| `debounceDiagramChangeMs` | _(vazio)_ | Quanto tempo (ms) a pré-visualização espera depois que você para de digitar antes de redesenhar um diagrama alterado. Deixe vazio para usar o padrão do modo (Fast: 100, Secure: 300, Easy: 300). |
 | `plantumlLocalServerStartMode` | `"lazy"` | Quando iniciar o servidor PlantUML local (apenas modo Fast): `"on"` (na ativação), `"lazy"` (na primeira renderização de diagrama), `"off"` (nunca — conecta-se a um servidor existente). Veja [Modo de início](#modo-fast-modo-de-início-do-servidor). |
 | `plantumlLocalServerHost` | `"127.0.0.1"` | Host ao qual se conectar quando Start Mode é `"off"` (apenas modo Fast). Ignorado para `"on"`/`"lazy"`. |
 | `plantumlLocalServerPort` | `0` | Porta para o servidor PlantUML local (apenas modo Fast). `0` = atribui automaticamente uma porta livre. Com Start Mode `"off"`, a porta à qual se conectar. |
@@ -832,14 +824,14 @@ Todas as configurações usam o prefixo `plantumlMarkdownPreview.`.
 | `plantumlLocalServerJvmInitialHeapMb` | `16` | Heap inicial (`-Xms`, MB) para a predefinição `"custom"`. Ignorado para outras predefinições. Faixa: 8–32768. |
 | `plantumlLocalServerJvmMaxHeapMb` | `512` | Heap máximo (`-Xmx`, MB) para a predefinição `"custom"`. Ignorado para outras predefinições. Faixa: 64–32768. |
 | `plantumlServerUrl` | `"https://www.plantuml.com/plantuml"` | URL do servidor PlantUML para o modo Easy. Configure para um URL de servidor auto-hospedado para maior privacidade. |
-| `enableDiagramViewer` | `true` | Habilita o item de menu de contexto "Abrir no visualizador de diagramas" ao clicar com o botão direito em um diagrama. Requer reabrir a prévia para fazer efeito. |
+| `enableDiagramViewer` | `true` | Habilita o item de menu de contexto "Abrir no visualizador de diagramas" ao clicar com o botão direito em um diagrama. Requer reabrir a pré-visualização para ter efeito. |
 | `retainPreviewContext` | `true` | Retém o conteúdo da pré-visualização quando a aba está oculta. Evita re-renderização ao trocar de aba, mas usa mais memória. Para aplicar uma alteração, feche e reabra a pré-visualização. Para o modo de leitura, reinicie o VS Code ou recarregue a janela. |
-| `useAsDefaultPreview` | `true` | Usa esta extensão no lugar da pré-visualização de Markdown integrada do VS Code. Os botões, os itens do menu de contexto e os atalhos padrão de pré-visualização de Markdown do VS Code abrem esta extensão. `Ctrl+K V` (`Cmd` no Mac) abre a prévia ao lado do editor; `Ctrl+Shift+V` alterna entre o código-fonte e o [modo de leitura](#modo-de-leitura) na mesma aba, também para arquivos PlantUML, Mermaid e D2. Antes do VS Code 1.119, apenas os atalhos são substituídos; antes da 1.100, os dois abrem a prévia ao lado do editor. **Alterado na 0.8.0:** esta configuração agora vem ativada por padrão. Para manter os botões e atalhos da pré-visualização de Markdown do próprio VS Code, desative-a. **Com o Markdown Preview Enhanced:** ele também usa `Ctrl+Shift+V` e `Ctrl+K V`. Quando as duas estão instaladas, os atalhos desta extensão têm efeito. Para usar os atalhos do Markdown Preview Enhanced no lugar, desative esta configuração. |
+| `useAsDefaultPreview` | `true` | Usa esta extensão no lugar da pré-visualização de Markdown integrada do VS Code: os botões, os itens do menu de contexto e os atalhos padrão de pré-visualização do VS Code abrem esta extensão. `Ctrl+K V` (`Cmd` no Mac) abre a pré-visualização ao lado; `Ctrl+Shift+V` alterna entre o código-fonte e o [modo de leitura](#modo-de-leitura) na mesma aba, também para arquivos PlantUML, Mermaid e D2. Antes do VS Code 1.119, apenas os atalhos são substituídos; antes da 1.100, os dois abrem a pré-visualização ao lado. Se o Markdown Preview Enhanced também estiver instalado, os atalhos desta extensão têm efeito. Desative para manter os botões e atalhos de pré-visualização do próprio VS Code, ou para usar os atalhos do Markdown Preview Enhanced. |
 
-> **Nota:** `allowLocalImages` e `allowHttpImages` aplicam-se apenas ao painel de prévia. A exportação para HTML sempre gera caminhos de imagem originais sem restrições de CSP.
+`allowLocalImages` e `allowHttpImages` se aplicam apenas à pré-visualização; a exportação para HTML sempre mantém os caminhos originais das suas imagens.
 
 <details>
-<summary><strong>Opções de tema da prévia</strong></summary>
+<summary><strong>Opções de tema da pré-visualização</strong></summary>
 
 | Valor | Descrição |
 |-------|-------------|
@@ -852,14 +844,14 @@ Todas as configurações usam o prefixo `plantumlMarkdownPreview.`.
 | `pen-paper-coffee` | Pen Paper Coffee — papel quente, estética manuscrita |
 | `coy` | Coy — quase branco, design limpo |
 | `vs` | VS — cores clássicas do Visual Studio |
-| `vscode-light-2026` | VS Code Light 2026 — cores da pré-visualização de Markdown integrada, código em linha e citações bem visíveis |
+| `vscode-light-2026` | VS Code Light 2026 — cores da pré-visualização de Markdown integrada, código inline e citações bem visíveis |
 | `github-dark` | GitHub Dark — fundo escuro |
 | `atom-dark` | Atom Dark — paleta Tomorrow Night |
 | `one-dark` | One Dark — escuro inspirado no Atom |
 | `dracula` | Dracula — paleta escura vibrante |
 | `solarized-dark` | Solarized Dark — teal profundo, amigável aos olhos |
 | `monokai` | Monokai — sintaxe vívida, inspirado no Sublime Text |
-| `vscode-dark-2026` | VS Code Dark 2026 — cores da pré-visualização de Markdown integrada, código em linha e citações bem visíveis |
+| `vscode-dark-2026` | VS Code Dark 2026 — cores da pré-visualização de Markdown integrada, código inline e citações bem visíveis |
 
 </details>
 
@@ -885,12 +877,12 @@ Todas as configurações usam o prefixo `plantumlMarkdownPreview.`.
 1. Execute `java -version` no seu terminal para confirmar se o Java 11 ou posterior está instalado
 2. Se você usa diagramas de classe, componentes ou outros dependentes de layout, execute `dot -V` para confirmar se o Graphviz está instalado (veja [Suporte a Diagramas](#suporte-a-diagramas))
 3. Se você configurou um `plantumlJarPath` personalizado, verifique se ele aponta para um arquivo `plantuml.jar` válido. Se o caminho não existir, a extensão volta para o JAR incluído com um aviso. Se `plantumlJarPath` estiver vazio (padrão), o JAR LGPL incluído é usado automaticamente
-4. Verifique o painel Output do VS Code para mensagens de erro
+4. Verifique se há mensagens de erro no painel de saída do VS Code
 
 **Modo Easy:**
 1. Verifique se o URL do servidor está correto (padrão: `https://www.plantuml.com/plantuml`)
 2. Verifique sua conexão de rede — a extensão precisa alcançar o servidor PlantUML
-3. Se estiver usando um servidor auto-hospedado, certifique-se de que ele está rodando e acessível
+3. Se estiver usando um servidor auto-hospedado, certifique-se de que ele está em execução e acessível
 4. As requisições para o servidor expiram após 15 segundos (os modos Fast e Secure também têm um tempo limite de 15 segundos por diagrama)
 
 </details>
@@ -901,36 +893,36 @@ Todas as configurações usam o prefixo `plantumlMarkdownPreview.`.
 O D2 é renderizado usando um módulo Wasm integrado — nenhuma CLI externa é necessária.
 
 1. Recarregue a janela do VS Code (`Developer: Reload Window`)
-2. Verifique o painel Output do VS Code para mensagens de erro
-3. Certifique-se de que a sintaxe da sua fonte D2 é válida
+2. Verifique se há mensagens de erro no painel de saída do VS Code
+3. Certifique-se de que a sintaxe do seu código-fonte D2 é válida
 
 </details>
 
 <details>
 <summary><strong>Posso usar PlantUML sem instalar Java?</strong></summary>
 
-Sim. Defina o `mode` para `"easy"` nas configurações da extensão. O modo Easy envia o texto do seu PlantUML para um servidor PlantUML para renderização e não requer Java. Por padrão, o servidor público em `https://www.plantuml.com/plantuml` é usado. Para privacidade, você pode rodar seu próprio servidor PlantUML e configurar `plantumlServerUrl` para o seu URL.
+Sim. Defina o `mode` para `"easy"` nas configurações da extensão. O modo Easy envia o texto do seu PlantUML para um servidor PlantUML para renderização e não requer Java. Por padrão, o servidor público em `https://www.plantuml.com/plantuml` é usado. Para privacidade, você pode executar seu próprio servidor PlantUML e configurar `plantumlServerUrl` para o seu URL.
 
 </details>
 
 <details>
 <summary><strong>O modo Secure está lento com muitos diagramas. Como posso acelerar?</strong></summary>
 
-Mude para o **modo Fast** (`mode: "fast"`). Ele inicia um servidor PlantUML persistente no localhost, então as re-renderizações são instantâneas — sem custo de inicialização de JVM por edição.
+Mude para o **modo Fast** (`mode: "fast"`). Ele mantém um servidor PlantUML em execução no localhost, então o Java não precisa iniciar a cada edição e as atualizações são instantâneas.
 
 </details>
 
 <details>
 <summary><strong>Meus dados de diagrama estão seguros no modo Easy?</strong></summary>
 
-No modo Easy, o texto fonte do PlantUML é enviado para o servidor configurado. O servidor público padrão (`https://www.plantuml.com/plantuml`) é operado pelo projeto PlantUML. Se seus diagramas contiverem informações sensíveis, considere rodar um [servidor PlantUML auto-hospedado](https://plantuml.com/server) e configurar o `plantumlServerUrl` para o seu URL, ou use o modo Fast ou Secure onde os diagramas nunca saem da sua máquina.
+No modo Easy, o texto fonte do PlantUML é enviado para o servidor configurado. O servidor público padrão (`https://www.plantuml.com/plantuml`) é operado pelo projeto PlantUML. Se seus diagramas contiverem informações sensíveis, considere executar um [servidor PlantUML auto-hospedado](https://plantuml.com/server) e configurar o `plantumlServerUrl` para o seu URL, ou use o modo Fast ou Secure onde os diagramas nunca saem da sua máquina.
 
 </details>
 
 <details>
 <summary><strong>Diagramas ficam estranhos com um tema escuro</strong></summary>
 
-Configure um tema de diagrama para corresponder ao seu tema de prévia. Abra o seletor de temas a partir do ícone na barra de título e selecione um tema escuro do PlantUML (ex: `cyborg`, `mars`) ou defina o tema Mermaid para `dark`.
+Defina um tema de diagrama que combine com o seu tema de pré-visualização. Abra a seleção rápida de temas pelo ícone na barra de título e selecione um tema escuro do PlantUML (ex.: `cyborg`, `mars`) ou defina o tema Mermaid para `dark`.
 
 </details>
 
@@ -939,9 +931,9 @@ Configure um tema de diagrama para corresponder ao seu tema de prévia. Abra o s
 
 O `!include` requer o modo Fast ou Secure — ele não funciona no modo Easy porque o servidor remoto não pode acessar seus arquivos locais.
 
-- Os caminhos são resolvidos em relação à raiz da área de trabalho por padrão. Configure `plantumlIncludePath` para usar um diretório base diferente.
+- Por padrão, os caminhos são resolvidos em relação à raiz do workspace. Configure `plantumlIncludePath` para usar um diretório base diferente.
 - No modo Fast, o diretório base dos includes só tem efeito quando a extensão inicia seu próprio servidor local. Se você se conectar a um servidor que já está em execução (Start Mode `"off"`, ou um servidor existente reutilizado em uma porta fixa), os includes são resolvidos em relação ao diretório de trabalho desse servidor — defina a porta como `0` (automático) para que a extensão sempre inicie seu próprio servidor.
-- Salvar um arquivo incluído atualiza automaticamente a prévia. Você também pode clicar no botão **Reload** (↻) para forçar uma atualização manual.
+- Salvar um arquivo incluído atualiza automaticamente a pré-visualização. Você também pode clicar no botão **Recarregar** (↻) para forçar uma atualização manual.
 
 </details>
 
@@ -964,7 +956,7 @@ Esta extensão inclui os seguintes softwares de terceiros:
 - [mermaid.js](https://mermaid.js.org/) — [Licença MIT](https://github.com/mermaid-js/mermaid/blob/develop/LICENSE)
 - [KaTeX](https://katex.org/) — [Licença MIT](https://github.com/KaTeX/KaTeX/blob/main/LICENSE)
 - [@terrastruct/d2](https://d2lang.com/) (build Wasm) — [Mozilla Public License 2.0 (MPL-2.0)](https://github.com/terrastruct/d2/blob/master/LICENSE.txt)
-- [markdown-it-github-alerts](https://github.com/antfu/markdown-it-github-alerts) — [MIT License](https://github.com/antfu/markdown-it-github-alerts/blob/main/LICENSE)
+- [markdown-it-github-alerts](https://github.com/antfu/markdown-it-github-alerts) — [Licença MIT](https://github.com/antfu/markdown-it-github-alerts/blob/main/LICENSE)
 
 ## Licença
 
