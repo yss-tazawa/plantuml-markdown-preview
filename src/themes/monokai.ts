@@ -18,7 +18,6 @@ const palette = {
     trEvenBg: '#2e2f2a',
     blockquoteBorder: '#49483e',
     blockquoteColor: '#75715e',
-    blockquoteBg: '#3e3d32',
     hljsBg: '#3e3d32',
     hljsComment: '#75715e',
     hljsKeyword: '#f92672',

@@ -1,0 +1,226 @@
+{
+  "go:github.com/PuerkitoBio/goquery@v1.10.0": {
+    "text": "texts/go-github.com-PuerkitoBio-goquery-v1.10.0.txt"
+  },
+  "go:github.com/alecthomas/chroma/v2@v2.14.0": {
+    "text": "texts/go-github.com-alecthomas-chroma-v2-v2.14.0.txt"
+  },
+  "go:github.com/andybalholm/brotli@v1.2.0": {
+    "text": "texts/go-github.com-andybalholm-brotli-v1.2.0.txt"
+  },
+  "go:github.com/andybalholm/cascadia@v1.3.2": {
+    "text": "texts/go-github.com-andybalholm-cascadia-v1.3.2.txt"
+  },
+  "go:github.com/dlclark/regexp2@v1.11.4": {
+    "text": "texts/go-github.com-dlclark-regexp2-v1.11.4.txt"
+  },
+  "go:github.com/golang/freetype@v0.0.0-20170609003504-e2365dfdc4a0": {
+    "text": "texts/go-github.com-golang-freetype-v0.0.0-20170609003504-e2365dfdc4a0.txt"
+  },
+  "go:github.com/lucasb-eyer/go-colorful@v1.2.0": {
+    "text": "texts/go-github.com-lucasb-eyer-go-colorful-v1.2.0.txt"
+  },
+  "go:github.com/mazznoer/csscolorparser@v0.1.5": {
+    "text": "texts/go-github.com-mazznoer-csscolorparser-v0.1.5.txt"
+  },
+  "go:github.com/rivo/uniseg@v0.4.7": {
+    "text": "texts/go-github.com-rivo-uniseg-v0.4.7.txt"
+  },
+  "go:github.com/yuin/goldmark@v1.7.4": {
+    "text": "texts/go-github.com-yuin-goldmark-v1.7.4.txt"
+  },
+  "go:golang.org/x/exp@v0.0.0-20240909161429-701f63a606c0": {
+    "text": "texts/go-golang.org-x-exp-v0.0.0-20240909161429-701f63a606c0.txt"
+  },
+  "go:golang.org/x/image@v0.20.0": {
+    "text": "texts/go-golang.org-x-image-v0.20.0.txt"
+  },
+  "go:golang.org/x/net@v0.35.0": {
+    "text": "texts/go-golang.org-x-net-v0.35.0.txt"
+  },
+  "go:golang.org/x/text@v0.22.0": {
+    "text": "texts/go-golang.org-x-text-v0.22.0.txt"
+  },
+  "go:golang.org/x/xerrors@v0.0.0-20240903120638-7835f813f4da": {
+    "text": "texts/go-golang.org-x-xerrors-v0.0.0-20240903120638-7835f813f4da.txt"
+  },
+  "go:oss.terrastruct.com/util-go@v0.0.0-20250213174338-243d8661088a": {
+    "text": "texts/go-oss.terrastruct.com-util-go-v0.0.0-20250213174338-243d8661088a.txt"
+  },
+  "npm:@chevrotain/gast@11.1.2": {
+    "license": "Apache-2.0",
+    "repository": "https://github.com/Chevrotain/chevrotain",
+    "text": "texts/npm-chevrotain-gast-11.1.2.txt"
+  },
+  "npm:@chevrotain/regexp-to-ast@11.1.2": {
+    "license": "Apache-2.0",
+    "repository": "https://github.com/Chevrotain/chevrotain",
+    "text": "texts/npm-chevrotain-regexp-to-ast-11.1.2.txt"
+  },
+  "npm:@chevrotain/utils@11.1.2": {
+    "license": "Apache-2.0",
+    "repository": "https://github.com/Chevrotain/chevrotain",
+    "text": "texts/npm-chevrotain-utils-11.1.2.txt"
+  },
+  "npm:@iconify/utils@3.0.2": {
+    "license": "MIT",
+    "repository": "https://github.com/iconify/iconify",
+    "text": "texts/npm-iconify-utils-3.0.2.txt"
+  },
+  "npm:chevrotain-allstar@0.3.1": {
+    "license": "MIT",
+    "repository": "https://github.com/langium/chevrotain-allstar",
+    "text": "texts/npm-chevrotain-allstar-0.3.1.txt"
+  },
+  "npm:chevrotain@11.1.2": {
+    "license": "Apache-2.0",
+    "repository": "https://github.com/Chevrotain/chevrotain",
+    "text": "texts/npm-chevrotain-11.1.2.txt"
+  },
+  "npm:cytoscape@3.33.3": {
+    "license": "MIT",
+    "repository": "https://github.com/cytoscape/cytoscape.js",
+    "text": "texts/npm-cytoscape-3.33.3.txt"
+  },
+  "npm:d3-format@3.1.0": {
+    "license": "ISC",
+    "repository": "https://github.com/d3/d3-format",
+    "text": "texts/npm-d3-format-3.1.0.txt"
+  },
+  "npm:dagre@0.8.5": {
+    "license": "MIT",
+    "repository": "https://github.com/dagrejs/dagre",
+    "text": "texts/npm-dagre-0.8.5.txt"
+  },
+  "npm:dayjs@1.11.20": {
+    "license": "MIT",
+    "repository": "https://github.com/iamkun/dayjs",
+    "text": "texts/npm-dayjs-1.11.20.txt"
+  },
+  "npm:dompurify@3.4.0": {
+    "license": "(MPL-2.0 OR Apache-2.0)",
+    "repository": "https://github.com/cure53/DOMPurify",
+    "text": "texts/npm-dompurify-3.4.0.txt"
+  },
+  "npm:es-toolkit@1.45.1": {
+    "license": "MIT",
+    "repository": "https://github.com/toss/es-toolkit",
+    "text": "texts/npm-es-toolkit-1.45.1.txt"
+  },
+  "npm:fmin@0.0.4": {
+    "license": "BSD-3-Clause",
+    "repository": "https://github.com/benfred/fmin",
+    "text": "texts/npm-fmin-0.0.4.txt"
+  },
+  "npm:graphlib@2.1.8": {
+    "license": "MIT",
+    "repository": "https://github.com/dagrejs/graphlib",
+    "text": "texts/npm-graphlib-2.1.8.txt"
+  },
+  "npm:js-yaml@4.1.1": {
+    "license": "MIT",
+    "repository": "https://github.com/nodeca/js-yaml",
+    "text": "texts/npm-js-yaml-4.1.1.txt"
+  },
+  "npm:katex@0.16.45": {
+    "license": "MIT",
+    "repository": "https://github.com/KaTeX/KaTeX",
+    "text": "texts/npm-katex-0.16.45.txt"
+  },
+  "npm:langium@4.2.0": {
+    "license": "MIT",
+    "repository": "https://github.com/eclipse-langium/langium",
+    "text": "texts/npm-langium-4.2.0.txt"
+  },
+  "npm:lodash-es@4.17.23": {
+    "license": "MIT",
+    "repository": "https://github.com/lodash/lodash",
+    "text": "texts/npm-lodash-es-4.17.23.txt"
+  },
+  "npm:lodash@4.17.15": {
+    "license": "MIT",
+    "repository": "https://github.com/lodash/lodash",
+    "text": "texts/npm-lodash-4.17.15.txt"
+  },
+  "npm:marked@16.3.0": {
+    "license": "MIT",
+    "repository": "https://github.com/markedjs/marked",
+    "text": "texts/npm-marked-16.3.0.txt"
+  },
+  "npm:path-browserify@1.0.1": {
+    "license": "MIT",
+    "repository": "https://github.com/browserify/path-browserify",
+    "text": "texts/npm-path-browserify-1.0.1.txt"
+  },
+  "npm:uuid@14.0.0": {
+    "license": "MIT",
+    "repository": "https://github.com/uuidjs/uuid",
+    "text": "texts/npm-uuid-14.0.0.txt"
+  },
+  "npm:vscode-jsonrpc@8.2.0": {
+    "license": "MIT",
+    "repository": "https://github.com/Microsoft/vscode-languageserver-node",
+    "text": "texts/npm-vscode-jsonrpc-8.2.0.txt"
+  },
+  "npm:vscode-languageserver-protocol@3.17.5": {
+    "license": "MIT",
+    "repository": "https://github.com/Microsoft/vscode-languageserver-node",
+    "text": "texts/npm-vscode-languageserver-protocol-3.17.5.txt"
+  },
+  "npm:vscode-languageserver-textdocument@1.0.12": {
+    "license": "MIT",
+    "repository": "https://github.com/Microsoft/vscode-languageserver-node",
+    "text": "texts/npm-vscode-languageserver-textdocument-1.0.12.txt"
+  },
+  "npm:vscode-languageserver-types@3.17.5": {
+    "license": "MIT",
+    "repository": "https://github.com/Microsoft/vscode-languageserver-node",
+    "text": "texts/npm-vscode-languageserver-types-3.17.5.txt"
+  },
+  "npm:vscode-uri@3.1.0": {
+    "license": "MIT",
+    "repository": "https://github.com/microsoft/vscode-uri",
+    "text": "texts/npm-vscode-uri-3.1.0.txt"
+  },
+  "npm:web-worker@1.2.0": {
+    "license": "Apache-2.0",
+    "repository": "https://github.com/developit/web-worker",
+    "text": "texts/npm-web-worker-1.2.0.txt"
+  },
+  "url:https://raw.githubusercontent.com/adobe-fonts/source-code-pro/2.038R-ro/1.058R-it/1.018R-VAR/LICENSE.md": {
+    "text": "texts/url-adobe-fonts-source-code-pro-2.038R-ro-1.058R-it-1.018R-VAR-LICENSE.txt"
+  },
+  "url:https://raw.githubusercontent.com/adobe-fonts/source-sans/2.045R-ro/1.095R-it/LICENSE.txt": {
+    "text": "texts/url-adobe-fonts-source-sans-2.045R-ro-1.095R-it-LICENSE.txt"
+  },
+  "url:https://raw.githubusercontent.com/faiface/pixel/master/LICENSE": {
+    "text": "texts/url-faiface-pixel-master-LICENSE.txt"
+  },
+  "url:https://raw.githubusercontent.com/golang/go/go1.24.6/LICENSE": {
+    "text": "texts/url-golang-go-go1.24.6-LICENSE.txt"
+  },
+  "url:https://raw.githubusercontent.com/googlefonts/fuzzy-bubbles/master/OFL.txt": {
+    "text": "texts/url-googlefonts-fuzzy-bubbles-master-OFL.txt"
+  },
+  "url:https://raw.githubusercontent.com/jquery/jquery/3.7.1/LICENSE.txt": {
+    "text": "texts/url-jquery-jquery-3.7.1-LICENSE.txt"
+  },
+  "url:https://raw.githubusercontent.com/mathjax/MathJax-src/3.2.2/LICENSE": {
+    "text": "texts/url-mathjax-MathJax-src-3.2.2-LICENSE.txt"
+  },
+  "url:https://raw.githubusercontent.com/mhchem/mhchemParser/master/LICENSE.txt": {
+    "text": "texts/url-mhchem-mhchemParser-master-LICENSE.txt"
+  },
+  "url:https://raw.githubusercontent.com/rough-stuff/rough/master/LICENSE": {
+    "text": "texts/url-rough-stuff-rough-master-LICENSE.txt"
+  },
+  "url:https://raw.githubusercontent.com/sindresorhus/github-markdown-css/main/license": {
+    "text": "texts/url-sindresorhus-github-markdown-css-main-license.txt"
+  },
+  "url:https://raw.githubusercontent.com/spdx/license-list-data/v3.25.0/text/Apache-2.0.txt": {
+    "text": "texts/url-spdx-license-list-data-v3.25.0-text-Apache-2.0.txt"
+  },
+  "url:https://raw.githubusercontent.com/spdx/license-list-data/v3.25.0/text/MIT.txt": {
+    "text": "texts/url-spdx-license-list-data-v3.25.0-text-MIT.txt"
+  }
+}

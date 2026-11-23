@@ -8,7 +8,7 @@
  * - renderAllLocal: Render all PlantUML blocks in a single JVM process (batch mode) with fallback to individual rendering
  * - listThemes: Dynamically discover available PlantUML themes via `help themes`
  * - Spawns Java via spawnJava/spawnJavaSync wrappers with -Djava.awt.headless=true (no macOS Dock icon)
- * - Cache key: content + jarPath + javaPath + dotPath + plantumlTheme (SHA-256 hash, max 200 entries)
+ * - Cache key: content + jarPath + javaPath + dotPath + plantumlTheme + Include Path (SHA-256 hash, max 200 entries)
  * - Auto-wraps with @startuml/@enduml if missing
  * - On syntax error: parses -stdrpt:1 structured stderr, displays source context
  *   with error line highlight and line number offset correction
@@ -55,6 +55,29 @@ export function resolveIncludePath(config: Pick<Config, 'plantumlIncludePath'>):
         if (existsSync(config.plantumlIncludePath)) return config.plantumlIncludePath;
     }
     return vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+}
+
+/**
+ * JVM system properties that every diagram-rendering Java process gets (they go before `-jar`).
+ *
+ * The PlantUML security profile is fixed to INTERNET_WITH_DOTSVG, so `@startdot` diagrams are drawn
+ * as SVG. Files read from inside a diagram are then limited to the Include Path folder, which is
+ * passed as `plantuml.include.path` (made absolute from the extension host's working directory,
+ * like the child's `cwd`). PlantUML splits that property on the Java path separator, so a folder
+ * containing it is not passed; without the property no local file can be read from a diagram.
+ * Older PlantUML versions treat the unknown profile name as LEGACY.
+ *
+ * @param config - Extension configuration containing plantumlIncludePath.
+ * @returns The `-D` arguments to put before `-jar`.
+ */
+export function plantumlSecurityArgs(config: Pick<Config, 'plantumlIncludePath'>): string[] {
+    const args = ['-DPLANTUML_SECURITY_PROFILE=INTERNET_WITH_DOTSVG'];
+    const includePath = resolveIncludePath(config);
+    if (includePath) {
+        const dir = path.resolve(includePath);
+        if (!dir.includes(path.delimiter)) args.push(`-Dplantuml.include.path=${dir}`);
+    }
+    return args;
 }
 
 /**
@@ -182,9 +205,10 @@ function prepareRenderContext(pumlContent: string, config: Config): { ctx: Rende
     const trimmed = pumlContent.trim();
     const tagsAdded = !trimmed.startsWith('@start');
     const content = ensureStartEndTags(trimmed);
-    const hash = computeHash(content, jarPath, resolveJavaCommand(javaPath), dotPath, plantumlTheme);
+    const includePath = resolveIncludePath(config);
+    const hash = computeHash(content, jarPath, resolveJavaCommand(javaPath), dotPath, plantumlTheme, includePath ?? '');
 
-    const args = ['-Djava.awt.headless=true', '-jar', jarPath, '-pipe', '-tsvg', '-charset', 'UTF-8', '-stdrpt:1'];
+    const args = ['-Djava.awt.headless=true', ...plantumlSecurityArgs(config), '-jar', jarPath, '-pipe', '-tsvg', '-charset', 'UTF-8', '-stdrpt:1'];
     if (dotPath !== 'dot') {
         args.push('-graphvizdot', dotPath);
     }
@@ -192,7 +216,7 @@ function prepareRenderContext(pumlContent: string, config: Config): { ctx: Rende
         args.push('-theme', plantumlTheme);
     }
 
-    return { ctx: { javaPath, args, content, trimmed, tagsAdded, hash, includePath: resolveIncludePath(config) } };
+    return { ctx: { javaPath, args, content, trimmed, tagsAdded, hash, includePath } };
 }
 
 /**
@@ -347,7 +371,7 @@ export function renderToPngAsync(pumlContent: string, config: Config, signal?: A
     const content = ensureStartEndTags(trimmed);
     const includePath = resolveIncludePath(config);
 
-    const args = ['-Djava.awt.headless=true', '-jar', jarPath, '-pipe', '-tpng', '-charset', 'UTF-8'];
+    const args = ['-Djava.awt.headless=true', ...plantumlSecurityArgs(config), '-jar', jarPath, '-pipe', '-tpng', '-charset', 'UTF-8'];
     if (dotPath !== 'dot') args.push('-graphvizdot', dotPath);
     if (plantumlTheme !== 'default') args.push('-theme', plantumlTheme);
 
@@ -407,20 +431,34 @@ export function renderToPngAsync(pumlContent: string, config: Config, signal?: A
 }
 
 /**
+ * Delimiter PlantUML prints after each diagram in batch -pipe mode (`-pipedelimitor`).
+ * ASCII on one line, without XML special characters, and not starting with `-`
+ * (PlantUML takes the argument after `-pipedelimitor` as its value).
+ */
+export const PIPE_DELIMITER = 'PMP_PLANTUML_DIAGRAM_END';
+
+/**
  * Split concatenated SVG output from PlantUML -pipe mode into individual SVGs.
  *
- * PlantUML outputs each diagram's SVG consecutively in stdout. Each SVG starts
- * with a `<?xml` declaration. We split on this boundary to extract individual SVGs.
+ * PlantUML prints {@link PIPE_DELIMITER} on its own line after each diagram it read, error
+ * images included, so the output is split on that string (not on lines: the line end is CRLF
+ * on Windows and an SVG has no trailing newline) and each part is trimmed. The part after the
+ * last delimiter must be empty; anything else (for example an SVG cut off when the JVM died
+ * midway) means the output does not match the input. An empty part before it (a diagram that
+ * printed nothing) does not match either, so that no empty SVG is cached.
  *
  * @param stdout - Concatenated SVG output from PlantUML.
- * @returns Array of individual SVG strings.
+ * @returns Array of individual SVG strings, or null when a part is empty or output follows the last delimiter.
  */
-function splitSvgOutput(stdout: string): string[] {
-    return stdout.split(/(?=<\?xml\s)/).filter(p => p.trim().length > 0);
+export function splitSvgOutput(stdout: string): string[] | null {
+    const parts = stdout.split(PIPE_DELIMITER).map(p => p.trim());
+    const rest = parts.pop();
+    if (rest || parts.some(p => !p)) return null;
+    return parts;
 }
 
 /**
- * Detect whether an SVG is a PlantUML error diagram (syntax error).
+ * Detect whether an SVG is a PlantUML error diagram (syntax error, or Graphviz missing).
  *
  * Error SVGs should not be cached so that re-renders after a fix produce
  * corrected output. Uses broad OR matching so that false positives
@@ -431,7 +469,7 @@ function splitSvgOutput(stdout: string): string[] {
  * @returns true if the SVG appears to be an error diagram.
  */
 function isErrorSvg(svg: string): boolean {
-    return /\[From string \(line \d+\)\]/.test(svg) || svg.includes('Syntax Error');
+    return /\[From string \(line \d+\)\s*\]/.test(svg) || svg.includes('Syntax Error') || svg.includes('Dot/Graphviz installation');
 }
 
 /**
@@ -541,7 +579,7 @@ async function fallbackToIndividual(
  *
  * Sends all uncached blocks to one JVM via stdin in -pipe mode. Each block
  * is wrapped with @startuml/@enduml, concatenated, and piped as a single
- * stdin payload. The concatenated SVG output is split by <?xml boundaries.
+ * stdin payload. The concatenated SVG output is split on {@link PIPE_DELIMITER}.
  *
  * Falls back to individual rendering (via renderToSvgAsync) if the batch
  * JVM fails or produces an unexpected number of SVGs.
@@ -565,6 +603,7 @@ async function renderBatchLocal(blocks: string[], config: Config, signal?: Abort
     }
 
     // Deduplicate and separate cached from uncached
+    const includePath = resolveIncludePath(config);
     const seen = new Set<string>();
     const uncached: { trimmed: string; content: string; hash: string }[] = [];
 
@@ -573,7 +612,7 @@ async function renderBatchLocal(blocks: string[], config: Config, signal?: Abort
         if (seen.has(trimmed)) continue;
         seen.add(trimmed);
         const content = ensureStartEndTags(trimmed);
-        const hash = computeHash(content, jarPath, resolveJavaCommand(javaPath), dotPath, plantumlTheme);
+        const hash = computeHash(content, jarPath, resolveJavaCommand(javaPath), dotPath, plantumlTheme, includePath ?? '');
         const cached = cache.get(hash);
         if (cached !== undefined) {
             results.set(trimmed, cached);
@@ -585,7 +624,8 @@ async function renderBatchLocal(blocks: string[], config: Config, signal?: Abort
     if (uncached.length === 0 || signal?.aborted) return results;
 
     // Build batch JVM args (no -stdrpt:1 — per-diagram stderr not parseable in batch)
-    const args = ['-Djava.awt.headless=true', '-jar', jarPath, '-pipe', '-tsvg', '-charset', 'UTF-8'];
+    const args = ['-Djava.awt.headless=true', ...plantumlSecurityArgs(config), '-jar', jarPath, '-pipe', '-tsvg', '-charset', 'UTF-8',
+        '-pipedelimitor', PIPE_DELIMITER];
     if (dotPath !== 'dot') args.push('-graphvizdot', dotPath);
     if (plantumlTheme !== 'default') args.push('-theme', plantumlTheme);
 
@@ -596,10 +636,10 @@ async function renderBatchLocal(blocks: string[], config: Config, signal?: Abort
     const stdinPayload = uncached.map(b => b.content).join('\n');
 
     try {
-        const stdout = await spawnBatchJvm(javaPath, args, stdinPayload, timeout, signal, resolveIncludePath(config));
+        const stdout = await spawnBatchJvm(javaPath, args, stdinPayload, timeout, signal, includePath);
         const svgs = splitSvgOutput(stdout);
 
-        if (svgs.length !== uncached.length) {
+        if (!svgs || svgs.length !== uncached.length) {
             // Output count mismatch: fall back to individual rendering
             return fallbackToIndividual(uncached, results, config, signal);
         }
@@ -808,7 +848,7 @@ export function listThemesAsync(config: Pick<Config, 'plantumlJarPath' | 'javaPa
     const promise = new Promise<string[]>((resolve) => {
         const child = spawnJava(
             javaPath,
-            ['-Djava.awt.headless=true', '-jar', jarPath, '-pipe', '-tutxt', '-charset', 'UTF-8'],
+            ['-Djava.awt.headless=true', ...plantumlSecurityArgs(config), '-jar', jarPath, '-pipe', '-tutxt', '-charset', 'UTF-8'],
             // Same folder as renders, so a relative javaPath names the same file.
             { stdio: ['pipe', 'pipe', 'pipe'], cwd: resolveIncludePath(config) }
         );

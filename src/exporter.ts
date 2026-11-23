@@ -16,6 +16,7 @@ import fs from 'fs';
 import os from 'os';
 import path from 'path';
 import url from 'url';
+import crypto from 'crypto';
 import { spawn } from 'child_process';
 import http from 'http';
 import MarkdownIt, { type Options as MarkdownItOptions } from 'markdown-it';
@@ -31,20 +32,16 @@ import { findBrowser } from './browser-finder.js';
 import { exportOutputPath, fileNameWithoutExtension } from './markdown-files.js';
 import { MERMAID_THEME_SET, type Config } from './config.js';
 import katexPlugin, { type MarkdownKatexOptions } from '@vscode/markdown-it-katex';
-import type { KatexOptions } from 'katex';
-import { strikethroughPlugin, trimAutolinkTrailing, listLooseClassPlugin } from './markdown-rules.js';
+import taskLists from 'markdown-it-task-lists';
+import { strikethroughPlugin, trimAutolinkTrailing, listLooseClassPlugin, footnotePlugin, alertPlugin } from './markdown-rules.js';
 import { loadingOverlayHtml } from './loading-overlay.js';
 import { shownScriptLoader } from './shown-script-loader.js';
 import { mermaidLoadErrorLiteral, SHOW_MERMAID_LOAD_ERROR_SCRIPT } from './mermaid-load-error.js';
 
 // KaTeX plugin options. throwOnError:false renders invalid math as a katex-error
-// display instead of throwing. output:'html' is a KaTeX render option that works
-// because the @vscode plugin forwards options straight to katex.renderToString
-// (suppresses the MathML output, emitting HTML only). Since output is not part of
-// the MarkdownKatexOptions type, it is combined with KatexOptions and cast.
-const KATEX_OPTIONS: MarkdownKatexOptions & Pick<KatexOptions, 'output'> = {
+// display instead of throwing.
+const KATEX_OPTIONS: MarkdownKatexOptions = {
     throwOnError: false,
-    output: 'html',
 };
 
 import {
@@ -245,48 +242,12 @@ function invalidateMdCache(config: Config): void {
  * When withSourceMap is true, a core rule (`source_map`) is added to attach
  * `data-source-line` attributes to block-level opening tokens and store
  * line numbers in `token.meta.sourceLine` for fence tokens.
- * Cached instances are reused for the same path/theme settings.
+ * Cached instances are reused for the same path/theme settings, and recreated when the
+ * cache is empty or was discarded by {@link invalidateMdCache}.
  *
  * @param config - Configuration used for PlantUML rendering.
  * @param [withSourceMap] - Whether to enable the source_map core rule.
  * @returns Configured markdown-it instance (possibly cached).
- */
-/** markdown-it plugin type (matches the first arg of md.use). */
-type MdPlugin = Parameters<MarkdownIt['use']>[0];
-
-/**
- * Loaded markdown-it-github-alerts plugin, or null until preloaded.
- * The package is ESM-only; a CommonJS build (esbuild/tsc Node16) cannot import
- * it statically, so it is loaded once via dynamic import.
- */
-let githubAlertsPlugin: MdPlugin | null = null;
-/** In-flight dynamic import, so concurrent renders load the plugin only once. */
-let githubAlertsLoading: Promise<void> | null = null;
-
-/**
- * Preload the ESM-only GitHub-alerts plugin. Idempotent; safe to await on every
- * render. A load failure is swallowed so alerts degrade to plain blockquotes
- * rather than breaking rendering.
- */
-async function ensureGithubAlerts(): Promise<void> {
-    if (githubAlertsPlugin || githubAlertsLoading) return githubAlertsLoading ?? undefined;
-    githubAlertsLoading = (async () => {
-        try {
-            githubAlertsPlugin = (await import('markdown-it-github-alerts')).default as MdPlugin;
-        } catch {
-            githubAlertsPlugin = null;
-        }
-    })();
-    return githubAlertsLoading;
-}
-
-/**
- * Return the cached markdown-it instance for the configuration, creating it when the
- * cache is empty or was discarded by {@link invalidateMdCache}.
- *
- * @param config - Current configuration.
- * @param withSourceMap - Whether to return the instance that adds data-source-line attributes.
- * @returns The markdown-it instance.
  */
 function getOrCreateMd(config: Config, withSourceMap?: boolean): MarkdownIt {
     invalidateMdCache(config);
@@ -298,9 +259,13 @@ function getOrCreateMd(config: Config, withSourceMap?: boolean): MarkdownIt {
     }
 
     const md = new MarkdownIt(MD_OPTIONS);
-    // GitHub-style autolink ends, `~`/`~~` strikethrough and loose-list class (see markdown-rules.ts).
+    // GitHub-style autolink ends, `~`/`~~` strikethrough, footnotes and loose-list class (see markdown-rules.ts).
     trimAutolinkTrailing(md);
     md.use(strikethroughPlugin);
+    // GFM task lists as read-only checkboxes: enabled: false keeps the `disabled` attribute,
+    // since the preview never edits the document.
+    md.use(taskLists, { enabled: false, label: false });
+    md.use(footnotePlugin);
     md.use(listLooseClassPlugin);
     plantumlPlugin(md, config);
     if (config.enableMath) {
@@ -308,11 +273,7 @@ function getOrCreateMd(config: Config, withSourceMap?: boolean): MarkdownIt {
     }
     // GitHub-style alerts (> [!NOTE] etc.). Emits the same markup GitHub uses
     // (div.markdown-alert + p.markdown-alert-title); styled per theme in themes/base.ts.
-    // The plugin is ESM-only, so it is dynamically preloaded (ensureGithubAlerts)
-    // before this factory runs; skip if that hasn't completed yet.
-    // matchCaseSensitive: GitHub only recognizes uppercase markers ([!NOTE]);
-    // lowercase [!note] stays a plain blockquote.
-    if (githubAlertsPlugin) md.use(githubAlertsPlugin, { matchCaseSensitive: true });
+    md.use(alertPlugin);
 
     /**
      * Indented code block renderer: the same `<pre class="hljs"><code>` wrapper the
@@ -368,11 +329,18 @@ function getOrCreateMd(config: Config, withSourceMap?: boolean): MarkdownIt {
          * For opening tokens (nesting === 1), sets the `data-source-line` HTML attribute
          * directly on the token. For fence tokens (nesting === 0), stores the line number
          * in `token.meta.sourceLine` so the renderer can wrap the output with the attribute.
+         * Tokens inside the footnote section get no line: markdown-it-footnote moves the
+         * definitions to the end of the document, and their lines would pin every later
+         * line to the end in scroll sync.
          *
          * @param state - markdown-it core state containing the token stream.
          */
         md.core.ruler.push('source_map', function (state) {
+            let inFootnotes = false;
             for (const token of state.tokens) {
+                if (token.type === 'footnote_block_open') inFootnotes = true;
+                else if (token.type === 'footnote_block_close') inFootnotes = false;
+                if (inFootnotes) continue;
                 if (token.map && token.map.length >= 2) {
                     if (token.nesting === 1) {
                         token.attrSet('data-source-line', String(token.map[0]));
@@ -449,9 +417,6 @@ export async function renderBodyAsync(
     // back to synchronous renderToSvg (spawnSync), freezing the extension host.
     if (signal?.aborted) return { bodyHtml: '', hasMermaid: false };
 
-    // Ensure the ESM-only GitHub-alerts plugin is loaded before the (cached) md
-    // instance is built, so the first render already includes alert support.
-    await ensureGithubAlerts();
     const md = getOrCreateMd(config, options?.sourceMap);
     const env: RenderEnv = { preRenderedSvgs, preRenderedD2Svgs, plantumlScale: config.plantumlScale, d2Scale: config.d2Scale };
     const bodyHtml = md.render(source, env);
@@ -541,6 +506,96 @@ export async function exportToHtml(mdFilePath: string, config: Config, signal?: 
 
 /** PDF export timeout in milliseconds. */
 const PDF_TIMEOUT_MS = 30_000;
+
+/** Page margin of the PDF, in millimeters (the `@page` rule in PDF_PRINT_CSS). */
+const PDF_MARGIN_MM = 15;
+
+/**
+ * Print-only CSS for the PDF. Paper cannot scroll, so content that scrolls sideways on screen
+ * has to fit the page instead. Text keeps its size where it can: long code lines wrap (not the
+ * Mermaid source, whose labels would inherit it), and PDF_FIT_SCRIPT breaks long words only in
+ * the body cells of a table that does not fit (`pdf-break`; header cells stay whole).
+ * Tables and display math that still overflow are shrunk by PDF_FIT_SCRIPT, like diagrams.
+ * HTML export keeps the GitHub shapes (content-wide tables that scroll).
+ */
+export const PDF_PRINT_CSS = `@page{margin:${PDF_MARGIN_MM}mm}`
+    + 'pre:not(.mermaid):not(:where(svg *)){white-space:pre-wrap;overflow-wrap:anywhere;overflow:visible}'
+    + 'table:not(:where(svg *)){overflow:visible}td.pdf-break:not(:where(svg *)){overflow-wrap:anywhere}'
+    + '.katex-display:not(:where(svg *)){overflow:visible}';
+
+/**
+ * Script run in the page before printing, evaluated with the printed content width in CSS
+ * pixels as `w`. It lays the page out at that width and, for each table that is wider than
+ * the page, lets long words break in its widest body cells first, one column width at a time,
+ * stopping as soon as the table fits (short words in narrow columns stay whole). A table that
+ * breaking cannot fit (its header cells are too wide) breaks no words at all; it is shrunk with
+ * `zoom`, as is a display formula that is too wide (a numbered formula is measured with room for
+ * its number, so the number never overlaps it). The zoom is measured again because borders do
+ * not shrink below 1px. The width is given back at the end. A table inside a table is fitted with
+ * the outer one; a formula inside a table cell is fitted after the table, so the table may shrink a
+ * little more than needed (rare).
+ */
+export const PDF_FIT_SCRIPT = `(w => {
+    if (!(w > 0)) return false;
+    const root = document.documentElement;
+    const prev = root.style.width;
+    root.style.width = w + 'px';
+    try {
+        const boxes = document.querySelectorAll('#preview-content table:not(:where(svg *)), #preview-content .katex-display:not(:where(svg *))');
+        for (const el of boxes) {
+            // A nested table is fitted with the table it is in.
+            if (el.tagName === 'TABLE' && el.parentElement && el.parentElement.closest('#preview-content table')) continue;
+            // A numbered formula (\\tag) has its number absolutely placed at the right, outside scrollWidth:
+            // measure the formula (all its lines) plus twice the number's width, so the number never overlaps
+            // the shrunk formula. KaTeX 0.16 names them .tag and .base, KaTeX 0.19 .katex-tag and .katex-base.
+            const tag = el.matches('.katex-display') ? el.querySelector('.katex-html > :is(.tag, .katex-tag)') : null;
+            const ratio = () => {
+                if (!tag) return el.scrollWidth / el.clientWidth;
+                const rects = [...el.querySelectorAll('.katex-html > :is(.base, .katex-base)')].map(b => b.getBoundingClientRect());
+                if (!rects.length) return 1;
+                const left = Math.min(...rects.map(r => r.left));
+                const right = Math.max(...rects.map(r => r.right));
+                return (right - left + 2 * tag.getBoundingClientRect().width) / el.getBoundingClientRect().width;
+            };
+            const over = () => el.clientWidth > 0 && (tag ? ratio() > 1.001 : el.scrollWidth > el.clientWidth + 1);
+            if (el.tagName === 'TABLE') {
+                let rest = [...el.querySelectorAll('td:not(:where(svg *))')];
+                while (over() && rest.length) {
+                    // Measure all widths first: marking a cell changes the widths of the others in its column.
+                    const widths = rest.map(c => c.offsetWidth);
+                    const widest = Math.max(...widths);
+                    for (const c of rest.filter((_, i) => widths[i] >= widest - 1)) c.classList.add('pdf-break');
+                    rest = rest.filter(c => !c.classList.contains('pdf-break'));
+                }
+                // Breaking did not make it fit (its header cells are too wide): unbreak and shrink instead.
+                if (over()) for (const c of el.querySelectorAll('td.pdf-break')) c.classList.remove('pdf-break');
+            }
+            let zoom = 1;
+            for (let i = 0; i < 3 && over(); i++) {
+                zoom /= ratio();
+                el.style.zoom = String(zoom);
+            }
+        }
+    } finally {
+        root.style.width = prev;
+    }
+    return true;
+})`;
+
+/**
+ * Width in CSS pixels that the printed content is laid out at: the paper width less the
+ * page margins, divided by the print scale (Chrome lays the page out at paper size / scale).
+ * printToPDF uses US Letter (8.5 x 11 in) when no paper size is given.
+ *
+ * @param scale - Print scale passed to printToPDF.
+ * @param landscape - Whether the page is landscape.
+ * @returns Content width in CSS pixels.
+ */
+export function pdfContentWidthPx(scale: number, landscape: boolean): number {
+    const paperIn = landscape ? 11 : 8.5;
+    const marginIn = (PDF_MARGIN_MM * 2) / 25.4;
+    return ((paperIn - marginIn) * 96) / scale;
+}
 
 /**
  * Make an HTTP GET request and return the response body as a string.
@@ -710,7 +765,7 @@ export async function exportToPdf(mdFilePath: string, config: Config, signal?: A
     const fullHtml = await renderHtmlAsync(source, fileNameWithoutExtension(mdFilePath), exportConfig, exportOptions, signal);
     if (signal?.aborted || !fullHtml) throw new Error('Aborted');
 
-    const printHtml = fullHtml.replace('</head>', '<style>@page{margin:15mm}</style>\n</head>');
+    const printHtml = fullHtml.replace('</head>', `<style>${PDF_PRINT_CSS}</style>\n</head>`);
 
     const tmpHtml = path.join(os.tmpdir(), `plantuml-md-preview-${Date.now()}.html`);
 
@@ -774,13 +829,29 @@ export async function exportToPdf(mdFilePath: string, config: Config, signal?: A
             // Extra wait for any remaining async rendering (KaTeX, etc.)
             await new Promise(r => setTimeout(r, 500));
 
-            // Print to PDF with scale
+            // Fit tables and formulas still wider than the page, then print to PDF with scale
             const pdfScale = config.pdfScale || 0.625;
+            const isLandscape = landscape ?? false;
+            // Measure with the final fonts (KaTeX's come from the CDN), but do not wait forever when offline.
+            await cdp.send('Runtime.evaluate', {
+                expression: 'Promise.race([document.fonts.ready, new Promise(r => setTimeout(r, 5000))]).then(() => true)',
+                awaitPromise: true,
+            });
+            // The PDF is still printed when fitting fails (wide content is then cut off at the page edge).
+            try {
+                const fit = await cdp.send('Runtime.evaluate', {
+                    expression: `${PDF_FIT_SCRIPT}(${pdfContentWidthPx(pdfScale, isLandscape)})`,
+                });
+                if (fit.exceptionDetails) console.warn('[exporter] PDF fit failed:', JSON.stringify(fit.exceptionDetails));
+                else if ((fit.result as { value?: unknown } | undefined)?.value !== true) console.warn('[exporter] PDF fit skipped: no print width');
+            } catch (err) {
+                console.warn('[exporter] PDF fit failed:', err);
+            }
             const result = await cdp.send('Page.printToPDF', {
                 printBackground: true,
                 preferCSSPageSize: true,
                 scale: pdfScale,
-                landscape: landscape ?? false,
+                landscape: isLandscape,
             });
 
             // Write the base64-encoded PDF data to disk
@@ -820,6 +891,15 @@ declare const __KATEX_VERSION__: string;
 declare const __MERMAID_MAJOR__: string;
 
 /**
+ * URL of mermaid.min.js that HTML export loads from the CDN.
+ *
+ * @returns The CDN URL for the bundled Mermaid major version.
+ */
+function mermaidCdnUrl(): string {
+    return `https://cdn.jsdelivr.net/npm/mermaid@${__MERMAID_MAJOR__}/dist/mermaid.min.js`;
+}
+
+/**
  * Build a KaTeX CSS `<style>` block for HTML export using CDN font URLs.
  * Reads katex.min.css from dist/ and replaces relative font paths with CDN URLs.
  *
@@ -837,8 +917,8 @@ async function buildKatexCdnCssHtml(): Promise<string> {
 /**
  * Assemble a complete HTML document from rendered body HTML.
  *
- * Inserts theme CSS via `<style id="theme-css">`, optional CSP meta tag
- * (nonce-based script-src), and optional script HTML before `</body>`.
+ * Inserts theme CSS via `<style id="theme-css">`, a CSP meta tag (nonce-based for the
+ * Webview, script-src only for export), and optional script HTML before `</body>`.
  *
  * @param title - Document title for the <title> tag.
  * @param body - Rendered HTML body content.
@@ -908,18 +988,24 @@ function buildHtml(title: string, body: string, previewTheme?: string, options?:
         mermaidHtml = `\n<script nonce="${cspNonce}">${SHOW_MERMAID_LOAD_ERROR_SCRIPT}${loader}</script>`;
     } else if (includeMermaid && !cspNonce) {
         // HTML export: load from CDN
-        mermaidHtml = `\n<script src="https://cdn.jsdelivr.net/npm/mermaid@${__MERMAID_MAJOR__}/dist/mermaid.min.js"></script>\n<script>${mermaidInitScript}</script>`;
+        mermaidHtml = `\n<script src="${mermaidCdnUrl()}"></script>\n<script>${mermaidInitScript}</script>`;
     }
+    // HTML/PDF export: only the two Mermaid scripts above may run (none without Mermaid), so scripts,
+    // event attributes and javascript: links in the Markdown and in diagram SVGs do not, as in the
+    // preview. Only scripts are restricted; images, fonts and media load as before.
+    const exportCspMeta = cspNonce ? '' : `\n  <meta http-equiv="Content-Security-Policy" content="script-src ${includeMermaid
+        ? `${mermaidCdnUrl()} 'sha256-${crypto.createHash('sha256').update(mermaidInitScript, 'utf8').digest('base64')}'`
+        : "'none'"};">`;
     return `<!DOCTYPE html>
 <html lang="${escapeHtml(lang || 'en')}">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">${cspMeta}
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">${cspMeta}${exportCspMeta}
   <title>${escapeHtml(title)}</title>
   <style id="theme-css">
 ${theme.css}
   </style>${katexCssHtml || ''}${buildLayoutOverrideStyle(htmlMaxWidth, htmlAlignment)}${fitToWidth ? `
-  <style>${typeof fitToWidth === 'number' ? `body{max-width:${fitToWidth}px;margin:${fitToWidthAlign === 'left' ? '0' : '0 auto'}}table{max-width:${fitToWidth}px;table-layout:fixed}table td,table th{word-break:break-word;overflow-wrap:break-word}` : `body{max-width:none;margin:0}.plantuml-diagram svg{max-width:100%;height:auto!important}.d2-diagram svg{max-width:100%;height:auto!important}pre.mermaid svg{max-width:100%!important;height:auto}img{max-width:100%;height:auto}table{width:100%;table-layout:fixed}table td,table th{word-break:break-word;overflow-wrap:break-word}`}</style>` : ''}${cspNonce ? `
+  <style>${typeof fitToWidth === 'number' ? `body{max-width:${fitToWidth}px;margin:${fitToWidthAlign === 'left' ? '0' : '0 auto'}}` : `body{max-width:none;margin:0}.plantuml-diagram svg{max-width:100%;height:auto!important}.d2-diagram svg{max-width:100%;height:auto!important}pre.mermaid svg{max-width:100%!important;height:auto}img{max-width:100%;height:auto}`}</style>` : ''}${cspNonce ? `
   <style>
 #nav-toolbar{position:fixed;top:8px;right:8px;display:flex;gap:2px;z-index:100}
 #nav-toolbar button{width:32px;height:32px;border:none;border-radius:4px;background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background 0.15s,opacity 0.15s;padding:0;opacity:0.45}

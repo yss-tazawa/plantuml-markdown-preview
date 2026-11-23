@@ -15,6 +15,7 @@ import { deflateRawSync } from 'zlib';
 import { escapeHtml, ensureStartEndTags, errorHtml, LruCache, computeHash, batchRender } from './utils.js';
 import type { Config } from './config.js';
 import { isManagedServerMode } from './config.js';
+import { resolveIncludePath } from './plantuml.js';
 import {
     handleRenderFailure, handleRenderSuccess, ensureLocalServerStarted,
     waitForLocalServer, getLocalServerUrl, localServerUnavailableMessage,
@@ -98,14 +99,15 @@ const DEFAULT_TIMEOUT_MS = 15000;
 
 /**
  * Compute a cache key for server rendering.
- * Key components: content + plantumlServerUrl + plantumlTheme.
+ * Key components: content + plantumlServerUrl + plantumlTheme + Include Path (the local server reads
+ * files from inside a diagram under it, and its URL stays the same on a fixed port).
  *
  * @param content - PlantUML source text (with @startuml/@enduml).
- * @param config - Server URL and theme settings.
+ * @param config - Server URL, theme and include path settings.
  * @returns SHA-256 hash string for cache lookup.
  */
 function cacheKey(content: string, config: Config): string {
-    return computeHash(content, config.plantumlServerUrl, config.plantumlTheme || 'default');
+    return computeHash(content, config.plantumlServerUrl, config.plantumlTheme || 'default', resolveIncludePath(config) ?? '');
 }
 
 // ---------------------------------------------------------------------------

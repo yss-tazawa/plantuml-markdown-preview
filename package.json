@@ -2,7 +2,7 @@
   "name": "plantuml-markdown-preview",
   "displayName": "%displayName%",
   "description": "%description%",
-  "version": "0.8.3",
+  "version": "0.9.0",
   "license": "MIT",
   "publisher": "yss-tazawa",
   "icon": "images/icon.png",
@@ -1582,12 +1582,14 @@
     "highlight.js": "^11.11.1",
     "katex": "^0.16.35",
     "markdown-it": "^14.1.1",
-    "markdown-it-github-alerts": "^1.0.1",
+    "markdown-it-footnote": "^4.0.0",
+    "markdown-it-task-lists": "^2.1.1",
     "mermaid": "^11.12.3"
   },
   "devDependencies": {
     "@types/jsdom": "^30.0.0",
     "@types/markdown-it": "^14.1.2",
+    "@types/markdown-it-footnote": "^3.0.4",
     "@types/mocha": "^10.0.10",
     "@types/node": "^20.17.0",
     "@types/vscode": "^1.83.0",
@@ -1617,6 +1619,7 @@
     "test:integration": "vscode-test",
     "typecheck": "tsc --noEmit && tsc --noEmit -p src/webview/tsconfig.webview.json",
     "typecheck:tests": "tsc --noEmit -p private/tests/tsconfig.tests.json",
-    "package": "npm run typecheck && npm run build && npx @vscode/vsce package --baseContentUrl https://github.com/yss-tazawa/plantuml-markdown-preview/blob/main --baseImagesUrl https://raw.githubusercontent.com/yss-tazawa/plantuml-markdown-preview/main"
+    "package": "npm run typecheck && npm run build && npx @vscode/vsce package --baseContentUrl https://github.com/yss-tazawa/plantuml-markdown-preview/blob/main --baseImagesUrl https://raw.githubusercontent.com/yss-tazawa/plantuml-markdown-preview/main",
+    "licenses": "npm run build && node scripts/licenses/generate.mjs"
   }
 }

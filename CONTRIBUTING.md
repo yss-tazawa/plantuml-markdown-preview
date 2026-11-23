@@ -47,6 +47,7 @@ The bundled PlantUML jar (LGPL) is used by default. To use a different jar, set 
 | `npm run build` | Bundle source + dependencies into `dist/extension.js` via esbuild |
 | `npm run typecheck` | Type-check both main and webview code with `tsc --noEmit` (no output files) |
 | `npm run package` | Type-check + build + generate `.vsix` package |
+| `npm run licenses` | Build + regenerate the third-party license lists in `third-party-licenses/` (run after changing dependencies) |
 
 > **Note:** `tsc` is used only for type-checking. esbuild handles all bundling — runtime dependencies are inlined into a single `dist/extension.js`.
 
@@ -95,6 +96,7 @@ src/
   themes/           CSS theme definitions (17 themes: 1 that follows VS Code + 9 light + 7 dark)
 snippets/           Markdown & diagram snippet definitions (PlantUML, Mermaid, D2)
 syntaxes/           TextMate grammars for Markdown fenced code blocks
+scripts/licenses/   Tools that regenerate the third-party license lists in third-party-licenses/
 l10n/               Localization bundles (7 languages: en, ja, zh-cn, zh-tw, ko, es, pt-br)
 .github/            GitHub templates (PR template, security policy)
 dist/               Build output (gitignored)

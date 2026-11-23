@@ -4,7 +4,7 @@
  *
  * Each theme file defines only a color palette object and passes it to buildThemeCss(),
  * which generates a complete CSS string covering body, headings, links, code blocks,
- * tables, blockquotes, PlantUML diagrams, and highlight.js syntax colors.
+ * tables, blockquotes, task lists, footnotes, PlantUML diagrams, and highlight.js syntax colors.
  * The block shapes (sizes, weights, spacing, borders, indents) follow GitHub; the
  * colors come from the palette.
  * Optional palette fields let a theme depart from the shared layout (table header
@@ -36,10 +36,8 @@ export interface ThemePalette {
     trEvenBg: string;
     /** Blockquote left-border color. */
     blockquoteBorder: string;
-    /** Blockquote text color. */
+    /** Blockquote text color; also the footnote section text. */
     blockquoteColor: string;
-    /** Blockquote background color. */
-    blockquoteBg: string;
     /** Code block (`.hljs`) background color; the renderer puts every code block in `pre.hljs`. */
     hljsBg: string;
     /** highlight.js comment token color (see `hljsCommentTokens`). */
@@ -128,7 +126,7 @@ const MONO_FONT = "'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospa
 /**
  * GitHub Primer accent colors for alert types, per light/dark theme.
  * Applied to `.markdown-alert-<type>` (left border + title/icon color).
- * Values mirror markdown-it-github-alerts' bundled github-colors CSS.
+ * Values are GitHub's Primer alert colors.
  */
 const ALERT_COLORS = {
     light: { note: '#0969da', tip: '#1a7f37', important: '#8250df', warning: '#9a6700', caution: '#d1242f' },
@@ -170,7 +168,7 @@ export function buildAlertAccentCss(dark: boolean, scope = ''): string {
 
 /**
  * Build the CSS for GitHub-style alerts (`> [!NOTE]` etc.), theme-aware.
- * Structure matches markdown-it-github-alerts' output; colors come from
+ * Structure matches the markup of alertPlugin (markdown-rules.ts); colors come from
  * {@link ALERT_COLORS} based on the theme background.
  *
  * @param bg - Theme background color, used to choose the light/dark accents.
@@ -183,7 +181,7 @@ function buildAlertCss(bg: string): string {
     return `
     .markdown-alert {
       padding: 0.5em 1em;
-      margin: 1em 0;
+      margin: 0 0 16px;
       border-left: 0.25em solid ${c.note};
       color: inherit;
     }
@@ -194,7 +192,7 @@ function buildAlertCss(bg: string): string {
       align-items: center;
       font-weight: 500;
       line-height: 1;
-      margin-bottom: 0.5em;
+      margin-bottom: 1em;
     }
     .markdown-alert-title .octicon {
       margin-right: 0.5em;
@@ -208,7 +206,7 @@ function buildAlertCss(bg: string): string {
  * Generate a complete theme CSS string from a color palette.
  *
  * Produces CSS rules for body layout, headings, links, inline/block code,
- * tables, blockquotes, horizontal rules, images, PlantUML diagrams,
+ * tables, blockquotes, horizontal rules, task lists, footnotes, images, PlantUML diagrams,
  * and highlight.js syntax token classes, with GitHub's block shapes. Optional
  * palette fields fall back to their corresponding base values, except `preBorder`:
  * without it code blocks have no border unless their background is the body background.
@@ -236,20 +234,21 @@ export function buildThemeCss(p: ThemePalette): string {
     *, *::before, *::after { box-sizing: border-box; }
     html { background-color: ${p.bg}; }
     body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
                    'Helvetica Neue', Arial, sans-serif;
       font-size: 16px;
       max-width: 960px; /* matches GitHub / VS Code markdown preview width */
       margin: 0 auto;
       padding: 46px 30px 4rem; /* as much room as Typora (GitHub theme): 30px at the sides, 30px + 16px above the first heading */
-      line-height: 1.6;
+      line-height: 1.5;
       word-wrap: break-word;
       color: ${p.text};
       background-color: ${p.bg};
     }
-    /* Block shapes (sizes, weights, spacing, borders, indents) follow GitHub (github-markdown-css 5.8.1); colors stay the theme's.
-       Body and table line height stay 1.6 rather than GitHub's 1.5, which is cramped for CJK text.
-       Spacing is the same margin above and below (adjacent margins collapse), which gives GitHub's gaps. */
+    /* Block shapes (sizes, weights, spacing, borders, indents, line heights) follow GitHub (github-markdown-css 5.8.1); colors stay the theme's.
+       Horizontal rules are half as thick as GitHub's.
+       Paragraphs, quotes, lists, definition lists, tables, code blocks, details, diagrams and display math have no top margin and 16px below, as on GitHub,
+       so a block right after something without a margin (a tight list item's text, a summary, a table cell) does not get extra room. */
     #preview-content > :first-child { margin-top: 0 !important; }
     #preview-content > :last-child { margin-bottom: 0 !important; }
     h1 { font-size: 2em; border-bottom: 1px solid ${p.border}; padding-bottom: 0.3em; }
@@ -259,44 +258,57 @@ export function buildThemeCss(p: ThemePalette): string {
     h5 { font-size: 0.875em; }
     h6 { font-size: 0.85em; }
     h1, h2, h3, h4, h5, h6 { margin-top: 24px; margin-bottom: 16px; font-weight: 600; line-height: 1.25; scroll-margin-top: 1.5em;${headingColor} }
-    p { margin: 1em 0; }
+    p { margin: 0 0 16px; }
     /* Paragraphs inside list items have no margin; lists whose items are separated by blank lines (loose lists) get paragraph spacing. */
     li > p { margin: 0; }
     ul.list-loose > li > p, ol.list-loose > li > p { margin: 1em 0; }
     ul.list-loose > li:first-child > p:first-child, ol.list-loose > li:first-child > p:first-child { margin-top: 0; }
     ul.list-loose > li:last-child > p:last-child, ol.list-loose > li:last-child > p:last-child { margin-bottom: 0; }
-    ul, ol { margin: 1em 0; padding-left: 2em; }
+    ul, ol { margin: 0 0 16px; padding-left: 2em; }
     ul ul, ul ol, ol ul, ol ol { margin: 0; }
     ol ol, ul ol { list-style-type: lower-roman; }
     ul ul ol, ul ol ol, ol ul ol, ol ol ol { list-style-type: lower-alpha; }
+    /* A list numbered by its type attribute (a raw ol with type="a" etc.) keeps that style, over the nesting rules above (same as GitHub). */
+    ol[type] { list-style-type: revert-layer; }
     li + li { margin-top: 0.25em; }
     b, strong { font-weight: 600; }
     a { color: ${p.link}; text-decoration: none; }
     a:hover { text-decoration: underline; }
+    /* An anchor without a link target (raw <a name>) reads as body text, as on GitHub; links in diagrams keep their own look. */
+    a:not([href]):not(:where(svg *)) { color: inherit; text-decoration: none; }
     a:visited { color: ${p.linkVisited}; }
-    code {
+    code, tt {
       font-family: ${MONO_FONT};
-      font-size: 0.875em;
+      font-size: 0.85em;
+      white-space: break-spaces;
       color: ${codeText};
       background: ${p.codeBg};
       padding: 0.2em 0.4em;
       border-radius: 6px;
     }
-    /* The code block carries the code font size and line height, so the line pitch is the code size x 1.45 as on GitHub. */
+    /* The code block carries the code font size and line height, so the line pitch is the code size x 1.45 as on GitHub.
+       Long words are not broken (word-wrap is reset here instead of inheriting the body's break-word), as on GitHub. */
     pre {
       font-family: ${MONO_FONT};
-      font-size: 0.875em;
+      font-size: 0.85em;
       line-height: 1.45;
-      margin: 16px 0;
+      word-wrap: normal;
+      margin: 0 0 16px;
       border-radius: 6px;${preBorder}
       padding: 16px;
       overflow-x: auto;
     }
-    h1 code, h2 code, h3 code, h4 code, h5 code, h6 code { padding: 0 0.2em; font-size: inherit; }
-    pre code { background: none; padding: 0; font-size: inherit; color: inherit; }
+    h1 code, h2 code, h3 code, h4 code, h5 code, h6 code,
+    h1 tt, h2 tt, h3 tt, h4 tt, h5 tt, h6 tt { padding: 0 0.2em; font-size: inherit; }
+    pre code { background: none; padding: 0; font-size: inherit; color: inherit; white-space: inherit; }
+    /* A tt in a code block drops only the background and padding; it keeps the inline size and white-space, as on GitHub. */
+    pre tt { background: none; padding: 0; color: inherit; }
+    del code { text-decoration: inherit; }
+    code br, tt br { display: none; }
+    samp { font-family: ${MONO_FONT}; font-size: 0.85em; }
     /* With source lines, a code block is wrapped in a div ending in a line marker that stops margin collapsing,
        so the wrapper takes the code block's margin (with the specificity of a bare div, so first and last child rules still win). */
-    div:where([data-source-line]:not([class])) { margin: 16px 0; }
+    div:where([data-source-line]:not([class])) { margin: 0 0 16px; }
     div:where([data-source-line]:not([class])) > pre { margin: 0; }
     kbd {
       display: inline-block;
@@ -309,34 +321,75 @@ export function buildThemeCss(p: ThemePalette): string {
       border-radius: 6px;
       box-shadow: inset 0 -1px 0 ${p.border};
     }
-    table { border-collapse: collapse; display: block; width: 100%; overflow: auto; margin: 1em 0; word-break: keep-all; }
-    th, td { border: 1px solid ${tableBorder}; padding: 6px 13px; text-align: left; }
+    /* No left and right margins, so that align="center" keeps its auto margins. */
+    table { border-collapse: collapse; display: block; width: max-content; max-width: 100%; overflow: auto; margin-top: 0; margin-bottom: 16px; font-variant: tabular-nums; }
+    th, td { border: 1px solid ${tableBorder}; padding: 6px 13px; }
+    /* Header cells without an align attribute are left-aligned like the cells below them (GitHub centers them); align attributes still apply. */
+    th:not([align]) { text-align: left; }
+    td > :last-child { margin-bottom: 0; }
     th { background: ${thBg}; font-weight: 600;${thBorder} }
-    tr:nth-child(even) { background: ${p.trEvenBg}; }
+    /* Stripes count only body rows with body cells, so the row after the header row is always white, even in an HTML
+       table whose header row is not in a <thead> (GitHub counts the header row there; a deliberate exception to GitHub).
+       Rows in <thead> and <tfoot> are not striped. */
+    tbody > tr:nth-child(even of :has(> td)) { background: ${p.trEvenBg}; }
     blockquote {
       border-left: 0.25em solid ${p.blockquoteBorder};
-      margin: 1em 0; /* vertical margin so consecutive blockquotes stay separate, like GitHub */
-      padding: 0.5em 1em;
+      margin: 0 0 16px;
+      padding: 0 1em;
       color: ${p.blockquoteColor};
-      background-color: ${p.blockquoteBg};
     }
     blockquote > :first-child { margin-top: 0; }
     blockquote > :last-child { margin-bottom: 0; }
     ${buildAlertCss(p.bg)}
-    hr { height: 0.25em; padding: 0; border: none; background-color: ${p.border}; margin: 24px 0; overflow: hidden; }
-    img { max-width: 100%; height: auto; }
-    .plantuml-diagram { margin: 1.5em 0; text-align: left; width: fit-content; }
+    hr { height: 0.125em; padding: 0; border: none; background-color: ${p.border}; margin: 24px 0; overflow: hidden; }
+    details { margin: 0 0 16px; }
+    details summary { cursor: pointer; }
+    summary h1, summary h2, summary h3, summary h4, summary h5, summary h6 { display: inline-block; }
+    summary h1, summary h2 { padding-bottom: 0; border-bottom: 0; }
+    small { font-size: 90%; }
+    /* Superscripts and subscripts do not raise the line, as on GitHub (footnote references are superscripts too). */
+    sub, sup { font-size: 75%; line-height: 0; position: relative; vertical-align: baseline; }
+    sub { bottom: -0.25em; }
+    sup { top: -0.5em; }
+    dl { padding: 0; margin: 0 0 16px; }
+    dl dt { padding: 0; margin-top: 1em; font-size: 1em; font-style: italic; font-weight: 600; }
+    dl dd { padding: 0 1em; margin: 0 0 1em; }
+    /* Form controls take the body font, so the checkbox's em margins are body ems, and drop the browser's own margins, as on GitHub. */
+    input { font: inherit; margin: 0; }
+    /* Task list checkboxes hang in the bullet's place; the space after the checkbox stays, as on GitHub.
+       The checkbox keeps the browser's own size (13px square). */
+    .task-list-item { list-style-type: none; }
+    .task-list-item-checkbox { margin: 0 0.2em 0.25em -1.4em; vertical-align: middle; }
+    /* Footnotes: the section is 12px text below a 1px line. */
+    section.footnotes { font-size: 12px; color: ${p.blockquoteColor}; border-top: 1px solid ${p.border}; }
+    .footnotes ol { padding-left: 16px; }
+    .footnotes ol ul { display: inline-block; padding-left: 16px; margin-top: 16px; }
+    .footnotes-list { margin: 0; }
+    .footnote-item::marker { color: ${p.link}; }
+    /* The definition a reference jumps to gets a frame and the body text color, as on GitHub: :target in an
+       exported page, .footnote-target in the preview (the webview script marks it; the webview never sets :target). */
+    .footnote-item { position: relative; }
+    .footnote-item:is(:target, .footnote-target)::before { position: absolute; inset: -8px -8px -8px -24px; pointer-events: none; content: ""; border: 2px solid ${p.link}; border-radius: 6px; }
+    .footnote-item:is(:target, .footnote-target) { color: ${p.text}; }
+    /* Footnote paragraphs and the paragraphs of loose lists in them are spaced by the body size (16px), not the 12px text. */
+    .footnote-item > p, .footnote-item ul.list-loose > li > p, .footnote-item ol.list-loose > li > p { margin: 16px 0; }
+    img { max-width: 100%; height: auto; box-sizing: content-box; border-style: none; }
+    img[align=right] { padding-left: 20px; }
+    img[align=left] { padding-right: 20px; }
+    .plantuml-diagram { margin: 0 0 16px; text-align: left; width: fit-content; }
     .plantuml-diagram svg { height: auto; }
-    .mermaid-diagram { margin: 1.5em 0; text-align: left; width: fit-content; }
+    .mermaid-diagram { margin: 0 0 16px; text-align: left; width: fit-content; }
     .mermaid-diagram pre.mermaid { visibility: hidden; overflow: visible; border: none; margin: 0; padding: 0; font-size: inherit; line-height: inherit; }
     .mermaid-diagram svg { visibility: visible; height: auto; }
     .mermaid-error { visibility: visible; color: #d32f2f; border-left: 3px solid #d32f2f; padding: 0.5em; white-space: pre-wrap; font-size: 0.85em; }
-    .d2-diagram { margin: 1.5em 0; text-align: left; }
+    .d2-diagram { margin: 0 0 16px; text-align: left; }
     .d2-diagram pre.d2 { margin: 0; }
     .d2-diagram svg { height: auto; }
     .d2-error { color: #d32f2f; border-left: 3px solid #d32f2f; padding: 0.5em; white-space: pre-wrap; font-size: 0.85em; }
     .katex { color: inherit; }
     .katex-display { margin: 1em 0; overflow-x: auto; overflow-y: hidden; }
+    .katex-block { margin: 0 0 16px; }
+    .katex-block > .katex-display { margin: 0; }
     body.preview { margin: 0; max-width: none; padding: 46px 30px 1em; }
     /* In print (PDF export, or printing an exported HTML file) the page margin takes the place of the room above the document. */
     @media print { body { padding-top: 0; } }

@@ -8,6 +8,7 @@
  *
  * Also copies mermaid.min.js to dist/ for Webview-side rendering,
  * and KaTeX CSS + fonts to dist/ for math rendering.
+ * Writes each bundle's metafile to .licenses/ for scripts/licenses/.
  */
 'use strict';
 
@@ -26,6 +27,7 @@ Promise.all([
         target: 'node18',
         minify: false,
         sourcemap: false,
+        metafile: true,
         define: {
             '__KATEX_VERSION__': JSON.stringify(katexVersion),
             '__MERMAID_MAJOR__': JSON.stringify(mermaidMajor),
@@ -40,11 +42,26 @@ Promise.all([
         target: 'es2020',
         minify: false,
         sourcemap: false,
+        metafile: true,
     }),
-]).then(() => {
-    // Copy mermaid.min.js to dist/ for Webview-side rendering
+]).then(([extensionResult, webviewResult]) => {
     const fs = require('fs');
     const path = require('path');
+
+    // Write the metafiles (the modules inside each bundle) outside dist/ so they stay out of the
+    // VSIX; scripts/licenses/ reads them to list the bundled npm packages.
+    const metaDir = path.join(__dirname, '.licenses');
+    try {
+        fs.mkdirSync(metaDir, { recursive: true });
+        fs.writeFileSync(path.join(metaDir, 'meta-extension.json'), JSON.stringify(extensionResult.metafile));
+        fs.writeFileSync(path.join(metaDir, 'meta-webview.json'), JSON.stringify(webviewResult.metafile));
+        console.log('Wrote: .licenses/meta-extension.json, .licenses/meta-webview.json');
+    } catch (writeErr) {
+        console.error('Failed to write the metafiles:', writeErr.message);
+        process.exit(1);
+    }
+
+    // Copy mermaid.min.js to dist/ for Webview-side rendering
     const src = path.join(__dirname, 'node_modules/mermaid/dist/mermaid.min.js');
     const dest = path.join(__dirname, 'dist/mermaid.min.js');
     try {
