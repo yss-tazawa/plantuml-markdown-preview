@@ -16,7 +16,7 @@ import * as net from 'net';
 import * as vscode from 'vscode';
 import type { ChildProcess } from 'child_process';
 import { spawnJava, killProcessTree, isProcessAlive, looksLikeJavaProcess } from './utils.js';
-import { resolveIncludePath } from './plantuml.js';
+import { resolveIncludePath, plantumlSecurityArgs } from './plantuml.js';
 import type { Config } from './config.js';
 import { checksJavaOnOpen, isJavaUnusable, javaGuidance, type JavaCheckResult } from './java-check.js';
 import { notifyOnce, type Guidance, type GuidanceAction } from './notify-once.js';
@@ -385,6 +385,10 @@ async function runStart(config: Config, superseded: () => boolean): Promise<void
     // there, fail at once if another program holds the port, and spawn only on a free one ---
     // Checked before the jar/Java requirements: adopting a running server needs neither.
     if (port > 0) {
+        // A server that was just stopped keeps its port, without answering, until it exits:
+        // wait for it, or the port would look taken by another program.
+        await stopExitPromise;
+        if (superseded()) return;
         const url = `http://127.0.0.1:${port}`;
         const found = await probeServer(url);
         if (superseded()) return;
@@ -575,7 +579,8 @@ function classifyBootFailure(boot: BootFailure | null, err: NodeJS.ErrnoExceptio
 
 /**
  * Promise that resolves when the most recently stopped server process exits.
- * Used by `restartLocalServer` to wait for port release before starting a new server.
+ * `restartLocalServer` and a start on a fixed port wait for it, so the new server does not
+ * find the port still held by the old one.
  */
 let stopExitPromise: Promise<void> = Promise.resolve();
 
@@ -635,9 +640,9 @@ export function stopLocalServer(): void {
             proc.once('error', done);
         });
     } else {
-        // Adopted server or nothing running: just drop our reference.
+        // Adopted server or nothing running: just drop our reference. Keep stopExitPromise:
+        // a child stopped just before may still hold its port until it exits.
         serverProcess = null;
-        stopExitPromise = Promise.resolve();
     }
     rememberPid(undefined);
     resetState();
@@ -969,7 +974,7 @@ async function findFreePort(preferredPort: number, excludePorts?: Set<number>): 
 /**
  * Build Java CLI arguments for the picoweb server.
  *
- * @param config - Extension settings (plantumlJarPath, dotPath, JVM heap settings).
+ * @param config - Extension settings (plantumlJarPath, dotPath, plantumlIncludePath, JVM heap settings).
  * @param port - Port number for the picoweb server.
  * @returns Array of CLI arguments.
  */
@@ -977,7 +982,7 @@ export function buildArgs(config: Config, port: number): string[] {
     // Heap flags (-Xms/-Xmx + fixed flags) are JVM options, so they must come before -jar.
     // For unlimited this is an empty array = exactly the legacy argument list (design §1.2 / §5.3).
     const heapArgs = resolveJvmHeapArgs(config);
-    const args = [...heapArgs, '-Djava.awt.headless=true', '-jar', config.plantumlJarPath, '-picoweb:' + port + ':127.0.0.1'];
+    const args = [...heapArgs, '-Djava.awt.headless=true', ...plantumlSecurityArgs(config), '-jar', config.plantumlJarPath, '-picoweb:' + port + ':127.0.0.1'];
     if (config.dotPath && config.dotPath !== 'dot') {
         // -graphvizdot is a PlantUML app arg; insert it right after the jar path (before -picoweb).
         const jarIndex = args.indexOf('-jar');

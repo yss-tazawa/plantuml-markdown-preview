@@ -1,7 +1,14 @@
 This extension bundles PlantUML (https://plantuml.com/).
 
-PlantUML is distributed under the GNU Lesser General Public License v3 (LGPL-3.0).
-See https://www.gnu.org/licenses/lgpl-3.0.html for full license terms.
+PlantUML is distributed under the GNU Lesser General Public License v3.0 or later (LGPL-3.0-or-later).
+The full license texts are in third-party-licenses/PlantUML-LICENSE.txt (LGPL-3.0) and
+third-party-licenses/PlantUML-GPL-3.0.txt (the GPL-3.0 it incorporates).
 
-Bundled version: plantuml-lgpl-1.2026.2.jar
+Bundled version: plantuml-lgpl-1.2026.10.jar
 Source: https://github.com/plantuml/plantuml
+Corresponding source of this version:
+  https://github.com/plantuml/plantuml/archive/refs/tags/v1.2026.10.tar.gz
+  https://github.com/plantuml/plantuml/releases/download/v1.2026.10/plantuml-lgpl-1.2026.10-sources.jar
+
+The jar also contains Graphviz (EPL-1.0) and graphics under Creative Commons licenses; see
+third-party-licenses/NOTICE.md.

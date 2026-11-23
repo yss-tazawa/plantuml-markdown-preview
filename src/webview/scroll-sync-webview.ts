@@ -1016,6 +1016,23 @@ interface Anchor {
     }
     observeImages();
 
+    // --- Footnote jump frame ---
+    // VS Code's webview follows an in-page link itself (scrollIntoView, then preventDefault), so the URL
+    // hash never changes and :target never matches. Mark the footnote definition a link jumps to instead,
+    // so it gets the same frame as on GitHub (base.ts); any other in-page jump clears the mark.
+    document.addEventListener('click', function (e) {
+        const link = (e.target as Element | null)?.closest?.('a[href^="#"]') as HTMLAnchorElement | null;
+        if (!link) return;
+        const raw = link.getAttribute('href')!.slice(1);
+        let id = raw;
+        try { id = decodeURIComponent(raw); } catch { /* keep the raw id */ }
+        // The outline writes ids as they are (not percent-encoded), so fall back to the raw id.
+        const target = raw ? document.getElementById(id) ?? document.getElementById(raw) : null;
+        if (!target) return;
+        for (const el of document.querySelectorAll('.footnote-target')) el.classList.remove('footnote-target');
+        if (target.matches('.footnote-item')) target.classList.add('footnote-target');
+    });
+
     // --- Navigation toolbar (top-right) ---
     const navTop = document.getElementById('nav-top');
     const navBottom = document.getElementById('nav-bottom');
@@ -1055,7 +1072,11 @@ interface Anchor {
             const level = parseInt(h.tagName[1], 10);
             const id = h.id || ('toc-heading-' + i);
             if (!h.id) h.id = id;
-            const node: TocNode = { id, text: h.textContent || '', level, children: [] };
+            // Read the text from a copy without the hidden MathML of formulas (its text and the
+            // TeX source would repeat each formula); the heading itself keeps it.
+            const textEl = h.cloneNode(true) as Element;
+            for (const el of textEl.querySelectorAll('.katex-mathml')) el.remove();
+            const node: TocNode = { id, text: textEl.textContent || '', level, children: [] };
             // Pop stack until we find a parent with lower level
             while (stack.length > 1 && stack[stack.length - 1].level >= level) stack.pop();
             stack[stack.length - 1].children.push(node);

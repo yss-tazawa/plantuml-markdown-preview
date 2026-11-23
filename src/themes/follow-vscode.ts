@@ -25,7 +25,6 @@ const FROM_VSCODE = {
     preBorder: 'widget-border',
     blockquoteBorder: 'textBlockQuote-border',
     blockquoteColor: 'editor-foreground',
-    blockquoteBg: 'textBlockQuote-background',
     hljsBg: 'textCodeBlock-background',
 } as const;
 /** A palette field taken from a VS Code variable. */
@@ -45,7 +44,6 @@ const HC_DARK_FALLBACK: Record<Field, string> = {
     preBorder: CONTRAST_BORDER,
     blockquoteBorder: CONTRAST_BORDER,
     blockquoteColor: '#ffffff',
-    blockquoteBg: 'transparent',
     hljsBg: 'transparent',
 };
 

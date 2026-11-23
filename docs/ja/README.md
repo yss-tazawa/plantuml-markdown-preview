@@ -42,7 +42,7 @@ Markdown の中にダイアグラムをコードで書けば、入力に合わ�
 ## ハイライト
 
 - **ダイアグラムが文書の中に** — PlantUML・Mermaid・D2 のダイアグラムが、別のパネルではなく Markdown のプレビューの中に表示されます。
-- **安心して開ける** — Markdown に書かれたスクリプトは、プレビューで実行されません。
+- **安心して開ける** — Markdown に書かれたスクリプトは、プレビューでも HTML/PDF のエクスポートでも実行されません。
 - **大きさを自由に** — PlantUML・Mermaid・D2 のダイアグラムの表示倍率を、それぞれ別に設定できます。
 - **1 つのファイルで HTML エクスポート** — 文書とダイアグラムを 1 つの HTML ファイルにまとめ、レイアウトの幅と配置も選べます。
 - **ワンクリックで PDF エクスポート** — Chrome・Edge・Chromium で印刷し、ダイアグラムはページに収まるように縮めます。
@@ -88,8 +88,8 @@ Markdown の中にダイアグラムをコードで書けば、入力に合わ�
 - **読み込み中の表示** — ダイアグラムがまだ描画中かどうかがひと目でわかります。
 - **わかりやすいエラー** — 構文の誤りを、行番号と前後のソースを添えてその場に表示します。
 - **PlantUML** — 手元の Java（Fast / Secure モード）か PlantUML サーバー（Easy モード）で描画します。詳しくは[レンダリングモード](#レンダリングモード)をご覧ください。
-- **Mermaid** — [mermaid.js](https://mermaid.js.org/) で描画するので、Java もほかの道具も要りません。
-- **D2** — 同梱の [@terrastruct/d2](https://d2lang.com/)（Wasm）で描画するので、ほかの道具は要りません。
+- **Mermaid** — [mermaid.js](https://mermaid.js.org/) で描画するので、Java もほかのツールも要りません。
+- **D2** — 同梱の [@terrastruct/d2](https://d2lang.com/)（Wasm）で描画するので、ほかのツールは要りません。
 
 ### 図のソースのハイライト
 
@@ -313,7 +313,7 @@ highlight.js で 190 以上の言語に対応しています。コードブロ�
 ### セキュリティ
 
 - **厳しいスクリプトの制限** — プレビューで動くのは、この拡張機能自身のスクリプトだけです。
-- **文書のコードは動かない** — Markdown の中の `<script>` タグなどのコードは実行されません。
+- **文書のコードは動かない** — Markdown の中の `<script>` タグなどのコードは、プレビューでも HTML/PDF のエクスポートでも実行されません。
 - **ローカルの画像はモードに従う** — 既定ではモードに合わせて読み込みを決め（`allowLocalImages: "mode-default"`）、Secure モードでは安全を最優先にして読み込みません。
 - **HTTP の画像は既定でオフ** — 暗号化されない HTTP での画像の読み込みはオフです（`allowHttpImages`）。オンにするのは、イントラネットや手元の開発サーバーなど、信頼できるネットワークだけにしてください。
 
@@ -343,9 +343,26 @@ PlantUML・Mermaid・D2 のダイアグラムは、VS Code 組み込みの Markd
 ```
 
 - **5 種類** — `NOTE`・`TIP`・`IMPORTANT`・`WARNING`・`CAUTION` に、それぞれ専用のアイコンと色があります。
-- **GitHub と同じ決まり** — 印は大文字だけが有効で、`[!note]` はふつうの引用ブロックのままです。
+- **GitHub と同じ決まり** — 印は、その行にほかの文字が無いものだけが有効です（大文字・小文字は問いません。`[!note]` でも有効です）。また、アラートになるのは文書の一番外側にある引用ブロックだけです。`> [!NOTE] My title`、リスト項目や別の引用ブロックの中の印は、ふつうの引用ブロックのままです。
 - **テーマに合わせる** — 色は今のプレビューテーマ（ライト / ダーク）に合わせて変わります。
 - **どこでも同じ見た目** — プレビューでも HTML/PDF のエクスポートでも、同じように表示されます。
+
+### 脚注とタスクリスト
+
+GitHub の書き方の脚注とタスクリストを、GitHub と同じ形で描画します。
+
+```markdown
+A sentence with a footnote.[^1]
+
+[^1]: The footnote text.
+
+- [x] Finished task
+- [ ] Open task
+```
+
+- **脚注** — `[^1]` の参照から文書の末尾の脚注へ移動でき、脚注から参照へも戻れます。
+- **タスクリスト** — `- [ ]` と `- [x]` の項目にチェックボックスが付きます。状態を示すだけで、クリックしても文書は変わりません。
+- **どこでも同じ見た目** — プレビューでも HTML/PDF のエクスポートでも、脚注とタスクリストは同じように表示されます。
 
 ## クイックスタート
 
@@ -361,10 +378,10 @@ PlantUML・Mermaid・D2 のダイアグラムは、VS Code 組み込みの Markd
 
 | ツール | 用途 | 確認方法 |
 | ------ | ---- | -------- |
-| [Java 11+（JRE または JDK）](#セットアップ) | PlantUML の実行（同梱の PlantUML 1.2026.2 は Java 11+ が必要） | `java -version` |
+| [Java 11+（JRE または JDK）](#セットアップ) | PlantUML の実行（同梱の PlantUML 1.2026.10 は Java 11+ が必要） | `java -version` |
 | [Graphviz](https://graphviz.org/) | 任意です。クラス図・コンポーネント図など、レイアウトを計算するダイアグラムに必要です（[ダイアグラムサポート](#ダイアグラムサポート)を参照） | `dot -V` |
 
-PlantUML（LGPL、v1.2026.2）は同梱しているので、ダウンロードは要りません。必要なのは Java 11 以降だけで、Graphviz は任意です。
+PlantUML（LGPL、v1.2026.10）は同梱しているので、ダウンロードは要りません。必要なのは Java 11 以降だけで、Graphviz は任意です。
 まだ Java がなくても大丈夫です。プレビューを開くと、この拡張機能が Easy モードへの切り替えを提案します。
 
 ### ダイアグラムサポート
@@ -390,9 +407,10 @@ PlantUML（LGPL、v1.2026.2）は同梱しているので、ダウンロード�
 | ステート | — | ✓ | ✓ |
 | ER（エンティティ関係） | — | ✓ | ✓ |
 | アクティビティ（旧構文） | — | ✓ | ✓ |
+| DOT（@startdot） | — | ✓ | ✓ |
 
 - **LGPL（同梱）** — すぐに使えます。Graphviz は要りません。
-- **Win: GPLv2 jar** — [GPLv2 版](https://plantuml.com/download)は Graphviz を内蔵しています（Windows のみ、自動で展開）。`plantumlJarPath`（[設定](#設定)を参照）で指定して使います。
+- **Win: GPLv2 jar** — [GPLv2 版](https://plantuml.com/download)は Graphviz を内蔵しています（Windows のみ、自動で展開）。`plantumlJarPath`（[設定](#設定)を参照）で指定して使います。DOT（`@startdot`）には PlantUML 1.2026.9 以降が必要です。
 - **Mac/Linux: + Graphviz** — [Graphviz](https://graphviz.org/) を別にインストールします。LGPL と GPLv2 のどちらの jar でも動きます。
 
 ### インストール
@@ -428,7 +446,7 @@ PlantUML（LGPL、v1.2026.2）は同梱しているので、ダウンロード�
 
    VS Code の設定（`Ctrl+,`）で `plantumlMarkdownPreview.javaPath` を検索し、上のパスを入力します。
 3. [GPLv2 版 PlantUML](https://plantuml.com/download)（`plantuml-gplv2-*.jar`）を好きなフォルダにダウンロードします（Graphviz を内蔵しているので、別にインストールする必要はありません）。
-4. VS Code の設定（`Ctrl+,`）で `plantumlMarkdownPreview.plantumlJarPath` を検索し、ダウンロードした `.jar` のフルパスを入力します（例: `C:\tools\plantuml-gplv2-1.2026.2.jar`）。
+4. VS Code の設定（`Ctrl+,`）で `plantumlMarkdownPreview.plantumlJarPath` を検索し、ダウンロードした `.jar` のフルパスを入力します（例: `C:\tools\plantuml-gplv2-1.2026.10.jar`）。
 
 #### Mac
 
@@ -809,7 +827,7 @@ PlantUML・Mermaid・D2 で、書いている場所に合ったキーワード�
 | `javaPath` | `"java"` | Java の実行ファイルのパスです。設定するとそのまま使い、設定しなければ `JAVA_HOME/bin/java`、次に PATH 上の `java` を使います（Fast / Secure モード）。 |
 | `plantumlJarPath` | `""` | `plantuml.jar` のパスです。空のままなら同梱の jar（LGPL）を使います（Fast / Secure モード）。 |
 | `dotPath` | `"dot"` | Graphviz の `dot` の実行ファイルのパスです（Fast / Secure モード）。 |
-| `plantumlIncludePath` | `""` | PlantUML の `!include` の基準のフォルダです。空のままならワークスペースのルートを使います。Easy モードでは使えません。 |
+| `plantumlIncludePath` | `""` | PlantUML の `!include` の基準のフォルダです。このフォルダの外のファイルは、基本的に絶対パスでは読めません。空のままならワークスペースのルートを使います。Easy モードでは使えません。 |
 | `allowLocalImages` | `"mode-default"` | プレビューで相対パスの画像（例: `![](./image.png)`）を読み込むかどうかです。`"mode-default"` はモードに従い（Fast: オン、Secure: オフ、Easy: オン）、`"on"` / `"off"` で上書きできます。 |
 | `allowHttpImages` | `false` | プレビューで、暗号化されない HTTP の画像の読み込みを許します。イントラネットや手元の開発サーバーで役立ちます。 |
 | `previewTheme` | `"github-light"` | プレビューテーマです（[テーマ](#テーマ)を参照）。 |
@@ -819,7 +837,7 @@ PlantUML・Mermaid・D2 で、書いている場所に合ったキーワード�
 | `plantumlScale` | `"100%"` | PlantUML のダイアグラムの倍率です。`"auto"` は幅に収まらないダイアグラムを縮小し、70%〜120% はもとの大きさのその割合で表示します。 |
 | `mermaidScale` | `"80%"` | Mermaid のダイアグラムの倍率です。`"auto"` は幅に収まらないダイアグラムを縮小し、50%〜100% はもとの大きさのその割合で表示します。 |
 | `d2Theme` | `"Neutral Default"` | D2 のダイアグラムのテーマです。19 種類の組み込みのテーマから選べます（例: `"Neutral Default"`、`"Dark Mauve"`、`"Terminal"`）。 |
-| `d2Layout` | `"dagre"` | D2 のレイアウトエンジンです。`"dagre"`（既定、速い）か `"elk"`（ノードの多い複雑なダイアグラムに向く）を選べます。 |
+| `d2Layout` | `"dagre"` | ダイアグラムが自分ではレイアウトエンジンを指定していない（`d2-config` の `layout-engine`）ときの、D2 のレイアウトエンジンです。`"dagre"`（既定、速い）か `"elk"`（ノードの多い複雑なダイアグラムに向く）を選べます。 |
 | `d2Scale` | `"70%"` | D2 のダイアグラムの倍率です。`"auto"` は幅に収まらないダイアグラムを縮小し、50%〜100% はもとの大きさのその割合で表示します。 |
 | `htmlMaxWidth` | `"960px"` | エクスポートした HTML の本文の最大幅です。`"640px"` 〜 `"1440px"` か、制限なしの `"none"` を選べます。 |
 | `htmlAlignment` | `"center"` | HTML の本文の配置です。`"center"`（既定）か `"left"` を選べます。 |
@@ -854,14 +872,14 @@ PlantUML・Mermaid・D2 で、書いている場所に合ったキーワード�
 | `pen-paper-coffee` | Pen Paper Coffee — 温かい紙の質感、手書き風 |
 | `coy` | Coy — ほぼ白、クリーンなデザイン |
 | `vs` | VS — クラシックな Visual Studio カラー |
-| `vscode-light-2026` | VS Code Light 2026 — 組み込みの Markdown プレビューの配色、インラインコードと引用がはっきり |
+| `vscode-light-2026` | VS Code Light 2026 — 組み込みの Markdown プレビューの配色、インラインコードがはっきり |
 | `github-dark` | GitHub Dark — ダーク背景 |
 | `atom-dark` | Atom Dark — Tomorrow Night パレット |
 | `one-dark` | One Dark — Atom インスパイアのダーク |
 | `dracula` | Dracula — 鮮やかなダークパレット |
 | `solarized-dark` | Solarized Dark — 深いティール、目に優しい |
 | `monokai` | Monokai — 鮮やかなシンタックス、Sublime Text 風 |
-| `vscode-dark-2026` | VS Code Dark 2026 — 組み込みの Markdown プレビューの配色、インラインコードと引用がはっきり |
+| `vscode-dark-2026` | VS Code Dark 2026 — 組み込みの Markdown プレビューの配色、インラインコードがはっきり |
 
 </details>
 
@@ -944,6 +962,8 @@ Easy モードでは、PlantUML のソースのテキストを設定したサー
 `!include` を使うには Fast か Secure モードが必要です。Easy モードでは、リモートのサーバーが手元のファイルを読めないため動きません。
 
 - パスは、既定ではワークスペースのルートからの相対パスとして探します。別の基準のフォルダを使うときは `plantumlIncludePath` を設定してください。
+- 基準のフォルダの外にあるファイルは、基本的に絶対パスではインクルードできません。ほかのフォルダを許可するには、環境変数 `PLANTUML_ALLOWLIST_PATH` に追加して、VS Code を再起動してください。ダイアグラムが読む画像・スプライト・テーマ・JSON ファイルも同じです。
+- フォルダを開いていなくて `plantumlIncludePath` も空のときは、ダイアグラムは手元のファイルを読めません。フォルダを開くか、`plantumlIncludePath` を設定してください。
 - Fast モードでは、インクルードの基準のフォルダが効くのは、この拡張機能が自分でローカルサーバーを起動したときだけです。すでに動いているサーバーに接続するとき（Start Mode が `"off"`、または固定のポートで今あるサーバーを使うとき）は、そのサーバーの作業フォルダが基準になります。ポートを `0`（自動）にすると、この拡張機能が必ず自分でサーバーを起動します。
 - インクルードしたファイルを保存すると、プレビューが自動で更新されます。**再読み込み** ボタン（↻）をクリックして更新し直すこともできます。
 
@@ -958,18 +978,27 @@ Easy モードでは、PlantUML のソースのテキストを設定したサー
 
 ## コントリビューション
 
-開発環境のセットアップ、ビルド手順、プルリクエストのガイドラインは [CONTRIBUTING.md](CONTRIBUTING.md) をご覧ください。
+開発環境のセットアップ、ビルド手順、プルリクエストのガイドラインは [CONTRIBUTING.md](https://github.com/yss-tazawa/plantuml-markdown-preview/blob/main/CONTRIBUTING.md) をご覧ください。
 
 ## サードパーティライセンス
 
 この拡張機能には、次のサードパーティのソフトウェアが含まれています。
 
-- [PlantUML](https://plantuml.com/)（LGPL 版）— [GNU Lesser General Public License v3 (LGPL-3.0)](https://www.gnu.org/licenses/lgpl-3.0.html)。詳しくは [PlantUML のライセンスのページ](https://plantuml.com/license)をご覧ください。
+- [PlantUML](https://plantuml.com/)（LGPL 版）— [GNU Lesser General Public License v3.0 or later (LGPL-3.0-or-later)](https://www.gnu.org/licenses/lgpl-3.0.html)。詳しくは [PlantUML のライセンスのページ](https://plantuml.com/license)をご覧ください。配布元のプロジェクトが、同梱している版のソースを公開しています: <https://github.com/plantuml/plantuml/archive/refs/tags/v1.2026.10.tar.gz>（タグ v1.2026.10 のリポジトリ）と <https://github.com/plantuml/plantuml/releases/download/v1.2026.10/plantuml-lgpl-1.2026.10-sources.jar>（LGPL ビルドの Java ソース）。
 - [mermaid.js](https://mermaid.js.org/) — [MIT License](https://github.com/mermaid-js/mermaid/blob/develop/LICENSE)
 - [KaTeX](https://katex.org/) — [MIT License](https://github.com/KaTeX/KaTeX/blob/main/LICENSE)
+- [@vscode/markdown-it-katex](https://github.com/microsoft/vscode-markdown-it-katex) — [MIT License](https://github.com/microsoft/vscode-markdown-it-katex/blob/main/LICENSE)
 - [@terrastruct/d2](https://d2lang.com/)（Wasm ビルド）— [Mozilla Public License 2.0 (MPL-2.0)](https://github.com/terrastruct/d2/blob/master/LICENSE.txt)
-- [markdown-it-github-alerts](https://github.com/antfu/markdown-it-github-alerts) — [MIT License](https://github.com/antfu/markdown-it-github-alerts/blob/main/LICENSE)
+- [@primer/octicons](https://github.com/primer/octicons) — [MIT License](https://github.com/primer/octicons/blob/main/LICENSE)
+- [markdown-it](https://github.com/markdown-it/markdown-it) — [MIT License](https://github.com/markdown-it/markdown-it/blob/master/LICENSE)
+- [markdown-it-footnote](https://github.com/markdown-it/markdown-it-footnote) — [MIT License](https://github.com/markdown-it/markdown-it-footnote/blob/master/LICENSE)
+- [markdown-it-task-lists](https://github.com/revin/markdown-it-task-lists) — [ISC License](https://github.com/revin/markdown-it-task-lists/blob/master/LICENSE)
+- [highlight.js](https://github.com/highlightjs/highlight.js) — [BSD 3-Clause License](https://github.com/highlightjs/highlight.js/blob/main/LICENSE)
+
+各コンポーネントのライセンス文を含む全体の一覧は `third-party-licenses/` フォルダにあり（まず [NOTICE.md](https://github.com/yss-tazawa/plantuml-markdown-preview/blob/main/third-party-licenses/NOTICE.md) をご覧ください）、フォルダごと拡張機能にも同梱しています。
+
+同梱しているサードパーティのコンポーネントは、それぞれのライセンスのままです。この拡張機能は、それらに制限を加えません。どのコンポーネントも、そのライセンスの条件に従って、VS Code の外でも使用・複製・再配布できます。
 
 ## ライセンス
 
-[MIT](LICENSE)
+[MIT](https://github.com/yss-tazawa/plantuml-markdown-preview/blob/main/LICENSE)

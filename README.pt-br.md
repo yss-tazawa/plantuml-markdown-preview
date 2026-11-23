@@ -42,7 +42,7 @@ Veja [Modos de Renderização](#modos-de-renderização) para os detalhes e [In�
 ## Destaques
 
 - **Diagramas direto no documento** — diagramas PlantUML, Mermaid e D2 aparecem dentro da sua pré-visualização de Markdown, não em um painel separado.
-- **Seguro para abrir** — scripts no seu Markdown nunca são executados na pré-visualização.
+- **Seguro para abrir** — scripts no seu Markdown nunca são executados, nem na pré-visualização nem na exportação para HTML/PDF.
 - **Tamanhos sob seu controle** — você define a escala de exibição dos diagramas PlantUML, Mermaid e D2 de forma independente.
 - **Exportação para um único arquivo HTML** — seu documento e seus diagramas em um só arquivo HTML, com a largura e o alinhamento de layout que você escolher.
 - **Exportação para PDF com um clique** — a impressão é feita pelo Chrome, Edge ou Chromium, com os diagramas ajustados para caber na página.
@@ -315,7 +315,7 @@ Mais de 190 linguagens suportadas via highlight.js. Blocos de código são estil
 ### Segurança
 
 - **Política de scripts rigorosa** — a pré-visualização executa apenas os scripts da própria extensão.
-- **Nenhum código dos seus documentos** — tags `<script>` e outros códigos no Markdown nunca são executados.
+- **Nenhum código dos seus documentos** — tags `<script>` e outros códigos no Markdown nunca são executados, nem na pré-visualização nem na exportação para HTML/PDF.
 - **Imagens locais conforme o modo** — por padrão, as imagens locais seguem o modo (`allowLocalImages: "mode-default"`); o modo Secure as bloqueia para segurança máxima.
 - **Sem imagens via HTTP simples por padrão** — o carregamento de imagens via HTTP não criptografado está desativado (`allowHttpImages`); ative-o apenas em redes confiáveis, como uma intranet ou um servidor de desenvolvimento local.
 
@@ -345,9 +345,26 @@ Renderiza alertas ao estilo GitHub (caixas de destaque) a partir de marcadores d
 ```
 
 - **Cinco tipos** — `NOTE`, `TIP`, `IMPORTANT`, `WARNING` e `CAUTION`, cada um com ícone e cor de destaque próprios.
-- **Mesmas regras do GitHub** — os marcadores funcionam apenas em maiúsculas (`[!note]` permanece uma citação comum).
+- **Mesmas regras do GitHub** — o marcador deve estar sozinho na linha (em maiúsculas ou minúsculas: `[!note]` também funciona), e somente uma citação no nível superior do documento se torna um alerta. `> [!NOTE] My title` e um marcador dentro de um item de lista ou de outra citação permanecem citações comuns.
 - **Acompanham o tema** — as cores se adaptam ao tema de pré-visualização ativo, claro ou escuro.
 - **Mesma aparência em todo lugar** — os alertas ficam iguais na pré-visualização e na exportação para HTML/PDF.
+
+### Notas de Rodapé e Listas de Tarefas
+
+Renderiza notas de rodapé e listas de tarefas escritas na sintaxe do GitHub, iguais às do próprio GitHub.
+
+```markdown
+A sentence with a footnote.[^1]
+
+[^1]: The footnote text.
+
+- [x] Finished task
+- [ ] Open task
+```
+
+- **Notas de rodapé** — uma referência `[^1]` leva à sua nota no fim do documento, e a nota leva de volta à referência.
+- **Listas de tarefas** — os itens `- [ ]` e `- [x]` mostram caixas de seleção. Elas apenas mostram o estado; clicar nelas não altera o documento.
+- **Mesma aparência em todo lugar** — as notas de rodapé e as listas de tarefas ficam iguais na pré-visualização e na exportação para HTML/PDF.
 
 ## Início Rápido
 
@@ -363,10 +380,10 @@ Renderiza alertas ao estilo GitHub (caixas de destaque) a partir de marcadores d
 
 | Ferramenta | Propósito | Verificar |
 |------|---------|--------|
-| [Java 11+ (JRE ou JDK)](#configuração) | Executa o PlantUML (o PlantUML 1.2026.2 incluído requer Java 11+) | `java -version` |
+| [Java 11+ (JRE ou JDK)](#configuração) | Executa o PlantUML (o PlantUML 1.2026.10 incluído requer Java 11+) | `java -version` |
 | [Graphviz](https://graphviz.org/) | Opcional — necessário para diagramas de classe, componentes e outros dependentes de layout (veja [Suporte a Diagramas](#suporte-a-diagramas)) | `dot -V` |
 
-O PlantUML vem incluído (LGPL, v1.2026.2) — não há nada para baixar. O Java 11 ou posterior é o único requisito; o Graphviz é opcional.
+O PlantUML vem incluído (LGPL, v1.2026.10) — não há nada para baixar. O Java 11 ou posterior é o único requisito; o Graphviz é opcional.
 Ainda não tem Java? A extensão oferece a mudança para o modo Easy quando você abre uma pré-visualização.
 
 ### Suporte a Diagramas
@@ -392,9 +409,10 @@ O que funciona depende da sua configuração:
 | State | — | ✓ | ✓ |
 | ER (Entidade Relacionamento) | — | ✓ | ✓ |
 | Activity (legado) | — | ✓ | ✓ |
+| DOT (@startdot) | — | ✓ | ✓ |
 
 - **LGPL (incluído)** — funciona imediatamente. Não precisa de Graphviz.
-- **Win: JAR GPLv2** — a [versão GPLv2](https://plantuml.com/download) inclui o Graphviz (apenas Windows, extraído automaticamente). Configure [`plantumlJarPath`](#configuração) para usá-lo.
+- **Win: JAR GPLv2** — a [versão GPLv2](https://plantuml.com/download) inclui o Graphviz (apenas Windows, extraído automaticamente). Configure [`plantumlJarPath`](#configuração) para usá-lo. DOT (`@startdot`) exige o PlantUML 1.2026.9 ou posterior.
 - **Mac/Linux: + Graphviz** — instale o [Graphviz](https://graphviz.org/) separadamente. Funciona tanto com o JAR LGPL quanto com o GPLv2.
 
 ### Instalar
@@ -426,7 +444,7 @@ O que funciona depende da sua configuração:
    ```
    Abra as configurações do VS Code (`Ctrl+,`), procure por `plantumlMarkdownPreview.javaPath` e insira o caminho mostrado acima
 3. Baixe a [versão GPLv2 do PlantUML](https://plantuml.com/download) (`plantuml-gplv2-*.jar`) para uma pasta de sua escolha (inclui Graphviz — sem necessidade de instalação separada)
-4. Abra as configurações do VS Code (`Ctrl+,`), procure por `plantumlMarkdownPreview.plantumlJarPath` e insira o caminho completo para o arquivo `.jar` baixado (ex.: `C:\tools\plantuml-gplv2-1.2026.2.jar`)
+4. Abra as configurações do VS Code (`Ctrl+,`), procure por `plantumlMarkdownPreview.plantumlJarPath` e insira o caminho completo para o arquivo `.jar` baixado (ex.: `C:\tools\plantuml-gplv2-1.2026.10.jar`)
 
 #### Mac
 
@@ -799,7 +817,7 @@ Todas as configurações usam o prefixo `plantumlMarkdownPreview.`.
 | `javaPath` | `"java"` | Caminho para o executável Java. Se definido, é usado como está; caso contrário, tenta `JAVA_HOME/bin/java`, depois `java` no PATH. (Modos Fast e Secure) |
 | `plantumlJarPath` | `""` | Caminho para o `plantuml.jar`. Deixe vazio para usar o JAR incluído (LGPL). (Modos Fast e Secure) |
 | `dotPath` | `"dot"` | Caminho para o executável `dot` do Graphviz (Modos Fast e Secure) |
-| `plantumlIncludePath` | `""` | Diretório base para diretivas `!include` do PlantUML. Deixe vazio para usar a raiz do workspace. Não disponível no modo Easy. |
+| `plantumlIncludePath` | `""` | Diretório base para diretivas `!include` do PlantUML. Os arquivos fora deste diretório, em geral, não podem ser lidos por caminho absoluto. Deixe vazio para usar a raiz do workspace. Não disponível no modo Easy. |
 | `allowLocalImages` | `"mode-default"` | Resolve caminhos de imagem relativos (ex.: `![](./image.png)`) na pré-visualização. `"mode-default"` usa a predefinição do modo (Fast: ligado, Secure: desligado, Easy: ligado). `"on"` / `"off"` para sobrescrever. |
 | `allowHttpImages` | `false` | Permite carregar imagens via HTTP (não criptografado) na pré-visualização. Útil para intranet ou servidores de desenvolvimento local. |
 | `previewTheme` | `"github-light"` | Tema da pré-visualização (veja [Temas](#temas)) |
@@ -809,7 +827,7 @@ Todas as configurações usam o prefixo `plantumlMarkdownPreview.`.
 | `plantumlScale` | `"100%"` | Escala do diagrama PlantUML. `"auto"` reduz os diagramas mais largos que a pré-visualização. Uma porcentagem (70%–120%) renderiza nessa fração do tamanho natural. |
 | `mermaidScale` | `"80%"` | Escala do diagrama Mermaid. `"auto"` reduz os diagramas mais largos que a pré-visualização. Uma porcentagem (50%–100%) renderiza nessa fração do tamanho natural. |
 | `d2Theme` | `"Neutral Default"` | Tema do diagrama D2. 19 temas integrados disponíveis (ex.: `"Neutral Default"`, `"Dark Mauve"`, `"Terminal"`). |
-| `d2Layout` | `"dagre"` | Motor de layout D2: `"dagre"` (padrão, rápido) ou `"elk"` (melhor para grafos complexos com muitos nós). |
+| `d2Layout` | `"dagre"` | Motor de layout D2 para os diagramas que não definem o seu (`layout-engine` em `d2-config`): `"dagre"` (padrão, rápido) ou `"elk"` (melhor para grafos complexos com muitos nós). |
 | `d2Scale` | `"70%"` | Escala do diagrama D2. `"auto"` reduz os diagramas mais largos que a pré-visualização. Uma porcentagem (50%–100%) renderiza nessa fração do tamanho natural. |
 | `htmlMaxWidth` | `"960px"` | Largura máxima do corpo do HTML exportado. Opções: `"640px"` – `"1440px"`, ou `"none"` para sem limite. |
 | `htmlAlignment` | `"center"` | Alinhamento do corpo do HTML. `"center"` (padrão) ou `"left"`. |
@@ -844,14 +862,14 @@ Todas as configurações usam o prefixo `plantumlMarkdownPreview.`.
 | `pen-paper-coffee` | Pen Paper Coffee — papel quente, estética manuscrita |
 | `coy` | Coy — quase branco, design limpo |
 | `vs` | VS — cores clássicas do Visual Studio |
-| `vscode-light-2026` | VS Code Light 2026 — cores da pré-visualização de Markdown integrada, código inline e citações bem visíveis |
+| `vscode-light-2026` | VS Code Light 2026 — cores da pré-visualização de Markdown integrada, código inline bem visível |
 | `github-dark` | GitHub Dark — fundo escuro |
 | `atom-dark` | Atom Dark — paleta Tomorrow Night |
 | `one-dark` | One Dark — escuro inspirado no Atom |
 | `dracula` | Dracula — paleta escura vibrante |
 | `solarized-dark` | Solarized Dark — teal profundo, amigável aos olhos |
 | `monokai` | Monokai — sintaxe vívida, inspirado no Sublime Text |
-| `vscode-dark-2026` | VS Code Dark 2026 — cores da pré-visualização de Markdown integrada, código inline e citações bem visíveis |
+| `vscode-dark-2026` | VS Code Dark 2026 — cores da pré-visualização de Markdown integrada, código inline bem visível |
 
 </details>
 
@@ -932,6 +950,8 @@ Defina um tema de diagrama que combine com o seu tema de pré-visualização. Ab
 O `!include` requer o modo Fast ou Secure — ele não funciona no modo Easy porque o servidor remoto não pode acessar seus arquivos locais.
 
 - Por padrão, os caminhos são resolvidos em relação à raiz do workspace. Configure `plantumlIncludePath` para usar um diretório base diferente.
+- Um arquivo fora do diretório base, em geral, não pode ser incluído por caminho absoluto. Para permitir outras pastas, adicione-as à variável de ambiente `PLANTUML_ALLOWLIST_PATH` e reinicie o VS Code. O mesmo vale para imagens, sprites, temas e arquivos JSON que um diagrama lê.
+- Sem nenhuma pasta aberta e com `plantumlIncludePath` vazio, os diagramas não conseguem ler arquivos locais. Abra uma pasta ou configure `plantumlIncludePath`.
 - No modo Fast, o diretório base dos includes só tem efeito quando a extensão inicia seu próprio servidor local. Se você se conectar a um servidor que já está em execução (Start Mode `"off"`, ou um servidor existente reutilizado em uma porta fixa), os includes são resolvidos em relação ao diretório de trabalho desse servidor — defina a porta como `0` (automático) para que a extensão sempre inicie seu próprio servidor.
 - Salvar um arquivo incluído atualiza automaticamente a pré-visualização. Você também pode clicar no botão **Recarregar** (↻) para forçar uma atualização manual.
 
@@ -952,11 +972,20 @@ Veja [CONTRIBUTING.md](CONTRIBUTING.md) para configuração de desenvolvimento, 
 
 Esta extensão inclui os seguintes softwares de terceiros:
 
-- [PlantUML](https://plantuml.com/) (versão LGPL) — [GNU Lesser General Public License v3 (LGPL-3.0)](https://www.gnu.org/licenses/lgpl-3.0.html). Veja a [página de licença do PlantUML](https://plantuml.com/license) para detalhes.
+- [PlantUML](https://plantuml.com/) (versão LGPL) — [GNU Lesser General Public License v3.0 or later (LGPL-3.0-or-later)](https://www.gnu.org/licenses/lgpl-3.0.html). Veja a [página de licença do PlantUML](https://plantuml.com/license) para detalhes. O projeto original fornece o código-fonte da versão incluída: <https://github.com/plantuml/plantuml/archive/refs/tags/v1.2026.10.tar.gz> (o repositório na tag v1.2026.10) e <https://github.com/plantuml/plantuml/releases/download/v1.2026.10/plantuml-lgpl-1.2026.10-sources.jar> (o código-fonte Java do build LGPL).
 - [mermaid.js](https://mermaid.js.org/) — [Licença MIT](https://github.com/mermaid-js/mermaid/blob/develop/LICENSE)
 - [KaTeX](https://katex.org/) — [Licença MIT](https://github.com/KaTeX/KaTeX/blob/main/LICENSE)
+- [@vscode/markdown-it-katex](https://github.com/microsoft/vscode-markdown-it-katex) — [Licença MIT](https://github.com/microsoft/vscode-markdown-it-katex/blob/main/LICENSE)
 - [@terrastruct/d2](https://d2lang.com/) (build Wasm) — [Mozilla Public License 2.0 (MPL-2.0)](https://github.com/terrastruct/d2/blob/master/LICENSE.txt)
-- [markdown-it-github-alerts](https://github.com/antfu/markdown-it-github-alerts) — [Licença MIT](https://github.com/antfu/markdown-it-github-alerts/blob/main/LICENSE)
+- [@primer/octicons](https://github.com/primer/octicons) — [Licença MIT](https://github.com/primer/octicons/blob/main/LICENSE)
+- [markdown-it](https://github.com/markdown-it/markdown-it) — [Licença MIT](https://github.com/markdown-it/markdown-it/blob/master/LICENSE)
+- [markdown-it-footnote](https://github.com/markdown-it/markdown-it-footnote) — [Licença MIT](https://github.com/markdown-it/markdown-it-footnote/blob/master/LICENSE)
+- [markdown-it-task-lists](https://github.com/revin/markdown-it-task-lists) — [Licença ISC](https://github.com/revin/markdown-it-task-lists/blob/master/LICENSE)
+- [highlight.js](https://github.com/highlightjs/highlight.js) — [Licença BSD de 3 cláusulas](https://github.com/highlightjs/highlight.js/blob/main/LICENSE)
+
+A lista completa, com o texto da licença de cada componente, está na pasta `third-party-licenses/`, começando por [NOTICE.md](third-party-licenses/NOTICE.md); a pasta também acompanha a extensão.
+
+Os componentes de terceiros incluídos continuam sob suas próprias licenças. Esta extensão não acrescenta nenhuma restrição a eles: você pode usar, copiar e redistribuir cada um deles, inclusive fora do VS Code, nos termos de sua licença.
 
 ## Licença
 

@@ -42,7 +42,7 @@ See [Rendering Modes](#rendering-modes) for details and [Quick Start](#quick-sta
 ## Highlights
 
 - **Diagrams right in your document** — PlantUML, Mermaid, and D2 diagrams appear inline in your Markdown preview, not in a separate panel.
-- **Safe to open** — scripts in your Markdown never run in the preview.
+- **Safe to open** — scripts in your Markdown never run in the preview or in HTML/PDF export.
 - **Sizes you control** — set the display scale of PlantUML, Mermaid, and D2 diagrams independently.
 - **Single-file HTML export** — your document and diagrams in one HTML file, with the layout width and alignment you choose.
 - **One-click PDF export** — print through Chrome, Edge, or Chromium, with diagrams scaled to fit the page.
@@ -318,7 +318,7 @@ selected preview theme.
 ### Security
 
 - **Strict script policy** — the preview runs only the extension's own scripts.
-- **No code from your documents** — `<script>` tags and other code in Markdown never run.
+- **No code from your documents** — `<script>` tags and other code in Markdown never run, in the preview or in HTML/PDF export.
 - **Local images by mode** — local images follow the mode by default (`allowLocalImages: "mode-default"`); Secure mode blocks them for maximum security.
 - **No plain-HTTP images by default** — loading images over unencrypted HTTP is off (`allowHttpImages`); turn it on only on trusted networks, such as an intranet or a local development server.
 
@@ -348,9 +348,26 @@ Render GitHub-style alerts (callouts) from blockquote markers, matching GitHub's
 ```
 
 - **Five types** — `NOTE`, `TIP`, `IMPORTANT`, `WARNING`, and `CAUTION`, each with its own icon and accent color.
-- **Same rules as GitHub** — markers are uppercase only (`[!note]` stays a plain blockquote).
+- **Same rules as GitHub** — a marker must be alone on its line (in any case: `[!note]` works too), and only a blockquote at the top level of the document becomes an alert. `> [!NOTE] My title` and a marker inside a list item or another blockquote stay plain blockquotes.
 - **Theme-aware** — colors adapt to the active preview theme, light or dark.
 - **Same look everywhere** — alerts look the same in the preview and in HTML/PDF export.
+
+### Footnotes and Task Lists
+
+Render footnotes and task lists in GitHub's syntax, matching GitHub's own output.
+
+```markdown
+A sentence with a footnote.[^1]
+
+[^1]: The footnote text.
+
+- [x] Finished task
+- [ ] Open task
+```
+
+- **Footnotes** — a `[^1]` reference links to its footnote at the end of the document, and the footnote links back to the reference.
+- **Task lists** — `- [ ]` and `- [x]` items show checkboxes. They show the state only; clicking them does not change the document.
+- **Same look everywhere** — footnotes and task lists look the same in the preview and in HTML/PDF export.
 
 ## Quick Start
 
@@ -366,10 +383,10 @@ Render GitHub-style alerts (callouts) from blockquote markers, matching GitHub's
 
 | Tool | Purpose | Verify |
 |------|---------|--------|
-| [Java 11+ (JRE or JDK)](#setup) | Runs PlantUML (bundled PlantUML 1.2026.2 requires Java 11+) | `java -version` |
+| [Java 11+ (JRE or JDK)](#setup) | Runs PlantUML (bundled PlantUML 1.2026.10 requires Java 11+) | `java -version` |
 | [Graphviz](https://graphviz.org/) | Optional — needed for class, component, and other layout-dependent diagrams (see [Diagram Support](#diagram-support)) | `dot -V` |
 
-PlantUML is bundled (LGPL, v1.2026.2) — nothing to download. Java 11 or later is the only requirement; Graphviz is optional.
+PlantUML is bundled (LGPL, v1.2026.10) — nothing to download. Java 11 or later is the only requirement; Graphviz is optional.
 No Java yet? The extension offers to switch to Easy mode when you open a preview.
 
 ### Diagram Support
@@ -395,9 +412,10 @@ What works depends on your setup:
 | State | — | ✓ | ✓ |
 | ER (Entity Relationship) | — | ✓ | ✓ |
 | Activity (legacy) | — | ✓ | ✓ |
+| DOT (@startdot) | — | ✓ | ✓ |
 
 - **LGPL (bundled)** — works out of the box. No Graphviz needed.
-- **Win: GPLv2 jar** — the [GPLv2 version](https://plantuml.com/download) bundles Graphviz (Windows only, auto-extracted). Set [`plantumlJarPath`](#configuration) to use it.
+- **Win: GPLv2 jar** — the [GPLv2 version](https://plantuml.com/download) bundles Graphviz (Windows only, auto-extracted). Set [`plantumlJarPath`](#configuration) to use it. DOT (`@startdot`) needs PlantUML 1.2026.9 or later.
 - **Mac/Linux: + Graphviz** — install [Graphviz](https://graphviz.org/) separately. Works with either LGPL or GPLv2 jar.
 
 ### Install
@@ -432,7 +450,7 @@ follow the steps for your platform below.
    ```
    Open VS Code settings (`Ctrl+,`), search for `plantumlMarkdownPreview.javaPath`, and enter the path shown above
 3. Download the [GPLv2 version of PlantUML](https://plantuml.com/download) (`plantuml-gplv2-*.jar`) to a folder of your choice (includes Graphviz — no separate install needed)
-4. Open VS Code settings (`Ctrl+,`), search for `plantumlMarkdownPreview.plantumlJarPath`, and enter the full path to the downloaded `.jar` file (e.g. `C:\tools\plantuml-gplv2-1.2026.2.jar`)
+4. Open VS Code settings (`Ctrl+,`), search for `plantumlMarkdownPreview.plantumlJarPath`, and enter the full path to the downloaded `.jar` file (e.g. `C:\tools\plantuml-gplv2-1.2026.10.jar`)
 
 #### Mac
 
@@ -805,7 +823,7 @@ All settings use the `plantumlMarkdownPreview.` prefix.
 | `javaPath` | `"java"` | Path to Java executable. If set, used as-is; otherwise falls back to `JAVA_HOME/bin/java`, then `java` on PATH. (Fast and Secure modes) |
 | `plantumlJarPath` | `""` | Path to `plantuml.jar`. Leave empty to use the bundled jar (LGPL). (Fast and Secure modes) |
 | `dotPath` | `"dot"` | Path to Graphviz `dot` executable (Fast and Secure modes) |
-| `plantumlIncludePath` | `""` | Base directory for PlantUML `!include` directives. Leave empty to use the workspace root. Not available in Easy mode. |
+| `plantumlIncludePath` | `""` | Base directory for PlantUML `!include` directives. Files outside this directory generally cannot be read by an absolute path. Leave empty to use the workspace root. Not available in Easy mode. |
 | `allowLocalImages` | `"mode-default"` | Resolve relative image paths (e.g. `![](./image.png)`) in the preview. `"mode-default"` uses the mode preset (Fast: on, Secure: off, Easy: on). `"on"` / `"off"` to override. |
 | `allowHttpImages` | `false` | Allow loading images over HTTP (unencrypted) in the preview. Useful for intranet or local development servers. |
 | `previewTheme` | `"github-light"` | Preview theme (see [Themes](#themes)) |
@@ -815,7 +833,7 @@ All settings use the `plantumlMarkdownPreview.` prefix.
 | `plantumlScale` | `"100%"` | PlantUML diagram scale. `"auto"` shrinks diagrams that are wider than the preview. A percentage (70%–120%) renders at that fraction of natural size. |
 | `mermaidScale` | `"80%"` | Mermaid diagram scale. `"auto"` shrinks diagrams that are wider than the preview. A percentage (50%–100%) renders at that fraction of natural size. |
 | `d2Theme` | `"Neutral Default"` | D2 diagram theme. 19 built-in themes available (e.g. `"Neutral Default"`, `"Dark Mauve"`, `"Terminal"`). |
-| `d2Layout` | `"dagre"` | D2 layout engine: `"dagre"` (default, fast) or `"elk"` (better for complex graphs with many nodes). |
+| `d2Layout` | `"dagre"` | D2 layout engine for diagrams that do not set their own (`layout-engine` in `d2-config`): `"dagre"` (default, fast) or `"elk"` (better for complex graphs with many nodes). |
 | `d2Scale` | `"70%"` | D2 diagram scale. `"auto"` shrinks diagrams that are wider than the preview. A percentage (50%–100%) renders at that fraction of natural size. |
 | `htmlMaxWidth` | `"960px"` | Maximum width of the exported HTML body. Options: `"640px"` – `"1440px"`, or `"none"` for no limit. |
 | `htmlAlignment` | `"center"` | HTML body alignment. `"center"` (default) or `"left"`. |
@@ -850,14 +868,14 @@ All settings use the `plantumlMarkdownPreview.` prefix.
 | `pen-paper-coffee` | Pen Paper Coffee — warm paper, handwritten aesthetic |
 | `coy` | Coy — near-white, clean design |
 | `vs` | VS — classic Visual Studio colors |
-| `vscode-light-2026` | VS Code Light 2026 — built-in Markdown preview colors, clear inline code and blockquotes |
+| `vscode-light-2026` | VS Code Light 2026 — built-in Markdown preview colors, clear inline code |
 | `github-dark` | GitHub Dark — dark background |
 | `atom-dark` | Atom Dark — Tomorrow Night palette |
 | `one-dark` | One Dark — Atom-inspired dark |
 | `dracula` | Dracula — vibrant dark palette |
 | `solarized-dark` | Solarized Dark — deep teal, eye-friendly |
 | `monokai` | Monokai — vivid syntax, Sublime Text inspired |
-| `vscode-dark-2026` | VS Code Dark 2026 — built-in Markdown preview colors, clear inline code and blockquotes |
+| `vscode-dark-2026` | VS Code Dark 2026 — built-in Markdown preview colors, clear inline code |
 
 </details>
 
@@ -948,6 +966,8 @@ title bar icon and select a dark PlantUML theme (e.g. `cyborg`, `mars`) or set t
 the remote server cannot access your local files.
 
 - Paths are resolved relative to the workspace root by default. Set `plantumlIncludePath` to use a different base directory.
+- A file outside the base directory generally cannot be included by an absolute path. To allow other folders, add them to the `PLANTUML_ALLOWLIST_PATH` environment variable and restart VS Code. The same applies to images, sprites, themes, and JSON files that a diagram reads.
+- With no folder open and `plantumlIncludePath` empty, diagrams cannot read local files. Open a folder or set `plantumlIncludePath`.
 - In Fast mode, the include base directory takes effect only when the extension starts its own local server. If you connect to an already-running server (Start Mode `"off"`, or an existing server reused on a fixed port), includes are resolved against that server's working directory instead — set the port to `0` (auto) so the extension always starts its own server.
 - Saving an included file automatically refreshes the preview. You can also click the **Reload** button (↻) to force a manual refresh.
 
@@ -969,11 +989,20 @@ and pull request guidelines.
 
 This extension bundles the following third-party software:
 
-- [PlantUML](https://plantuml.com/) (LGPL version) — [GNU Lesser General Public License v3 (LGPL-3.0)](https://www.gnu.org/licenses/lgpl-3.0.html). See the [PlantUML license page](https://plantuml.com/license) for details.
+- [PlantUML](https://plantuml.com/) (LGPL version) — [GNU Lesser General Public License v3.0 or later (LGPL-3.0-or-later)](https://www.gnu.org/licenses/lgpl-3.0.html). See the [PlantUML license page](https://plantuml.com/license) for details. The upstream project provides the source of the bundled version: <https://github.com/plantuml/plantuml/archive/refs/tags/v1.2026.10.tar.gz> (the repository at the tag v1.2026.10) and <https://github.com/plantuml/plantuml/releases/download/v1.2026.10/plantuml-lgpl-1.2026.10-sources.jar> (the Java sources of the LGPL build).
 - [mermaid.js](https://mermaid.js.org/) — [MIT License](https://github.com/mermaid-js/mermaid/blob/develop/LICENSE)
 - [KaTeX](https://katex.org/) — [MIT License](https://github.com/KaTeX/KaTeX/blob/main/LICENSE)
+- [@vscode/markdown-it-katex](https://github.com/microsoft/vscode-markdown-it-katex) — [MIT License](https://github.com/microsoft/vscode-markdown-it-katex/blob/main/LICENSE)
 - [@terrastruct/d2](https://d2lang.com/) (Wasm build) — [Mozilla Public License 2.0 (MPL-2.0)](https://github.com/terrastruct/d2/blob/master/LICENSE.txt)
-- [markdown-it-github-alerts](https://github.com/antfu/markdown-it-github-alerts) — [MIT License](https://github.com/antfu/markdown-it-github-alerts/blob/main/LICENSE)
+- [@primer/octicons](https://github.com/primer/octicons) — [MIT License](https://github.com/primer/octicons/blob/main/LICENSE)
+- [markdown-it](https://github.com/markdown-it/markdown-it) — [MIT License](https://github.com/markdown-it/markdown-it/blob/master/LICENSE)
+- [markdown-it-footnote](https://github.com/markdown-it/markdown-it-footnote) — [MIT License](https://github.com/markdown-it/markdown-it-footnote/blob/master/LICENSE)
+- [markdown-it-task-lists](https://github.com/revin/markdown-it-task-lists) — [ISC License](https://github.com/revin/markdown-it-task-lists/blob/master/LICENSE)
+- [highlight.js](https://github.com/highlightjs/highlight.js) — [BSD 3-Clause License](https://github.com/highlightjs/highlight.js/blob/main/LICENSE)
+
+The full list, with each component's license text, is in the `third-party-licenses/` folder, starting from [NOTICE.md](third-party-licenses/NOTICE.md); the folder also ships in the extension.
+
+The bundled third-party components remain under their own licenses. This extension places no additional restrictions on them: you may use, copy and redistribute each of them, including outside VS Code, under the terms of its license.
 
 ## License
 

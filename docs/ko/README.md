@@ -42,7 +42,7 @@ Markdown 안에 다이어그램을 코드로 쓰면 입력하는 대로 바로 �
 ## 주요 특징
 
 - **문서 안에 바로 다이어그램** — PlantUML, Mermaid, D2 다이어그램이 별도의 패널이 아닌 Markdown 미리보기 안에 인라인으로 표시됩니다.
-- **안심하고 열 수 있음** — Markdown 안의 스크립트는 미리보기에서 절대 실행되지 않습니다.
+- **안심하고 열 수 있음** — Markdown 안의 스크립트는 미리보기와 HTML/PDF 내보내기에서 절대 실행되지 않습니다.
 - **원하는 크기로** — PlantUML, Mermaid, D2 다이어그램의 표시 배율을 각각 따로 설정할 수 있습니다.
 - **단일 파일 HTML 내보내기** — 문서와 다이어그램을 하나의 HTML 파일로 내보내며, 레이아웃 너비와 정렬을 직접 고를 수 있습니다.
 - **원클릭 PDF 내보내기** — Chrome, Edge 또는 Chromium으로 인쇄하며, 다이어그램은 페이지에 맞게 조정됩니다.
@@ -315,7 +315,7 @@ highlight.js를 통해 190개 이상의 언어를 지원합니다. 코드 블록
 ### 보안
 
 - **엄격한 스크립트 정책** — 미리보기에서는 확장 자체의 스크립트만 실행됩니다.
-- **문서의 코드는 실행 안 함** — Markdown 안의 `<script>` 태그나 기타 코드는 절대 실행되지 않습니다.
+- **문서의 코드는 실행 안 함** — Markdown 안의 `<script>` 태그나 기타 코드는 미리보기와 HTML/PDF 내보내기에서 절대 실행되지 않습니다.
 - **모드에 따른 로컬 이미지** — 로컬 이미지는 기본적으로 모드를 따르며(`allowLocalImages: "mode-default"`), Secure 모드는 최대 보안을 위해 차단합니다.
 - **기본적으로 HTTP 이미지 차단** — 암호화되지 않은 HTTP를 통한 이미지 로딩은 꺼져 있습니다(`allowHttpImages`). 인트라넷이나 로컬 개발 서버처럼 신뢰할 수 있는 네트워크에서만 켜세요.
 
@@ -345,9 +345,26 @@ PlantUML, Mermaid, D2 다이어그램은 VS Code의 내장 Markdown 미리보기
 ```
 
 - **5가지 유형** — `NOTE`, `TIP`, `IMPORTANT`, `WARNING`, `CAUTION`이 있으며, 각각 고유한 아이콘과 강조 색상을 가집니다.
-- **GitHub와 같은 규칙** — 마커는 대문자만 인식됩니다(`[!note]`는 일반 인용문으로 남습니다).
+- **GitHub와 같은 규칙** — 마커는 그 줄에 단독으로 있어야 하며 (대소문자는 구분하지 않으므로 `[!note]`도 동작합니다), 문서 최상위의 인용문만 경고문이 됩니다. `> [!NOTE] My title`, 그리고 목록 항목이나 다른 인용문 안의 마커는 일반 인용문으로 남습니다.
 - **테마에 맞춤** — 색상이 활성 미리보기 테마(밝은 테마 / 어두운 테마)에 맞게 조정됩니다.
 - **어디서나 같은 모양** — 경고문은 미리보기와 HTML/PDF 내보내기에서 똑같이 보입니다.
+
+### 각주와 작업 목록
+
+GitHub 문법으로 쓴 각주와 작업 목록을 렌더링하며, GitHub 자체 출력과 동일하게 표시합니다.
+
+```markdown
+A sentence with a footnote.[^1]
+
+[^1]: The footnote text.
+
+- [x] Finished task
+- [ ] Open task
+```
+
+- **각주** — `[^1]` 참조는 문서 끝의 각주로 연결되고, 각주에서 다시 참조로 돌아올 수 있습니다.
+- **작업 목록** — `- [ ]`와 `- [x]` 항목에 체크박스가 표시됩니다. 상태만 보여 주며, 클릭해도 문서는 바뀌지 않습니다.
+- **어디서나 같은 모양** — 각주와 작업 목록은 미리보기와 HTML/PDF 내보내기에서 똑같이 보입니다.
 
 ## 빠른 시작
 
@@ -363,10 +380,10 @@ PlantUML, Mermaid, D2 다이어그램은 VS Code의 내장 Markdown 미리보기
 
 | 도구 | 용도 | 확인 |
 |------|---------|--------|
-| [Java 11+ (JRE 또는 JDK)](#설정) | PlantUML 실행 (내장 PlantUML 1.2026.2는 Java 11+ 필요) | `java -version` |
+| [Java 11+ (JRE 또는 JDK)](#설정) | PlantUML 실행 (내장 PlantUML 1.2026.10은 Java 11+ 필요) | `java -version` |
 | [Graphviz](https://graphviz.org/) | 선택 사항 — 클래스, 구성 요소 및 기타 레이아웃 의존적 다이어그램에 필요 ([다이어그램 지원](#다이어그램-지원) 참조) | `dot -V` |
 
-PlantUML(LGPL, v1.2026.2)이 내장되어 있어 따로 다운로드할 필요가 없습니다. 필요한 것은 Java 11 이상뿐이며, Graphviz는 선택 사항입니다.
+PlantUML(LGPL, v1.2026.10)이 내장되어 있어 따로 다운로드할 필요가 없습니다. 필요한 것은 Java 11 이상뿐이며, Graphviz는 선택 사항입니다.
 아직 Java가 없나요? 미리보기를 열 때 Easy 모드로 전환할지 묻습니다.
 
 ### 다이어그램 지원
@@ -392,9 +409,10 @@ PlantUML(LGPL, v1.2026.2)이 내장되어 있어 따로 다운로드할 필요�
 | State | — | ✓ | ✓ |
 | ER (Entity Relationship) | — | ✓ | ✓ |
 | Activity (레거시) | — | ✓ | ✓ |
+| DOT (@startdot) | — | ✓ | ✓ |
 
 - **LGPL (내장)** — 즉시 작동합니다. Graphviz가 필요하지 않습니다.
-- **Win: GPLv2 jar** — [GPLv2 버전](https://plantuml.com/download)은 Graphviz를 포함합니다 (Windows 전용, 자동 압축 해제). 이를 사용하려면 [`plantumlJarPath`](#설정)를 설정하세요.
+- **Win: GPLv2 jar** — [GPLv2 버전](https://plantuml.com/download)은 Graphviz를 포함합니다 (Windows 전용, 자동 압축 해제). 이를 사용하려면 [`plantumlJarPath`](#설정)를 설정하세요. DOT(`@startdot`)에는 PlantUML 1.2026.9 이상이 필요합니다.
 - **Mac/Linux: + Graphviz** — [Graphviz](https://graphviz.org/)를 별도로 설치하세요. LGPL 또는 GPLv2 jar와 함께 작동합니다.
 
 ### 설치
@@ -427,7 +445,7 @@ PlantUML(LGPL, v1.2026.2)이 내장되어 있어 따로 다운로드할 필요�
    ```
    VS Code 설정(`Ctrl+,`)을 열고 `plantumlMarkdownPreview.javaPath`를 검색한 후 위에서 확인한 경로를 입력하세요.
 3. 원하는 폴더에 [GPLv2 버전 PlantUML](https://plantuml.com/download) (`plantuml-gplv2-*.jar`)을 다운로드하세요 (Graphviz 포함 — 별도 설치 불필요).
-4. VS Code 설정(`Ctrl+,`)을 열고 `plantumlMarkdownPreview.plantumlJarPath`를 검색한 후 다운로드한 `.jar` 파일의 전체 경로를 입력하세요 (예: `C:\tools\plantuml-gplv2-1.2026.2.jar`).
+4. VS Code 설정(`Ctrl+,`)을 열고 `plantumlMarkdownPreview.plantumlJarPath`를 검색한 후 다운로드한 `.jar` 파일의 전체 경로를 입력하세요 (예: `C:\tools\plantuml-gplv2-1.2026.10.jar`).
 
 #### Mac
 
@@ -799,7 +817,7 @@ PlantUML, Mermaid, D2를 위한 컨텍스트 인식 키워드 제안을 제공�
 | `javaPath` | `"java"` | Java 실행 파일 경로. 설정된 경우 그대로 사용하며, 그렇지 않으면 `JAVA_HOME/bin/java`를 시도한 후 PATH의 `java`를 시도합니다. (Fast 및 Secure 모드) |
 | `plantumlJarPath` | `""` | `plantuml.jar` 경로. 비워두면 내장 jar (LGPL)를 사용합니다. (Fast 및 Secure 모드) |
 | `dotPath` | `"dot"` | Graphviz `dot` 실행 파일 경로 (Fast 및 Secure 모드) |
-| `plantumlIncludePath` | `""` | PlantUML `!include` 지시어의 기준 디렉토리. 비워두면 워크스페이스 루트를 사용합니다. Easy 모드에서는 사용할 수 없습니다. |
+| `plantumlIncludePath` | `""` | PlantUML `!include` 지시어의 기준 디렉토리. 이 디렉토리 밖의 파일은 대체로 절대 경로로 읽을 수 없습니다. 비워두면 워크스페이스 루트를 사용합니다. Easy 모드에서는 사용할 수 없습니다. |
 | `allowLocalImages` | `"mode-default"` | 미리보기에서 상대 이미지 경로(예: `![](./image.png)`)를 해석합니다. `"mode-default"`는 모드 프리셋을 따릅니다 (Fast: 사용, Secure: 미사용, Easy: 사용). `"on"` / `"off"`로 덮어쓸 수 있습니다. |
 | `allowHttpImages` | `false` | 미리보기에서 HTTP(암호화되지 않음)를 통한 이미지 로딩을 허용합니다. 인트라넷이나 로컬 개발 서버에 유용합니다. |
 | `previewTheme` | `"github-light"` | 미리보기 테마 ([테마](#테마) 참조) |
@@ -809,7 +827,7 @@ PlantUML, Mermaid, D2를 위한 컨텍스트 인식 키워드 제안을 제공�
 | `plantumlScale` | `"100%"` | PlantUML 다이어그램 배율. `"auto"`는 미리보기보다 넓은 다이어그램만 축소합니다. 백분율(70%–120%)은 원래 크기의 해당 비율로 렌더링합니다. |
 | `mermaidScale` | `"80%"` | Mermaid 다이어그램 배율. `"auto"`는 미리보기보다 넓은 다이어그램만 축소합니다. 백분율(50%–100%)은 원래 크기의 해당 비율로 렌더링합니다. |
 | `d2Theme` | `"Neutral Default"` | D2 다이어그램 테마. 19가지 내장 테마(예: `"Neutral Default"`, `"Dark Mauve"`, `"Terminal"`)를 사용할 수 있습니다. |
-| `d2Layout` | `"dagre"` | D2 레이아웃 엔진: `"dagre"` (기본값, 빠름) 또는 `"elk"` (노드가 많은 복잡한 그래프에 적합). |
+| `d2Layout` | `"dagre"` | 다이어그램이 자체적으로 지정하지 않을 때(`d2-config`의 `layout-engine`) 쓰는 D2 레이아웃 엔진: `"dagre"` (기본값, 빠름) 또는 `"elk"` (노드가 많은 복잡한 그래프에 적합). |
 | `d2Scale` | `"70%"` | D2 다이어그램 배율. `"auto"`는 미리보기보다 넓은 다이어그램만 축소합니다. 백분율(50%–100%)은 원래 크기의 해당 비율로 렌더링합니다. |
 | `htmlMaxWidth` | `"960px"` | 내보낸 HTML 본문의 최대 너비. 옵션: `"640px"` – `"1440px"`, 또는 제한 없음을 위한 `"none"`. |
 | `htmlAlignment` | `"center"` | HTML 본문 정렬. `"center"` (기본값) 또는 `"left"`. |
@@ -844,14 +862,14 @@ PlantUML, Mermaid, D2를 위한 컨텍스트 인식 키워드 제안을 제공�
 | `pen-paper-coffee` | Pen Paper Coffee — 따뜻한 종이, 손글씨 감성 |
 | `coy` | Coy — 흰색에 가까움, 깔끔한 디자인 |
 | `vs` | VS — 클래식 Visual Studio 색상 |
-| `vscode-light-2026` | VS Code Light 2026 — 내장 Markdown 미리보기 색상, 인라인 코드와 인용문이 잘 보임 |
+| `vscode-light-2026` | VS Code Light 2026 — 내장 Markdown 미리보기 색상, 인라인 코드가 잘 보임 |
 | `github-dark` | GitHub Dark — 어두운 배경 |
 | `atom-dark` | Atom Dark — Tomorrow Night 팔레트 |
 | `one-dark` | One Dark — Atom 스타일 다크 |
 | `dracula` | Dracula — 활기찬 다크 팔레트 |
 | `solarized-dark` | Solarized Dark — 짙은 청록색, 눈이 편안함 |
 | `monokai` | Monokai — 선명한 구문, Sublime Text 스타일 |
-| `vscode-dark-2026` | VS Code Dark 2026 — 내장 Markdown 미리보기 색상, 인라인 코드와 인용문이 잘 보임 |
+| `vscode-dark-2026` | VS Code Dark 2026 — 내장 Markdown 미리보기 색상, 인라인 코드가 잘 보임 |
 
 </details>
 
@@ -935,6 +953,8 @@ Easy 모드에서는 PlantUML 소스 텍스트가 구성된 서버로 전송됩�
 `!include`는 Fast 또는 Secure 모드가 필요합니다 — 원격 서버가 로컬 파일에 액세스할 수 없으므로 Easy 모드에서는 작동하지 않습니다.
 
 - 경로는 기본적으로 워크스페이스 루트를 기준으로 해석됩니다. 다른 기준 디렉토리를 사용하려면 `plantumlIncludePath`를 설정하세요.
+- 기준 디렉토리 밖의 파일은 대체로 절대 경로로 include할 수 없습니다. 다른 폴더를 허용하려면 환경 변수 `PLANTUML_ALLOWLIST_PATH`에 추가한 뒤 VS Code를 다시 시작하세요. 다이어그램이 읽는 이미지, 스프라이트, 테마, JSON 파일도 마찬가지입니다.
+- 열린 폴더가 없고 `plantumlIncludePath`도 비어 있으면 다이어그램이 로컬 파일을 읽을 수 없습니다. 폴더를 열거나 `plantumlIncludePath`를 설정하세요.
 - Fast 모드에서는 include 기준 디렉토리가 확장이 자체 로컬 서버를 시작한 경우에만 적용됩니다. 이미 실행 중인 서버에 연결하는 경우(Start Mode `"off"`, 또는 고정 포트에서 기존 서버를 재사용하는 경우)에는 대신 그 서버의 작업 디렉토리를 기준으로 include가 해석됩니다 — 확장이 항상 자체 서버를 시작하도록 하려면 포트를 `0`(자동)으로 설정하세요.
 - 포함된 파일을 저장하면 미리보기가 자동으로 새로고침됩니다. **새로고침** 버튼(↻)을 클릭하여 수동으로 강제 새로고침할 수도 있습니다.
 
@@ -949,18 +969,27 @@ Easy 모드에서는 PlantUML 소스 텍스트가 구성된 서버로 전송됩�
 
 ## 기여하기
 
-개발 설정, 빌드 지침 및 풀 리퀘스트 가이드라인은 [CONTRIBUTING.md](CONTRIBUTING.md)를 참조하세요.
+개발 설정, 빌드 지침 및 풀 리퀘스트 가이드라인은 [CONTRIBUTING.md](https://github.com/yss-tazawa/plantuml-markdown-preview/blob/main/CONTRIBUTING.md)를 참조하세요.
 
 ## 타사 라이선스
 
 이 확장은 다음 타사 소프트웨어를 포함하고 있습니다.
 
-- [PlantUML](https://plantuml.com/) (LGPL 버전) — [GNU Lesser General Public License v3 (LGPL-3.0)](https://www.gnu.org/licenses/lgpl-3.0.html). 자세한 내용은 [PlantUML 라이선스 페이지](https://plantuml.com/license)를 참조하세요.
+- [PlantUML](https://plantuml.com/) (LGPL 버전) — [GNU Lesser General Public License v3.0 or later (LGPL-3.0-or-later)](https://www.gnu.org/licenses/lgpl-3.0.html). 자세한 내용은 [PlantUML 라이선스 페이지](https://plantuml.com/license)를 참조하세요. 업스트림 프로젝트가 내장된 버전의 소스를 제공합니다: <https://github.com/plantuml/plantuml/archive/refs/tags/v1.2026.10.tar.gz> (태그 v1.2026.10의 저장소) 및 <https://github.com/plantuml/plantuml/releases/download/v1.2026.10/plantuml-lgpl-1.2026.10-sources.jar> (LGPL 빌드의 Java 소스).
 - [mermaid.js](https://mermaid.js.org/) — [MIT License](https://github.com/mermaid-js/mermaid/blob/develop/LICENSE)
 - [KaTeX](https://katex.org/) — [MIT License](https://github.com/KaTeX/KaTeX/blob/main/LICENSE)
+- [@vscode/markdown-it-katex](https://github.com/microsoft/vscode-markdown-it-katex) — [MIT License](https://github.com/microsoft/vscode-markdown-it-katex/blob/main/LICENSE)
 - [@terrastruct/d2](https://d2lang.com/) (Wasm 빌드) — [Mozilla Public License 2.0 (MPL-2.0)](https://github.com/terrastruct/d2/blob/master/LICENSE.txt)
-- [markdown-it-github-alerts](https://github.com/antfu/markdown-it-github-alerts) — [MIT License](https://github.com/antfu/markdown-it-github-alerts/blob/main/LICENSE)
+- [@primer/octicons](https://github.com/primer/octicons) — [MIT License](https://github.com/primer/octicons/blob/main/LICENSE)
+- [markdown-it](https://github.com/markdown-it/markdown-it) — [MIT License](https://github.com/markdown-it/markdown-it/blob/master/LICENSE)
+- [markdown-it-footnote](https://github.com/markdown-it/markdown-it-footnote) — [MIT License](https://github.com/markdown-it/markdown-it-footnote/blob/master/LICENSE)
+- [markdown-it-task-lists](https://github.com/revin/markdown-it-task-lists) — [ISC License](https://github.com/revin/markdown-it-task-lists/blob/master/LICENSE)
+- [highlight.js](https://github.com/highlightjs/highlight.js) — [BSD 3-Clause License](https://github.com/highlightjs/highlight.js/blob/main/LICENSE)
+
+각 구성 요소의 라이선스 전문을 포함한 전체 목록은 `third-party-licenses/` 폴더에 있으며([NOTICE.md](https://github.com/yss-tazawa/plantuml-markdown-preview/blob/main/third-party-licenses/NOTICE.md)부터 참조하세요), 이 폴더는 확장에도 함께 포함되어 있습니다.
+
+내장된 타사 구성 요소는 각자의 라이선스를 그대로 따릅니다. 이 확장은 이들에 어떤 제한도 추가하지 않습니다. 각 구성 요소는 해당 라이선스의 조건에 따라 VS Code 밖에서도 사용, 복사 및 재배포할 수 있습니다.
 
 ## 라이선스
 
-[MIT](LICENSE)
+[MIT](https://github.com/yss-tazawa/plantuml-markdown-preview/blob/main/LICENSE)

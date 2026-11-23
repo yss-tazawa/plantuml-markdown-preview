@@ -21,7 +21,6 @@ export const palette = {
     trEvenBg: '#ffffff',
     blockquoteBorder: '#f0f1f2',
     blockquoteColor: '#202020',
-    blockquoteBg: '#eaeaea',
     hljsBg: '#ececec',
     hljsComment: '#008000',
     hljsKeyword: '#0000ff',

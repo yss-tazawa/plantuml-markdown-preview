@@ -10,6 +10,7 @@ CLAUDE.md
 **/.DS_Store
 **/Thumbs.db
 node_modules/**
+.licenses/**
 
 # Not needed in package
 .git/**
@@ -17,6 +18,7 @@ node_modules/**
 docs/**
 CONTRIBUTING.md
 esbuild.js
+scripts/**
 
 # Pre-bundle source code
 extension.ts

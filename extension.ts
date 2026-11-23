@@ -46,7 +46,7 @@ import type { D2Render } from './src/d2-preview.js';
 import { initD2, disposeD2 } from './src/d2-renderer.js';
 import { openRevisionPreview, disposeRevisionPreviews, getOpenRevisionPreviews } from './src/revision-preview.js';
 import { HEAD_REVISION, STAGED_REVISION, type Revision } from './src/git.js';
-import { CONFIG_SECTION, MODE_PRESETS, OUTPUT_CHANNEL_NAME, isLazyDeferralActive, resolveStartMode, type Config, type Mode } from './src/config.js';
+import { CONFIG_SECTION, MODE_PRESETS, OUTPUT_CHANNEL_NAME, isLazyDeferralActive, resolveAllowLocalImages, resolveStartMode, type Config, type Mode } from './src/config.js';
 import { registerCompletionProviders } from './src/completion/register.js';
 import { registerColorProviders } from './src/color/register.js';
 import { recordPreviewThemeIfUnset, PREVIEW_THEME_RECORDED_KEY } from './src/preview-theme-default.js';
@@ -54,22 +54,6 @@ import type MarkdownIt from 'markdown-it';
 
 /** Module-level reference set in activate(). Used by resolveMarkdownPath(). */
 let previewManager: PreviewManager;
-
-/**
- * Resolve the allowLocalImages tri-state setting to a boolean.
- *
- * When the user sets `'mode-default'`, the result falls back to the preset's
- * default value. Explicit `'on'` or `'off'` overrides the preset.
- *
- * @param value - User setting: `'mode-default'`, `'on'`, or `'off'`.
- * @param presetDefault - Default value defined by the active mode preset.
- * @returns Whether local images should be allowed.
- */
-function resolveAllowLocalImages(value: string, presetDefault: boolean): boolean {
-    if (value === 'on') return true;
-    if (value === 'off') return false;
-    return presetDefault;
-}
 
 /** Absolute path to the extension root directory, set during activate(). */
 let extensionPath = '';
@@ -122,7 +106,7 @@ function getConfig(): Config {
         plantumlTheme: cfg.get<string>('plantumlTheme', 'default'),
         plantumlScale: cfg.get<string>('plantumlScale', '100%'),
         previewTheme: cfg.get<string>('previewTheme', 'github-light'),
-        allowLocalImages: resolveAllowLocalImages(cfg.get<string>('allowLocalImages', 'mode-default'), preset.allowLocalImages),
+        allowLocalImages: resolveAllowLocalImages(cfg.get<string | boolean>('allowLocalImages', 'mode-default'), preset.allowLocalImages),
         allowHttpImages: cfg.get<boolean>('allowHttpImages', false),
         renderMode: preset.renderMode,
         plantumlServerUrl: cfg.get<string>('plantumlServerUrl', 'https://www.plantuml.com/plantuml'),

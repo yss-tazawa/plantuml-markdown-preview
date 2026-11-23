@@ -42,7 +42,7 @@
 ## 亮点
 
 - **图表就在文档中** — PlantUML、Mermaid 和 D2 图表内联显示在 Markdown 预览中，而不是另开一个面板。
-- **放心打开** — Markdown 中的脚本永远不会在预览中运行。
+- **放心打开** — Markdown 中的脚本永远不会在预览和 HTML/PDF 导出中运行。
 - **大小由你掌控** — 可分别设置 PlantUML、Mermaid 和 D2 图表的显示缩放。
 - **单文件 HTML 导出** — 文档和图表保存在同一个 HTML 文件中，布局宽度和对齐方式由你选择。
 - **一键 PDF 导出** — 通过 Chrome、Edge 或 Chromium 打印，图表会缩放以适合页面。
@@ -315,7 +315,7 @@ Markdown 中的 ```` ```plantuml ````、```` ```mermaid ````、```` ```d2 ```` �
 ### 安全
 
 - **严格的脚本策略** — 预览只运行扩展自身的脚本。
-- **不运行文档中的代码** — Markdown 中的 `<script>` 标签和其他代码永远不会运行。
+- **不运行文档中的代码** — Markdown 中的 `<script>` 标签和其他代码永远不会在预览和 HTML/PDF 导出中运行。
 - **本地图片按模式处理** — 本地图片默认遵循模式设置（`allowLocalImages: "mode-default"`）；Secure 模式为最高安全性会阻止它们。
 - **默认不加载明文 HTTP 图片** — 通过未加密的 HTTP 加载图片默认关闭（`allowHttpImages`）；仅在可信网络（如内网或本地开发服务器）中开启。
 
@@ -345,9 +345,26 @@ PlantUML、Mermaid 和 D2 图表也会显示在 VS Code 内置的 Markdown 预�
 ```
 
 - **五种类型** — `NOTE`、`TIP`、`IMPORTANT`、`WARNING` 和 `CAUTION`，每种都有独立的图标和强调色。
-- **与 GitHub 规则相同** — 标记仅大写有效（`[!note]` 仍为普通块引用）。
+- **与 GitHub 规则相同** — 标记必须独占一行（大小写均可，`[!note]` 同样有效）；只有文档顶层的块引用才会变成提示。`> [!NOTE] My title`，以及列表项或其他块引用中的标记，仍为普通块引用。
 - **适配主题** — 颜色随当前预览主题（浅色或深色）变化。
 - **处处一致** — 提示在预览和 HTML/PDF 导出中的外观相同。
+
+### 脚注和任务列表
+
+渲染以 GitHub 语法书写的脚注和任务列表，与 GitHub 官方输出保持一致。
+
+```markdown
+A sentence with a footnote.[^1]
+
+[^1]: The footnote text.
+
+- [x] Finished task
+- [ ] Open task
+```
+
+- **脚注** — `[^1]` 引用链接到文档末尾的脚注，脚注也可链接回引用处。
+- **任务列表** — `- [ ]` 和 `- [x]` 项会显示复选框。复选框仅显示状态，点击不会更改文档。
+- **处处一致** — 脚注和任务列表在预览和 HTML/PDF 导出中的外观相同。
 
 ## 快速开始
 
@@ -363,10 +380,10 @@ PlantUML、Mermaid 和 D2 图表也会显示在 VS Code 内置的 Markdown 预�
 
 | 工具 | 用途 | 验证 |
 | --- | --- | --- |
-| [Java 11+（JRE 或 JDK）](#设置) | 运行 PlantUML（内置 PlantUML 1.2026.2 需要 Java 11+） | `java -version` |
+| [Java 11+（JRE 或 JDK）](#设置) | 运行 PlantUML（内置 PlantUML 1.2026.10 需要 Java 11+） | `java -version` |
 | [Graphviz](https://graphviz.org/) | 可选 — 类图、组件图等布局相关图表需要（参见[图表支持](#图表支持)） | `dot -V` |
 
-PlantUML 已内置（LGPL，v1.2026.2）— 无需下载。唯一的要求是 Java 11 或更高版本；Graphviz 是可选的。
+PlantUML 已内置（LGPL，v1.2026.10）— 无需下载。唯一的要求是 Java 11 或更高版本；Graphviz 是可选的。
 还没有 Java？打开预览时，扩展会提示切换到 Easy 模式。
 
 ### 图表支持
@@ -392,9 +409,10 @@ PlantUML 已内置（LGPL，v1.2026.2）— 无需下载。唯一的要求是 Ja
 | 状态图 | — | ✓ | ✓ |
 | ER 图 | — | ✓ | ✓ |
 | 活动图（旧语法） | — | ✓ | ✓ |
+| DOT（@startdot） | — | ✓ | ✓ |
 
 - **LGPL（内置）** — 开箱即用，无需 Graphviz。
-- **Win: GPLv2 jar** — [GPLv2 版本](https://plantuml.com/download)内置 Graphviz（仅 Windows，自动解压）。设置 [`plantumlJarPath`](#配置) 即可使用。
+- **Win: GPLv2 jar** — [GPLv2 版本](https://plantuml.com/download)内置 Graphviz（仅 Windows，自动解压）。设置 [`plantumlJarPath`](#配置) 即可使用。DOT（`@startdot`）需要 PlantUML 1.2026.9 或更高版本。
 - **Mac/Linux: + Graphviz** — 单独安装 [Graphviz](https://graphviz.org/)。LGPL 或 GPLv2 jar 均可使用。
 
 ### 安装
@@ -431,7 +449,7 @@ PlantUML 已内置（LGPL，v1.2026.2）— 无需下载。唯一的要求是 Ja
    打开 VS Code 设置（`Ctrl+,`），搜索 `plantumlMarkdownPreview.javaPath`，输入上述路径
 
 3. 将 [GPLv2 版 PlantUML](https://plantuml.com/download)（`plantuml-gplv2-*.jar`）下载到任意文件夹（内置 Graphviz — 无需单独安装）
-4. 打开 VS Code 设置（`Ctrl+,`），搜索 `plantumlMarkdownPreview.plantumlJarPath`，输入下载的 `.jar` 完整路径（如 `C:\tools\plantuml-gplv2-1.2026.2.jar`）
+4. 打开 VS Code 设置（`Ctrl+,`），搜索 `plantumlMarkdownPreview.plantumlJarPath`，输入下载的 `.jar` 完整路径（如 `C:\tools\plantuml-gplv2-1.2026.10.jar`）
 
 #### Mac
 
@@ -812,7 +830,7 @@ PlantUML、Mermaid 和 D2 的上下文感知关键字建议。适用于独立文
 | `javaPath` | `"java"` | Java 可执行文件路径。设置后直接使用；否则回退到 `JAVA_HOME/bin/java`，再到 PATH 中的 `java`。（Fast 和 Secure 模式） |
 | `plantumlJarPath` | `""` | `plantuml.jar` 路径。留空使用内置 jar（LGPL）。（Fast 和 Secure 模式） |
 | `dotPath` | `"dot"` | Graphviz `dot` 可执行文件路径（Fast 和 Secure 模式） |
-| `plantumlIncludePath` | `""` | PlantUML `!include` 指令的基础目录。留空使用工作区根目录。Easy 模式不可用。 |
+| `plantumlIncludePath` | `""` | PlantUML `!include` 指令的基础目录。此目录之外的文件，一般无法通过绝对路径读取。留空使用工作区根目录。Easy 模式不可用。 |
 | `allowLocalImages` | `"mode-default"` | 在预览中解析相对图片路径（例如 `![](./image.png)`）。`"mode-default"` 使用模式预设（Fast: 开，Secure: 关，Easy: 开）。设为 `"on"` / `"off"` 可覆盖。 |
 | `allowHttpImages` | `false` | 允许在预览中通过 HTTP（未加密）加载图片。适用于内网或本地开发服务器。 |
 | `previewTheme` | `"github-light"` | 预览主题（参见[主题](#主题)） |
@@ -822,7 +840,7 @@ PlantUML、Mermaid 和 D2 的上下文感知关键字建议。适用于独立文
 | `plantumlScale` | `"100%"` | PlantUML 图表缩放。`"auto"` 只缩小比预览宽的图表。百分比（70%–120%）按原始大小的指定比例渲染。 |
 | `mermaidScale` | `"80%"` | Mermaid 图表缩放。`"auto"` 只缩小比预览宽的图表。百分比（50%–100%）按原始大小的指定比例渲染。 |
 | `d2Theme` | `"Neutral Default"` | D2 图表主题。提供 19 种内置主题（例如 `"Neutral Default"`、`"Dark Mauve"`、`"Terminal"`）。 |
-| `d2Layout` | `"dagre"` | D2 布局引擎：`"dagre"`（默认，快速）或 `"elk"`（更适合节点众多的复杂图）。 |
+| `d2Layout` | `"dagre"` | 图表未自行指定（`d2-config` 中的 `layout-engine`）时使用的 D2 布局引擎：`"dagre"`（默认，快速）或 `"elk"`（更适合节点众多的复杂图）。 |
 | `d2Scale` | `"70%"` | D2 图表缩放。`"auto"` 只缩小比预览宽的图表。百分比（50%–100%）按原始大小的指定比例渲染。 |
 | `htmlMaxWidth` | `"960px"` | 导出 HTML 正文的最大宽度。可选：`"640px"` – `"1440px"`，或 `"none"` 表示不限制。 |
 | `htmlAlignment` | `"center"` | HTML 正文的对齐方式。`"center"`（默认）或 `"left"`。 |
@@ -857,14 +875,14 @@ PlantUML、Mermaid 和 D2 的上下文感知关键字建议。适用于独立文
 | `pen-paper-coffee` | Pen Paper Coffee — 暖纸色，手写风格 |
 | `coy` | Coy — 近白色，简洁设计 |
 | `vs` | VS — 经典 Visual Studio 配色 |
-| `vscode-light-2026` | VS Code Light 2026 — 内置 Markdown 预览配色，行内代码和引用清晰 |
+| `vscode-light-2026` | VS Code Light 2026 — 内置 Markdown 预览配色，行内代码清晰 |
 | `github-dark` | GitHub Dark — 深色背景 |
 | `atom-dark` | Atom Dark — Tomorrow Night 色调 |
 | `one-dark` | One Dark — Atom 风格深色 |
 | `dracula` | Dracula — 鲜艳深色 |
 | `solarized-dark` | Solarized Dark — 深青色，护眼 |
 | `monokai` | Monokai — 鲜明语法，Sublime Text 风格 |
-| `vscode-dark-2026` | VS Code Dark 2026 — 内置 Markdown 预览配色，行内代码和引用清晰 |
+| `vscode-dark-2026` | VS Code Dark 2026 — 内置 Markdown 预览配色，行内代码清晰 |
 
 </details>
 
@@ -947,6 +965,8 @@ Easy 模式下，PlantUML 源文本会发送至配置的服务器。默认的公
 `!include` 需要 Fast 或 Secure 模式 — Easy 模式不可用，因为远程服务器无法访问本地文件。
 
 - 路径默认相对于工作区根目录解析。设置 `plantumlIncludePath` 可使用不同的基础目录。
+- 基础目录之外的文件，一般无法通过绝对路径包含。若要允许其他文件夹，请将它们添加到环境变量 `PLANTUML_ALLOWLIST_PATH`，然后重启 VS Code。图表读取的图片、精灵图、主题和 JSON 文件也是如此。
+- 未打开文件夹且 `plantumlIncludePath` 为空时，图表无法读取本地文件。请打开一个文件夹，或设置 `plantumlIncludePath`。
 - 在 Fast 模式下，`!include` 指令的基础目录仅在扩展启动了自己的本地服务器时才生效。如果你连接到一个已在运行的服务器（Start Mode 为 `"off"`，或在固定端口上复用现有服务器），包含文件则会改为相对于该服务器的工作目录解析 — 将端口设置为 `0`（自动），扩展就会始终启动自己的服务器。
 - 保存包含文件会自动刷新预览。也可点击**重新加载**按钮（↻）手动刷新。
 
@@ -967,11 +987,20 @@ Easy 模式下，PlantUML 源文本会发送至配置的服务器。默认的公
 
 此扩展包含以下第三方软件：
 
-- [PlantUML](https://plantuml.com/)（LGPL 版本）— [GNU Lesser General Public License v3 (LGPL-3.0)](https://www.gnu.org/licenses/lgpl-3.0.html)。详情请参阅 [PlantUML 许可证页面](https://plantuml.com/license)。
+- [PlantUML](https://plantuml.com/)（LGPL 版本）— [GNU Lesser General Public License v3.0 or later (LGPL-3.0-or-later)](https://www.gnu.org/licenses/lgpl-3.0.html)。详情请参阅 [PlantUML 许可证页面](https://plantuml.com/license)。上游项目提供内置版本的源代码：<https://github.com/plantuml/plantuml/archive/refs/tags/v1.2026.10.tar.gz>（标签 v1.2026.10 处的仓库）和 <https://github.com/plantuml/plantuml/releases/download/v1.2026.10/plantuml-lgpl-1.2026.10-sources.jar>（LGPL 构建的 Java 源代码）。
 - [mermaid.js](https://mermaid.js.org/) — [MIT License](https://github.com/mermaid-js/mermaid/blob/develop/LICENSE)
 - [KaTeX](https://katex.org/) — [MIT License](https://github.com/KaTeX/KaTeX/blob/main/LICENSE)
+- [@vscode/markdown-it-katex](https://github.com/microsoft/vscode-markdown-it-katex) — [MIT License](https://github.com/microsoft/vscode-markdown-it-katex/blob/main/LICENSE)
 - [@terrastruct/d2](https://d2lang.com/)（Wasm 构建）— [Mozilla Public License 2.0 (MPL-2.0)](https://github.com/terrastruct/d2/blob/master/LICENSE.txt)
-- [markdown-it-github-alerts](https://github.com/antfu/markdown-it-github-alerts) — [MIT License](https://github.com/antfu/markdown-it-github-alerts/blob/main/LICENSE)
+- [@primer/octicons](https://github.com/primer/octicons) — [MIT License](https://github.com/primer/octicons/blob/main/LICENSE)
+- [markdown-it](https://github.com/markdown-it/markdown-it) — [MIT License](https://github.com/markdown-it/markdown-it/blob/master/LICENSE)
+- [markdown-it-footnote](https://github.com/markdown-it/markdown-it-footnote) — [MIT License](https://github.com/markdown-it/markdown-it-footnote/blob/master/LICENSE)
+- [markdown-it-task-lists](https://github.com/revin/markdown-it-task-lists) — [ISC License](https://github.com/revin/markdown-it-task-lists/blob/master/LICENSE)
+- [highlight.js](https://github.com/highlightjs/highlight.js) — [BSD 3-Clause License](https://github.com/highlightjs/highlight.js/blob/main/LICENSE)
+
+包含各组件许可证全文的完整列表见 `third-party-licenses/` 文件夹（从 [NOTICE.md](third-party-licenses/NOTICE.md) 开始），该文件夹也随扩展一同提供。
+
+内置的第三方组件仍遵循各自的许可证。本扩展未对它们添加任何限制：可按各自许可证的条款使用、复制和再分发其中每一个组件，在 VS Code 之外也可以。
 
 ## 许可证
 

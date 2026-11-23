@@ -122,6 +122,24 @@ export function resolveJvmHeapArgs(config: Config): string[] {
  */
 export type LocalServerStartMode = 'on' | 'lazy' | 'off';
 
+/**
+ * Resolve the allowLocalImages tri-state setting to a boolean, honoring the legacy boolean value.
+ *
+ * Explicit `'on'` or `'off'` overrides the preset; `'mode-default'` falls back to the preset's
+ * default. Before the setting became a tri-state it was a boolean, and a settings.json written then
+ * may still hold `true` or `false`: they map to `'on'` and `'off'`, so a user who turned local
+ * images off does not get them back from the preset.
+ *
+ * @param value - User setting: `'mode-default'`, `'on'`, `'off'`, or a legacy boolean.
+ * @param presetDefault - Default value defined by the active mode preset.
+ * @returns Whether local images should be allowed.
+ */
+export function resolveAllowLocalImages(value: string | boolean, presetDefault: boolean): boolean {
+    if (value === 'on' || value === true) return true;
+    if (value === 'off' || value === false) return false;
+    return presetDefault;
+}
+
 /** Default start mode when nothing is configured (matches the package.json default). */
 export const DEFAULT_START_MODE: LocalServerStartMode = 'lazy';
 
@@ -245,7 +263,7 @@ export interface Config {
     plantumlIncludePath: string;
     /** D2 diagram theme name (maps to a themeID internally). */
     d2Theme: string;
-    /** D2 layout engine: 'dagre' or 'elk'. */
+    /** D2 layout engine for diagrams that set none: 'dagre' or 'elk'. */
     d2Layout: string;
     /** D2 diagram scale ('auto', '70%'–'120%'). 'auto' = shrink to fit. */
     d2Scale: string;

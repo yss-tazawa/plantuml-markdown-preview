@@ -36,10 +36,13 @@ let initPromise: Promise<void> | null = null;
  */
 let d2Queue: Promise<unknown> = Promise.resolve();
 
-/** D2 instance interface matching @terrastruct/d2 API. */
+/**
+ * D2 instance interface matching @terrastruct/d2 API. `diagram.config.layoutEngine` is the layout
+ * engine the diagram sets in `vars.d2-config` (null when it sets none).
+ */
 interface D2Instance {
     ready: Promise<void>;
-    compile(source: string | { fs: { index: string }; options?: Record<string, unknown> }, options?: Record<string, unknown>): Promise<{ diagram: Record<string, unknown>; renderOptions: Record<string, unknown> }>;
+    compile(source: string | { fs: { index: string }; options?: Record<string, unknown> }, options?: Record<string, unknown>): Promise<{ diagram: Record<string, unknown> & { config?: { layoutEngine?: string | null } }; renderOptions: Record<string, unknown> }>;
     render(diagram: Record<string, unknown>, options?: Record<string, unknown>): Promise<string>;
 }
 
@@ -202,7 +205,7 @@ function getRenderOptions(result: Record<string, unknown>): Record<string, unkno
  *
  * @param source - D2 diagram source code.
  * @param themeID - D2 theme number.
- * @param layout - Layout engine ('dagre' or 'elk').
+ * @param layout - Layout engine from the setting ('dagre' or 'elk'), used when the diagram sets none.
  * @param signal - Cancels the render while it waits in the queue (AbortError).
  * @returns SVG markup string.
  */
@@ -230,7 +233,7 @@ function inD2Queue<T>(task: () => Promise<T>): Promise<T> {
  *
  * @param source - D2 diagram source code.
  * @param themeID - D2 theme number.
- * @param layout - Layout engine ('dagre' or 'elk').
+ * @param layout - Layout engine from the setting ('dagre' or 'elk'), used when the diagram sets none.
  * @param cacheKey - Cache key of the render.
  * @param signal - Cancels the render before it starts (AbortError).
  * @returns SVG markup string.
@@ -292,12 +295,18 @@ async function renderUncached(
  * @param instance - The D2 instance.
  * @param source - D2 diagram source code.
  * @param themeID - D2 theme number.
- * @param layout - Layout engine ('dagre' or 'elk').
+ * @param layout - Layout engine from the setting ('dagre' or 'elk'), used when the diagram sets none.
  * @returns The raw SVG.
  */
 async function renderOnce(instance: D2Instance, source: string, themeID: number, layout: string): Promise<string> {
     await instance.ready;
-    const result = await instance.compile(source, { layout, themeID });
+    let result = await instance.compile(source, { layout, themeID });
+    // A layout engine set in the diagram wins over the setting. D2 keeps the diagram's value in
+    // config.layoutEngine even when `layout` is passed, so compile again only when it differs.
+    const diagramLayout = result?.diagram?.config?.layoutEngine;
+    if (typeof diagramLayout === 'string' && diagramLayout !== '' && diagramLayout !== layout) {
+        result = await instance.compile(source, { layout: diagramLayout, themeID });
+    }
     if (!result || !result.diagram) {
         throw new Error('D2 compile returned no diagram');
     }
