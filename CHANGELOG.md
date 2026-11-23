@@ -6,6 +6,35 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## 0.9.0 - 2026-11-24
+
+### Added
+
+- Footnotes (`[^1]`) and task lists (`- [ ]` / `- [x]`) in the Markdown preview, Reading View and HTML/PDF export, as on GitHub. Task list checkboxes show the state but cannot be clicked
+- `@startdot` diagrams (Graphviz DOT) in Fast and Secure modes. They require Graphviz
+
+### Changed
+
+- The Markdown preview, Reading View and HTML/PDF export look even closer to GitHub: line height, the space around blocks, inline code, quotes (no background), tables (only as wide as their content), and HTML such as `<details>`, `<sup>` and the `align` attribute
+- Alerts (`> [!NOTE]` and the like) now follow GitHub's rules: text after the marker (`> [!NOTE] My title`) no longer becomes the alert's title, and a marker inside a list item or a quote, or with nothing after it, no longer makes an alert. These are shown as plain quotes. A lowercase marker (`> [!note]`) now makes an alert too
+- In PDF export, code blocks, tables and formulas are no longer cut off at the right edge of the page: long code lines wrap, and tables and formulas that are too wide are fitted to the page width
+- The bundled PlantUML is now 1.2026.10. Sequence diagrams are drawn with its new default layout engine (Teoz), so they may look different
+- Files that PlantUML diagrams read (`!include`, images, sprites, themes and JSON) are generally limited to the workspace root, or to the folder set in `plantumlIncludePath`: a file outside it can no longer be read by its absolute path. Relative paths work as before. With no folder open and `plantumlIncludePath` empty, diagrams cannot read local files
+- The environment variables `PLANTUML_SECURITY_PROFILE` and `PLANTUML_INCLUDE_PATH` are now overridden by the extension. To let diagrams read files in other folders, add those folders to `PLANTUML_ALLOWLIST_PATH`
+- A D2 diagram that sets its own layout engine (`vars: { d2-config: { layout-engine: elk } }`) is now laid out with it; the `d2Layout` setting applies to diagrams that set none. An engine that is not bundled, such as `tala`, is an error
+- Scripts in your Markdown and in diagrams no longer run in exported HTML and PDF, as in the preview
+- Formulas in the Markdown preview, Reading View and HTML export now include MathML for screen readers
+
+### Fixed
+
+- Changing `plantumlIncludePath` no longer leaves PlantUML diagrams drawn with the previous folder
+- In Fast mode with a fixed `plantumlLocalServerPort`, changing a setting that restarts the local server (such as `plantumlJarPath`) no longer reports the port as already in use by another process
+- `allowLocalImages` set to `false` (or `true`) in versions before 0.4.0 is no longer ignored: it now turns local images off (or on) instead of following the mode
+
+### Known Issues
+
+- `@startdot` diagrams may not be drawn when `plantumlJarPath` points to a PlantUML jar older than 1.2026.9. Use 1.2026.9 or later
+
 ## 0.8.3 - 2026-11-19
 
 ### Changed
