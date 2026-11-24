@@ -6,6 +6,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## 0.9.2 - 2026-11-24
+
+### Changed
+
+- `allowLocalImages` values `false` and `true` left over from versions before 0.4.0 are now rewritten in your user and workspace settings when the extension starts: `false` becomes `off` and `true` becomes `on`. Local images load as before; set it to `mode-default` to follow the mode
+
 ## 0.9.1 - 2026-11-24
 
 ### Added
