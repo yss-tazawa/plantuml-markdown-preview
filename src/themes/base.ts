@@ -72,6 +72,8 @@ export interface ThemePalette {
     headingColor?: string;
     /** Inline code text color override (defaults to body text color); code blocks use `hljsText`. */
     codeText?: string;
+    /** Scrollbar thumb color in the preview (defaults to the body text color at 30%). */
+    scrollbarThumb?: string;
     /**
      * Code block border color. Code blocks have no border, as on GitHub, unless this is set
      * or the code block background is the body background (then the general border marks
@@ -273,7 +275,11 @@ export function buildThemeCss(p: ThemePalette): string {
     li + li { margin-top: 0.25em; }
     b, strong { font-weight: 600; }
     a { color: ${p.link}; text-decoration: none; }
-    a:hover { text-decoration: underline; }
+    /* VS Code puts its own stylesheet in every webview. In current versions it sits in a layer, so only values the theme
+       leaves unset show through (a quote background, the kbd color, the underline of code in links); in older versions
+       without the layer its a:hover and a code also win. These rules set the values themselves; exported pages look the
+       same either way. */
+    a:hover { color: ${p.link}; text-decoration: underline; }
     /* An anchor without a link target (raw <a name>) reads as body text, as on GitHub; links in diagrams keep their own look. */
     a:not([href]):not(:where(svg *)) { color: inherit; text-decoration: none; }
     a:visited { color: ${p.linkVisited}; }
@@ -305,6 +311,7 @@ export function buildThemeCss(p: ThemePalette): string {
     pre tt { background: none; padding: 0; color: inherit; }
     del code { text-decoration: inherit; }
     code br, tt br { display: none; }
+    a code, a tt { color: ${codeText}; text-decoration: none; }
     samp { font-family: ${MONO_FONT}; font-size: 0.85em; }
     /* With source lines, a code block is wrapped in a div ending in a line marker that stops margin collapsing,
        so the wrapper takes the code block's margin (with the specificity of a bare div, so first and last child rules still win). */
@@ -316,13 +323,16 @@ export function buildThemeCss(p: ThemePalette): string {
       font: 11px ${MONO_FONT};
       line-height: 10px;
       vertical-align: middle;
+      color: inherit;
       background-color: ${p.codeBg};
       border: 1px solid ${p.border};
       border-radius: 6px;
       box-shadow: inset 0 -1px 0 ${p.border};
     }
-    /* No left and right margins, so that align="center" keeps its auto margins. */
-    table { border-collapse: collapse; display: block; width: max-content; max-width: 100%; overflow: auto; margin-top: 0; margin-bottom: 16px; font-variant: tabular-nums; }
+    /* No left and right margins, so that align="center" keeps its auto margins.
+       CJK text breaks only where words break (keep-all), so a wide table keeps its width and scrolls instead of
+       narrowing to the screen one character per line (a deliberate exception to GitHub). */
+    table { border-collapse: collapse; display: block; width: max-content; max-width: 100%; overflow: auto; margin-top: 0; margin-bottom: 16px; font-variant: tabular-nums; word-break: keep-all; }
     th, td { border: 1px solid ${tableBorder}; padding: 6px 13px; }
     /* Header cells without an align attribute are left-aligned like the cells below them (GitHub centers them); align attributes still apply. */
     th:not([align]) { text-align: left; }
@@ -337,6 +347,7 @@ export function buildThemeCss(p: ThemePalette): string {
       margin: 0 0 16px;
       padding: 0 1em;
       color: ${p.blockquoteColor};
+      background: none;
     }
     blockquote > :first-child { margin-top: 0; }
     blockquote > :last-child { margin-bottom: 0; }
@@ -391,6 +402,10 @@ export function buildThemeCss(p: ThemePalette): string {
     .katex-block { margin: 0 0 16px; }
     .katex-block > .katex-display { margin: 0; }
     body.preview { margin: 0; max-width: none; padding: 46px 30px 1em; }
+    /* Scrollbars in the preview take the theme's colors (a thumb of the text color at 30% over a clear track, so each box
+       shows its own background), not the VS Code color theme's, which VS Code's webview stylesheet sets on html. VS Code
+       versions too old for scrollbar-color keep their own scrollbars. Exported pages keep the browser's own scrollbars. */
+    html:has(> body.preview) { scrollbar-color: ${p.scrollbarThumb ?? `color-mix(in srgb, ${p.text} 30%, transparent)`} transparent; }
     /* In print (PDF export, or printing an exported HTML file) the page margin takes the place of the room above the document. */
     @media print { body { padding-top: 0; } }
     .hljs { background: ${p.hljsBg}; color: ${hljsText}; }

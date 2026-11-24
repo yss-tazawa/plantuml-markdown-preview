@@ -185,7 +185,7 @@ Exporta tu documento Markdown a un único archivo HTML.
 - **Diagramas incluidos** — los diagramas PlantUML y D2 se incrustan como SVG integrados; los diagramas Mermaid y las fuentes matemáticas se cargan desde una CDN al abrir el archivo.
 - **Estilos incluidos** — los estilos de resaltado de sintaxis van dentro del archivo.
 - **Exportar y abrir** — exporta y abre el resultado en tu navegador con un solo comando.
-- **Tu diseño** — elige un ancho fijo de 640px a 1440px, centrado o alineado a la izquierda, o **Responsive**, que ocupa toda la ventana del navegador y reduce solo los diagramas que desbordarían. Establece tu ancho y alineación habituales en la Configuración, o elige en cada exportación desde el menú.
+- **Tu diseño** — elige un ancho fijo de 640px a 1440px, centrado o alineado a la izquierda, o **Responsive**, que ocupa toda la ventana del navegador, reduce solo los diagramas que desbordarían y ajusta las tablas anchas a la ventana. Establece tu ancho y alineación habituales en la Configuración, o elige en cada exportación desde el menú.
 
 ### Exportación a PDF
 
@@ -553,7 +553,7 @@ El submenú ofrece estas opciones de ancho:
 | ------ | ----------- |
 | Configuración actual | Exportar con la configuración actual (sin CSS responsive) |
 | 640px – 1440px | Ancho fijo del cuerpo en píxeles, centrado |
-| Responsive (izquierda) | Cuerpo del ancho del viewport alineado a la izquierda; los diagramas se reducen solo si desbordan |
+| Responsive (izquierda) | Cuerpo del ancho del viewport alineado a la izquierda; los diagramas se reducen solo si desbordan y las tablas anchas se ajustan |
 | 640px – 1440px (izquierda) | Ancho fijo, alineado a la izquierda |
 
 El archivo HTML se guarda junto al archivo Markdown fuente.
@@ -830,6 +830,7 @@ Todos los ajustes usan el prefijo `plantumlMarkdownPreview.`.
 | `d2Scale` | `"70%"` | Escala del diagrama D2. `"auto"` reduce solo los diagramas más anchos que la vista previa. Un porcentaje (50%–100%) renderiza a esa fracción del tamaño natural. |
 | `htmlMaxWidth` | `"960px"` | Ancho máximo del cuerpo del HTML exportado. Opciones: `"640px"` – `"1440px"`, o `"none"` para sin límite. |
 | `htmlAlignment` | `"center"` | Alineación del cuerpo del HTML. `"center"` (predeterminado) o `"left"`. |
+| `htmlTableWrap` | `"words"` | Cómo se dividen las celdas de las tablas en el HTML exportado. `"words"` (predeterminado) divide en los espacios sin partir las palabras en japonés, chino y coreano, así que las tablas anchas se desplazan horizontalmente. `"characters"` divide también esos idiomas entre caracteres, así que las tablas anchas caben en el ancho del cuerpo. `"none"` divide las líneas solo en `<br>`, y las tablas anchas se extienden a la derecha hasta el ancho de la ventana. La exportación Responsive siempre usa `"characters"`. |
 | `pdfScale` | `0.625` | Factor de escala para exportación PDF. Escala texto y diagramas uniformemente. Rango: 0.1–2.0. |
 | `enableMath` | `true` | Habilita el renderizado matemático de KaTeX. Soporta `$...$` (en línea) y `$$...$$` (en bloque). |
 | `debounceNoDiagramChangeMs` | _(vacío)_ | Cuánto tiempo (ms) espera la vista previa después de que dejas de escribir antes de actualizarse, cuando no ha cambiado ningún diagrama. Déjalo vacío para usar el valor predeterminado del modo (Fast: 100, Secure: 100, Easy: 100). |

@@ -10,6 +10,9 @@
 /** Preset mode values exposed via the `mode` setting. */
 export type Mode = 'fast' | 'secure' | 'easy';
 
+/** How wide tables wrap in HTML export, exposed via the `htmlTableWrap` setting. */
+export type TableWrap = 'words' | 'characters' | 'none';
+
 /** Properties controlled by the preset mode. */
 interface ModePreset {
     readonly renderMode: 'local' | 'server' | 'local-server';
@@ -245,6 +248,8 @@ export interface Config {
     htmlMaxWidth: string;
     /** HTML export body alignment ('center' or 'left'). */
     htmlAlignment: string;
+    /** How wide tables wrap in HTML export ('words', 'characters' or 'none'). */
+    htmlTableWrap: TableWrap;
     /** When true, resolve relative image paths in the preview. */
     allowLocalImages: boolean;
     /** When true, allow loading images over HTTP (unencrypted) in the preview CSP. */
