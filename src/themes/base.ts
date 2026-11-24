@@ -224,6 +224,7 @@ export function buildThemeCss(p: ThemePalette): string {
     const tableBorder = p.tableBorder || p.border;
     const hljsText = p.hljsText || p.text;
     const thBg = p.thBg || p.codeBg;
+    const scrollbarThumb = p.scrollbarThumb ?? `color-mix(in srgb, ${p.text} 30%, transparent)`;
     const thBorder = p.thBorder ? ` border-bottom-color: ${p.thBorder};` : '';
     const hljsTitleWeight = p.hljsTitleWeight || 'bold';
     const hljsCommentSelector = (p.hljsCommentTokens ?? ['comment', 'prolog', 'doctype', 'cdata'])
@@ -402,10 +403,13 @@ export function buildThemeCss(p: ThemePalette): string {
     .katex-block { margin: 0 0 16px; }
     .katex-block > .katex-display { margin: 0; }
     body.preview { margin: 0; max-width: none; padding: 46px 30px 1em; }
-    /* Scrollbars in the preview take the theme's colors (a thumb of the text color at 30% over a clear track, so each box
-       shows its own background), not the VS Code color theme's, which VS Code's webview stylesheet sets on html. VS Code
-       versions too old for scrollbar-color keep their own scrollbars. Exported pages keep the browser's own scrollbars. */
-    html:has(> body.preview) { scrollbar-color: ${p.scrollbarThumb ?? `color-mix(in srgb, ${p.text} 30%, transparent)`} transparent; }
+    /* Scrollbars in the preview take the theme's colors (a thumb of the text color at 30%), not the VS Code color theme's,
+       which VS Code's webview stylesheet sets on html. The page's own scrollbar has a track of the page background: a clear
+       one would show the editor behind the webview, not the page. Boxes inside inherit a clear track from body, so each box
+       shows its own background. VS Code versions too old for scrollbar-color keep their own scrollbars. Exported pages keep
+       the browser's own scrollbars. */
+    html:has(> body.preview) { scrollbar-color: ${scrollbarThumb} ${p.bg}; }
+    body.preview { scrollbar-color: ${scrollbarThumb} transparent; }
     /* In print (PDF export, or printing an exported HTML file) the page margin takes the place of the room above the document. */
     @media print { body { padding-top: 0; } }
     .hljs { background: ${p.hljsBg}; color: ${hljsText}; }
