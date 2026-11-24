@@ -46,7 +46,7 @@ import type { D2Render } from './src/d2-preview.js';
 import { initD2, disposeD2 } from './src/d2-renderer.js';
 import { openRevisionPreview, disposeRevisionPreviews, getOpenRevisionPreviews } from './src/revision-preview.js';
 import { HEAD_REVISION, STAGED_REVISION, type Revision } from './src/git.js';
-import { CONFIG_SECTION, MODE_PRESETS, OUTPUT_CHANNEL_NAME, isLazyDeferralActive, resolveAllowLocalImages, resolveStartMode, type Config, type Mode } from './src/config.js';
+import { CONFIG_SECTION, MODE_PRESETS, OUTPUT_CHANNEL_NAME, isLazyDeferralActive, resolveAllowLocalImages, resolveStartMode, type Config, type Mode, type TableWrap } from './src/config.js';
 import { registerCompletionProviders } from './src/completion/register.js';
 import { registerColorProviders } from './src/color/register.js';
 import { recordPreviewThemeIfUnset, PREVIEW_THEME_RECORDED_KEY } from './src/preview-theme-default.js';
@@ -120,6 +120,7 @@ function getConfig(): Config {
         mermaidScale: cfg.get<string>('mermaidScale', '80%'),
         htmlMaxWidth: cfg.get<string>('htmlMaxWidth', '960px'),
         htmlAlignment: cfg.get<string>('htmlAlignment', 'center'),
+        htmlTableWrap: cfg.get<TableWrap>('htmlTableWrap', 'words'),
         enableMath: cfg.get<boolean>('enableMath', true),
         pdfScale: cfg.get<number>('pdfScale', 0.625),
         previewZoom: snapPreviewZoom(cfg.get<number>('previewZoom', DEFAULT_PREVIEW_ZOOM)),
@@ -1351,6 +1352,7 @@ const builtInPreviewConfig: Config = {
     mermaidScale: '80%',
     htmlMaxWidth: '960px',
     htmlAlignment: 'center',
+    htmlTableWrap: 'words',
     allowLocalImages: true,
     allowHttpImages: false,
     enableMath: true,

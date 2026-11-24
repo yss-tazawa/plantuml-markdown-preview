@@ -185,7 +185,7 @@ Export your Markdown document to a single HTML file.
 - **Diagrams included** — PlantUML and D2 diagrams are embedded as inline SVG; Mermaid diagrams and math fonts load from a CDN when the file is opened.
 - **Styles included** — syntax highlighting styles travel inside the file.
 - **Export and open** — export and open the result in your browser with one command.
-- **Your layout** — pick a fixed width from 640px to 1440px, centered or left-aligned, or **Responsive**, which fills the browser window and shrinks only the diagrams that would overflow. Set your usual width and alignment in Settings, or choose per export from the menu.
+- **Your layout** — pick a fixed width from 640px to 1440px, centered or left-aligned, or **Responsive**, which fills the browser window, shrinks only the diagrams that would overflow, and fits wide tables to the window. Set your usual width and alignment in Settings, or choose per export from the menu.
 
 ### PDF Export
 
@@ -559,7 +559,7 @@ The submenu offers these width options:
 | ------ | ----------- |
 | Current Settings | Export with the current configuration (no responsive CSS) |
 | 640px – 1440px | Fixed body width in pixels, centered |
-| Responsive (Left-Aligned) | Viewport-width body anchored to the left; diagrams shrink only if they overflow |
+| Responsive (Left-Aligned) | Viewport-width body anchored to the left; diagrams shrink only if they overflow, and wide tables wrap to fit |
 | 640px – 1440px (Left-Aligned) | Fixed width, left-aligned |
 
 The HTML file is saved alongside the source Markdown file.
@@ -837,6 +837,7 @@ All settings use the `plantumlMarkdownPreview.` prefix.
 | `d2Scale` | `"70%"` | D2 diagram scale. `"auto"` shrinks diagrams that are wider than the preview. A percentage (50%–100%) renders at that fraction of natural size. |
 | `htmlMaxWidth` | `"960px"` | Maximum width of the exported HTML body. Options: `"640px"` – `"1440px"`, or `"none"` for no limit. |
 | `htmlAlignment` | `"center"` | HTML body alignment. `"center"` (default) or `"left"`. |
+| `htmlTableWrap` | `"words"` | How table cells wrap in HTML export. `"words"` (default) wraps at spaces and keeps Japanese, Chinese and Korean words whole, so wide tables scroll sideways. `"characters"` also breaks those languages between characters, so wide tables fit the body width. `"none"` breaks lines only at `<br>`, and wide tables extend to the right up to the window width. Responsive export always uses `"characters"`. |
 | `pdfScale` | `0.625` | PDF export scale factor. Scales text and diagrams uniformly. Range: 0.1–2.0. |
 | `enableMath` | `true` | Enable KaTeX math rendering. Supports `$...$` (inline) and `$$...$$` (block). |
 | `debounceNoDiagramChangeMs` | _(empty)_ | How long (ms) the preview waits after you stop typing before updating, when no diagram changed. Leave empty to use the mode default (Fast: 100, Secure: 100, Easy: 100). |

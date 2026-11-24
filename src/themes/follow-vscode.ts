@@ -67,6 +67,8 @@ const palette = {
     hljsAdditionBg: 'var(--vscode-diffEditor-insertedTextBackground, rgba(155, 185, 85, 0.2))',
     hljsDeletionBg: 'var(--vscode-diffEditor-removedTextBackground, rgba(255, 0, 0, 0.2))',
     thBorder: `var(--pmp-thBorder, ${light.thBorder})`,
+    // The thumb follows VS Code's own scrollbar color, like the rest of this theme.
+    scrollbarThumb: `var(--vscode-scrollbarSlider-background, color-mix(in srgb, ${follow('text')} 30%, transparent))`,
 } satisfies ThemePalette;
 
 /** Dark syntax colors. */

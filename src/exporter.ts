@@ -30,7 +30,7 @@ import { escapeHtml, extractPlantUmlBlocks, extractD2Blocks, errorHtml } from '.
 import { renderAllD2 } from './d2-renderer.js';
 import { findBrowser } from './browser-finder.js';
 import { exportOutputPath, fileNameWithoutExtension } from './markdown-files.js';
-import { MERMAID_THEME_SET, type Config } from './config.js';
+import { MERMAID_THEME_SET, type Config, type TableWrap } from './config.js';
 import katexPlugin, { type MarkdownKatexOptions } from '@vscode/markdown-it-katex';
 import taskLists from 'markdown-it-task-lists';
 import { strikethroughPlugin, trimAutolinkTrailing, listLooseClassPlugin, footnotePlugin, alertPlugin } from './markdown-rules.js';
@@ -198,6 +198,12 @@ export interface RenderOptions {
     fitToWidth?: boolean | number;
     /** Alignment when fitToWidth is a number. 'center' (default) or 'left'. */
     fitToWidthAlign?: 'center' | 'left';
+    /**
+     * How wide tables wrap (HTML export only; unset keeps the theme's `words`). `characters` breaks CJK text
+     * between characters again, so wide tables narrow to the body width. `none` never wraps cell text (only
+     * `<br>` breaks lines) and lets tables grow past the body to the right, up to the window, then scroll.
+     */
+    tableWrap?: TableWrap;
     /** KaTeX CSS <style> block to inject into <head> (already includes @font-face with resolved URIs). */
     katexCssHtml?: string;
     /** When true, relax CSP font-src from 'none' to cspSource for KaTeX fonts. */
@@ -494,6 +500,8 @@ export async function exportToHtml(mdFilePath: string, config: Config, signal?: 
         htmlAlignment: config.htmlAlignment,
         fitToWidth,
         fitToWidthAlign,
+        // The responsive export (fitToWidth true) fits everything to the window, tables included.
+        tableWrap: fitToWidth === true ? 'characters' : config.htmlTableWrap,
         katexCssHtml: config.enableMath ? await buildKatexCdnCssHtml() : '',
         enableMath: config.enableMath,
     };
@@ -516,11 +524,14 @@ const PDF_MARGIN_MM = 15;
  * Mermaid source, whose labels would inherit it), and PDF_FIT_SCRIPT breaks long words only in
  * the body cells of a table that does not fit (`pdf-break`; header cells stay whole).
  * Tables and display math that still overflow are shrunk by PDF_FIT_SCRIPT, like diagrams.
- * HTML export keeps the GitHub shapes (content-wide tables that scroll).
+ * CJK text in tables breaks between characters again (`word-break: normal`), as on GitHub: the theme
+ * keeps it whole (`keep-all`) so that wide tables scroll on screen. This also covers tables inside
+ * diagrams, which the theme rule reaches too.
+ * HTML export keeps the screen shapes (content-wide tables that scroll).
  */
 export const PDF_PRINT_CSS = `@page{margin:${PDF_MARGIN_MM}mm}`
     + 'pre:not(.mermaid):not(:where(svg *)){white-space:pre-wrap;overflow-wrap:anywhere;overflow:visible}'
-    + 'table:not(:where(svg *)){overflow:visible}td.pdf-break:not(:where(svg *)){overflow-wrap:anywhere}'
+    + 'table:not(:where(svg *)){overflow:visible}table{word-break:normal}td.pdf-break:not(:where(svg *)){overflow-wrap:anywhere}'
     + '.katex-display:not(:where(svg *)){overflow:visible}';
 
 /**
@@ -885,6 +896,29 @@ function buildLayoutOverrideStyle(htmlMaxWidth?: string, htmlAlignment?: string)
     return overrides.length ? `\n  <style>body { ${overrides.join('; ')}; }</style>` : '';
 }
 
+/**
+ * Build the `<style>` for the HTML export's table wrapping (htmlTableWrap).
+ *
+ * `characters` gives CJK text in tables back its breaks between characters (the theme keeps it whole
+ * with `keep-all`). `none` stops wrapping in cells (inline code included, which sets its own white-space)
+ * and lets a table directly in the body grow to the right past the body, keeping its left edge on the
+ * body's: up to 30px (the body's side padding) before the window's right edge. The body is centered in
+ * the window, or on its left edge with `left`. Tables in lists and quotes keep the width of their box,
+ * so that the page never scrolls sideways. Tables in diagrams are left alone.
+ *
+ * @param [tableWrap] - The table wrapping mode; `words` or unset adds nothing.
+ * @param [left] - Whether the body is on the left edge of the window rather than centered.
+ * @returns Style tag string, or empty string for `words`.
+ */
+function buildTableWrapStyle(tableWrap?: TableWrap, left?: boolean): string {
+    if (tableWrap === 'characters') return '\n  <style>table{word-break:normal}</style>';
+    if (tableWrap !== 'none') return '';
+    const room = left ? '100vw - 60px' : '(100vw + 100%) / 2 - 30px';
+    return `\n  <style>#preview-content > table{max-width:max(100%, calc(${room}))}`
+        + 'table:not(:where(svg *)) :is(th, td){white-space:nowrap}'
+        + 'table:not(:where(svg *)) :is(th, td) :is(code, tt){white-space:pre}</style>';
+}
+
 /** KaTeX version injected at build time from package.json via esbuild define. */
 declare const __KATEX_VERSION__: string;
 /** Mermaid major version injected at build time from package.json via esbuild define. */
@@ -934,7 +968,7 @@ function buildHtml(title: string, body: string, previewTheme?: string, options?:
         mermaidScriptUri, mermaidTheme, mermaidScale,
         htmlMaxWidth, htmlAlignment,
         navTopTitle, navBottomTitle, navReloadTitle, navTocTitle,
-        fitToWidth, fitToWidthAlign, katexCssHtml, enableMath, hideBodyInitially, loadingText, previewZoom,
+        fitToWidth, fitToWidthAlign, tableWrap, katexCssHtml, enableMath, hideBodyInitially, loadingText, previewZoom,
     } = options || {};
     // Written into the page so its first paint is already zoomed; 100% writes nothing.
     const zoomStyle = typeof previewZoom === 'number' && Number.isFinite(previewZoom) && previewZoom !== 100
@@ -1005,7 +1039,7 @@ function buildHtml(title: string, body: string, previewTheme?: string, options?:
   <style id="theme-css">
 ${theme.css}
   </style>${katexCssHtml || ''}${buildLayoutOverrideStyle(htmlMaxWidth, htmlAlignment)}${fitToWidth ? `
-  <style>${typeof fitToWidth === 'number' ? `body{max-width:${fitToWidth}px;margin:${fitToWidthAlign === 'left' ? '0' : '0 auto'}}` : `body{max-width:none;margin:0}.plantuml-diagram svg{max-width:100%;height:auto!important}.d2-diagram svg{max-width:100%;height:auto!important}pre.mermaid svg{max-width:100%!important;height:auto}img{max-width:100%;height:auto}`}</style>` : ''}${cspNonce ? `
+  <style>${typeof fitToWidth === 'number' ? `body{max-width:${fitToWidth}px;margin:${fitToWidthAlign === 'left' ? '0' : '0 auto'}}` : `body{max-width:none;margin:0}.plantuml-diagram svg{max-width:100%;height:auto!important}.d2-diagram svg{max-width:100%;height:auto!important}pre.mermaid svg{max-width:100%!important;height:auto}img{max-width:100%;height:auto}`}</style>` : ''}${buildTableWrapStyle(tableWrap, typeof fitToWidth === 'number' ? fitToWidthAlign === 'left' : htmlAlignment === 'left')}${cspNonce ? `
   <style>
 #nav-toolbar{position:fixed;top:8px;right:8px;display:flex;gap:2px;z-index:100}
 #nav-toolbar button{width:32px;height:32px;border:none;border-radius:4px;background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background 0.15s,opacity 0.15s;padding:0;opacity:0.45}

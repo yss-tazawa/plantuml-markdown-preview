@@ -185,7 +185,7 @@ Exporte seu documento Markdown para um único arquivo HTML.
 - **Diagramas incluídos** — diagramas PlantUML e D2 são incorporados como SVG inline; diagramas Mermaid e fontes de matemática são carregados de uma CDN quando o arquivo é aberto.
 - **Estilos incluídos** — os estilos de realce de sintaxe vão dentro do arquivo.
 - **Exportar e abrir** — exporte e abra o resultado no seu navegador com um único comando.
-- **Seu layout** — escolha uma largura fixa de 640px a 1440px, centralizada ou alinhada à esquerda, ou **Responsivo**, que ocupa a janela do navegador e reduz apenas os diagramas que transbordariam. Defina sua largura e seu alinhamento habituais nas Configurações, ou escolha a cada exportação pelo menu.
+- **Seu layout** — escolha uma largura fixa de 640px a 1440px, centralizada ou alinhada à esquerda, ou **Responsivo**, que ocupa a janela do navegador, reduz apenas os diagramas que transbordariam e ajusta as tabelas largas à janela. Defina sua largura e seu alinhamento habituais nas Configurações, ou escolha a cada exportação pelo menu.
 
 ### Exportação para PDF
 
@@ -553,7 +553,7 @@ O submenu oferece estas opções de largura:
 | ----- | --------- |
 | Configurações atuais | Exporta com a configuração atual (sem CSS responsivo) |
 | 640px – 1440px | Largura fixa do corpo em pixels, centralizado |
-| Responsivo (à esquerda) | Corpo com largura do viewport alinhado à esquerda; diagramas reduzidos apenas se transbordarem |
+| Responsivo (à esquerda) | Corpo com largura do viewport alinhado à esquerda; diagramas reduzidos apenas se transbordarem e tabelas largas ajustadas |
 | 640px – 1440px (à esquerda) | Largura fixa, alinhado à esquerda |
 
 O arquivo HTML é salvo ao lado do arquivo Markdown de origem.
@@ -831,6 +831,7 @@ Todas as configurações usam o prefixo `plantumlMarkdownPreview.`.
 | `d2Scale` | `"70%"` | Escala do diagrama D2. `"auto"` reduz os diagramas mais largos que a pré-visualização. Uma porcentagem (50%–100%) renderiza nessa fração do tamanho natural. |
 | `htmlMaxWidth` | `"960px"` | Largura máxima do corpo do HTML exportado. Opções: `"640px"` – `"1440px"`, ou `"none"` para sem limite. |
 | `htmlAlignment` | `"center"` | Alinhamento do corpo do HTML. `"center"` (padrão) ou `"left"`. |
+| `htmlTableWrap` | `"words"` | Como as células das tabelas quebram linha no HTML exportado. `"words"` (padrão) quebra nos espaços sem partir palavras em japonês, chinês e coreano, então tabelas largas rolam horizontalmente. `"characters"` quebra também esses idiomas entre caracteres, então tabelas largas cabem na largura do corpo. `"none"` quebra linhas só em `<br>`, e tabelas largas se estendem para a direita até a largura da janela. A exportação Responsiva sempre usa `"characters"`. |
 | `pdfScale` | `0.625` | Fator de escala para exportação PDF. Escala texto e diagramas uniformemente. Faixa: 0.1–2.0. |
 | `enableMath` | `true` | Habilita a renderização matemática KaTeX. Suporta `$...$` (inline) e `$$...$$` (bloco). |
 | `debounceNoDiagramChangeMs` | _(vazio)_ | Quanto tempo (ms) a pré-visualização espera depois que você para de digitar antes de ser atualizada, quando nenhum diagrama mudou. Deixe vazio para usar o padrão do modo (Fast: 100, Secure: 100, Easy: 100). |

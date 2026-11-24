@@ -6,6 +6,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## 0.9.1 - 2026-11-24
+
+### Added
+
+- `htmlTableWrap` setting for how table cells wrap in HTML export: at spaces with Japanese, Chinese and Korean words kept whole (default), also between those characters so that wide tables fit the body width, or only at `<br>` with wide tables in the body extending to the window width
+
+### Changed
+
+- Wide tables with Japanese, Chinese or Korean text keep their width and scroll sideways in the Markdown preview, Reading View and HTML export (fixed widths included), instead of narrowing to the window with Japanese, Chinese and Korean text broken between characters. Responsive export still fits them, and PDF export is unchanged
+
+### Fixed
+
+- In the Markdown preview and Reading View, quotes no longer take a background from the VS Code color theme, `<kbd>` text keeps the preview theme's color, and code in links is no longer underlined
+- Scrollbars in the Markdown preview and Reading View take the preview theme's colors instead of the VS Code color theme's
+
 ## 0.9.0 - 2026-11-24
 
 ### Added
