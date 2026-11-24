@@ -49,6 +49,7 @@ import { HEAD_REVISION, STAGED_REVISION, type Revision } from './src/git.js';
 import { CONFIG_SECTION, MODE_PRESETS, OUTPUT_CHANNEL_NAME, isLazyDeferralActive, resolveAllowLocalImages, resolveStartMode, type Config, type Mode, type TableWrap } from './src/config.js';
 import { registerCompletionProviders } from './src/completion/register.js';
 import { registerColorProviders } from './src/color/register.js';
+import { rewriteLegacyAllowLocalImages } from './src/allow-local-images-legacy.js';
 import { recordPreviewThemeIfUnset, PREVIEW_THEME_RECORDED_KEY } from './src/preview-theme-default.js';
 import type MarkdownIt from 'markdown-it';
 
@@ -106,7 +107,7 @@ function getConfig(): Config {
         plantumlTheme: cfg.get<string>('plantumlTheme', 'default'),
         plantumlScale: cfg.get<string>('plantumlScale', '100%'),
         previewTheme: cfg.get<string>('previewTheme', 'github-light'),
-        allowLocalImages: resolveAllowLocalImages(cfg.get<string | boolean>('allowLocalImages', 'mode-default'), preset.allowLocalImages),
+        allowLocalImages: resolveAllowLocalImages(cfg.get<string>('allowLocalImages', 'mode-default'), preset.allowLocalImages),
         allowHttpImages: cfg.get<boolean>('allowHttpImages', false),
         renderMode: preset.renderMode,
         plantumlServerUrl: cfg.get<string>('plantumlServerUrl', 'https://www.plantuml.com/plantuml'),
@@ -466,6 +467,12 @@ export interface TestHooks {
     /** Wait for the recording step activation started; returns whether it wrote the
      *  setting and the run-once marker now held by the extension's global state. */
     getActivationThemeRecording(): Promise<{ written: boolean; marker: unknown }>;
+    /** Run the step that replaces leftover boolean `allowLocalImages` values in the user and
+     *  workspace settings; returns how many it rewrote. */
+    rewriteLegacyAllowLocalImages(): Promise<number>;
+    /** How many leftover boolean `allowLocalImages` values the activation step rewrote, and
+     *  whether the first configuration activation read allows local images. */
+    getActivationAllowLocalImagesRewrite(): { rewritten: number; initialAllowLocalImages: boolean };
     /**
      * Every open Reading View: its view type and panel, whether it draws its file (false
      * for the notice shown for a non-file document) and, when it does, the file, the
@@ -515,7 +522,7 @@ export interface ExtensionApi {
  *
  * @param context - Extension context for managing subscriptions and storage.
  */
-export function activate(context: vscode.ExtensionContext): ExtensionApi {
+export async function activate(context: vscode.ExtensionContext): Promise<ExtensionApi> {
     extensionPath = context.extensionPath;
 
     // Create and register the shared output channel so its lifecycle is managed
@@ -528,6 +535,9 @@ export function activate(context: vscode.ExtensionContext): ExtensionApi {
         ? recordOutputChannel(rawChannel)
         : { channel: rawChannel, read: () => '' };
     const channel = outputLog.channel;
+    // Replace leftover boolean values before the settings are read: they are no longer
+    // read, so without this the first render would take the mode default for them.
+    const allowLocalImagesRewrite = await rewriteLegacyAllowLocalImages(line => channel.appendLine(line));
     previewManager = new PreviewManager(channel);
     context.subscriptions.push(previewManager);
     // Before any Mermaid page is built: a Reading View may open before the preview.
@@ -1186,6 +1196,10 @@ export function activate(context: vscode.ExtensionContext): ExtensionApi {
                 recordPreviewThemeIfUnset(state ?? context.globalState, line => channel.appendLine(line)),
             getActivationThemeRecording: () => themeRecording.then(written =>
                 ({ written, marker: context.globalState.get(PREVIEW_THEME_RECORDED_KEY) })),
+            rewriteLegacyAllowLocalImages: () =>
+                rewriteLegacyAllowLocalImages(line => channel.appendLine(line)),
+            getActivationAllowLocalImagesRewrite: () =>
+                ({ rewritten: allowLocalImagesRewrite, initialAllowLocalImages: initialConfig.allowLocalImages }),
             getEditorPreviews: () => allReadingViews().map(reading => ({
                 viewType: READING_VIEW_TYPES[reading.kind],
                 panel: reading.panel,

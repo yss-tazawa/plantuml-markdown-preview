@@ -126,20 +126,19 @@ export function resolveJvmHeapArgs(config: Config): string[] {
 export type LocalServerStartMode = 'on' | 'lazy' | 'off';
 
 /**
- * Resolve the allowLocalImages tri-state setting to a boolean, honoring the legacy boolean value.
+ * Resolve the allowLocalImages tri-state setting to a boolean.
  *
- * Explicit `'on'` or `'off'` overrides the preset; `'mode-default'` falls back to the preset's
- * default. Before the setting became a tri-state it was a boolean, and a settings.json written then
- * may still hold `true` or `false`: they map to `'on'` and `'off'`, so a user who turned local
- * images off does not get them back from the preset.
+ * Explicit `'on'` or `'off'` overrides the preset; anything else (`'mode-default'`) falls back to
+ * the preset's default. Boolean values from before the setting became a tri-state are replaced
+ * at activation, so they are not read here.
  *
- * @param value - User setting: `'mode-default'`, `'on'`, `'off'`, or a legacy boolean.
+ * @param value - User setting: `'mode-default'`, `'on'` or `'off'`.
  * @param presetDefault - Default value defined by the active mode preset.
  * @returns Whether local images should be allowed.
  */
-export function resolveAllowLocalImages(value: string | boolean, presetDefault: boolean): boolean {
-    if (value === 'on' || value === true) return true;
-    if (value === 'off' || value === false) return false;
+export function resolveAllowLocalImages(value: string, presetDefault: boolean): boolean {
+    if (value === 'on') return true;
+    if (value === 'off') return false;
     return presetDefault;
 }
 
