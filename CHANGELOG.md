@@ -6,6 +6,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## Unreleased
+
+### Added
+
+- `pdfPaperSize` setting for the paper size of PDF export: A4 (default), Letter, Legal, A3 or A5. It applies to both portrait and landscape
+
+### Changed
+
+- PDF export now uses A4 paper by default instead of Letter. Set `pdfPaperSize` to `Letter` to keep Letter
+- `pdfScale` is now a whole percentage from 10 to 200 instead of a factor from 0.1 to 2.0. Factors already in your user and workspace settings are rewritten to percentages when the extension starts, with the fraction dropped (for example, `0.625` becomes `62`)
+- PDF export now prints text and diagrams at the same size as the HTML export by default: `pdfScale` defaults to 100 instead of 0.625. Set `pdfScale` to `62` to keep the smaller size
+
+### Fixed
+
+- PDF export no longer adds the preview's own padding inside the page margins, so the text starts at the 15 mm margins
+
 ## 0.9.3 - 2026-11-24
 
 ### Fixed

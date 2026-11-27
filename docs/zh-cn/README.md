@@ -193,7 +193,8 @@ Markdown 中的 ```` ```plantuml ````、```` ```mermaid ````、```` ```d2 ```` �
 
 - **使用你的浏览器** — 需要系统中安装 Chrome、Edge 或 Chromium。
 - **纵向或横向** — 导出时选择方向。
-- **统一缩放** — 文本和图表一起缩放（`pdfScale`，默认 0.625）。
+- **纸张大小** — 可选 A4（默认）、Letter、Legal、A3 或 A5（`pdfPaperSize`）。
+- **统一缩放** — 文本和图表一起缩放（`pdfScale`，默认 100%）。
 - **整洁的页面** — 自动应用打印边距。
 
 ### 批量图表导出
@@ -577,7 +578,8 @@ HTML 文件保存在源 Markdown 文件旁边。
 - **预览** — 在预览内右键 → **导出为 PDF** 或 **导出为 PDF 并打开** → **纵向** 或 **横向**。
 
 PDF 文件保存在源 Markdown 文件旁边。需要 Chrome、Edge 或 Chromium。
-`pdfScale` 设置（默认 0.625）控制文本和图表的整体缩放。
+`pdfScale` 设置（默认 100%）控制文本和图表的整体缩放。
+`pdfPaperSize` 设置（默认 A4）选择纸张：A4、Letter、Legal、A3 或 A5。
 
 ### 将图表保存/复制为 PNG/SVG
 
@@ -845,7 +847,8 @@ PlantUML、Mermaid 和 D2 的上下文感知关键字建议。适用于独立文
 | `htmlMaxWidth` | `"960px"` | 导出 HTML 正文的最大宽度。可选：`"640px"` – `"1440px"`，或 `"none"` 表示不限制。 |
 | `htmlAlignment` | `"center"` | HTML 正文的对齐方式。`"center"`（默认）或 `"left"`。 |
 | `htmlTableWrap` | `"words"` | HTML 导出中表格单元格的折行方式。`"words"`（默认）在空格处折行，日文、中文和韩文不在词中间折行，较宽的表格可横向滚动。`"characters"` 让这些语言也可在字与字之间折行，使较宽的表格收入正文宽度。`"none"` 只在 `<br>` 处换行，较宽的表格向右扩展到窗口宽度。响应式导出始终使用 `"characters"`。 |
-| `pdfScale` | `0.625` | PDF 导出缩放比例。均匀缩放文本和图表。范围: 0.1–2.0。 |
+| `pdfScale` | `100` | PDF 导出缩放比例（%）。均匀缩放文本和图表。范围: 10–200。 |
+| `pdfPaperSize` | `"A4"` | PDF 导出的纸张大小，纵向和横向均适用：`"A4"`（210 × 297 mm）、`"Letter"`（8.5 × 11 in）、`"Legal"`（8.5 × 14 in）、`"A3"`（297 × 420 mm）或 `"A5"`（148 × 210 mm）。 |
 | `enableMath` | `true` | 启用 KaTeX 数学渲染。支持 `$...$`（行内）和 `$$...$$`（块级）。 |
 | `debounceNoDiagramChangeMs` | _(空)_ | 没有图表变化时，停止输入后预览等待多久（毫秒）再更新。留空使用模式默认值（Fast: 100, Secure: 100, Easy: 100）。 |
 | `debounceDiagramChangeMs` | _(空)_ | 停止输入后预览等待多久（毫秒）再重新绘制有变化的图表。留空使用模式默认值（Fast: 100, Secure: 300, Easy: 300）。 |

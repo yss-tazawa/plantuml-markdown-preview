@@ -193,7 +193,8 @@
 
 - **使用你的瀏覽器** — 系統中需要安裝 Chrome、Edge 或 Chromium。
 - **直向或橫向** — 匯出時選擇方向。
-- **一致的縮放** — 文字和圖表一起縮放（`pdfScale`，預設 0.625）。
+- **紙張大小** — 可選 A4（預設）、Letter、Legal、A3 或 A5（`pdfPaperSize`）。
+- **一致的縮放** — 文字和圖表一起縮放（`pdfScale`，預設 100%）。
 - **整潔的頁面** — 會自動套用列印邊界。
 
 ### 批次圖表匯出
@@ -579,7 +580,8 @@ HTML 檔案儲存在來源 Markdown 檔案旁邊。
 - **預覽** — 在預覽中按右鍵 → **匯出為 PDF** 或 **匯出為 PDF 並開啟** → **直向** 或 **橫向**。
 
 PDF 檔案會儲存在來源 Markdown 檔案旁邊。需要 Chrome、Edge 或 Chromium。
-`pdfScale` 設定（預設 0.625）控制文字和圖表的整體縮放。
+`pdfScale` 設定（預設 100%）控制文字和圖表的整體縮放。
+`pdfPaperSize` 設定（預設 A4）選擇紙張：A4、Letter、Legal、A3 或 A5。
 
 ### 儲存/複製圖表為 PNG/SVG
 
@@ -847,7 +849,8 @@ $$\int_0^\infty e^{-x}\,dx = 1$$
 | `htmlMaxWidth` | `"960px"` | 匯出 HTML 本文的最大寬度。選項：`"640px"` – `"1440px"`，或 `"none"` 表示無限制。 |
 | `htmlAlignment` | `"center"` | HTML 本文的對齊方式。`"center"`（預設）或 `"left"`。 |
 | `htmlTableWrap` | `"words"` | HTML 匯出中表格儲存格的換行方式。`"words"`（預設）在空格處換行，日文、中文和韓文不在詞中間換行，較寬的表格可橫向捲動。`"characters"` 讓這些語言也可在字與字之間換行，使較寬的表格收進本文寬度。`"none"` 只在 `<br>` 處換行，較寬的表格向右擴展到視窗寬度。響應式匯出一律使用 `"characters"`。 |
-| `pdfScale` | `0.625` | PDF 匯出縮放比例。均勻縮放文字和圖表。範圍: 0.1–2.0。 |
+| `pdfScale` | `100` | PDF 匯出縮放比例（%）。均勻縮放文字和圖表。範圍: 10–200。 |
+| `pdfPaperSize` | `"A4"` | PDF 匯出的紙張大小，直向和橫向皆適用：`"A4"`（210 × 297 mm）、`"Letter"`（8.5 × 11 in）、`"Legal"`（8.5 × 14 in）、`"A3"`（297 × 420 mm）或 `"A5"`（148 × 210 mm）。 |
 | `enableMath` | `true` | 啟用 KaTeX 數學公式渲染。支援 `$...$`（行內）和 `$$...$$`（區塊）。 |
 | `debounceNoDiagramChangeMs` | _(空)_ | 沒有圖表變更時，停止輸入後預覽要等待多久（毫秒）才更新。留空則使用模式預設值（Fast: 100, Secure: 100, Easy: 100）。 |
 | `debounceDiagramChangeMs` | _(空)_ | 停止輸入後要等待多久（毫秒）才重新繪製變更過的圖表。留空則使用模式預設值（Fast: 100, Secure: 300, Easy: 300）。 |

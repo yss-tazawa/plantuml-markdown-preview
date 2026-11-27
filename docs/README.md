@@ -193,7 +193,8 @@ Export your Markdown document to PDF using the Chrome, Edge, or Chromium already
 
 - **Uses your browser** — requires Chrome, Edge, or Chromium installed on your system.
 - **Portrait or landscape** — choose the orientation when you export.
-- **Consistent scaling** — text and diagrams scale together (`pdfScale`, default 0.625).
+- **Paper size** — A4 (default), Letter, Legal, A3, or A5 (`pdfPaperSize`).
+- **Consistent scaling** — text and diagrams scale together (`pdfScale`, default 100%).
 - **Clean pages** — print margins are applied for you.
 
 ### Bulk Diagram Export
@@ -570,7 +571,8 @@ The HTML file is saved alongside the source Markdown file.
 - **Preview** — right-click inside the preview → **Export as PDF** or **Export as PDF & Open** → **Portrait** or **Landscape**.
 
 The PDF file is saved alongside the source Markdown file. Chrome, Edge, or Chromium is required.
-The `pdfScale` setting (default 0.625) controls the overall scale of text and diagrams.
+The `pdfScale` setting (default 100%) controls the overall scale of text and diagrams.
+The `pdfPaperSize` setting (default A4) chooses the paper: A4, Letter, Legal, A3, or A5.
 
 ### Save / Copy Diagram as PNG / SVG
 
@@ -838,7 +840,8 @@ All settings use the `plantumlMarkdownPreview.` prefix.
 | `htmlMaxWidth` | `"960px"` | Maximum width of the exported HTML body. Options: `"640px"` – `"1440px"`, or `"none"` for no limit. |
 | `htmlAlignment` | `"center"` | HTML body alignment. `"center"` (default) or `"left"`. |
 | `htmlTableWrap` | `"words"` | How table cells wrap in HTML export. `"words"` (default) wraps at spaces and keeps Japanese, Chinese and Korean words whole, so wide tables scroll sideways. `"characters"` also breaks those languages between characters, so wide tables fit the body width. `"none"` breaks lines only at `<br>`, and wide tables extend to the right up to the window width. Responsive export always uses `"characters"`. |
-| `pdfScale` | `0.625` | PDF export scale factor. Scales text and diagrams uniformly. Range: 0.1–2.0. |
+| `pdfScale` | `100` | PDF export scale (%). Scales text and diagrams uniformly. Range: 10–200. |
+| `pdfPaperSize` | `"A4"` | Paper size for PDF export, in both portrait and landscape: `"A4"` (210 × 297 mm), `"Letter"` (8.5 × 11 in), `"Legal"` (8.5 × 14 in), `"A3"` (297 × 420 mm), or `"A5"` (148 × 210 mm). |
 | `enableMath` | `true` | Enable KaTeX math rendering. Supports `$...$` (inline) and `$$...$$` (block). |
 | `debounceNoDiagramChangeMs` | _(empty)_ | How long (ms) the preview waits after you stop typing before updating, when no diagram changed. Leave empty to use the mode default (Fast: 100, Secure: 100, Easy: 100). |
 | `debounceDiagramChangeMs` | _(empty)_ | How long (ms) the preview waits after you stop typing before redrawing a changed diagram. Leave empty to use the mode default (Fast: 100, Secure: 300, Easy: 300). |

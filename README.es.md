@@ -193,7 +193,8 @@ Exporta tu documento Markdown a PDF usando el Chrome, Edge o Chromium que ya tie
 
 - **Usa tu navegador** — requiere Chrome, Edge o Chromium instalado en tu sistema.
 - **Vertical u horizontal** — elige la orientación al exportar.
-- **Escalado uniforme** — el texto y los diagramas se escalan juntos (`pdfScale`, predeterminado 0.625).
+- **Tamaño de papel** — A4 (predeterminado), Letter, Legal, A3 o A5 (`pdfPaperSize`).
+- **Escalado uniforme** — el texto y los diagramas se escalan juntos (`pdfScale`, predeterminado 100%).
 - **Páginas limpias** — los márgenes de impresión se aplican automáticamente.
 
 ### Exportación masiva de diagramas
@@ -563,7 +564,7 @@ El archivo HTML se guarda junto al archivo Markdown fuente.
 - **Menú contextual** — haz clic derecho en un archivo Markdown → **PlantUML Markdown Preview** → **Exportar como PDF** → **Vertical** u **Horizontal**.
 - **Vista previa** — haz clic derecho dentro de la vista previa → **Exportar como PDF** o **Exportar como PDF y abrir** → **Vertical** u **Horizontal**.
 
-El archivo PDF se guarda junto al archivo Markdown fuente. Se requiere Chrome, Edge o Chromium. El ajuste `pdfScale` (predeterminado 0.625) controla la escala general del texto y los diagramas.
+El archivo PDF se guarda junto al archivo Markdown fuente. Se requiere Chrome, Edge o Chromium. El ajuste `pdfScale` (predeterminado 100%) controla la escala general del texto y los diagramas. El ajuste `pdfPaperSize` (predeterminado A4) elige el papel: A4, Letter, Legal, A3 o A5.
 
 ### Guardar / Copiar diagrama como PNG / SVG
 
@@ -831,7 +832,8 @@ Todos los ajustes usan el prefijo `plantumlMarkdownPreview.`.
 | `htmlMaxWidth` | `"960px"` | Ancho máximo del cuerpo del HTML exportado. Opciones: `"640px"` – `"1440px"`, o `"none"` para sin límite. |
 | `htmlAlignment` | `"center"` | Alineación del cuerpo del HTML. `"center"` (predeterminado) o `"left"`. |
 | `htmlTableWrap` | `"words"` | Cómo se dividen las celdas de las tablas en el HTML exportado. `"words"` (predeterminado) divide en los espacios sin partir las palabras en japonés, chino y coreano, así que las tablas anchas se desplazan horizontalmente. `"characters"` divide también esos idiomas entre caracteres, así que las tablas anchas caben en el ancho del cuerpo. `"none"` divide las líneas solo en `<br>`, y las tablas anchas se extienden a la derecha hasta el ancho de la ventana. La exportación Responsive siempre usa `"characters"`. |
-| `pdfScale` | `0.625` | Factor de escala para exportación PDF. Escala texto y diagramas uniformemente. Rango: 0.1–2.0. |
+| `pdfScale` | `100` | Escala (%) para exportación PDF. Escala texto y diagramas uniformemente. Rango: 10–200. |
+| `pdfPaperSize` | `"A4"` | Tamaño de papel para exportación PDF, tanto en vertical como en horizontal: `"A4"` (210 × 297 mm), `"Letter"` (8.5 × 11 in), `"Legal"` (8.5 × 14 in), `"A3"` (297 × 420 mm) o `"A5"` (148 × 210 mm). |
 | `enableMath` | `true` | Habilita el renderizado matemático de KaTeX. Soporta `$...$` (en línea) y `$$...$$` (en bloque). |
 | `debounceNoDiagramChangeMs` | _(vacío)_ | Cuánto tiempo (ms) espera la vista previa después de que dejas de escribir antes de actualizarse, cuando no ha cambiado ningún diagrama. Déjalo vacío para usar el valor predeterminado del modo (Fast: 100, Secure: 100, Easy: 100). |
 | `debounceDiagramChangeMs` | _(vacío)_ | Cuánto tiempo (ms) espera la vista previa después de que dejas de escribir antes de volver a dibujar un diagrama modificado. Déjalo vacío para usar el valor predeterminado del modo (Fast: 100, Secure: 300, Easy: 300). |
