@@ -847,6 +847,7 @@ PlantUML、Mermaid 和 D2 的上下文感知关键字建议。适用于独立文
 | `htmlMaxWidth` | `"960px"` | 导出 HTML 正文的最大宽度。可选：`"640px"` – `"1440px"`，或 `"none"` 表示不限制。 |
 | `htmlAlignment` | `"center"` | HTML 正文的对齐方式。`"center"`（默认）或 `"left"`。 |
 | `htmlTableWrap` | `"words"` | HTML 导出中表格单元格的折行方式。`"words"`（默认）在空格处折行，日文、中文和韩文不在词中间折行，较宽的表格可横向滚动。`"characters"` 让这些语言也可在字与字之间折行，使较宽的表格收入正文宽度。`"none"` 只在 `<br>` 处换行，较宽的表格向右扩展到窗口宽度。响应式导出始终使用 `"characters"`。 |
+| `tableVerticalAlign` | `"middle"` | 表格单元格中文字的垂直对齐方式：`"top"`、`"middle"`（默认，与 GitHub 相同）或 `"bottom"`。适用于 Markdown 预览、阅读视图以及 HTML 和 PDF 导出，Markdown 表格和 HTML 表格都适用。指定了 `valign` 属性的行和单元格保持其自身的对齐方式。 |
 | `pdfScale` | `100` | PDF 导出缩放比例（%）。均匀缩放文本和图表。范围: 10–200。 |
 | `pdfPaperSize` | `"A4"` | PDF 导出的纸张大小，纵向和横向均适用：`"A4"`（210 × 297 mm）、`"Letter"`（8.5 × 11 in）、`"Legal"`（8.5 × 14 in）、`"A3"`（297 × 420 mm）或 `"A5"`（148 × 210 mm）。 |
 | `enableMath` | `true` | 启用 KaTeX 数学渲染。支持 `$...$`（行内）和 `$$...$$`（块级）。 |

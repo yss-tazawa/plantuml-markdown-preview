@@ -833,6 +833,7 @@ PlantUML, Mermaid, D2를 위한 컨텍스트 인식 키워드 제안을 제공�
 | `htmlMaxWidth` | `"960px"` | 내보낸 HTML 본문의 최대 너비. 옵션: `"640px"` – `"1440px"`, 또는 제한 없음을 위한 `"none"`. |
 | `htmlAlignment` | `"center"` | HTML 본문 정렬. `"center"` (기본값) 또는 `"left"`. |
 | `htmlTableWrap` | `"words"` | HTML 내보내기에서 표 셀의 줄바꿈 방식. `"words"` (기본값)는 공백에서 줄바꿈하고 일본어·중국어·한국어는 단어 중간에서 줄바꿈하지 않으므로, 넓은 표는 가로로 스크롤됩니다. `"characters"`는 이들 언어도 글자 사이에서 줄바꿈하여 넓은 표를 본문 너비에 맞춥니다. `"none"`은 `<br>`에서만 줄바꿈하고, 넓은 표는 창 너비까지 오른쪽으로 넓어집니다. 반응형 내보내기는 항상 `"characters"`입니다. |
+| `tableVerticalAlign` | `"middle"` | 표 셀 안 텍스트의 세로 정렬입니다. `"top"`, `"middle"`(기본값, GitHub와 같음), `"bottom"` 중에서 선택합니다. Markdown 미리보기, 읽기용 보기, HTML 및 PDF 내보내기에서 Markdown 표와 HTML로 작성한 표 모두에 적용됩니다. `valign` 속성을 지정한 행과 셀은 그 정렬을 유지합니다. |
 | `pdfScale` | `100` | PDF 내보내기 배율(%). 텍스트와 다이어그램을 균일하게 조절. 범위: 10–200. |
 | `pdfPaperSize` | `"A4"` | PDF 내보내기 용지 크기. 세로와 가로 모두에 사용: `"A4"` (210 × 297 mm), `"Letter"` (8.5 × 11 in), `"Legal"` (8.5 × 14 in), `"A3"` (297 × 420 mm), 또는 `"A5"` (148 × 210 mm). |
 | `enableMath` | `true` | KaTeX 수학 렌더링을 활성화합니다. `$...$` (인라인) 및 `$$...$$` (블록)을 지원합니다. |

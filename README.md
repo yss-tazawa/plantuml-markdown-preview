@@ -840,6 +840,7 @@ All settings use the `plantumlMarkdownPreview.` prefix.
 | `htmlMaxWidth` | `"960px"` | Maximum width of the exported HTML body. Options: `"640px"` – `"1440px"`, or `"none"` for no limit. |
 | `htmlAlignment` | `"center"` | HTML body alignment. `"center"` (default) or `"left"`. |
 | `htmlTableWrap` | `"words"` | How table cells wrap in HTML export. `"words"` (default) wraps at spaces and keeps Japanese, Chinese and Korean words whole, so wide tables scroll sideways. `"characters"` also breaks those languages between characters, so wide tables fit the body width. `"none"` breaks lines only at `<br>`, and wide tables extend to the right up to the window width. Responsive export always uses `"characters"`. |
+| `tableVerticalAlign` | `"middle"` | Vertical alignment of text in table cells: `"top"`, `"middle"` (default, as on GitHub), or `"bottom"`. Applies to the Markdown preview, Reading View, and HTML and PDF export, to Markdown tables and raw HTML tables alike. Rows and cells with a `valign` attribute keep their own alignment. |
 | `pdfScale` | `100` | PDF export scale (%). Scales text and diagrams uniformly. Range: 10–200. |
 | `pdfPaperSize` | `"A4"` | Paper size for PDF export, in both portrait and landscape: `"A4"` (210 × 297 mm), `"Letter"` (8.5 × 11 in), `"Legal"` (8.5 × 14 in), `"A3"` (297 × 420 mm), or `"A5"` (148 × 210 mm). |
 | `enableMath` | `true` | Enable KaTeX math rendering. Supports `$...$` (inline) and `$$...$$` (block). |

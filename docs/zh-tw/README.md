@@ -849,6 +849,7 @@ $$\int_0^\infty e^{-x}\,dx = 1$$
 | `htmlMaxWidth` | `"960px"` | 匯出 HTML 本文的最大寬度。選項：`"640px"` – `"1440px"`，或 `"none"` 表示無限制。 |
 | `htmlAlignment` | `"center"` | HTML 本文的對齊方式。`"center"`（預設）或 `"left"`。 |
 | `htmlTableWrap` | `"words"` | HTML 匯出中表格儲存格的換行方式。`"words"`（預設）在空格處換行，日文、中文和韓文不在詞中間換行，較寬的表格可橫向捲動。`"characters"` 讓這些語言也可在字與字之間換行，使較寬的表格收進本文寬度。`"none"` 只在 `<br>` 處換行，較寬的表格向右擴展到視窗寬度。響應式匯出一律使用 `"characters"`。 |
+| `tableVerticalAlign` | `"middle"` | 表格儲存格中文字的垂直對齊方式：`"top"`、`"middle"`（預設，與 GitHub 相同）或 `"bottom"`。適用於 Markdown 預覽、閱讀檢視以及 HTML 和 PDF 匯出，Markdown 表格和 HTML 表格都適用。指定了 `valign` 屬性的列和儲存格保持其本身的對齊方式。 |
 | `pdfScale` | `100` | PDF 匯出縮放比例（%）。均勻縮放文字和圖表。範圍: 10–200。 |
 | `pdfPaperSize` | `"A4"` | PDF 匯出的紙張大小，直向和橫向皆適用：`"A4"`（210 × 297 mm）、`"Letter"`（8.5 × 11 in）、`"Legal"`（8.5 × 14 in）、`"A3"`（297 × 420 mm）或 `"A5"`（148 × 210 mm）。 |
 | `enableMath` | `true` | 啟用 KaTeX 數學公式渲染。支援 `$...$`（行內）和 `$$...$$`（區塊）。 |

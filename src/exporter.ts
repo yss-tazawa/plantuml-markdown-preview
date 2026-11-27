@@ -30,7 +30,7 @@ import { escapeHtml, extractPlantUmlBlocks, extractD2Blocks, errorHtml } from '.
 import { renderAllD2 } from './d2-renderer.js';
 import { findBrowser } from './browser-finder.js';
 import { exportOutputPath, fileNameWithoutExtension } from './markdown-files.js';
-import { MERMAID_THEME_SET, type Config, type PdfPaperSize, type TableWrap } from './config.js';
+import { MERMAID_THEME_SET, type Config, type PdfPaperSize, type TableVerticalAlign, type TableWrap } from './config.js';
 import katexPlugin, { type MarkdownKatexOptions } from '@vscode/markdown-it-katex';
 import taskLists from 'markdown-it-task-lists';
 import { strikethroughPlugin, trimAutolinkTrailing, listLooseClassPlugin, footnotePlugin, alertPlugin } from './markdown-rules.js';
@@ -458,7 +458,7 @@ export function handleExportEvent(source: string, config: Config): void {
 export async function renderHtmlAsync(source: string, title: string, config: Config, options?: RenderOptions, signal?: AbortSignal): Promise<string> {
     const { bodyHtml, hasMermaid } = await renderBodyAsync(source, config, options, signal);
     if (signal?.aborted) return '';
-    return buildHtml(title, bodyHtml, config.previewTheme, options, hasMermaid);
+    return buildHtml(title, bodyHtml, config.previewTheme, options, hasMermaid, config.tableVerticalAlign);
 }
 
 /**
@@ -956,6 +956,22 @@ function buildTableWrapStyle(tableWrap?: TableWrap, left?: boolean): string {
         + 'table:not(:where(svg *)) :is(th, td) :is(code, tt){white-space:pre}</style>';
 }
 
+/**
+ * Build the `<style>` for the vertical alignment of table cells (tableVerticalAlign).
+ *
+ * The rule goes on the row groups, whose `middle` the cells inherit by the browser default, so that
+ * `valign` on a row group, a row or a cell (which the browser maps to `vertical-align`) and a cell's own
+ * `style` keep their alignment. Markdown tables and raw HTML tables are both aligned; tables in diagrams
+ * are left alone.
+ *
+ * @param [tableVerticalAlign] - The vertical alignment; `middle` or unset adds nothing.
+ * @returns Style tag string, or empty string for `middle`.
+ */
+function buildTableVerticalAlignStyle(tableVerticalAlign?: TableVerticalAlign): string {
+    if (tableVerticalAlign !== 'top' && tableVerticalAlign !== 'bottom') return '';
+    return `\n  <style>:is(thead, tbody, tfoot):not([valign]):not(:where(svg *)){vertical-align:${tableVerticalAlign}}</style>`;
+}
+
 /** KaTeX version injected at build time from package.json via esbuild define. */
 declare const __KATEX_VERSION__: string;
 /** Mermaid major version injected at build time from package.json via esbuild define. */
@@ -996,9 +1012,10 @@ async function buildKatexCdnCssHtml(): Promise<string> {
  * @param [previewTheme] - Theme key for CSS selection.
  * @param [options] - CSP nonce, script HTML, and CSP source.
  * @param [hasMermaid] - Whether the body contains Mermaid diagrams.
+ * @param [tableVerticalAlign] - Vertical alignment of table cells.
  * @returns Complete `<!DOCTYPE html>` document string.
  */
-function buildHtml(title: string, body: string, previewTheme?: string, options?: RenderOptions, hasMermaid?: boolean): string {
+function buildHtml(title: string, body: string, previewTheme?: string, options?: RenderOptions, hasMermaid?: boolean, tableVerticalAlign?: TableVerticalAlign): string {
     const theme = PREVIEW_THEMES[previewTheme || ''] || PREVIEW_THEMES[DEFAULT_PREVIEW_THEME];
     const {
         scriptHtml, cspNonce, cspSource, lang, allowHttpImages,
@@ -1076,7 +1093,7 @@ function buildHtml(title: string, body: string, previewTheme?: string, options?:
   <style id="theme-css">
 ${theme.css}
   </style>${katexCssHtml || ''}${buildLayoutOverrideStyle(htmlMaxWidth, htmlAlignment)}${fitToWidth ? `
-  <style>${typeof fitToWidth === 'number' ? `body{max-width:${fitToWidth}px;margin:${fitToWidthAlign === 'left' ? '0' : '0 auto'}}` : `body{max-width:none;margin:0}.plantuml-diagram svg{max-width:100%;height:auto!important}.d2-diagram svg{max-width:100%;height:auto!important}pre.mermaid svg{max-width:100%!important;height:auto}img{max-width:100%;height:auto}`}</style>` : ''}${buildTableWrapStyle(tableWrap, typeof fitToWidth === 'number' ? fitToWidthAlign === 'left' : htmlAlignment === 'left')}${cspNonce ? `
+  <style>${typeof fitToWidth === 'number' ? `body{max-width:${fitToWidth}px;margin:${fitToWidthAlign === 'left' ? '0' : '0 auto'}}` : `body{max-width:none;margin:0}.plantuml-diagram svg{max-width:100%;height:auto!important}.d2-diagram svg{max-width:100%;height:auto!important}pre.mermaid svg{max-width:100%!important;height:auto}img{max-width:100%;height:auto}`}</style>` : ''}${buildTableWrapStyle(tableWrap, typeof fitToWidth === 'number' ? fitToWidthAlign === 'left' : htmlAlignment === 'left')}${buildTableVerticalAlignStyle(tableVerticalAlign)}${cspNonce ? `
   <style>
 #nav-toolbar{position:fixed;top:8px;right:8px;display:flex;gap:2px;z-index:100}
 #nav-toolbar button{width:32px;height:32px;border:none;border-radius:4px;background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background 0.15s,opacity 0.15s;padding:0;opacity:0.45}
