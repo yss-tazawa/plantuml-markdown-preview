@@ -6,7 +6,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
-## Unreleased
+## 0.9.4 - 2026-11-28
 
 ### Added
 
@@ -17,10 +17,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - PDF export now uses A4 paper by default instead of Letter. Set `pdfPaperSize` to `Letter` to keep Letter
 - `pdfScale` is now a whole percentage from 10 to 200 instead of a factor from 0.1 to 2.0. Factors already in your user and workspace settings are rewritten to percentages when the extension starts, with the fraction dropped (for example, `0.625` becomes `62`)
 - PDF export now prints text and diagrams at the same size as the HTML export by default: `pdfScale` defaults to 100 instead of 0.625. Set `pdfScale` to `62` to keep the smaller size
+- In the Markdown preview and Reading View, the Table of Contents and links within the document now scroll smoothly and leave a 16 px gap above the target. Exported HTML leaves the same gap
 
 ### Fixed
 
 - PDF export no longer adds the preview's own padding inside the page margins, so the text starts at the 15 mm margins
+- Switching a Markdown Reading View back to the source after scrolling it now also scrolls the Markdown preview beside the source to the same position
+- In Fast mode, the local PlantUML server no longer fails to start on a slow or busy computer
 
 ## 0.9.3 - 2026-11-24
 
