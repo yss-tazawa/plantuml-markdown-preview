@@ -260,7 +260,7 @@ export function buildThemeCss(p: ThemePalette): string {
     h4 { font-size: 1em; }
     h5 { font-size: 0.875em; }
     h6 { font-size: 0.85em; }
-    h1, h2, h3, h4, h5, h6 { margin-top: 24px; margin-bottom: 16px; font-weight: 600; line-height: 1.25; scroll-margin-top: 1.5em;${headingColor} }
+    h1, h2, h3, h4, h5, h6 { margin-top: 24px; margin-bottom: 16px; font-weight: 600; line-height: 1.25;${headingColor} }
     p { margin: 0 0 16px; }
     /* Paragraphs inside list items have no margin; lists whose items are separated by blank lines (loose lists) get paragraph spacing. */
     li > p { margin: 0; }

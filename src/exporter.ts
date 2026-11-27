@@ -37,6 +37,7 @@ import { strikethroughPlugin, trimAutolinkTrailing, listLooseClassPlugin, footno
 import { loadingOverlayHtml } from './loading-overlay.js';
 import { shownScriptLoader } from './shown-script-loader.js';
 import { mermaidLoadErrorLiteral, SHOW_MERMAID_LOAD_ERROR_SCRIPT } from './mermaid-load-error.js';
+import { JUMP_TOP_GAP } from './webview/jump-top-gap.js';
 
 // KaTeX plugin options. throwOnError:false renders invalid math as a katex-error
 // display instead of throwing.
@@ -909,6 +910,13 @@ export async function exportToPdf(mdFilePath: string, config: Config, signal?: A
 }
 
 /**
+ * In a page without the preview script (an export, a revision preview), an in-page link stops its target
+ * JUMP_TOP_GAP below the top, as the preview script does while it jumps (src/webview/jump-top-gap.ts).
+ */
+const NO_SCRIPT_IN_PAGE_JUMP_STYLE = `
+  <style>#preview-content [id]{scroll-margin-top:${JUMP_TOP_GAP}px}</style>`;
+
+/**
  * Build an optional `<style>` override for HTML export layout.
  *
  * Generates CSS overrides for max-width and alignment when they differ
@@ -1094,7 +1102,7 @@ ${theme.css}
 #toc-sidebar li ul li ul li ul a{padding-left:56px}
 #toc-sidebar li ul li ul li ul li ul .toc-toggle{left:50px}
 #toc-sidebar li ul li ul li ul li ul a{padding-left:68px}
-  </style>` : ''}
+  </style>` : ''}${scriptHtml ? '' : NO_SCRIPT_IN_PAGE_JUMP_STYLE}
 </head>
 <body${cspNonce ? ' class="preview"' : ''}${hideBodyInitially ? ' style="visibility:hidden"' : ''}>
 ${cspNonce ? `<div id="nav-toolbar">

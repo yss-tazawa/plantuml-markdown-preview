@@ -15,6 +15,7 @@
 
 import { LOADING_OVERLAY_ID, loadingOverlayHtml } from '../loading-overlay.js';
 import { stepPreviewZoom, accumulateWheelZoom, snapPreviewZoom, DEFAULT_PREVIEW_ZOOM } from '../preview-zoom-levels.js';
+import { scrollIntoViewWithTopGap } from './jump-top-gap.js';
 
 declare function acquireVsCodeApi(): { postMessage(msg: unknown): void };
 
@@ -1016,10 +1017,11 @@ interface Anchor {
     }
     observeImages();
 
-    // --- Footnote jump frame ---
-    // VS Code's webview follows an in-page link itself (scrollIntoView, then preventDefault), so the URL
-    // hash never changes and :target never matches. Mark the footnote definition a link jumps to instead,
-    // so it gets the same frame as on GitHub (base.ts); any other in-page jump clears the mark.
+    // --- In-page links and the footnote jump frame ---
+    // An in-page link (the TOC's too) jumps here with a gap above its target (jump-top-gap.ts), and the event
+    // stops before VS Code's webview, which would follow the link again on its own. The URL hash never changes,
+    // so :target never matches: mark the footnote definition a link jumps to instead, so it gets the same
+    // frame as on GitHub (base.ts); any other in-page jump clears the mark.
     document.addEventListener('click', function (e) {
         const link = (e.target as Element | null)?.closest?.('a[href^="#"]') as HTMLAnchorElement | null;
         if (!link) return;
@@ -1031,6 +1033,13 @@ interface Anchor {
         if (!target) return;
         for (const el of document.querySelectorAll('.footnote-target')) el.classList.remove('footnote-target');
         if (target.matches('.footnote-item')) target.classList.add('footnote-target');
+        e.preventDefault();
+        e.stopPropagation();
+        // The preview leads the scroll, as with the top and bottom buttons, and a scroll still following
+        // the editor stops so it does not cut the jump short.
+        setSyncMaster('preview');
+        if (smoothScrollTimer) { clearTimeout(smoothScrollTimer); smoothScrollTimer = null; expectingScrollEvent = false; }
+        scrollIntoViewWithTopGap(target, { behavior: 'smooth' });
     });
 
     // --- Navigation toolbar (top-right) ---
@@ -1170,15 +1179,6 @@ interface Anchor {
                 buildToc();
                 highlightToc();
             }
-        });
-        // Click TOC item → scroll to heading
-        tocSidebar.addEventListener('click', function (e) {
-            const target = (e.target as HTMLElement).closest('a[data-toc-id]') as HTMLElement | null;
-            if (!target) return;
-            e.preventDefault();
-            const id = target.dataset.tocId!;
-            const el = document.getElementById(id);
-            if (el) el.scrollIntoView({ behavior: 'smooth' });
         });
         // Highlight active TOC item on scroll (throttled)
         let tocHighlightThrottle: ReturnType<typeof setTimeout> | null = null;
