@@ -13,6 +13,9 @@ export type Mode = 'fast' | 'secure' | 'easy';
 /** How wide tables wrap in HTML export, exposed via the `htmlTableWrap` setting. */
 export type TableWrap = 'words' | 'characters' | 'none';
 
+/** Paper size of the PDF export, exposed via the `pdfPaperSize` setting. */
+export type PdfPaperSize = 'A4' | 'Letter' | 'Legal' | 'A3' | 'A5';
+
 /** Properties controlled by the preset mode. */
 interface ModePreset {
     readonly renderMode: 'local' | 'server' | 'local-server';
@@ -170,6 +173,61 @@ export function resolveStartMode(
     return DEFAULT_START_MODE;
 }
 
+/** Default paper size of the PDF export (matches the package.json default). */
+export const DEFAULT_PDF_PAPER_SIZE: PdfPaperSize = 'A4';
+
+/**
+ * Resolve the `pdfPaperSize` setting to one of the supported paper sizes.
+ *
+ * The value is written into the page's `@page` rule, so anything else (a hand-written `B5`,
+ * a lowercase `letter`, a broken value) falls back to the default A4, which keeps the paper
+ * and the printed content width in step.
+ *
+ * @param value - User setting value.
+ * @returns The paper size to print on.
+ */
+export function resolvePdfPaperSize(value: string | undefined): PdfPaperSize {
+    if (value === 'A4' || value === 'Letter' || value === 'Legal' || value === 'A3' || value === 'A5') {
+        return value;
+    }
+    return DEFAULT_PDF_PAPER_SIZE;
+}
+
+/** Default scale (%) of the PDF export (matches the package.json default). */
+export const DEFAULT_PDF_SCALE = 100;
+
+/** Smallest and largest scale (%) of the PDF export (match the package.json range). */
+const PDF_SCALE_MIN = 10;
+const PDF_SCALE_MAX = 200;
+
+/**
+ * Whether a `pdfScale` value is a scale factor from before the setting became a percentage
+ * (such as `0.625` or `1`): a number below the smallest percentage.
+ *
+ * @param value - User setting value.
+ * @returns Whether the value is to be read as a factor.
+ */
+export function isLegacyPdfScale(value: unknown): value is number {
+    return typeof value === 'number' && Number.isFinite(value) && value < PDF_SCALE_MIN;
+}
+
+/**
+ * Resolve the `pdfScale` setting to a whole percentage from 10 to 200.
+ *
+ * A factor from before the setting became a percentage is multiplied by 100 first, and the
+ * fraction is dropped (`0.625` becomes 62, `1` becomes 100). Anything outside the range or
+ * not a number falls back to the default 100.
+ *
+ * @param value - User setting value.
+ * @returns The scale of the PDF export, in percent.
+ */
+export function resolvePdfScale(value: unknown): number {
+    if (typeof value !== 'number' || !Number.isFinite(value)) return DEFAULT_PDF_SCALE;
+    // The small margin keeps factors such as 0.29 (28.999… after the multiplication) whole.
+    const percent = Math.floor(isLegacyPdfScale(value) ? value * 100 + 1e-9 : value);
+    return percent >= PDF_SCALE_MIN && percent <= PDF_SCALE_MAX ? percent : DEFAULT_PDF_SCALE;
+}
+
 /**
  * Whether the extension spawns/manages its own local server (start mode 'on' or 'lazy')
  * rather than connecting to an external one ('off'). Mirrors the old autoStart=true meaning.
@@ -259,8 +317,10 @@ export interface Config {
     debounceDiagramChangeMs: number;
     /** When true, enable KaTeX math rendering ($...$ inline, $$...$$ block). */
     enableMath: boolean;
-    /** PDF export scale factor (0.1–2.0). Scales text and diagrams uniformly. */
+    /** Scale (%) of the PDF export, a whole number from 10 to 200, resolved by resolvePdfScale. Scales text and diagrams uniformly. */
     pdfScale: number;
+    /** Paper size of the PDF export ('A4', 'Letter', 'Legal', 'A3' or 'A5'), resolved by resolvePdfPaperSize. */
+    pdfPaperSize: PdfPaperSize;
     /** Zoom (%) of the Markdown preview and Reading View, snapped to a level of PREVIEW_ZOOM_LEVELS. Display only. */
     previewZoom: number;
     /** Base directory for PlantUML `!include` directives. Empty string = workspace root. */

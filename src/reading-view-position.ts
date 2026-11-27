@@ -32,6 +32,22 @@ const sourcePositions = new Map<string, SourcePosition>();
  *  {@link sourcePositions}, which another editor of the file may update while the tab switches. */
 const switchedPositions = new Map<string, SourcePosition>();
 
+/** Files whose source editor a Reading View switched back to and moved to its line, until the
+ *  preview beside the source takes the move ({@link takeSourceMovedByReadingView}). */
+const movedByReadingView = new Set<string>();
+
+/**
+ * Whether a Reading View switched back to the source editor of a file and moved it to its line
+ * since the last call, and forget it. The preview beside the source follows that move: VS Code
+ * reports it as the first visible range of a new editor, the same as the restore of a position.
+ *
+ * @param filePath - Absolute path of the file.
+ * @returns True once per move.
+ */
+export function takeSourceMovedByReadingView(filePath: string): boolean {
+    return movedByReadingView.delete(filePath);
+}
+
 /**
  * Take the position a Reading View of a file starts at, and forget it.
  *
@@ -96,6 +112,7 @@ export function trackSourcePositions(): vscode.Disposable {
             if (!isLiveSourceUri(document.uri)) return;
             sourcePositions.delete(document.uri.fsPath);
             switchedPositions.delete(document.uri.fsPath);
+            movedByReadingView.delete(document.uri.fsPath);
         }),
     );
 }
@@ -111,5 +128,6 @@ export function revealLineInSource(filePath: string, line: number): void {
     if (!editor || !isLiveSourceUri(editor.document.uri) || editor.document.uri.fsPath !== filePath) return;
     // The Reading View reports the line at its middle, as the preview does.
     const target = Math.min(line, editor.document.lineCount - 1);
+    movedByReadingView.add(filePath);
     editor.revealRange(new vscode.Range(target, 0, target, 0), vscode.TextEditorRevealType.InCenter);
 }

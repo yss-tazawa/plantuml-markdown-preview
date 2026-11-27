@@ -23,7 +23,7 @@ import { checkJavaAvailability, checksJavaOnSettingsChange, announcesJavaPathCha
 import type { JavaCheckResult } from './src/java-check.js';
 import { getShownGuidance } from './src/notify-once.js';
 import type { ShownGuidance } from './src/notify-once.js';
-import { prepareLocalServer, startLocalServer, stopLocalServer, restartLocalServer, setLocalServerOutputChannel, setOnServerStateChange, setConfigGetter, setLocalServerPidStore, cleanupStaleLocalServer, setJavaAvailabilityChecker, getLocalServerDiagnostics, handleServerEvent } from './src/local-server.js';
+import { prepareLocalServer, startLocalServer, stopLocalServer, restartLocalServer, setLocalServerOutputChannel, setOnServerStateChange, setConfigGetter, setLocalServerPidStore, cleanupStaleLocalServer, setJavaAvailabilityChecker, getLocalServerDiagnostics, handleServerEvent, setServerReadyTimeoutForTest } from './src/local-server.js';
 import type { LocalServerState, LocalServerDiagnostics } from './src/local-server.js';
 import { createStatusBarItem, updateStatusBar, showModeQuickPick, SELECT_MODE_COMMAND } from './src/status-bar.js';
 import { initPreviewZoom, applyPreviewZoomSetting, getPreviewZoomStatus } from './src/preview-zoom.js';
@@ -46,10 +46,11 @@ import type { D2Render } from './src/d2-preview.js';
 import { initD2, disposeD2 } from './src/d2-renderer.js';
 import { openRevisionPreview, disposeRevisionPreviews, getOpenRevisionPreviews } from './src/revision-preview.js';
 import { HEAD_REVISION, STAGED_REVISION, type Revision } from './src/git.js';
-import { CONFIG_SECTION, MODE_PRESETS, OUTPUT_CHANNEL_NAME, isLazyDeferralActive, resolveAllowLocalImages, resolveStartMode, type Config, type Mode, type TableWrap } from './src/config.js';
+import { CONFIG_SECTION, MODE_PRESETS, OUTPUT_CHANNEL_NAME, isLazyDeferralActive, resolveAllowLocalImages, resolvePdfPaperSize, resolvePdfScale, resolveStartMode, type Config, type Mode, type TableWrap } from './src/config.js';
 import { registerCompletionProviders } from './src/completion/register.js';
 import { registerColorProviders } from './src/color/register.js';
 import { rewriteLegacyAllowLocalImages } from './src/allow-local-images-legacy.js';
+import { rewriteLegacyPdfScale } from './src/pdf-scale-legacy.js';
 import { recordPreviewThemeIfUnset, PREVIEW_THEME_RECORDED_KEY } from './src/preview-theme-default.js';
 import type MarkdownIt from 'markdown-it';
 
@@ -123,7 +124,8 @@ function getConfig(): Config {
         htmlAlignment: cfg.get<string>('htmlAlignment', 'center'),
         htmlTableWrap: cfg.get<TableWrap>('htmlTableWrap', 'words'),
         enableMath: cfg.get<boolean>('enableMath', true),
-        pdfScale: cfg.get<number>('pdfScale', 0.625),
+        pdfScale: resolvePdfScale(cfg.get<number>('pdfScale', 100)),
+        pdfPaperSize: resolvePdfPaperSize(cfg.get<string>('pdfPaperSize', 'A4')),
         previewZoom: snapPreviewZoom(cfg.get<number>('previewZoom', DEFAULT_PREVIEW_ZOOM)),
         plantumlIncludePath: cfg.get<string>('plantumlIncludePath', ''),
         d2Theme: cfg.get<string>('d2Theme', 'Neutral Default'),
@@ -461,6 +463,8 @@ export interface TestHooks {
     getOutputLog(): string;
     /** Snapshot of the local PlantUML server state (status, URL, counters, last error). */
     getLocalServerState(): LocalServerDiagnostics;
+    /** Shorten the limit for a spawned local server to answer (no value restores it). */
+    setServerReadyTimeout(ms?: number): void;
     /** Run the activation step that records the preview theme when no scope sets it.
      *  `state` replaces the extension's global state (which holds the run-once marker). */
     recordPreviewThemeIfUnset(state?: vscode.Memento): Promise<boolean>;
@@ -473,6 +477,12 @@ export interface TestHooks {
     /** How many leftover boolean `allowLocalImages` values the activation step rewrote, and
      *  whether the first configuration activation read allows local images. */
     getActivationAllowLocalImagesRewrite(): { rewritten: number; initialAllowLocalImages: boolean };
+    /** Run the step that replaces leftover scale factors of `pdfScale` in the user and
+     *  workspace settings with percentages; returns how many it rewrote. */
+    rewriteLegacyPdfScale(): Promise<number>;
+    /** How many leftover scale factors of `pdfScale` the activation step rewrote, and the
+     *  scale (%) the first configuration activation read. */
+    getActivationPdfScaleRewrite(): { rewritten: number; initialPdfScale: number };
     /**
      * Every open Reading View: its view type and panel, whether it draws its file (false
      * for the notice shown for a non-file document) and, when it does, the file, the
@@ -538,6 +548,8 @@ export async function activate(context: vscode.ExtensionContext): Promise<Extens
     // Replace leftover boolean values before the settings are read: they are no longer
     // read, so without this the first render would take the mode default for them.
     const allowLocalImagesRewrite = await rewriteLegacyAllowLocalImages(line => channel.appendLine(line));
+    // Replace leftover scale factors too, so the settings show the percentages they are read as.
+    const pdfScaleRewrite = await rewriteLegacyPdfScale(line => channel.appendLine(line));
     previewManager = new PreviewManager(channel);
     context.subscriptions.push(previewManager);
     // Before any Mermaid page is built: a Reading View may open before the preview.
@@ -1192,6 +1204,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<Extens
             getShownGuidance: () => getShownGuidance(),
             getOutputLog: () => outputLog.read(),
             getLocalServerState: () => getLocalServerDiagnostics(),
+            setServerReadyTimeout: (ms) => setServerReadyTimeoutForTest(ms),
             recordPreviewThemeIfUnset: (state) =>
                 recordPreviewThemeIfUnset(state ?? context.globalState, line => channel.appendLine(line)),
             getActivationThemeRecording: () => themeRecording.then(written =>
@@ -1200,6 +1213,10 @@ export async function activate(context: vscode.ExtensionContext): Promise<Extens
                 rewriteLegacyAllowLocalImages(line => channel.appendLine(line)),
             getActivationAllowLocalImagesRewrite: () =>
                 ({ rewritten: allowLocalImagesRewrite, initialAllowLocalImages: initialConfig.allowLocalImages }),
+            rewriteLegacyPdfScale: () =>
+                rewriteLegacyPdfScale(line => channel.appendLine(line)),
+            getActivationPdfScaleRewrite: () =>
+                ({ rewritten: pdfScaleRewrite, initialPdfScale: initialConfig.pdfScale }),
             getEditorPreviews: () => allReadingViews().map(reading => ({
                 viewType: READING_VIEW_TYPES[reading.kind],
                 panel: reading.panel,
@@ -1370,7 +1387,8 @@ const builtInPreviewConfig: Config = {
     allowLocalImages: true,
     allowHttpImages: false,
     enableMath: true,
-    pdfScale: 0.625,
+    pdfScale: 100,
+    pdfPaperSize: 'A4',
     previewZoom: DEFAULT_PREVIEW_ZOOM,
     plantumlIncludePath: '',
     d2Theme: 'Neutral Default',

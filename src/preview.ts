@@ -25,7 +25,7 @@ import { fileNameWithoutExtension } from './markdown-files.js';
 import { CONFIG_SECTION, MERMAID_THEME_KEYS, D2_THEME_KEYS, D2_THEME_MAP, type Config } from './config.js';
 import { updateDiagramViewer, closeStaleViewers, disposeViewersOf, setPendingSaveDiagram, getPendingDiagramContext, handlePngFromPreview, handleCopyResult } from './diagram-viewer.js';
 import type { AdoptedPanel, MarkdownReadingView } from './reading-view.js';
-import { takeSourcePosition } from './reading-view-position.js';
+import { takeSourcePosition, takeSourceMovedByReadingView } from './reading-view-position.js';
 import { LOADING_OVERLAY_ID } from './loading-overlay.js';
 import { trackZoomPanel, handleZoomChanged, getPreviewZoom, postPreviewZoom } from './preview-zoom.js';
 
@@ -130,11 +130,17 @@ export class PreviewManager implements vscode.Disposable {
     // -- scroll sync --------------------------------------------------
     private syncMaster: SyncMaster = 'none';
     /** Tracks whether the source editor was visible at the last check. Used to
-     *  swallow the first visibleRanges event VS Code fires when a source tab is
-     *  re-displayed (a position-restore "noise" event), so it isn't mistaken for a
-     *  real user scroll. The editor is NOT moved on this transition — the editor is
-     *  the master while the user works in it. */
+     *  pick out the first visibleRanges event after a source tab is re-displayed:
+     *  when it only restores the source's position ("noise", see sourceTopLines) it
+     *  is swallowed, so it isn't mistaken for a real user scroll. The editor is NOT
+     *  moved on this transition — the editor is the master while the user works in it. */
     private sourceWasVisible = false;
+    /** First visible line of the source editor in each editor group (by view column)
+     *  the last time it was seen: a visibleRanges event from it, or the preview opening
+     *  beside it. The first event after the source is re-displayed is position-restore
+     *  noise only when it shows the line its group showed (or its group showed none yet):
+     *  a source shown at another line moved (the line a Reading View switched back to it at). */
+    private sourceTopLines = new Map<vscode.ViewColumn | undefined, number>();
     private visibleEditorsDisposable: vscode.Disposable | null = null;
     /** Snapshot of lastScrollLine taken when the preview becomes hidden.
      *  On visible+active restore, comparing against the current lastScrollLine
@@ -367,6 +373,7 @@ export class PreviewManager implements vscode.Disposable {
         this.pageToken = null;
         this.syncMaster = 'none';
         this.sourceWasVisible = false;
+        this.sourceTopLines.clear();
         this.scrollLineWhenHidden = -1;
         this.pendingShowRender = false;
         this.hiddenSinceShown = false;
@@ -613,20 +620,29 @@ export class PreviewManager implements vscode.Disposable {
             if (event.textEditor.document.uri.fsPath !== this.currentFilePath) return;
             if (event.visibleRanges.length === 0) return;
 
+            const topLine = event.visibleRanges[0].start.line;
+            const column = event.textEditor.viewColumn;
+            const previousTopLine = this.sourceTopLines.get(column);
+            this.sourceTopLines.set(column, topLine);
+            const movedByReadingView = takeSourceMovedByReadingView(this.currentFilePath);
+
             // Hidden -> visible transition: the source editor is being re-displayed.
             // Do NOT move it. The editor is the master while the user works in it
             // (tab switches, scrolling); moving it to the preview's position is the
-            // "source scrolls on its own" bug. Just mark it visible again and let
-            // the normal editor->preview sync below run from its real position.
+            // "source scrolls on its own" bug. An event that shows the line the source
+            // was last seen at in its group (or comes before any was seen there)
+            // restores its position: just mark it visible again. One at another line
+            // is a real move, VS Code firing no restore event for a new editor: the
+            // preview follows it below. So is the line a Reading View switched back to
+            // the source at, even in a group that never showed the source.
             if (!this.sourceWasVisible) {
                 this.sourceWasVisible = true;
-                return;
+                if (!movedByReadingView && (previousTopLine === undefined || topLine === previousTopLine)) return;
             }
 
             if (this.syncMaster === 'preview') return;
             if (this.pendingScrollRestore) return;
 
-            const topLine = event.visibleRanges[0].start.line;
             const bottomLine = event.visibleRanges[0].end.line;
             const lineCount = event.textEditor.document.lineCount;
             const { midLine, maxTopLine, atBottom } = this.calcScrollSync(topLine, bottomLine, lineCount);
@@ -644,8 +660,15 @@ export class PreviewManager implements vscode.Disposable {
             this.postScrollToLine(midLine, maxTopLine, atBottom);
         });
 
-        // Initial snapshot: is the source editor currently visible?
+        // Initial snapshot: is the source editor currently visible, and at which line?
         this.sourceWasVisible = !!this.findSourceEditor();
+        this.sourceTopLines.clear();
+        // A move a Reading View made before this preview showed the file is not this preview's to follow.
+        if (this.currentFilePath) takeSourceMovedByReadingView(this.currentFilePath);
+        for (const editor of vscode.window.visibleTextEditors) {
+            if (!isLiveSourceUri(editor.document.uri) || editor.document.uri.fsPath !== this.currentFilePath) continue;
+            if (editor.visibleRanges.length > 0) this.sourceTopLines.set(editor.viewColumn, editor.visibleRanges[0].start.line);
+        }
 
         // We track source visibility so that the hidden->visible transition can
         // be detected inside onDidChangeTextEditorVisibleRanges. This subscription
@@ -657,7 +680,11 @@ export class PreviewManager implements vscode.Disposable {
             const isVisible = editors.some(
                 e => isLiveSourceUri(e.document.uri) && e.document.uri.fsPath === this.currentFilePath
             );
-            if (!isVisible) this.sourceWasVisible = false;
+            if (!isVisible) {
+                this.sourceWasVisible = false;
+                // A move the source reported no visible range for (its line was in view already) is over.
+                takeSourceMovedByReadingView(this.currentFilePath);
+            }
         });
     }
 

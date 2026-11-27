@@ -30,13 +30,14 @@ import { escapeHtml, extractPlantUmlBlocks, extractD2Blocks, errorHtml } from '.
 import { renderAllD2 } from './d2-renderer.js';
 import { findBrowser } from './browser-finder.js';
 import { exportOutputPath, fileNameWithoutExtension } from './markdown-files.js';
-import { MERMAID_THEME_SET, type Config, type TableWrap } from './config.js';
+import { MERMAID_THEME_SET, type Config, type PdfPaperSize, type TableWrap } from './config.js';
 import katexPlugin, { type MarkdownKatexOptions } from '@vscode/markdown-it-katex';
 import taskLists from 'markdown-it-task-lists';
 import { strikethroughPlugin, trimAutolinkTrailing, listLooseClassPlugin, footnotePlugin, alertPlugin } from './markdown-rules.js';
 import { loadingOverlayHtml } from './loading-overlay.js';
 import { shownScriptLoader } from './shown-script-loader.js';
 import { mermaidLoadErrorLiteral, SHOW_MERMAID_LOAD_ERROR_SCRIPT } from './mermaid-load-error.js';
+import { JUMP_TOP_GAP } from './webview/jump-top-gap.js';
 
 // KaTeX plugin options. throwOnError:false renders invalid math as a katex-error
 // display instead of throwing.
@@ -515,8 +516,35 @@ export async function exportToHtml(mdFilePath: string, config: Config, signal?: 
 /** PDF export timeout in milliseconds. */
 const PDF_TIMEOUT_MS = 30_000;
 
-/** Page margin of the PDF, in millimeters (the `@page` rule in PDF_PRINT_CSS). */
+/** Page margin of the PDF, in millimeters (the `@page` rule of pdfPageCss). */
 const PDF_MARGIN_MM = 15;
+
+/**
+ * Paper of each `pdfPaperSize` value: its name in the CSS `@page` `size` property and its
+ * portrait width and height in millimeters. The printed content width is the paper width
+ * (the height when landscape) less the page margins.
+ */
+const PDF_PAPERS: Readonly<Record<PdfPaperSize, { readonly cssName: string; readonly widthMm: number; readonly heightMm: number }>> = {
+    A4: { cssName: 'A4', widthMm: 210, heightMm: 297 },
+    Letter: { cssName: 'letter', widthMm: 215.9, heightMm: 279.4 },
+    Legal: { cssName: 'legal', widthMm: 215.9, heightMm: 355.6 },
+    A3: { cssName: 'A3', widthMm: 297, heightMm: 420 },
+    A5: { cssName: 'A5', widthMm: 148, heightMm: 210 },
+};
+
+/**
+ * Build the `@page` rule of the PDF: the paper, its orientation and the page margins.
+ * printToPDF is called with preferCSSPageSize, so this rule alone decides the paper and the
+ * orientation (printToPDF's own landscape flag has no effect then).
+ *
+ * @param paperSize - Paper size to print on.
+ * @param landscape - Whether the page is landscape.
+ * @returns The `@page` rule.
+ */
+export function pdfPageCss(paperSize: PdfPaperSize, landscape: boolean): string {
+    const size = PDF_PAPERS[paperSize].cssName + (landscape ? ' landscape' : '');
+    return `@page{size:${size};margin:${PDF_MARGIN_MM}mm}`;
+}
 
 /**
  * Print-only CSS for the PDF. Paper cannot scroll, so content that scrolls sideways on screen
@@ -527,10 +555,11 @@ const PDF_MARGIN_MM = 15;
  * CJK text in tables breaks between characters again (`word-break: normal`), as on GitHub: the theme
  * keeps it whole (`keep-all`) so that wide tables scroll on screen. This also covers tables inside
  * diagrams, which the theme rule reaches too.
+ * The body drops the preview's own padding, so the page margins of pdfPageCss are the only room
+ * around the text and the content is exactly as wide as pdfContentWidthPx.
  * HTML export keeps the screen shapes (content-wide tables that scroll).
  */
-export const PDF_PRINT_CSS = `@page{margin:${PDF_MARGIN_MM}mm}`
-    + 'pre:not(.mermaid):not(:where(svg *)){white-space:pre-wrap;overflow-wrap:anywhere;overflow:visible}'
+export const PDF_PRINT_CSS = 'body{padding:0}pre:not(.mermaid):not(:where(svg *)){white-space:pre-wrap;overflow-wrap:anywhere;overflow:visible}'
     + 'table:not(:where(svg *)){overflow:visible}table{word-break:normal}td.pdf-break:not(:where(svg *)){overflow-wrap:anywhere}'
     + '.katex-display:not(:where(svg *)){overflow:visible}';
 
@@ -594,18 +623,19 @@ export const PDF_FIT_SCRIPT = `(w => {
 })`;
 
 /**
- * Width in CSS pixels that the printed content is laid out at: the paper width less the
- * page margins, divided by the print scale (Chrome lays the page out at paper size / scale).
- * printToPDF uses US Letter (8.5 x 11 in) when no paper size is given.
+ * Width in CSS pixels that the printed content is laid out at: the paper width (the height
+ * when landscape) less the page margins, divided by the print scale (Chrome lays the page out
+ * at paper size / scale). The paper is the one pdfPageCss sets.
  *
  * @param scale - Print scale passed to printToPDF.
  * @param landscape - Whether the page is landscape.
+ * @param paperSize - Paper size to print on.
  * @returns Content width in CSS pixels.
  */
-export function pdfContentWidthPx(scale: number, landscape: boolean): number {
-    const paperIn = landscape ? 11 : 8.5;
-    const marginIn = (PDF_MARGIN_MM * 2) / 25.4;
-    return ((paperIn - marginIn) * 96) / scale;
+export function pdfContentWidthPx(scale: number, landscape: boolean, paperSize: PdfPaperSize): number {
+    const paper = PDF_PAPERS[paperSize];
+    const paperMm = landscape ? paper.heightMm : paper.widthMm;
+    return (((paperMm - PDF_MARGIN_MM * 2) / 25.4) * 96) / scale;
 }
 
 /**
@@ -776,7 +806,8 @@ export async function exportToPdf(mdFilePath: string, config: Config, signal?: A
     const fullHtml = await renderHtmlAsync(source, fileNameWithoutExtension(mdFilePath), exportConfig, exportOptions, signal);
     if (signal?.aborted || !fullHtml) throw new Error('Aborted');
 
-    const printHtml = fullHtml.replace('</head>', `<style>${PDF_PRINT_CSS}</style>\n</head>`);
+    const isLandscape = landscape ?? false;
+    const printHtml = fullHtml.replace('</head>', `<style>${pdfPageCss(config.pdfPaperSize, isLandscape)}${PDF_PRINT_CSS}</style>\n</head>`);
 
     const tmpHtml = path.join(os.tmpdir(), `plantuml-md-preview-${Date.now()}.html`);
 
@@ -841,8 +872,8 @@ export async function exportToPdf(mdFilePath: string, config: Config, signal?: A
             await new Promise(r => setTimeout(r, 500));
 
             // Fit tables and formulas still wider than the page, then print to PDF with scale
-            const pdfScale = config.pdfScale || 0.625;
-            const isLandscape = landscape ?? false;
+            // (the setting is a percentage, printToPDF and the content width take a factor)
+            const pdfScale = (config.pdfScale || 100) / 100;
             // Measure with the final fonts (KaTeX's come from the CDN), but do not wait forever when offline.
             await cdp.send('Runtime.evaluate', {
                 expression: 'Promise.race([document.fonts.ready, new Promise(r => setTimeout(r, 5000))]).then(() => true)',
@@ -851,7 +882,7 @@ export async function exportToPdf(mdFilePath: string, config: Config, signal?: A
             // The PDF is still printed when fitting fails (wide content is then cut off at the page edge).
             try {
                 const fit = await cdp.send('Runtime.evaluate', {
-                    expression: `${PDF_FIT_SCRIPT}(${pdfContentWidthPx(pdfScale, isLandscape)})`,
+                    expression: `${PDF_FIT_SCRIPT}(${pdfContentWidthPx(pdfScale, isLandscape, config.pdfPaperSize)})`,
                 });
                 if (fit.exceptionDetails) console.warn('[exporter] PDF fit failed:', JSON.stringify(fit.exceptionDetails));
                 else if ((fit.result as { value?: unknown } | undefined)?.value !== true) console.warn('[exporter] PDF fit skipped: no print width');
@@ -862,7 +893,6 @@ export async function exportToPdf(mdFilePath: string, config: Config, signal?: A
                 printBackground: true,
                 preferCSSPageSize: true,
                 scale: pdfScale,
-                landscape: isLandscape,
             });
 
             // Write the base64-encoded PDF data to disk
@@ -878,6 +908,13 @@ export async function exportToPdf(mdFilePath: string, config: Config, signal?: A
         await fs.promises.unlink(tmpHtml).catch(() => {});
     }
 }
+
+/**
+ * In a page without the preview script (an export, a revision preview), an in-page link stops its target
+ * JUMP_TOP_GAP below the top, as the preview script does while it jumps (src/webview/jump-top-gap.ts).
+ */
+const NO_SCRIPT_IN_PAGE_JUMP_STYLE = `
+  <style>#preview-content [id]{scroll-margin-top:${JUMP_TOP_GAP}px}</style>`;
 
 /**
  * Build an optional `<style>` override for HTML export layout.
@@ -1065,7 +1102,7 @@ ${theme.css}
 #toc-sidebar li ul li ul li ul a{padding-left:56px}
 #toc-sidebar li ul li ul li ul li ul .toc-toggle{left:50px}
 #toc-sidebar li ul li ul li ul li ul a{padding-left:68px}
-  </style>` : ''}
+  </style>` : ''}${scriptHtml ? '' : NO_SCRIPT_IN_PAGE_JUMP_STYLE}
 </head>
 <body${cspNonce ? ' class="preview"' : ''}${hideBodyInitially ? ' style="visibility:hidden"' : ''}>
 ${cspNonce ? `<div id="nav-toolbar">
