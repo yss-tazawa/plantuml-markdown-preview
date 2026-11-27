@@ -23,7 +23,7 @@ import { checkJavaAvailability, checksJavaOnSettingsChange, announcesJavaPathCha
 import type { JavaCheckResult } from './src/java-check.js';
 import { getShownGuidance } from './src/notify-once.js';
 import type { ShownGuidance } from './src/notify-once.js';
-import { prepareLocalServer, startLocalServer, stopLocalServer, restartLocalServer, setLocalServerOutputChannel, setOnServerStateChange, setConfigGetter, setLocalServerPidStore, cleanupStaleLocalServer, setJavaAvailabilityChecker, getLocalServerDiagnostics, handleServerEvent } from './src/local-server.js';
+import { prepareLocalServer, startLocalServer, stopLocalServer, restartLocalServer, setLocalServerOutputChannel, setOnServerStateChange, setConfigGetter, setLocalServerPidStore, cleanupStaleLocalServer, setJavaAvailabilityChecker, getLocalServerDiagnostics, handleServerEvent, setServerReadyTimeoutForTest } from './src/local-server.js';
 import type { LocalServerState, LocalServerDiagnostics } from './src/local-server.js';
 import { createStatusBarItem, updateStatusBar, showModeQuickPick, SELECT_MODE_COMMAND } from './src/status-bar.js';
 import { initPreviewZoom, applyPreviewZoomSetting, getPreviewZoomStatus } from './src/preview-zoom.js';
@@ -463,6 +463,8 @@ export interface TestHooks {
     getOutputLog(): string;
     /** Snapshot of the local PlantUML server state (status, URL, counters, last error). */
     getLocalServerState(): LocalServerDiagnostics;
+    /** Shorten the limit for a spawned local server to answer (no value restores it). */
+    setServerReadyTimeout(ms?: number): void;
     /** Run the activation step that records the preview theme when no scope sets it.
      *  `state` replaces the extension's global state (which holds the run-once marker). */
     recordPreviewThemeIfUnset(state?: vscode.Memento): Promise<boolean>;
@@ -1202,6 +1204,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<Extens
             getShownGuidance: () => getShownGuidance(),
             getOutputLog: () => outputLog.read(),
             getLocalServerState: () => getLocalServerDiagnostics(),
+            setServerReadyTimeout: (ms) => setServerReadyTimeoutForTest(ms),
             recordPreviewThemeIfUnset: (state) =>
                 recordPreviewThemeIfUnset(state ?? context.globalState, line => channel.appendLine(line)),
             getActivationThemeRecording: () => themeRecording.then(written =>

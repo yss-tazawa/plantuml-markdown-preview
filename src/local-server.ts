@@ -433,9 +433,13 @@ interface BootFailure {
 
 /**
  * Spawn and manage our own picoweb server (owned=true), bound to 127.0.0.1.
- * Retries on a different port only in auto-port mode. A child that ends before it
- * is ready fails the start (it is not restarted automatically); one that ends
- * after it was ready goes to {@link handleCrash}.
+ * - A child that could not take its port (BindException) is started again on
+ *   another port in auto-port mode. One that ends before it is ready for another
+ *   reason fails the start, as does a taken fixed port.
+ * - A child that is alive but does not answer within SERVER_READY_TIMEOUT_MS
+ *   fails the start in any mode.
+ * - A failed start is not restarted automatically: the next render tries again.
+ * - A child that ends after it was ready goes to {@link handleCrash}.
  *
  * @param config - Current extension settings.
  * @param superseded - True once the start that called this has been superseded
@@ -498,7 +502,7 @@ async function spawnManagedServer(config: Config, superseded: () => boolean): Pr
                 }
             });
 
-            await waitForReady(port, superseded, () => bootFailure !== null);
+            await waitForReady(port, superseded, () => bootFailure !== null || reportsBindFailure(stderrBuf));
             // Guard against a stop that ran during waitForReady. Re-read serverState
             // as a string — TypeScript narrows the module-level variable but cannot
             // track mutations across await boundaries.
@@ -522,8 +526,13 @@ async function spawnManagedServer(config: Config, superseded: () => boolean): Pr
             // Cast: TypeScript cannot see the assignments inside the child's handlers.
             const reason = classifyBootFailure(bootFailure as BootFailure | null, err as NodeJS.ErrnoException, stderrBuf, config);
             log(`[local-server] Failed to start: ${(bootFailure as BootFailure | null)?.message ?? (err as Error).message}`);
-            if (useAutoPort && attempt < MAX_PORT_RETRIES - 1 && reason.kind !== 'java') {
-                log(`[local-server] Port may be in use, retrying (${attempt + 1}/${MAX_PORT_RETRIES})...`);
+            // Only a child that could not take its port is started again, on another
+            // port. One that ended for another reason would end the same way again,
+            // and one still alive that did not answer in time is only slow: starting
+            // another JVM at once would not be faster. Either fails the start, and the
+            // next render tries again.
+            if (useAutoPort && attempt < MAX_PORT_RETRIES - 1 && reportsBindFailure(stderrBuf)) {
+                log(`[local-server] Port in use, retrying on another port (${attempt + 1}/${MAX_PORT_RETRIES})...`);
                 continue;
             }
             // A fixed port taken right after an event: another window may be
@@ -546,7 +555,13 @@ function discardBootingChild(): void {
     // Safe to reset synchronously: removeAllListeners('close') above ensures
     // no close callback fires between kill() and the reset.
     stoppingIntentionally = true;
-    try { serverProcess.kill(); } catch { /* process already gone (ESRCH) */ }
+    const running = serverProcess.exitCode === null && serverProcess.signalCode === null;
+    if (running && process.platform === 'win32' && serverProcess.pid) {
+        // taskkill /T /F, as a stop does: a plain kill() can orphan the JVM tree on Windows.
+        killProcessTree(serverProcess.pid, 'SIGKILL');
+    } else if (running) {
+        try { serverProcess.kill(); } catch { /* process already gone (ESRCH) */ }
+    }
     serverProcess = null;
     ownedProcess = false;
     rememberPid(undefined);
@@ -570,11 +585,20 @@ function classifyBootFailure(boot: BootFailure | null, err: NodeJS.ErrnoExceptio
     if (stderr.includes('UnsupportedClassVersionError') || stderr.includes('class file version')) {
         return { kind: 'java', result: { status: 'too-old', major: null }, javaPath: config.javaPath };
     }
-    if (config.plantumlLocalServerPort > 0
-        && (stderr.includes('BindException') || stderr.includes('Address already in use'))) {
+    if (config.plantumlLocalServerPort > 0 && reportsBindFailure(stderr)) {
         return { kind: 'port-in-use' };
     }
     return { kind: 'start-failed', detail: boot?.message ?? err.message };
+}
+
+/**
+ * Whether a child's stderr says it could not take its port.
+ *
+ * @param stderr - The child's recent stderr.
+ * @returns True on a BindException.
+ */
+function reportsBindFailure(stderr: string): boolean {
+    return stderr.includes('BindException') || stderr.includes('Address already in use');
 }
 
 /**
@@ -820,9 +844,10 @@ function retriesStoppedText(): string {
  * readyPromise); the caller then checks getLocalServerUrl. A pending start is
  * awaited in any state, including 'error' while a retry runs.
  *
- * Note: This function has its own 15s timeout independent of startLocalServer's
- * internal waitForReady timeout. If this timeout fires while the start is still
- * running, getLocalServerUrl() returns null and the caller shows the message.
+ * Note: This function has its own timeout, a little longer than the spawned
+ * server's waitForReady limit, so a start that ends in time is awaited. If it
+ * fires while a start is still running, getLocalServerUrl() returns null and
+ * the caller shows the message.
  */
 export async function waitForLocalServer(): Promise<void> {
     if (serverState === 'running') return;
@@ -833,7 +858,7 @@ export async function waitForLocalServer(): Promise<void> {
         await Promise.race([
             readyPromise,
             new Promise<void>((_, reject) => {
-                timer = setTimeout(() => reject(new Error('Local server start timeout')), 15_000);
+                timer = setTimeout(() => reject(new Error('Local server start timeout')), serverReadyTimeoutMs + 5_000);
             }),
         ]);
     } catch {
@@ -1419,29 +1444,70 @@ function notifyLost(message: string, withRetry: boolean): void {
 }
 
 /**
+ * Longest wait for a spawned server to answer while its process is alive. A cold
+ * start takes a few seconds, but a slow or busy PC can take several times as long
+ * to answer its first diagram; a child that ends before it is ready ends the wait
+ * at the next poll, so the limit only applies to a live child.
+ */
+const SERVER_READY_TIMEOUT_MS = 60_000;
+/** Longest wait for a connection to a booting server, before its diagram is asked for. */
+const READY_CONNECT_MS = 500;
+/** Longest wait for a booting server's diagram: a check cut short still lets the server finish drawing. */
+const READY_PROBE_MS = 2_000;
+/** Wait after a booting server answered before the child is checked once more. */
+const READY_SETTLE_MS = 500;
+/** The limit in use: SERVER_READY_TIMEOUT_MS, unless a unit test shortened it. */
+let serverReadyTimeoutMs = SERVER_READY_TIMEOUT_MS;
+
+/**
+ * Shorten the limit for a spawned server to answer, so unit tests can reach the
+ * timeout without waiting a minute. Called with no value, it restores the limit.
+ *
+ * @param ms - The limit in milliseconds.
+ */
+export function setServerReadyTimeoutForTest(ms = SERVER_READY_TIMEOUT_MS): void {
+    // Only a real limit: anything else restores the default.
+    serverReadyTimeoutMs = Number.isFinite(ms) && ms > 0 ? ms : SERVER_READY_TIMEOUT_MS;
+}
+
+/**
  * Poll our spawned server until it passes the shared health check, or timeout.
  *
- * Uses probeExisting (Content-Type validated): a foreign server that happens to
- * answer 200 on the same port while our child died of BindException must not be
- * mistaken for our own child becoming ready.
+ * Uses probeServer (Content-Type validated, as for adoption): a foreign server that
+ * happens to answer 200 on the same port must not be mistaken for our own child
+ * becoming ready. After an answer the child is checked once more, as a foreign
+ * server can answer while our child is failing to take the port.
  *
  * @param port - Port number to health-check.
  * @param superseded - Stops polling once the calling start has been superseded.
- * @param exited - Stops polling once the child has ended.
+ * @param failed - Stops polling once the child has ended or could not take its port.
  * @param timeoutMs - Maximum wait time in milliseconds.
  * @param intervalMs - Polling interval in milliseconds.
  */
-async function waitForReady(port: number, superseded: () => boolean, exited: () => boolean, timeoutMs = 15_000, intervalMs = 500): Promise<void> {
+async function waitForReady(port: number, superseded: () => boolean, failed: () => boolean, timeoutMs = serverReadyTimeoutMs, intervalMs = 500): Promise<void> {
     const baseUrl = `http://127.0.0.1:${port}`;
     const deadline = Date.now() + timeoutMs;
+    let connected = false;
 
-    while (Date.now() < deadline && serverState === 'starting' && !superseded() && !exited()) {
-        if (await probeExisting(baseUrl, 2000)) return;
+    while (Date.now() < deadline && serverState === 'starting' && !superseded() && !failed()) {
+        // A short connect first: on Windows, a connection to a port nothing listens on is refused slowly.
+        if (await acceptsConnections('127.0.0.1', port, READY_CONNECT_MS)) {
+            connected = true;
+            const readMs = Math.max(1, Math.min(READY_PROBE_MS, deadline - Date.now()));
+            if (await probeServer(baseUrl, readMs) === 'plantuml') {
+                // Check the child once more a moment later: another server on the port may have
+                // answered while our child is failing to take it.
+                await sleep(READY_SETTLE_MS);
+                if (!failed()) return;
+            }
+        }
+        if (failed() || Date.now() >= deadline) break;
         await sleep(intervalMs);
     }
 
-    if (exited()) throw new Error('Server exited before it was ready');
-    throw new Error(`Server did not become ready within ${timeoutMs}ms`);
+    if (failed()) throw new Error('Server could not take its port or exited before it was ready');
+    if (!connected) throw new Error(`Server did not accept connections within ${timeoutMs / 1000}s`);
+    throw new Error(`Server did not become ready within ${timeoutMs / 1000}s`);
 }
 
 /**
