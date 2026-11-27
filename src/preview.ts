@@ -30,7 +30,7 @@ import { LOADING_OVERLAY_ID } from './loading-overlay.js';
 import { trackZoomPanel, handleZoomChanged, getPreviewZoom, postPreviewZoom } from './preview-zoom.js';
 
 /** Config keys that affect &lt;head&gt; content and require a full HTML reload. */
-const HEAD_KEYS = new Set(['allowLocalImages', 'allowHttpImages', 'mermaidScale', 'enableMath']);
+const HEAD_KEYS = new Set(['allowLocalImages', 'allowHttpImages', 'mermaidScale', 'enableMath', 'tableVerticalAlign']);
 
 /** Scroll sync state: which side currently owns the scroll. */
 type SyncMaster = 'none' | 'editor' | 'preview';
@@ -40,7 +40,7 @@ const SYNC_MASTER_TIMEOUT_MS = 300;
 
 
 /** Property keys that affect rendering output. */
-const RENDER_KEYS = ['plantumlJarPath', 'javaPath', 'dotPath', 'plantumlTheme', 'plantumlScale', 'previewTheme', 'allowLocalImages', 'allowHttpImages', 'mode', 'plantumlServerUrl', 'plantumlLocalServerPort', 'mermaidTheme', 'mermaidScale', 'enableMath', 'plantumlIncludePath', 'd2Theme', 'd2Layout', 'd2Scale'] as const;
+const RENDER_KEYS = ['plantumlJarPath', 'javaPath', 'dotPath', 'plantumlTheme', 'plantumlScale', 'previewTheme', 'allowLocalImages', 'allowHttpImages', 'mode', 'plantumlServerUrl', 'plantumlLocalServerPort', 'mermaidTheme', 'mermaidScale', 'enableMath', 'tableVerticalAlign', 'plantumlIncludePath', 'd2Theme', 'd2Layout', 'd2Scale'] as const;
 
 /** Source of preview ids; each PreviewManager takes the next one. */
 let previewIdSeq = 0;

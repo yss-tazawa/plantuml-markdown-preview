@@ -46,7 +46,7 @@ import type { D2Render } from './src/d2-preview.js';
 import { initD2, disposeD2 } from './src/d2-renderer.js';
 import { openRevisionPreview, disposeRevisionPreviews, getOpenRevisionPreviews } from './src/revision-preview.js';
 import { HEAD_REVISION, STAGED_REVISION, type Revision } from './src/git.js';
-import { CONFIG_SECTION, MODE_PRESETS, OUTPUT_CHANNEL_NAME, isLazyDeferralActive, resolveAllowLocalImages, resolvePdfPaperSize, resolvePdfScale, resolveStartMode, type Config, type Mode, type TableWrap } from './src/config.js';
+import { CONFIG_SECTION, MODE_PRESETS, OUTPUT_CHANNEL_NAME, isLazyDeferralActive, resolveAllowLocalImages, resolvePdfPaperSize, resolvePdfScale, resolveStartMode, resolveTableVerticalAlign, type Config, type Mode, type TableWrap } from './src/config.js';
 import { registerCompletionProviders } from './src/completion/register.js';
 import { registerColorProviders } from './src/color/register.js';
 import { rewriteLegacyAllowLocalImages } from './src/allow-local-images-legacy.js';
@@ -123,6 +123,7 @@ function getConfig(): Config {
         htmlMaxWidth: cfg.get<string>('htmlMaxWidth', '960px'),
         htmlAlignment: cfg.get<string>('htmlAlignment', 'center'),
         htmlTableWrap: cfg.get<TableWrap>('htmlTableWrap', 'words'),
+        tableVerticalAlign: resolveTableVerticalAlign(cfg.get<string>('tableVerticalAlign', 'middle')),
         enableMath: cfg.get<boolean>('enableMath', true),
         pdfScale: resolvePdfScale(cfg.get<number>('pdfScale', 100)),
         pdfPaperSize: resolvePdfPaperSize(cfg.get<string>('pdfPaperSize', 'A4')),
@@ -1384,6 +1385,7 @@ const builtInPreviewConfig: Config = {
     htmlMaxWidth: '960px',
     htmlAlignment: 'center',
     htmlTableWrap: 'words',
+    tableVerticalAlign: 'middle',
     allowLocalImages: true,
     allowHttpImages: false,
     enableMath: true,

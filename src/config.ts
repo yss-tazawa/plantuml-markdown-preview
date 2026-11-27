@@ -13,6 +13,9 @@ export type Mode = 'fast' | 'secure' | 'easy';
 /** How wide tables wrap in HTML export, exposed via the `htmlTableWrap` setting. */
 export type TableWrap = 'words' | 'characters' | 'none';
 
+/** Vertical alignment of table cells, exposed via the `tableVerticalAlign` setting. */
+export type TableVerticalAlign = 'top' | 'middle' | 'bottom';
+
 /** Paper size of the PDF export, exposed via the `pdfPaperSize` setting. */
 export type PdfPaperSize = 'A4' | 'Letter' | 'Legal' | 'A3' | 'A5';
 
@@ -193,6 +196,25 @@ export function resolvePdfPaperSize(value: string | undefined): PdfPaperSize {
     return DEFAULT_PDF_PAPER_SIZE;
 }
 
+/** Default vertical alignment of table cells (matches the package.json default and the browser default). */
+export const DEFAULT_TABLE_VERTICAL_ALIGN: TableVerticalAlign = 'middle';
+
+/**
+ * Resolve the `tableVerticalAlign` setting to one of the supported alignments.
+ *
+ * Anything else (a hand-written `baseline`, an uppercase `TOP`, a broken value) falls back to
+ * the default middle, which leaves the cells at the browser default.
+ *
+ * @param value - User setting value.
+ * @returns The vertical alignment of table cells.
+ */
+export function resolveTableVerticalAlign(value: string | undefined): TableVerticalAlign {
+    if (value === 'top' || value === 'middle' || value === 'bottom') {
+        return value;
+    }
+    return DEFAULT_TABLE_VERTICAL_ALIGN;
+}
+
 /** Default scale (%) of the PDF export (matches the package.json default). */
 export const DEFAULT_PDF_SCALE = 100;
 
@@ -307,6 +329,8 @@ export interface Config {
     htmlAlignment: string;
     /** How wide tables wrap in HTML export ('words', 'characters' or 'none'). */
     htmlTableWrap: TableWrap;
+    /** Vertical alignment of table cells in the preview and in HTML/PDF export ('top', 'middle' or 'bottom'), resolved by resolveTableVerticalAlign. */
+    tableVerticalAlign: TableVerticalAlign;
     /** When true, resolve relative image paths in the preview. */
     allowLocalImages: boolean;
     /** When true, allow loading images over HTTP (unencrypted) in the preview CSP. */
